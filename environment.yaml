@@ -8,9 +8,12 @@ dependencies:
   # Science
   - numpy
   - scipy
+
+  # Data
   - pandas
   - openpyxl
   - xlrd
+  - pandas-datareader
 
   # Graphics
   - matplotlib
@@ -20,6 +23,11 @@ dependencies:
   - pymc
   - pytensor
   - arviz
+  - nutpie
+
+  # Not Bayes
+  - scikit-learn
+  - statsmodels
 
   # Geospatial
   - geopandas
