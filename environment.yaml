@@ -1,0 +1,43 @@
+name: laos-climate-change
+channels:
+  - conda-forge
+
+dependencies:
+  - python=3.12
+
+  # Science
+  - numpy
+  - scipy
+
+  # Data
+  - pandas
+  - openpyxl
+  - xlrd
+  - pandas-datareader
+
+  # Graphics
+  - matplotlib
+  - seaborn
+
+  # Bayes
+  - pymc
+  - pytensor
+  - arviz
+  - nutpie
+
+  # Not Bayes
+  - scikit-learn
+  - statsmodels
+
+  # Geospatial
+  - geopandas
+  - pysal
+
+  # Etc
+  - jupyter
+  - notebook
+
+  # Testing
+  - pytest
+  - pytest-cov
+  - pre-commit
