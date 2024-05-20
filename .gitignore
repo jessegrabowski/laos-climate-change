@@ -158,3 +158,18 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
+
+
+# Specific documents and data: we add the set of data that we want to ignore.
+emdat.xlsx
+data/emdat.xlsx
+
+wb_countries_admin0_10m.zip
+lao_adm_ngd_20191112_shp.zip
+WB_countries_Admin0
+lao_admbnda_adm
+
+laos_climate_change/wb_countries_admin0_10m.zip
+laos_climate_change/lao_adm_ngd_20191112_shp.zip
+laos_climate_change/WB_countries_Admin0
+laos_climate_change/lao_admbnda_adm
