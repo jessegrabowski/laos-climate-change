@@ -12,7 +12,7 @@ def process_emdat(repo_path=".../laos-climate-change"):
 
     df = pd.read_excel(repo_path + "/data/emdat.xlsx", sheet_name="EM-DAT Data")
 
-    prob_cols = [ #ignore
+    prob_cols = [  # noqa
         "Drought",
         "Earthquake",
         "Extreme temperature",
@@ -22,7 +22,7 @@ def process_emdat(repo_path=".../laos-climate-change"):
         "Volcanic activity",
         "Mass Movement (Dry)",
         "Mass Movement (Wet)",
-    ] #ignore
+    ]  # noqa
 
     intensity_cols = [
         "Country",
