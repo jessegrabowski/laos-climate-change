@@ -8,8 +8,7 @@ LAOS_URL = "https://data.humdata.org/dataset/9eb6aff1-9e3f-43d3-99a6-f415fe4b4df
 LAOS_FILENAME = "lao_adm_ngd_20191112_shp.zip"
 
 
-def download_shapefile(
-    which, output_path="../data/shapefiles"):
+def download_shapefile(which, output_path="../data/shapefiles"):
     if which == "Laos":
         url = LAOS_URL
         filename = LAOS_FILENAME

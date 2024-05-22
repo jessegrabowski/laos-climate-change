@@ -161,18 +161,10 @@ cython_debug/
 
 
 # Specific documents and data: we add the set of data that we want to ignore.
-emdat.xlsx
-data/emdat.xlsx
-emdat_processed.csv
-data/emdat_processed .csv
+**/emdat.xlsx
+**/emdat_processed .csv
 
-
-wb_countries_admin0_10m.zip
-lao_adm_ngd_20191112_shp.zip
-WB_countries_Admin0
-lao_admbnda_adm
-
-laos_climate_change/wb_countries_admin0_10m.zip
-laos_climate_change/lao_adm_ngd_20191112_shp.zip
-laos_climate_change/WB_countries_Admin0
-laos_climate_change/lao_admbnda_adm
+**/wb_countries_admin0_10m.zip
+**/lao_adm_ngd_20191112_shp.zip
+**/WB_countries_Admin0
+**/lao_admbnda_adm
