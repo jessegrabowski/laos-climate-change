@@ -164,7 +164,4 @@ cython_debug/
 **/emdat.xlsx
 **/emdat_processed .csv
 
-**/wb_countries_admin0_10m.zip
-**/lao_adm_ngd_20191112_shp.zip
-**/WB_countries_Admin0
-**/lao_admbnda_adm
+data/*

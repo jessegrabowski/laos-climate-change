@@ -1,11 +1,11 @@
 import pandas as pd
 import os
 from os.path import exists
-from const_vars import prob_cols, intensity_cols, dis_found
+import const_vars
 
-PROB_COLS = prob_cols
-INTENSITY_COLS = intensity_cols
-DISASTERS_FOUND = dis_found
+PROB_COLS = const_vars.PROB_COLS
+INTENSITY_COLS = const_vars.INTENSITY_COLS
+DISASTERS_FOUND = const_vars.DISASTERS_FOUND
 
 
 def process_emdat(data_path="../data"):
@@ -19,10 +19,10 @@ def process_emdat(data_path="../data"):
 
     df = pd.read_excel(data_path + "/emdat.xlsx", sheet_name="EM-DAT Data")
 
-    df2 = df.copy()[intensity_cols]
+    df2 = df.copy()[INTENSITY_COLS]
 
     df = (
-        df.query("`Disaster Type` in @prob_cols")
+        df.query("`Disaster Type` in @PROB_COLS")
         .groupby(["Disaster Type", "Country", "Start Year"])
         .size()
         .unstack("Disaster Type")

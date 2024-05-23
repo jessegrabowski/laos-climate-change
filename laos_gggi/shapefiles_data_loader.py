@@ -1,11 +1,12 @@
 import os
 from os.path import exists
 from urllib.request import urlretrieve
+import const_vars
 
-WORLD_URL = "https://datacatalogfiles.worldbank.org/ddh-published/0038272/DR0046659/wb_countries_admin0_10m.zip?versionId=2024-05-14T14:58:01.5696428Z"
-WORLD_FILENAME = "wb_countries_admin0_10m.zip"
-LAOS_URL = "https://data.humdata.org/dataset/9eb6aff1-9e3f-43d3-99a6-f415fe4b4dff/resource/1d6edf99-5303-4b31-8909-dd70cda78443/download/lao_adm_ngd_20191112_shp.zip"
-LAOS_FILENAME = "lao_adm_ngd_20191112_shp.zip"
+WORLD_URL = const_vars.WORLD_URL
+WORLD_FILENAME = const_vars.WORLD_FILENAME
+LAOS_URL = const_vars.LAOS_URL
+LAOS_FILENAME = const_vars.LAOS_FILENAME
 
 
 def download_shapefile(which, output_path="../data/shapefiles"):
