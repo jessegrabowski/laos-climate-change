@@ -1,12 +1,7 @@
 import os
 from os.path import exists
 from urllib.request import urlretrieve
-import const_vars
-
-WORLD_URL = const_vars.WORLD_URL
-WORLD_FILENAME = const_vars.WORLD_FILENAME
-LAOS_URL = const_vars.LAOS_URL
-LAOS_FILENAME = const_vars.LAOS_FILENAME
+from const_vars import WORLD_URL, WORLD_FILENAME, LAOS_URL, LAOS_FILENAME
 
 
 def download_shapefile(which, output_path="../data/shapefiles"):

@@ -1,11 +1,7 @@
 import pandas as pd
 import os
 from os.path import exists
-import const_vars
-
-PROB_COLS = const_vars.PROB_COLS
-INTENSITY_COLS = const_vars.INTENSITY_COLS
-DISASTERS_FOUND = const_vars.DISASTERS_FOUND
+from const_vars import INTENSITY_COLS, DISASTERS_FOUND
 
 
 def process_emdat(data_path="../data"):
