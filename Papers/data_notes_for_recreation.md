@@ -38,4 +38,3 @@ Data filters:
 Questions:
 
 What to do for countries that no longer exist/merged? (Soviet Union, West Germany, etc)
-\
