@@ -51,3 +51,7 @@ VARIABLES_DICTIONARY = {
     "gdp_per_cap_real": "GDP per capita (constant 2015 US$)",
     "population_density": "Population density (people per sq. km of land area)",
 }
+
+GPCC_URL = (
+    "https://downloads.psl.noaa.gov/Datasets/gpcc/full_v7/precip.mon.nobs.1x1.v7.nc"
+)
