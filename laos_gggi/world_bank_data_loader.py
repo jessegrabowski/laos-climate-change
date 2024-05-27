@@ -12,7 +12,7 @@ def download_wb_data(output_path="../data"):
     path_to_gdp_per_capita_real = (
         output_path + "/API_NY.GDP.PCAP.KD_DS2_en_csv_v2_552878.zip"
     )
-    path_to_wb_data = output_path + "/world_bank.csv"  # noqa
+    path_to_wb_data = output_path + "/world_bank.csv"
     if not exists(output_path):
         os.makedirs(output_path)
         urlretrieve(POPULATION_DENSITY_URL, path_to_population_density)
@@ -39,12 +39,12 @@ def download_wb_data(output_path="../data"):
 
         population_density = (
             population_density.drop(
-                ["Country Code", "Indicator Code", "Indicator Name"], axis=1
+                ["Country Name", "Indicator Code", "Indicator Name"], axis=1
             )
-            .melt(id_vars=["Country Name"])
+            .melt(id_vars=["Country Code"])
             .rename(
                 columns={
-                    "Country Name": "Country",
+                    "Country Code": "Country",
                     "variable": "Year",
                     "value": "Population_density",
                 }
@@ -55,12 +55,12 @@ def download_wb_data(output_path="../data"):
 
         gdp_per_cap = (
             gdp_per_cap.drop(
-                ["Country Code", "Indicator Code", "Indicator Name"], axis=1
+                ["Country Name", "Indicator Code", "Indicator Name"], axis=1
             )
-            .melt(id_vars=["Country Name"])
+            .melt(id_vars=["Country Code"])
             .rename(
                 columns={
-                    "Country Name": "Country",
+                    "Country Code": "Country",
                     "variable": "Year",
                     "value": "gdp_per_cap_real",
                 }
