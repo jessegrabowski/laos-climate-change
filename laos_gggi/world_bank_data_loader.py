@@ -1,7 +1,7 @@
 import os
 from os.path import exists
 from pandas_datareader import wb
-import numpy as np
+import pandas as pd
 from const_vars import COUNTRIES_ISO, ISO_DICTIONARY
 
 
@@ -18,10 +18,7 @@ def download_wb_data(output_path="../data"):
         )
         wb_df.reset_index(inplace=True)
         # Adding country code
-        wb_df["country_code"] = np.NaN
-
-        for x in wb_df.index.values:
-            wb_df.loc[x, "country_code"] = ISO_DICTIONARY[wb_df.loc[x, "country"]]
+        wb_df["country_code"] = wb_df["country"].apply(ISO_DICTIONARY.get)
         # Formatting data
         wb_df = wb_df[["country_code", "year", "NY.GDP.PCAP.KD", "EN.POP.DNST"]]
         wb_df.rename(
@@ -32,8 +29,9 @@ def download_wb_data(output_path="../data"):
             inplace=True,
         )
         wb_df = wb_df.set_index(["country_code", "year"]).sort_index()
+        wb_df.to_csv(path_to_wb_data)
 
-    else:
+    if not exists(path_to_wb_data):
         # Importing data
         wb_df = wb.download(
             indicator=["EN.POP.DNST", "NY.GDP.PCAP.KD"],
@@ -43,9 +41,7 @@ def download_wb_data(output_path="../data"):
         )
         wb_df.reset_index(inplace=True)
         # Adding country code
-        wb_df["country_code"] = np.NaN
-        for x in wb_df.index.values:
-            wb_df.loc[x, "country_code"] = ISO_DICTIONARY[wb_df.loc[x, "country"]]
+        wb_df["country_code"] = wb_df["country"].apply(ISO_DICTIONARY.get)
         # Formatting data
         wb_df = wb_df[["country_code", "year", "NY.GDP.PCAP.KD", "EN.POP.DNST"]]
         wb_df.rename(
@@ -56,5 +52,9 @@ def download_wb_data(output_path="../data"):
             inplace=True,
         )
         wb_df = wb_df.set_index(["country_code", "year"]).sort_index()
+        wb_df.to_csv(path_to_wb_data)
 
-    return (wb_df, wb_df.to_csv(path_to_wb_data))
+    else:
+        wb_df = pd.read_csv(path_to_wb_data, index_col=["country_code", "year"])
+
+    return wb_df
