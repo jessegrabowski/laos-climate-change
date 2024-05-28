@@ -40,3 +40,18 @@ WORLD_URL = "https://datacatalogfiles.worldbank.org/ddh-published/0038272/DR0046
 WORLD_FILENAME = "wb_countries_admin0_10m.zip"  # noqa
 LAOS_URL = "https://data.humdata.org/dataset/9eb6aff1-9e3f-43d3-99a6-f415fe4b4dff/resource/1d6edf99-5303-4b31-8909-dd70cda78443/download/lao_adm_ngd_20191112_shp.zip"  # noqa
 LAOS_FILENAME = "lao_adm_ngd_20191112_shp.zip"  # noqa
+POPULATION_DENSITY_URL = (
+    "https://api.worldbank.org/v2/en/indicator/EN.POP.DNST?downloadformat=csv"
+)
+GDP_PER_CAPITA_CONSTANT_URL = (
+    "https://api.worldbank.org/v2/en/indicator/NY.GDP.PCAP.KD?downloadformat=csv"
+)
+
+VARIABLES_DICTIONARY = {
+    "gdp_per_cap_real": "GDP per capita (constant 2015 US$)",
+    "population_density": "Population density (people per sq. km of land area)",
+}
+
+GPCC_URL = (
+    "https://downloads.psl.noaa.gov/Datasets/gpcc/full_v7/precip.mon.nobs.1x1.v7.nc"
+)
