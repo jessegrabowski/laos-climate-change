@@ -163,5 +163,5 @@ cython_debug/
 # Specific documents and data: we add the set of data that we want to ignore.
 **/emdat.xlsx
 **/emdat_processed .csv
-
+.DS_Store
 data/*
