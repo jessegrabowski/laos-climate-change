@@ -2,16 +2,16 @@ import os
 from os.path import exists
 from pandas_datareader import wb
 import pandas as pd
-from const_vars import COUNTRIES_ISO, ISO_DICTIONARY
+from const_vars import COUNTRIES_ISO, ISO_DICTIONARY, WB_INDICATORS, WB_RENAME_DICT
 
 
-def download_wb_data(output_path="../data"):
-    path_to_wb_data = output_path + "/world_bank.csv"
-    if not exists(output_path):
-        os.makedirs(output_path)
+def download_wb_data(folder_path="../data"):
+    path_to_wb_data = folder_path + "/world_bank.csv"
+    if not exists(folder_path):
+        os.makedirs(folder_path)
         # Importing data
         wb_df = wb.download(
-            indicator=["EN.POP.DNST", "NY.GDP.PCAP.KD"],
+            indicator=WB_INDICATORS,
             country=COUNTRIES_ISO,
             start="1900",
             end=None,
@@ -22,10 +22,7 @@ def download_wb_data(output_path="../data"):
         # Formatting data
         wb_df = wb_df[["country_code", "year", "NY.GDP.PCAP.KD", "EN.POP.DNST"]]
         wb_df.rename(
-            columns={
-                "EN.POP.DNST": "population_density",
-                "NY.GDP.PCAP.KD": "gdp_per_cap",
-            },
+            columns=WB_RENAME_DICT,
             inplace=True,
         )
         wb_df = wb_df.set_index(["country_code", "year"]).sort_index()
@@ -34,7 +31,7 @@ def download_wb_data(output_path="../data"):
     if not exists(path_to_wb_data):
         # Importing data
         wb_df = wb.download(
-            indicator=["EN.POP.DNST", "NY.GDP.PCAP.KD"],
+            indicator=WB_INDICATORS,
             country=COUNTRIES_ISO,
             start="1900",
             end=None,
@@ -45,10 +42,7 @@ def download_wb_data(output_path="../data"):
         # Formatting data
         wb_df = wb_df[["country_code", "year", "NY.GDP.PCAP.KD", "EN.POP.DNST"]]
         wb_df.rename(
-            columns={
-                "EN.POP.DNST": "population_density",
-                "NY.GDP.PCAP.KD": "gdp_per_cap",
-            },
+            columns=WB_RENAME_DICT,
             inplace=True,
         )
         wb_df = wb_df.set_index(["country_code", "year"]).sort_index()
