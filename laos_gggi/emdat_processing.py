@@ -19,7 +19,7 @@ def process_emdat(data_path="../data"):
 
     df = (
         df.query("`Disaster Type` in @PROB_COLS")
-        .groupby(["Disaster Type", "Country", "Start Year"])
+        .groupby(["Disaster Type", "Country", "Start Year", "Region"])
         .size()
         .unstack("Disaster Type")
         .fillna(0)

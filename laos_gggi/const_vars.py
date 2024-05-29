@@ -8,6 +8,7 @@ PROB_COLS = [  # noqa
     "Volcanic activity",
     "Mass Movement (Dry)",
     "Mass Movement (Wet)",
+    "Region",
 ]
 
 DISASTERS_FOUND = [  # noqa
@@ -22,6 +23,7 @@ DISASTERS_FOUND = [  # noqa
 
 INTENSITY_COLS = [  # noqa
     "Country",
+    "Region",
     "Start Year",
     "Total Deaths",
     "No. Injured",
