@@ -1,21 +1,22 @@
 import os
 from os.path import exists
 from urllib.request import urlretrieve
-from const_vars import GPCC_URL
+from const_vars import GPCC_YEARS, MAKE_GPCC_URL
 import geopandas as geo
 import pandas as pd
 from zipfile import ZipFile
 import gzip
 import shutil
+import xarray as xr
 
 
 def download_gpcc_data(output_path="../data"):
-    path_to_GPCC_raw = {
-        "1981_1990": output_path + "/gpcc/gpcc_raw_1981_1990.nc.gz",
-        "1991_2000": output_path + "/gpcc/gpcc_raw_1991_2000.nc.gz",
-        "2001_2010": output_path + "/gpcc/gpcc_raw_2001_2010.nc.gz",
-        "2011_2020": output_path + "/gpcc/gpcc_raw_2011_2020.nc.gz",
-    }
+    def path_to_GPCC_raw(years: str):
+        return f"../data/gpcc/gpcc_raw_{years}.nc.gz"
+
+    def path_to_GPCC_extracted(years: str):
+        return f"../data/gpcc/gpcc_raw_{years}.nc"
+
     path_to_GPCC_unzipped = output_path + "/gpcc/gpcc_raw_1981_1990.nc"
     shapefile_unzipped_folder_world = (
         output_path + "/shapefiles/wb_countries_admin0_10m"
@@ -33,9 +34,9 @@ def download_gpcc_data(output_path="../data"):
         os.makedirs(output_path + "/gpcc")
 
     # Check if the GPCC raw data exists
-    if not exists(path_to_GPCC_raw["1981_1990"]):
-        for x in GPCC_URL:
-            urlretrieve(GPCC_URL[x], path_to_GPCC_raw[x])
+    if not exists(path_to_GPCC_raw("1981_1990")):
+        for x in GPCC_YEARS:
+            urlretrieve(MAKE_GPCC_URL(x), path_to_GPCC_raw(x))
 
     # Verify if shapefiles are unzipped
     if not exists(shapefile_unzipped_folder_world):
@@ -51,22 +52,10 @@ def download_gpcc_data(output_path="../data"):
 
     # Verify if the gpcc files are extracted (Note:gzip.open does not support loops)
     if not exists(path_to_GPCC_unzipped):
-        with gzip.open(output_path + "/gpcc/gpcc_raw_1981_1990.nc.gz", "rb") as f_in:
-            with open(output_path + "/gpcc/gpcc_raw_1981_1990.nc", "wb") as f_out:
-                shutil.copyfileobj(f_in, f_out)
-
-        with gzip.open(output_path + "/gpcc/gpcc_raw_1991_2000.nc.gz", "rb") as f_in:
-            with open(output_path + "/gpcc/gpcc_raw_1991_2000.nc", "wb") as f_out:
-                shutil.copyfileobj(f_in, f_out)
-
-        with gzip.open(output_path + "/gpcc/gpcc_raw_2001_2010.nc.gz", "rb") as f_in:
-            with open(output_path + "/gpcc/gpcc_raw_2001_2010.nc", "wb") as f_out:
-                shutil.copyfileobj(f_in, f_out)
-
-        with gzip.open(output_path + "/gpcc/gpcc_raw_2011_2020.nc.gz", "rb") as f_in:
-            with open(output_path + "/gpcc/gpcc_raw_2011_2020.nc", "wb") as f_out:
-                shutil.copyfileobj(f_in, f_out)
-
+        for x in GPCC_YEARS:
+            with gzip.open(path_to_GPCC_raw(x), "rb") as f_in:
+                with open(path_to_GPCC_extracted(x), "wb") as f_out:
+                    shutil.copyfileobj(f_in, f_out)
     if not exists(gpcc_processed_path):
         # Import the world shapefile
         world_shapefile = geo.read_file(world_shapefile_path).rename(  # noqa
@@ -78,35 +67,34 @@ def download_gpcc_data(output_path="../data"):
             }
         )
         # Open gpcc files, transform them to geopandas shapefile geometry and merge them with the world shapefiles
-        for x in list(path_to_GPCC_raw.keys()):
-            exec(
-                f'data_{x} = xr.open_dataset(output_path + "/gpcc/gpcc_raw_" + x + ".nc")'
+        result_df = pd.DataFrame()
+        for x in list(GPCC_YEARS):
+            data = xr.open_dataset(path_to_GPCC_extracted(x))
+            df = data["precip"].to_dataframe().reset_index()
+            df_geo = geo.GeoDataFrame(
+                df, geometry=geo.points_from_xy(df["lat"], df["lon"]), crs="EPSG:4326"
             )
-            exec(f'df_{x} = data_{x}["precip"].to_dataframe().reset_index()')
-            exec(
-                f'df_geo_{x} = geo.GeoDataFrame(df_{x}, geometry=geo.points_from_xy(df_{x}["lat"], df_{x}["lon"]), crs="EPSG:4326")'
-            )
-            exec(
-                f'df_geo_wshape_{x} = df_geo_{x}.sjoin(world_shapefile, how="inner", predicate="intersects")[["time", "lat", "lon", "precip","country_code", "geometry", "country", "continent", "region"]]'
-            )
-            exec(
-                f'df_geo_wshape_{x} = df_geo_wshape_{x}.set_index(["country_code", "time"])'
-            )
+            df_geo_wshape = df_geo.sjoin(
+                world_shapefile, how="inner", predicate="intersects"
+            )[
+                [
+                    "time",
+                    "lat",
+                    "lon",
+                    "precip",
+                    "country_code",
+                    "geometry",
+                    "country",
+                    "continent",
+                    "region",
+                ]
+            ]
+            result_df = pd.concat([result_df, df_geo_wshape], axis=0)
 
-        df = pd.concat(
-            [
-                df_geo_wshape_2011_2020,  # noqa
-                df_geo_wshape_2001_2010,  # noqa
-                df_geo_wshape_1991_2000,  # noqa
-                df_geo_wshape_1981_1990,  # noqa
-            ],
-            axis=0,
-        ).sort_index()
-        df = df.reset_index()
-        df = df.pivot_table(
+        result_df = result_df.pivot_table(
             values="precip", index=["country_code", "time"], aggfunc="mean"
         )
-        df.to_csv(gpcc_processed_path)
+        result_df.to_csv(gpcc_processed_path)
     else:
-        df = pd.read_csv(gpcc_processed_path)
-    return df
+        result_df = pd.read_csv(gpcc_processed_path).set_index(["country_code", "time"])
+    return result_df
