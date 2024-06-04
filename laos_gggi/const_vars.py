@@ -52,7 +52,9 @@ VARIABLES_DICTIONARY = {
     "population_density": "Population density (people per sq. km of land area)",
 }
 
-GPCC_URL = {"1981_1990": "https://opendata.dwd.de/climate_environment/GPCC/full_data_monthly_v2022/10/full_data_monthly_v2022_1981_1990_10.nc.gz",
-    "1991_2000": "https://opendata.dwd.de/climate_environment/GPCC/full_data_monthly_v2022/10/full_data_monthly_v2022_1991_2000_10.nc.gz" ,
-    "2001_2010": "https://opendata.dwd.de/climate_environment/GPCC/full_data_monthly_v2022/10/full_data_monthly_v2022_2001_2010_10.nc.gz" ,
-    "2011_2020": "https://opendata.dwd.de/climate_environment/GPCC/full_data_monthly_v2022/10/full_data_monthly_v2022_2011_2020_10.nc.gz"}
+GPCC_URL = {
+    "1981_1990": "https://opendata.dwd.de/climate_environment/GPCC/full_data_monthly_v2022/10/full_data_monthly_v2022_1981_1990_10.nc.gz",
+    "1991_2000": "https://opendata.dwd.de/climate_environment/GPCC/full_data_monthly_v2022/10/full_data_monthly_v2022_1991_2000_10.nc.gz",
+    "2001_2010": "https://opendata.dwd.de/climate_environment/GPCC/full_data_monthly_v2022/10/full_data_monthly_v2022_2001_2010_10.nc.gz",
+    "2011_2020": "https://opendata.dwd.de/climate_environment/GPCC/full_data_monthly_v2022/10/full_data_monthly_v2022_2011_2020_10.nc.gz",
+}
