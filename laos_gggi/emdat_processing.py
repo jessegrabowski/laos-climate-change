@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 from os.path import exists
-from const_vars import INTENSITY_COLS, DISASTERS_FOUND
+from const_vars import INTENSITY_COLS, DISASTERS_FOUND, PROB_COLS  # noqa
 
 
 def process_emdat(data_path="../data"):
@@ -10,7 +10,7 @@ def process_emdat(data_path="../data"):
 
     if not exists(data_path + "/emdat.xlsx"):
         raise NotImplementedError(
-            "No EM-DAT data was found at `/data/emdat.xlsx`. Please make an account at <url>, download the database, and place it in `/data/emdat.xlsx`"
+            "No EM-DAT data was found at `/data/emdat.xlsx`. Please make an account at https://public.emdat.be/, download the database, and place it in `/data/emdat.xlsx`"
         )
 
     df = pd.read_excel(data_path + "/emdat.xlsx", sheet_name="EM-DAT Data")
