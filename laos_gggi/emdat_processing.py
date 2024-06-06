@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 from os.path import exists
-from const_vars import INTENSITY_COLS, DISASTERS_FOUND, PROB_COLS  # noqa
+from laos_gggi.const_vars import INTENSITY_COLS, DISASTERS_FOUND, PROB_COLS  # noqa
 
 
 def process_emdat(data_path="../data"):
