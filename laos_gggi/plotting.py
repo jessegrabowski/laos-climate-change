@@ -47,7 +47,7 @@ def prepare_gridspec_figure(n_cols: int, n_plots: int) -> tuple[GridSpec, list]:
     return gs, plot_locs
 
 
-def _plot_single_kde(data, axis=None, bins=30, color="tab:blue"):
+def _plot_single_kde(data: pd.Series, axis=None, bins=30, color="tab:blue"):
     """
     Plot a single KDE plot on a given axis.
 
@@ -88,6 +88,7 @@ def _plot_single_kde(data, axis=None, bins=30, color="tab:blue"):
     box = AnchoredText(text, loc="upper left", prop={"fontfamily": "monospace"})
     box.patch.set_alpha(0.5)
     axis.add_artist(box)
+    axis.set_title(data.name)
 
     return axis
 
@@ -123,10 +124,7 @@ def plot_descriptive(
     figsize = figure_kwargs.pop("figsize", (14, 4))
     dpi = figure_kwargs.pop("dpi", 144)
 
-    if isinstance(df, pd.Series):
-        df = df.to_frame()
-
-    n_plots = df.shape[1]
+    n_plots = df.shape[1] if isinstance(df, pd.DataFrame) else 1
 
     if n_plots == 1:
         fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
@@ -137,7 +135,7 @@ def plot_descriptive(
     n_cols = min(n_cols, n_plots)
     gs, locs = prepare_gridspec_figure(n_cols=n_cols, n_plots=n_plots)
 
-    for name, loc in zip(df, locs):
+    for name, loc in zip(df.columns, locs):
         axis = fig.add_subplot(gs[loc])
         _plot_single_kde(df[name], axis=axis, bins=bins, color=color)
 
