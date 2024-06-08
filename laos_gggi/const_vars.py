@@ -22,6 +22,7 @@ DISASTERS_FOUND = [  # noqa
 
 INTENSITY_COLS = [  # noqa
     "Country",
+    "ISO",
     "Start Year",
     "Total Deaths",
     "No. Injured",
