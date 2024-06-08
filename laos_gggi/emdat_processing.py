@@ -58,7 +58,6 @@ def process_emdat(data_path="data", force_reload=False):
 
     for df, out_name in zip([df_prob, df_inten], output_files):
         out_path = os.path.join(data_path, f"{out_name}.csv")
-        if not exists(out_path):
-            df.to_csv(out_path)
+        df.to_csv(out_path)
 
     return df_prob, df_inten
