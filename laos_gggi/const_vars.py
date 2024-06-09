@@ -43,7 +43,7 @@ LAOS_FILENAME = "lao_adm_ngd_20191112_shp.zip"  # noqa
 
 CO2_URL = "https://gml.noaa.gov/aftp/products/trends/co2/co2_mm_gl.csv"
 CO2_FILENAME = "co2_mm_gl.csv"
-OCEAN_HEAT_URL = "https://www.ncei.noaa.gov/data/oceans/woa/DATA_ANALYSIS/3M_HEAT_CONTENT/DATA/basin/onemonth/ohc_levitus_climdash_monthly.csv"
+OCEAN_HEAT_URL = "https://www.ncei.noaa.gov/data/oceans/woa/DATA_ANALYSIS/3M_HEAT_CONTENT/DATA/basin/3month/ohc_levitus_climdash_seasonal.csv"
 # https://www.ncei.noaa.gov/access/global-ocean-heat-content/basin_heat_data_monthly.html
 OCEAN_HEAT_FILENAME = "ncei_global_ocean_heat.csv"
 
