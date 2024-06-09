@@ -3,10 +3,15 @@ from os.path import exists
 from pandas_datareader import wb
 import pandas as pd
 from const_vars import COUNTRIES_ISO, ISO_DICTIONARY, WB_INDICATORS, WB_RENAME_DICT
+import logging
 
 
-def download_wb_data(folder_path="../data"):
-    path_to_wb_data = folder_path + "/world_bank.csv"
+_log = logging.getLogger(__name__)
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def download_wb_data(folder_path="data"):
+    path_to_wb_data = os.path.join(ROOT_DIR, folder_path, "world_bank.csv")
     if not exists(folder_path):
         os.makedirs(folder_path)
 

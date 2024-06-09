@@ -12,6 +12,7 @@ import xarray as xr
 import logging
 
 _log = logging.getLogger(__name__)
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def download_gpcc_data(output_path="data"):
@@ -20,6 +21,7 @@ def download_gpcc_data(output_path="data"):
         fname += ".gz" if not extracted else ""
         return os.path.join(output_path, "gpcc", fname)
 
+    output_path = os.path.join(ROOT_DIR, output_path)
     path_to_GPCC_unzipped = os.path.join(output_path, "gpcc/gpcc_raw_1981_1990.nc")
 
     shapefile_path = os.path.join(output_path, "shapefiles")
@@ -109,7 +111,6 @@ def download_gpcc_data(output_path="data"):
         _log.info(f"Saving processed GPCC data to {gpcc_processed_path}")
         result_df.to_csv(gpcc_processed_path)
     else:
-        _log.info("Reading available processed GPCC data")
         result_df = pd.read_csv(gpcc_processed_path).set_index(["country_code", "time"])
 
     return result_df
