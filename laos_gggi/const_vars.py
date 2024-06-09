@@ -580,4 +580,3 @@ ISO_DICTIONARY = {
 }
 WB_INDICATORS = ["EN.POP.DNST", "NY.GDP.PCAP.KD"]
 WB_RENAME_DICT = {"EN.POP.DNST": "population_density", "NY.GDP.PCAP.KD": "gdp_per_cap"}
-
