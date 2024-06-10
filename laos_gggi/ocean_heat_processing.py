@@ -8,7 +8,7 @@ _log = logging.getLogger(__name__)
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def process_ocean_heat(output_path="data", force_reload=False):
+def load_ocean_heat(output_path="data", force_reload=False):
     output_path = os.path.join(ROOT_DIR, output_path)
 
     if not exists(output_path):
