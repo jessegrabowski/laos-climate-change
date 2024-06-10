@@ -17,6 +17,7 @@ def load_ocean_heat(output_path="data", force_reload=False):
     file_path = os.path.join(output_path, OCEAN_HEAT_FILENAME)
 
     if not os.path.isfile(file_path) or force_reload:
+        _log.info(f"Downloading ocean heat data from {OCEAN_HEAT_URL} to {output_path}")
         df_ocean = pd.read_csv(OCEAN_HEAT_URL, header=None)
         df_ocean.rename(columns={0: "Date", 1: "Temp"}, inplace=True)
         df_ocean.Date = pd.to_datetime(df_ocean.Date)
