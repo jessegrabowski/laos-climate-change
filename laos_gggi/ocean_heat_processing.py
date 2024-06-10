@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 from os.path import exists
-from const_vars import OCEAN_HEAT_FILENAME, OCEAN_HEAT_URL
+from laos_gggi.const_vars import OCEAN_HEAT_FILENAME, OCEAN_HEAT_URL
 import logging
 
 _log = logging.getLogger(__name__)
