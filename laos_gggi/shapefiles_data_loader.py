@@ -16,7 +16,9 @@ def download_shapefile(which, output_path="data/shapefiles", force_reload=False)
     url = LAOS_URL if which.lower() == "Laos" else WORLD_URL
     filename = LAOS_FILENAME if which.lower() == "Laos" else WORLD_FILENAME
 
-    path_to_file = os.path.join(ROOT_DIR, output_path, filename)
+    output_path = os.path.join(ROOT_DIR, output_path)
+    path_to_file = os.path.join(output_path, filename)
+
     if not exists(output_path):
         os.makedirs(output_path)
 
@@ -87,7 +89,5 @@ def load_shapefile(
 
         # Check that ISO codes are unique for each geometry
         assert (df["ISO_A3"].value_counts() == 1).all()
-
-    df = gpd.read_file(shapefile_path.replace(".zip", ""))
 
     return df
