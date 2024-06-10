@@ -88,6 +88,4 @@ def load_shapefile(
         # Check that ISO codes are unique for each geometry
         assert (df["ISO_A3"].value_counts() == 1).all()
 
-    df = gpd.read_file(shapefile_path.replace(".zip", ""))
-
     return df
