@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 from os.path import exists
-from const_vars import CO2_URL, CO2_FILENAME
+from const_vars import CO2_FILENAME, CO2_URL
 
 
 def process_co2(data_path="../data"):
@@ -9,12 +9,12 @@ def process_co2(data_path="../data"):
         os.makedirs(data_path)
 
     if not os.path.isfile(os.path.join(data_path, CO2_FILENAME)):
-        df_co2 = pd.read_csv(CO2_URL, skiprows=38)
-        df_co2["Date"] = df_co2.apply(
-            lambda x: pd.to_datetime(f"{x.year}-{x.month}", format="%Y-%m", axis=1)
-        )
+        df_co2 = pd.read_csv(CO2_URL, skiprows=37)
+        df_co2["month"] = 1
+        df_co2["day"] = 1
+        df_co2["Date"] = pd.to_datetime(df_co2[["year", "month", "day"]])
         df_co2.set_index("Date", inplace=True)
-        df_co2.rename(columns={"average": "co2"}, inplace=True)
+        df_co2.rename(columns={"mean": "co2"}, inplace=True)
         df_co2 = df_co2[["co2"]]
         df_co2.to_csv(os.path.join(data_path, CO2_FILENAME))
 
