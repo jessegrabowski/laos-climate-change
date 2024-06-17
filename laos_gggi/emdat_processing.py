@@ -1,6 +1,7 @@
 import pandas as pd
 import os
 from os.path import exists
+
 from laos_gggi.const_vars import (
     INTENSITY_COLS,
     DISASTERS_FOUND,
@@ -9,11 +10,19 @@ from laos_gggi.const_vars import (
 )  # noqa
 
 
-def process_emdat(data_path="../data"):
+
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def process_emdat(data_path="data", force_reload=False):
+    output_files = ["probability_data_set", "intensity_data_set"]
+    data_path = os.path.join(ROOT_DIR, data_path)
+
     if not exists(data_path):
         os.makedirs(data_path)
 
-    if not exists(data_path + "/emdat.xlsx"):
+    emdat_path = os.path.join(data_path, "emdat.xlsx")
+    if not exists(emdat_path):
         raise NotImplementedError(
             "No EM-DAT data was found at `/data/emdat.xlsx`. Please make an account at https://public.emdat.be/, download the database, and place it in `/data/emdat.xlsx`"
         )
@@ -29,6 +38,8 @@ def process_emdat(data_path="../data"):
         "Total_Affected >1000 &  Deaths >100 & Start_Year > 1970"
     )
 
+
+    df = pd.read_excel(emdat_path, sheet_name="EM-DAT Data")
     df2 = df.copy()[INTENSITY_COLS]
     df2_filtered = df.copy().query(
         "Total_Affected >1000 &  Deaths >100 & Start_Year > 1970"
