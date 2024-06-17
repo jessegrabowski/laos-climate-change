@@ -10,12 +10,11 @@ from laos_gggi.const_vars import (
 )  # noqa
 
 
-
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def process_emdat(data_path="data", force_reload=False):
-    output_files = ["probability_data_set", "intensity_data_set"]
+    output_files = ["probability_data_set", "intensity_data_set"]  # noqa
     data_path = os.path.join(ROOT_DIR, data_path)
 
     if not exists(data_path):
@@ -37,7 +36,6 @@ def process_emdat(data_path="data", force_reload=False):
     df_raw_filtered = df_raw.query(
         "Total_Affected >1000 &  Deaths >100 & Start_Year > 1970"
     )
-
 
     df = pd.read_excel(emdat_path, sheet_name="EM-DAT Data")
     df2 = df.copy()[INTENSITY_COLS]
