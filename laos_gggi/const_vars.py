@@ -1,4 +1,7 @@
 PROB_COLS = [  # noqa
+    "Country",
+    "ISO",
+    "Start_Year",
     "Drought",
     "Earthquake",
     "Extreme temperature",
@@ -23,6 +26,7 @@ DISASTERS_FOUND = [  # noqa
 
 INTENSITY_COLS = [  # noqa
     "Country",
+    "ISO",
     "Start_Year",
     "Region",
     "Deaths",
@@ -32,7 +36,6 @@ INTENSITY_COLS = [  # noqa
     "Total_Affected",
     "Total_Damage",
     "Total_Damage_Adjusted",
-    "CPI",
 ]
 
 EM_DAT_COL_DICT = {  # noqa
