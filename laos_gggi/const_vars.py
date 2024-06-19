@@ -12,6 +12,7 @@ PROB_COLS = [  # noqa
     "Mass Movement (Dry)",
     "Mass Movement (Wet)",
     "Region",
+    "Subregion",
 ]
 
 DISASTERS_FOUND = [  # noqa
