@@ -3,12 +3,10 @@ PROB_COLS = [  # noqa
     "ISO",
     "Start_Year",
     "Drought",
-    "Earthquake",
     "Extreme temperature",
     "Flood",
     "Storm",
     "Wildfire",
-    "Volcanic activity",
     "Mass Movement (Dry)",
     "Mass Movement (Wet)",
     "Region",
@@ -17,11 +15,9 @@ PROB_COLS = [  # noqa
 
 DISASTERS_FOUND = [  # noqa
     "Drought",
-    "Earthquake",
     "Extreme temperature",
     "Flood",
     "Storm",
-    "Volcanic activity",
     "Wildfire",
 ]
 
@@ -599,3 +595,5 @@ ISO_DICTIONARY = {
 }
 WB_INDICATORS = ["EN.POP.DNST", "NY.GDP.PCAP.KD"]
 WB_RENAME_DICT = {"EN.POP.DNST": "population_density", "NY.GDP.PCAP.KD": "gdp_per_cap"}
+
+REGIONS = ["Asia", "Europe", "Africa", "Oceania", "Americas"]
