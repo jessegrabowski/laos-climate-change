@@ -10,8 +10,9 @@ def process_co2(data_path="../data"):
 
     if not os.path.isfile(os.path.join(data_path, CO2_FILENAME)):
         df_co2 = pd.read_csv(CO2_URL, skiprows=38)
-        df_co2["Date"] = df_co2.apply(
-            lambda x: pd.to_datetime(f"{x.year}-{x.month}", format="%Y-%m", axis=1)
+        df_co2["Date"] = pd.to_datetime(
+            df_co2["year"].astype(str) + "-" + df_co2["month"].astype(str),
+            format="%Y-%m",
         )
         df_co2.set_index("Date", inplace=True)
         df_co2.rename(columns={"average": "co2"}, inplace=True)
