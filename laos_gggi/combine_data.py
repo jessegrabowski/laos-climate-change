@@ -26,7 +26,12 @@ def final_data():
 
     # 3. The WB data, index (Year, ISO3)
     merged_dict["wb_data"] = download_wb_data()
-
+    merged_dict["wb_data"] = (
+        merged_dict["wb_data"]
+        .reset_index()
+        .rename(columns={"country_code": "ISO", "year": "Start_Year"})
+        .set_index(["ISO", "Start_Year"])
+    )
     # 4 A single dataframe containing all of the timeseries-only data: GPCC + NOAA + NECI, index: Year
     # 4.1 GPCC: precipitation
     gpcc = download_gpcc_data()
@@ -46,6 +51,59 @@ def final_data():
     ocean_heat["year"] = ocean_heat["Date"].dt.year
     merged_dict["ocean_temperature"] = ocean_heat.pivot_table(
         values="Temp", index="year", aggfunc="mean"
+    )
+
+    # ISO reconciliation
+    emdat_iso = merged_dict["emdat_damage"].index.get_level_values(0).unique()
+    world_iso = merged_dict["wb_data"].index.get_level_values(0).unique()
+    # Codes in EMDAT but not in world
+    ", ".join(list(set(emdat_iso) - set(world_iso)))
+    # Codes in shapefile but not in EMDAT
+    ", ".join(list(set(world_iso) - set(emdat_iso)))
+    # Drop codes not in both
+    common_codes = set(world_iso).intersection(set(emdat_iso))
+    merged_dict["emdat_damage"] = (
+        merged_dict["emdat_damage"]
+        .loc[lambda x: x.index.get_level_values(0).isin(common_codes)]
+        .copy()
+    )
+    merged_dict["emdat_events"] = (
+        merged_dict["emdat_events"]
+        .loc[lambda x: x.index.get_level_values(0).isin(common_codes)]
+        .copy()
+    )
+    merged_dict["wb_data"] = (
+        merged_dict["wb_data"]
+        .loc[merged_dict["wb_data"].index.get_level_values(0).isin(common_codes)]
+        .copy()
+    )
+
+    # Merging panel data sets
+    emdat_df = pd.merge(
+        merged_dict["emdat_events"],
+        merged_dict["emdat_damage"],
+        right_index=True,
+        left_index=True,
+        how="outer",
+    )
+    merged_dict["df_panel"] = pd.merge(
+        emdat_df, merged_dict["wb_data"], right_index=True, left_index=True, how="left"
+    )
+
+    # Merging time series
+    time_series_df = pd.merge(
+        merged_dict["gpcc"],
+        merged_dict["co2"],
+        left_index=True,
+        right_index=True,
+        how="outer",
+    )
+    merged_dict["df_time_series"] = pd.merge(
+        time_series_df,
+        merged_dict["ocean_temperature"],
+        left_index=True,
+        right_index=True,
+        how="outer",
     )
 
     return merged_dict
