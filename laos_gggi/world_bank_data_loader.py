@@ -2,7 +2,12 @@ import os
 from os.path import exists
 from pandas_datareader import wb
 import pandas as pd
-from const_vars import COUNTRIES_ISO, ISO_DICTIONARY, WB_INDICATORS, WB_RENAME_DICT
+from laos_gggi.const_vars import (
+    COUNTRIES_ISO,
+    ISO_DICTIONARY,
+    WB_INDICATORS,
+    WB_RENAME_DICT,
+)
 import logging
 
 
