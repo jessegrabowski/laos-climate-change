@@ -12,14 +12,10 @@ def final_data():
 
     # 1. EM-DAT data representing number of events per year (index: Year, ISO3)
     emdat = process_emdat()
-    merged_dict["emdat_events"] = emdat["df_prob_filtered_adjusted"].drop(
-        columns=["Region", "Subregion"]
-    )
+    merged_dict["emdat_events"] = emdat["df_prob_filtered_adjusted"]
 
     # 2. EM-DAT data representing the event damages (index: Year, ISO3)
-    merged_dict["emdat_damage"] = emdat["df_inten_filtered_adjusted"].drop(
-        columns=["Country", "Region"]
-    )
+    merged_dict["emdat_damage"] = emdat["df_inten_filtered_adjusted"]
 
     # 3. The WB data, index (Year, ISO3)
     merged_dict["wb_data"] = download_wb_data()
@@ -64,11 +60,32 @@ def final_data():
         .loc[lambda x: x.index.get_level_values(0).isin(common_codes)]
         .copy()
     )
+
+    merged_dict["country_constants"] = (
+        merged_dict["emdat_events"]
+        .reset_index()
+        .drop(
+            [
+                "Start_Year",
+                "Drought",
+                "Flood",
+                "Storm",
+                "Wildfire",
+                "Extreme temperature",
+            ],
+            axis=1,
+        )
+        .drop_duplicates()
+        .set_index("ISO")
+    )
+
     merged_dict["emdat_events"] = (
         merged_dict["emdat_events"]
         .loc[lambda x: x.index.get_level_values(0).isin(common_codes)]
         .copy()
+        .drop(columns=["Region"])
     )
+
     merged_dict["wb_data"] = (
         merged_dict["wb_data"]
         .loc[merged_dict["wb_data"].index.get_level_values(0).isin(common_codes)]
