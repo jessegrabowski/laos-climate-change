@@ -1,12 +1,9 @@
 import pandas as pd
-import sys
-
-sys.path.append("..")
-from emdat_processing import process_emdat
-from world_bank_data_loader import download_wb_data
-from GPCC_data_loader import download_gpcc_data
-from co2_processing import process_co2
-from ocean_heat_processing import load_ocean_heat
+from laos_gggi.emdat_processing import process_emdat
+from laos_gggi.world_bank_data_loader import download_wb_data
+from laos_gggi.GPCC_data_loader import download_gpcc_data
+from laos_gggi.co2_processing import process_co2
+from laos_gggi.ocean_heat_processing import load_ocean_heat
 
 
 def final_data():

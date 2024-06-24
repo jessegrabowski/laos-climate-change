@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 from os.path import exists
-from const_vars import CO2_URL, CO2_FILENAME
+from laos_gggi.const_vars import CO2_URL, CO2_FILENAME
 
 
 def process_co2(data_path="../data"):
