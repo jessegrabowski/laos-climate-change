@@ -7,7 +7,7 @@ from laos_gggi.const_vars import OCEAN_HEAT_FILENAME, OCEAN_HEAT_URL
 def load_ocean_heat(data_path="../data"):
     if not exists(data_path):
         os.makedirs(data_path)
-        
+
     if not os.path.isfile(os.path.join(data_path, OCEAN_HEAT_FILENAME)):
         df_ocean = pd.read_csv(OCEAN_HEAT_URL, header=0, names=["Date", "Temp"])
         df_ocean.Date = pd.to_datetime(df_ocean.Date, format="%Y-%m")
@@ -28,4 +28,3 @@ def load_ocean_heat(data_path="../data"):
         )
 
     return df_ocean
-

@@ -12,10 +12,14 @@ def final_data():
 
     # 1. EM-DAT data representing number of events per year (index: Year, ISO3)
     emdat = process_emdat()
-    merged_dict["emdat_events"] = emdat["df_prob_filtered_adjusted"]
+    merged_dict["emdat_events"] = emdat["df_prob_filtered_adjusted"].drop(
+        ["Subregion"], axis=1
+    )
 
     # 2. EM-DAT data representing the event damages (index: Year, ISO3)
-    merged_dict["emdat_damage"] = emdat["df_inten_filtered_adjusted"]
+    merged_dict["emdat_damage"] = emdat["df_inten_filtered_adjusted"].drop(
+        ["Country", "Region"], axis=1
+    )
 
     # 3. The WB data, index (Year, ISO3)
     merged_dict["wb_data"] = download_wb_data()
@@ -42,9 +46,7 @@ def final_data():
     ocean_heat = load_ocean_heat()
     ocean_heat.reset_index(inplace=True)
     ocean_heat["year"] = ocean_heat["Date"].dt.year
-    merged_dict["ocean_temperature"] = ocean_heat.pivot_table(
-        values="Temp", index="year", aggfunc="mean"
-    )
+    merged_dict["ocean_temperature"] = ocean_heat.set_index("year")
 
     # ISO reconciliation
     emdat_iso = merged_dict["emdat_damage"].index.get_level_values(0).unique()
@@ -62,7 +64,7 @@ def final_data():
     )
 
     merged_dict["country_constants"] = (
-        merged_dict["emdat_events"]
+        emdat["df_prob_filtered_adjusted"]
         .reset_index()
         .drop(
             [
