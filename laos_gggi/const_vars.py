@@ -56,10 +56,9 @@ WORLD_FILENAME = "wb_countries_admin0_10m.zip"  # noqa
 LAOS_URL = "https://data.humdata.org/dataset/9eb6aff1-9e3f-43d3-99a6-f415fe4b4dff/resource/1d6edf99-5303-4b31-8909-dd70cda78443/download/lao_adm_ngd_20191112_shp.zip"  # noqa
 LAOS_FILENAME = "lao_adm_ngd_20191112_shp.zip"  # noqa
 
-CO2_URL = "https://gml.noaa.gov/aftp/products/trends/co2/co2_mm_gl.csv"
-CO2_FILENAME = "co2_mm_gl.csv"
+CO2_URL = "https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_annmean_mlo.csv"
+CO2_FILENAME = "noaa_co2.csv"
 OCEAN_HEAT_URL = "https://www.ncei.noaa.gov/data/oceans/woa/DATA_ANALYSIS/3M_HEAT_CONTENT/DATA/basin/3month/ohc_levitus_climdash_seasonal.csv"
-# https://www.ncei.noaa.gov/access/global-ocean-heat-content/basin_heat_data_monthly.html
 OCEAN_HEAT_FILENAME = "ncei_global_ocean_heat.csv"
 
 POPULATION_DENSITY_URL = (

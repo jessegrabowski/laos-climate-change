@@ -16,17 +16,21 @@ def load_ocean_heat(output_path="data", force_reload=False):
 
     file_path = os.path.join(output_path, OCEAN_HEAT_FILENAME)
 
-    if not os.path.isfile(file_path) or force_reload:
-        _log.info(f"Downloading ocean heat data from {OCEAN_HEAT_URL} to {output_path}")
-        df_ocean = pd.read_csv(OCEAN_HEAT_URL, header=None)
-        df_ocean.rename(columns={0: "Date", 1: "Temp"}, inplace=True)
-        df_ocean.Date = pd.to_datetime(df_ocean.Date)
+    if not os.path.isfile(os.path.join(file_path, OCEAN_HEAT_FILENAME)):
+        df_ocean = pd.read_csv(OCEAN_HEAT_URL, header=0, names=["Date", "Temp"])
+        df_ocean.Date = pd.to_datetime(df_ocean.Date, format="%Y-%m")
         df_ocean.set_index("Date", inplace=True)
-        df_ocean.to_csv(file_path)
+        df_ocean = df_ocean.resample("YE").mean()
+        df_ocean.reset_index(inplace=True)
+        df_ocean["Date"] = df_ocean["Date"] - pd.offsets.YearBegin()
+        df_ocean.set_index("Date", inplace=True)
+        df_ocean = df_ocean.iloc[1:-1]
+        df_ocean = df_ocean + 152
+        df_ocean.to_csv(os.path.join(file_path, OCEAN_HEAT_FILENAME))
 
     else:
         df_ocean = pd.read_csv(
-            file_path,
+            os.path.join(output_path, OCEAN_HEAT_FILENAME),
             index_col=["Date"],
             parse_dates=True,
         )
