@@ -28,6 +28,7 @@ def process_emdat(data_path="data", force_reload=False):
     df = pd.read_excel(data_path + "/emdat.xlsx", sheet_name="EM-DAT Data").rename(
         columns=EM_DAT_COL_DICT
     )
+
     # Raw versions
     df_raw = df
 
@@ -36,6 +37,20 @@ def process_emdat(data_path="data", force_reload=False):
     )
 
     df_raw_filtered_adj = df.query("Total_Affected >1000 & Start_Year > 1970")
+
+    # Define the complete combination of years and ISO codes
+    years = [*range(1969, 2024)]
+    ISO_codes = df["ISO"].unique()
+    complete_df = pd.DataFrame(
+        columns=["col_1"],
+        index=pd.MultiIndex.from_product(
+            [ISO_codes, years],
+            names=[
+                "ISO",
+                "Start_Year",
+            ],
+        ),
+    ).sort_index()
 
     # df_prob_unfiltered
     df_prob_unfiltered = (
@@ -49,6 +64,35 @@ def process_emdat(data_path="data", force_reload=False):
         .reset_index()
         .set_index(["ISO", "Start_Year"])
         .sort_index()
+    )
+    df_prob_unfiltered_B = (
+        pd.merge(
+            complete_df,
+            df_prob_unfiltered[
+                ["Drought", "Extreme temperature", "Flood", "Storm", "Wildfire"]
+            ],
+            right_index=True,
+            left_index=True,
+            how="left",
+        )
+        .reset_index()
+        .set_index(["ISO"])
+    )
+
+    df_prob_unfiltered = (
+        (
+            pd.merge(
+                df_prob_unfiltered_B,
+                df_prob_unfiltered.reset_index()
+                .set_index("ISO")[["Region", "Subregion"]]
+                .drop_duplicates(),
+                right_index=True,
+                left_index=True,
+                how="left",
+            )
+        )
+        .reset_index()
+        .set_index(["ISO", "Start_Year"])
     )
 
     # df_prob_filtered
@@ -64,6 +108,35 @@ def process_emdat(data_path="data", force_reload=False):
         .set_index(["ISO", "Start_Year"])
         .sort_index()
     )
+    df_prob_filtered_B = (
+        pd.merge(
+            complete_df,
+            df_prob_filtered[
+                ["Drought", "Extreme temperature", "Flood", "Storm", "Wildfire"]
+            ],
+            right_index=True,
+            left_index=True,
+            how="left",
+        )
+        .reset_index()
+        .set_index(["ISO"])
+    )
+
+    df_prob_filtered = (
+        (
+            pd.merge(
+                df_prob_filtered_B,
+                df_prob_filtered.reset_index()
+                .set_index("ISO")[["Region", "Subregion"]]
+                .drop_duplicates(),
+                right_index=True,
+                left_index=True,
+                how="left",
+            )
+        )
+        .reset_index()
+        .set_index(["ISO", "Start_Year"])
+    )
 
     # df_prob_filtered_adjusted
     df_prob_filtered_adjusted = (
@@ -78,6 +151,35 @@ def process_emdat(data_path="data", force_reload=False):
         .set_index(["ISO", "Start_Year"])
         .sort_index()
     )
+    df_prob_filtered_adjusted_B = (
+        pd.merge(
+            complete_df,
+            df_prob_filtered_adjusted[
+                ["Drought", "Extreme temperature", "Flood", "Storm", "Wildfire"]
+            ],
+            right_index=True,
+            left_index=True,
+            how="left",
+        )
+        .reset_index()
+        .set_index(["ISO"])
+    )
+
+    df_prob_filtered_adjusted = (
+        (
+            pd.merge(
+                df_prob_filtered_adjusted_B,
+                df_prob_filtered_adjusted.reset_index()
+                .set_index("ISO")[["Region", "Subregion"]]
+                .drop_duplicates(),
+                right_index=True,
+                left_index=True,
+                how="left",
+            )
+        )
+        .reset_index()
+        .set_index(["ISO", "Start_Year"])
+    )
 
     # df_inten_unfiltered
     df_inten_unfiltered = (
@@ -85,6 +187,43 @@ def process_emdat(data_path="data", force_reload=False):
         .query("`Disaster Type` in @PROB_COLS")[INTENSITY_COLS]
         .set_index(["ISO", "Start_Year"])
         .sort_index()
+    )
+    df_inten_unfiltered_B = (
+        pd.merge(
+            complete_df,
+            df_inten_unfiltered[
+                [
+                    "Deaths",
+                    "Injured",
+                    "Numb_Affected",
+                    "Homeless",
+                    "Total_Affected",
+                    "Total_Damage",
+                    "Total_Damage_Adjusted",
+                ]
+            ],
+            right_index=True,
+            left_index=True,
+            how="left",
+        )
+        .reset_index()
+        .set_index(["ISO"])
+    )
+
+    df_inten_unfiltered = (
+        (
+            pd.merge(
+                df_inten_unfiltered_B,
+                df_inten_unfiltered.reset_index()
+                .set_index("ISO")[["Region", "Country"]]
+                .drop_duplicates(),
+                right_index=True,
+                left_index=True,
+                how="left",
+            )
+        )
+        .reset_index()
+        .set_index(["ISO", "Start_Year"])
     )
 
     # df_inten_filtered
@@ -94,6 +233,43 @@ def process_emdat(data_path="data", force_reload=False):
         .set_index(["ISO", "Start_Year"])
         .sort_index()
     )
+    df_inten_filtered_B = (
+        pd.merge(
+            complete_df,
+            df_inten_filtered[
+                [
+                    "Deaths",
+                    "Injured",
+                    "Numb_Affected",
+                    "Homeless",
+                    "Total_Affected",
+                    "Total_Damage",
+                    "Total_Damage_Adjusted",
+                ]
+            ],
+            right_index=True,
+            left_index=True,
+            how="left",
+        )
+        .reset_index()
+        .set_index(["ISO"])
+    )
+
+    df_inten_filtered = (
+        (
+            pd.merge(
+                df_inten_filtered_B,
+                df_inten_filtered.reset_index()
+                .set_index("ISO")[["Region", "Country"]]
+                .drop_duplicates(),
+                right_index=True,
+                left_index=True,
+                how="left",
+            )
+        )
+        .reset_index()
+        .set_index(["ISO", "Start_Year"])
+    )
 
     # df_inten_filtered_adjusted
     df_inten_filtered_adjusted = (
@@ -101,6 +277,44 @@ def process_emdat(data_path="data", force_reload=False):
         .query("`Disaster Type` in @PROB_COLS")[INTENSITY_COLS]
         .set_index(["ISO", "Start_Year"])
         .sort_index()
+    )
+
+    df_inten_filtered_adjusted_B = (
+        pd.merge(
+            complete_df,
+            df_inten_filtered_adjusted[
+                [
+                    "Deaths",
+                    "Injured",
+                    "Numb_Affected",
+                    "Homeless",
+                    "Total_Affected",
+                    "Total_Damage",
+                    "Total_Damage_Adjusted",
+                ]
+            ],
+            right_index=True,
+            left_index=True,
+            how="left",
+        )
+        .reset_index()
+        .set_index(["ISO"])
+    )
+
+    df_inten_filtered_adjusted = (
+        (
+            pd.merge(
+                df_inten_filtered_adjusted_B,
+                df_inten_filtered_adjusted.reset_index()
+                .set_index("ISO")[["Region", "Country"]]
+                .drop_duplicates(),
+                right_index=True,
+                left_index=True,
+                how="left",
+            )
+        )
+        .reset_index()
+        .set_index(["ISO", "Start_Year"])
     )
 
     result = {
