@@ -3,12 +3,10 @@ PROB_COLS = [  # noqa
     "ISO",
     "Start_Year",
     "Drought",
-    "Earthquake",
     "Extreme temperature",
     "Flood",
     "Storm",
     "Wildfire",
-    "Volcanic activity",
     "Mass Movement (Dry)",
     "Mass Movement (Wet)",
     "Region",
@@ -17,11 +15,9 @@ PROB_COLS = [  # noqa
 
 DISASTERS_FOUND = [  # noqa
     "Drought",
-    "Earthquake",
     "Extreme temperature",
     "Flood",
     "Storm",
-    "Volcanic activity",
     "Wildfire",
 ]
 
@@ -60,10 +56,9 @@ WORLD_FILENAME = "wb_countries_admin0_10m.zip"  # noqa
 LAOS_URL = "https://data.humdata.org/dataset/9eb6aff1-9e3f-43d3-99a6-f415fe4b4dff/resource/1d6edf99-5303-4b31-8909-dd70cda78443/download/lao_adm_ngd_20191112_shp.zip"  # noqa
 LAOS_FILENAME = "lao_adm_ngd_20191112_shp.zip"  # noqa
 
-CO2_URL = "https://gml.noaa.gov/aftp/products/trends/co2/co2_mm_gl.csv"
-CO2_FILENAME = "co2_mm_gl.csv"
+CO2_URL = "https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_annmean_mlo.csv"
+CO2_FILENAME = "noaa_co2.csv"
 OCEAN_HEAT_URL = "https://www.ncei.noaa.gov/data/oceans/woa/DATA_ANALYSIS/3M_HEAT_CONTENT/DATA/basin/3month/ohc_levitus_climdash_seasonal.csv"
-# https://www.ncei.noaa.gov/access/global-ocean-heat-content/basin_heat_data_monthly.html
 OCEAN_HEAT_FILENAME = "ncei_global_ocean_heat.csv"
 
 POPULATION_DENSITY_URL = (
@@ -599,3 +594,5 @@ ISO_DICTIONARY = {
 }
 WB_INDICATORS = ["EN.POP.DNST", "NY.GDP.PCAP.KD"]
 WB_RENAME_DICT = {"EN.POP.DNST": "population_density", "NY.GDP.PCAP.KD": "gdp_per_cap"}
+
+REGIONS = ["Asia", "Europe", "Africa", "Oceania", "Americas"]

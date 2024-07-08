@@ -5,6 +5,8 @@ from matplotlib.offsetbox import AnchoredText
 import seaborn as sns
 from scipy import stats
 import numpy as np
+import math
+from laos_gggi.const_vars import REGIONS
 
 
 def prepare_gridspec_figure(n_cols: int, n_plots: int) -> tuple[GridSpec, list]:
@@ -67,7 +69,7 @@ def _plot_single_kde(data: pd.Series, axis=None, bins=30, color="tab:blue"):
      matplotlib.axes.Axes
          The axis the plot was created on.
     """
-
+    data = data.dropna()
     if axis is None:
         fig, axis = plt.subplots()
 
@@ -140,3 +142,64 @@ def plot_descriptive(
         _plot_single_kde(df[name], axis=axis, bins=bins, color=color)
 
     return fig
+
+
+# Aggregated plotting function
+def subplots_function(
+    df,
+    var_list,
+    index,
+    aggregation_funct,
+    title,
+    graph_rows=2,
+    figure_size=(20, 18),
+    subplot_title_fontsize=14,
+):
+    fig, axs = plt.subplots(graph_rows, 2, figsize=figure_size)
+
+    for x in var_list:
+        a = math.floor(var_list.index(x) / 2)
+        b = var_list.index(x) % 2
+        axs[a, b].plot(
+            df.pivot_table(values=x, index=index, aggfunc=aggregation_funct)[x]
+        )
+        axs[a, b].set_title(x, fontsize=subplot_title_fontsize)
+
+    if (len(var_list) % 2) != 0:
+        axs[graph_rows - 1, 1].set_axis_off()
+
+    plt.suptitle(title, fontsize=subplot_title_fontsize + 10)
+    fig.tight_layout()
+
+
+# Aggregated plotting function for regions
+def subplots_function_regions(
+    df,
+    var_list,
+    index,
+    aggregation_funct,
+    title,
+    graph_rows=2,
+    figure_size=(20, 18),
+    subplot_title_fontsize=14,
+):
+    fig, axs = plt.subplots(graph_rows, 2, figsize=figure_size)
+
+    for x in var_list:
+        a = math.floor(var_list.index(x) / 2)
+        b = var_list.index(x) % 2
+        for y in REGIONS:
+            axs[a, b].plot(
+                df.query(f'Region == "{y}"').pivot_table(
+                    values=x, index=index, aggfunc=aggregation_funct
+                ),
+                label=y,
+            )
+            axs[a, b].set_title(x, fontsize=subplot_title_fontsize)
+        # axs[a,b].legend()
+
+    if (len(var_list) % 2) != 0:
+        axs[graph_rows - 1, 1].set_axis_off()
+    fig.legend(REGIONS, loc="lower right", ncol=5, fontsize=16)
+    plt.suptitle(title, fontsize=subplot_title_fontsize + 10)
+    fig.tight_layout(rect=[0, 0, 1, 0.95])
