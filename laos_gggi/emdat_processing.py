@@ -182,13 +182,26 @@ def process_emdat(data_path="data", force_reload=False):
     )
 
     # df_inten_unfiltered
+    damage_vars = [
+        "Deaths",
+        "Injured",
+        "Numb_Affected",
+        "Homeless",
+        "Total_Affected",
+        "Total_Damage",
+        "Total_Damage_Adjusted",
+    ]
+
     df_inten_unfiltered = (
         df_raw.copy()
         .query("`Disaster Type` in @PROB_COLS")[INTENSITY_COLS]
-        .set_index(["ISO", "Start_Year"])
+        .pivot_table(index=["ISO", "Start_Year"], values=damage_vars, aggfunc="sum")
+        .fillna(0)
+        .astype(int)
         .sort_index()
     )
-    df_inten_unfiltered_B = (
+
+    df_inten_unfiltered = (
         pd.merge(
             complete_df,
             df_inten_unfiltered[
@@ -207,22 +220,6 @@ def process_emdat(data_path="data", force_reload=False):
             how="left",
         )
         .reset_index()
-        .set_index(["ISO"])
-    )
-
-    df_inten_unfiltered = (
-        (
-            pd.merge(
-                df_inten_unfiltered_B,
-                df_inten_unfiltered.reset_index()
-                .set_index("ISO")[["Region", "Country"]]
-                .drop_duplicates(),
-                right_index=True,
-                left_index=True,
-                how="left",
-            )
-        )
-        .reset_index()
         .set_index(["ISO", "Start_Year"])
     )
 
@@ -230,10 +227,13 @@ def process_emdat(data_path="data", force_reload=False):
     df_inten_filtered = (
         df_raw_filtered.copy()
         .query("`Disaster Type` in @PROB_COLS")[INTENSITY_COLS]
-        .set_index(["ISO", "Start_Year"])
+        .pivot_table(index=["ISO", "Start_Year"], values=damage_vars, aggfunc="sum")
+        .fillna(0)
+        .astype(int)
         .sort_index()
     )
-    df_inten_filtered_B = (
+
+    df_inten_filtered = (
         pd.merge(
             complete_df,
             df_inten_filtered[
@@ -252,22 +252,6 @@ def process_emdat(data_path="data", force_reload=False):
             how="left",
         )
         .reset_index()
-        .set_index(["ISO"])
-    )
-
-    df_inten_filtered = (
-        (
-            pd.merge(
-                df_inten_filtered_B,
-                df_inten_filtered.reset_index()
-                .set_index("ISO")[["Region", "Country"]]
-                .drop_duplicates(),
-                right_index=True,
-                left_index=True,
-                how="left",
-            )
-        )
-        .reset_index()
         .set_index(["ISO", "Start_Year"])
     )
 
@@ -275,11 +259,13 @@ def process_emdat(data_path="data", force_reload=False):
     df_inten_filtered_adjusted = (
         df_raw_filtered_adj.copy()
         .query("`Disaster Type` in @PROB_COLS")[INTENSITY_COLS]
-        .set_index(["ISO", "Start_Year"])
+        .pivot_table(index=["ISO", "Start_Year"], values=damage_vars, aggfunc="sum")
+        .fillna(0)
+        .astype(int)
         .sort_index()
     )
 
-    df_inten_filtered_adjusted_B = (
+    df_inten_filtered_adjusted = (
         pd.merge(
             complete_df,
             df_inten_filtered_adjusted[
@@ -296,22 +282,6 @@ def process_emdat(data_path="data", force_reload=False):
             right_index=True,
             left_index=True,
             how="left",
-        )
-        .reset_index()
-        .set_index(["ISO"])
-    )
-
-    df_inten_filtered_adjusted = (
-        (
-            pd.merge(
-                df_inten_filtered_adjusted_B,
-                df_inten_filtered_adjusted.reset_index()
-                .set_index("ISO")[["Region", "Country"]]
-                .drop_duplicates(),
-                right_index=True,
-                left_index=True,
-                how="left",
-            )
         )
         .reset_index()
         .set_index(["ISO", "Start_Year"])
