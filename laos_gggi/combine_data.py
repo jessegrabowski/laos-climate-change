@@ -50,6 +50,7 @@ def final_data():
     ocean_heat["year"] = ocean_heat.reset_index()["Date"].dt.year.values
     ocean_heat = ocean_heat.pivot_table(values="Temp", index="year", aggfunc="mean")
     merged_dict["ocean_temperature"] = ocean_heat
+
     # ISO reconciliation: emdat and world
     emdat_iso = merged_dict["emdat_damage"].index.get_level_values(0).unique()
     world_iso = merged_dict["wb_data"].index.get_level_values(0).unique()
