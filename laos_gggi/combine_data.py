@@ -17,9 +17,7 @@ def final_data():
     )
 
     # 2. EM-DAT data representing the event damages (index: Year, ISO3)
-    merged_dict["emdat_damage"] = emdat["df_inten_filtered_adjusted"].drop(
-        ["Country", "Region"], axis=1
-    )
+    merged_dict["emdat_damage"] = emdat["df_inten_filtered_adjusted"]
 
     # 3. The WB data, index (Year, ISO3)
     merged_dict["wb_data"] = download_wb_data()
