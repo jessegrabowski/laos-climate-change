@@ -112,28 +112,9 @@ def final_data():
     # Drop codes not in both
     common_codes2 = set(merged_dict_iso).intersection(set(hadcrut_iso))
 
-    merged_dict["emdat_damage"] = (
-        merged_dict["emdat_damage"]
-        .loc[lambda x: x.index.get_level_values(0).isin(common_codes)]
-        .copy()
-    )
-
     merged_dict["surface_temp"] = (
         merged_dict["surface_temp"]
         .loc[lambda x: x.index.get_level_values(0).isin(common_codes2)]
-        .copy()
-    )
-
-    # EM-DAT EVENTS
-    merged_dict["emdat_events"] = (
-        merged_dict["emdat_events"]
-        .loc[lambda x: x.index.get_level_values(0).isin(common_codes2)]
-        .copy()
-    )
-
-    merged_dict["wb_data"] = (
-        merged_dict["wb_data"]
-        .loc[merged_dict["wb_data"].index.get_level_values(0).isin(common_codes2)]
         .copy()
     )
 
