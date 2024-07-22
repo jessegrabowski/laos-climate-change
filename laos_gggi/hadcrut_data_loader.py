@@ -57,40 +57,36 @@ def process_hadcrut_data(output_path="data", force_reload=False, repair_ISO_code
             geometry=geo.points_from_xy(df["longitude"], df["latitude"]),
             crs="EPSG:4326",
         )
-        result_df = df_geo.sjoin(world_shapefile, how="inner", predicate="intersects")[
-            [
-                "time",
-                "latitude",
-                "longitude",
-                "realization",
-                "tas_mean",
-                "country_code",
-                "geometry",
-                "country",
-                "continent",
-                "region",
-            ]
+
+        cols_to_use = [
+            "time",
+            "latitude",
+            "longitude",
+            "realization",
+            "tas_mean",
+            "country_code",
+            "geometry",
+            "country",
+            "continent",
+            "region",
         ]
-        result_df = result_df.rename(columns={"tas_mean": "surface_temperature_dev"})
 
-        result_df = result_df.pivot_table(
-            values="surface_temperature_dev",
-            index=["country_code", "time"],
-            aggfunc="mean",
-        )
-        result_df = result_df.reset_index()
+        result_df = df_geo.sjoin(world_shapefile, how="inner", predicate="intersects")[
+            cols_to_use
+        ].rename(columns={"tas_mean": "surface_temperature_dev"})
+
         result_df["year"] = result_df["time"].dt.year
-        result_df = result_df.rename(columns={"country_code": "ISO"})
 
-        result_df = result_df.pivot_table(
-            values="surface_temperature_dev", index=["ISO", "year"], aggfunc="mean"
-        )
-
-        result_df = result_df.pivot_table(
-            values="surface_temperature_dev", index=["ISO", "year"]
-        )
         result_df = (
-            result_df.reset_index().query("year >1959").set_index(["ISO", "year"])
+            result_df.pivot_table(
+                values="surface_temperature_dev",
+                index=["country_code", "year"],
+                aggfunc="mean",
+            )
+            .reset_index()
+            .rename(columns={"country_code": "ISO"})
+            .query("year >1959")
+            .set_index(["ISO", "year"])
         )
 
         _log.info(f"Saving processed GPCC data to {hadcrut_processed_path}")
