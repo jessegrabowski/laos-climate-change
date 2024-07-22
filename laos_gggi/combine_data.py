@@ -91,10 +91,6 @@ def final_data():
     # ISO reconciliation: gpcc
     merged_dict_iso = merged_dict["wb_data"].index.get_level_values(0).unique()
     gpcc_iso = merged_dict["gpcc"].index.get_level_values(0).unique()
-    # Codes in gpcc but not in world
-    ", ".join(list(set(gpcc_iso) - set(merged_dict_iso)))
-    # Codes in world but not in gpcc
-    ", ".join(list(set(merged_dict_iso) - set(gpcc_iso)))
 
     # Drop codes not in both
     common_codes2 = set(merged_dict_iso).intersection(set(gpcc_iso))
@@ -112,13 +108,10 @@ def final_data():
     # ISO reconciliation: hadcrut
     merged_dict_iso = merged_dict["wb_data"].index.get_level_values(0).unique()
     hadcrut_iso = merged_dict["surface_temp"].index.get_level_values(0).unique()
-    # Codes in gpcc but not in world
-    ", ".join(list(set(hadcrut_iso) - set(merged_dict_iso)))
-    # Codes in world but not in gpcc
-    ", ".join(list(set(merged_dict_iso) - set(hadcrut_iso)))
 
     # Drop codes not in both
     common_codes2 = set(merged_dict_iso).intersection(set(hadcrut_iso))
+
     merged_dict["emdat_damage"] = (
         merged_dict["emdat_damage"]
         .loc[lambda x: x.index.get_level_values(0).isin(common_codes)]
@@ -131,12 +124,6 @@ def final_data():
         .copy()
     )
 
-    # EM-DAT damages
-    merged_dict["emdat_damage"] = (
-        merged_dict["emdat_damage"]
-        .loc[lambda x: x.index.get_level_values(0).isin(common_codes2)]
-        .copy()
-    )
     # EM-DAT EVENTS
     merged_dict["emdat_events"] = (
         merged_dict["emdat_events"]
