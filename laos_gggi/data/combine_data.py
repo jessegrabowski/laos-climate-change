@@ -5,6 +5,7 @@ from laos_gggi.data.GPCC_data_loader import load_gpcc_data
 from laos_gggi.data.co2_processing import load_co2_data
 from laos_gggi.data.ocean_heat_processing import load_ocean_heat_data
 from laos_gggi.data.hadcrut_data_loader import load_hadcrut_data
+from functools import partial, reduce
 
 
 def load_all_data():
@@ -14,7 +15,7 @@ def load_all_data():
     # 1. EM-DAT data representing number of events per year (index: Year, ISO3)
     emdat = load_emdat_data()
     merged_dict["emdat_events"] = emdat["df_prob_filtered_adjusted"].drop(
-        ["Subregion"], axis=1
+        columns=["Subregion"]
     )
 
     # 2. EM-DAT data representing the event damages (index: Year, ISO3)
@@ -26,13 +27,14 @@ def load_all_data():
         merged_dict["wb_data"]
         .reset_index()
         .rename(columns={"country_code": "ISO", "year": "Start_Year"})
+        .assign(Start_Year=lambda x: pd.to_datetime(x.Start_Year, format="%Y"))
         .set_index(["ISO", "Start_Year"])
     )
     # 4 A single dataframe containing all of the timeseries-only data: GPCC + NOAA + NECI, index: Year
     # 4.1 GPCC: precipitation
     gpcc = load_gpcc_data()
     gpcc = gpcc.reset_index().rename(columns={"country_code": "ISO"})
-    gpcc["year"] = pd.to_datetime(gpcc["time"]).dt.year
+    gpcc["year"] = pd.to_datetime(pd.to_datetime(gpcc["time"]).dt.year, format="%Y")
     merged_dict["gpcc"] = gpcc.pivot_table(
         values="precip", index=["ISO", "year"], aggfunc="sum"
     )
@@ -43,19 +45,20 @@ def load_all_data():
     # 4.2 NOAA: CO2
     co2 = load_co2_data()
     co2.reset_index(inplace=True)
-    co2["year"] = co2["Date"].dt.year
+    co2["year"] = pd.to_datetime(co2["Date"].dt.year, format="%Y")
     merged_dict["co2"] = co2.pivot_table(values="co2", index="year", aggfunc="sum")
 
     # 4.3 NECI: ocean temperature
     ocean_heat = load_ocean_heat_data()
     ocean_heat["year"] = ocean_heat.reset_index()["Date"].dt.year.values
     ocean_heat = ocean_heat.pivot_table(values="Temp", index="year", aggfunc="mean")
+    ocean_heat.index = pd.to_datetime(ocean_heat.index, format="%Y")
     merged_dict["ocean_temperature"] = ocean_heat
 
     # 4.4 HACRUT: surface temperature
     surface_temp = load_hadcrut_data()
-    merged_dict["surface_temp"] = surface_temp
 
+    merged_dict["surface_temp"] = surface_temp
     merged_dict["surface_temp_agg"] = surface_temp.reset_index().pivot_table(
         values="surface_temperature_dev", index=["year"], aggfunc="mean"
     )
@@ -138,61 +141,37 @@ def load_all_data():
     )
 
     # Merging panel data sets
-    emdat_df = pd.merge(
-        merged_dict["emdat_events"],
-        merged_dict["emdat_damage"],
-        right_index=True,
-        left_index=True,
-        how="outer",
-    )
-    merged_dict["df_panel"] = pd.merge(
-        emdat_df, merged_dict["wb_data"], right_index=True, left_index=True, how="left"
-    )
-    merged_dict["df_panel"] = pd.merge(
-        merged_dict["df_panel"],
-        merged_dict["gpcc"]
-        .reset_index()
-        .rename(columns={"year": "Start_Year"})
-        .set_index(["ISO", "Start_Year"]),
-        right_index=True,
-        left_index=True,
-        how="left",
-    )
-
-    merged_dict["df_panel"] = pd.merge(
-        merged_dict["df_panel"],
-        merged_dict["surface_temp"]
-        .reset_index()
-        .rename(columns={"year": "Start_Year"})
-        .set_index(["ISO", "Start_Year"]),
-        right_index=True,
-        left_index=True,
-        how="left",
+    merge_func = partial(pd.merge, left_index=True, right_index=True, how="outer")  # noqa
+    merged_dict["df_panel"] = reduce(
+        lambda left, right: merge_func(left, right),
+        [
+            merged_dict["emdat_events"],
+            merged_dict["emdat_damage"],
+            merged_dict["wb_data"],
+            (
+                merged_dict["gpcc"]
+                .reset_index()
+                .rename(columns={"year": "Start_Year"})
+                .set_index(["ISO", "Start_Year"])
+            ),
+            (
+                merged_dict["surface_temp"]
+                .reset_index()
+                .rename(columns={"year": "Start_Year"})
+                .set_index(["ISO", "Start_Year"])
+            ),
+        ],
     )
 
     # Merging time series
-    merged_dict["df_time_series"] = pd.merge(
-        merged_dict["co2"],
-        merged_dict["ocean_temperature"],
-        left_index=True,
-        right_index=True,
-        how="outer",
-    )
-
-    merged_dict["df_time_series"] = pd.merge(
-        merged_dict["df_time_series"],
-        merged_dict["gpcc_agg"],
-        left_index=True,
-        right_index=True,
-        how="outer",
-    )
-
-    merged_dict["df_time_series"] = pd.merge(
-        merged_dict["df_time_series"],
-        merged_dict["surface_temp_agg"],
-        left_index=True,
-        right_index=True,
-        how="outer",
+    merged_dict["df_time_series"] = reduce(
+        lambda left, right: merge_func(left, right),
+        [
+            merged_dict["co2"],
+            merged_dict["ocean_temperature"],
+            merged_dict["gpcc_agg"],
+            merged_dict["surface_temp_agg"],
+        ],
     )
 
     return merged_dict

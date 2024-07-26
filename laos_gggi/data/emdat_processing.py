@@ -9,7 +9,7 @@ from laos_gggi.const_vars import (
 )  # noqa
 
 
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def load_emdat_data(data_path="data", force_reload=False):
@@ -39,7 +39,8 @@ def load_emdat_data(data_path="data", force_reload=False):
     df_raw_filtered_adj = df.query("Total_Affected >1000 & Start_Year > 1970")
 
     # Define the complete combination of years and ISO codes
-    years = [*range(1969, 2024)]
+    # years = list(range(1969, 2024))
+    years = pd.date_range(start="1969-01-01", end="2024-01-01", freq="YS-JAN")
     ISO_codes = df["ISO"].unique()
     complete_df = pd.DataFrame(
         columns=["col_1"],

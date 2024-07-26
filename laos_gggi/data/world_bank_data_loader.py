@@ -12,7 +12,7 @@ import logging
 
 
 _log = logging.getLogger(__name__)
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def load_wb_data(folder_path="data"):

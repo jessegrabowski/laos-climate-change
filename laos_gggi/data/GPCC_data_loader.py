@@ -12,7 +12,7 @@ import xarray as xr
 import logging
 
 _log = logging.getLogger(__name__)
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def load_gpcc_data(output_path="data", force_reload=False, repair_ISO_codes=True):

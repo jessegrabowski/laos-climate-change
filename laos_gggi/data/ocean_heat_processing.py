@@ -4,7 +4,12 @@ from os.path import exists
 from laos_gggi.const_vars import OCEAN_HEAT_FILENAME, OCEAN_HEAT_URL
 
 
-def load_ocean_heat_data(data_path="../data"):
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+def load_ocean_heat_data(data_path=None):
+    if data_path is None:
+        data_path = os.path.join(ROOT_DIR, "data")
     if not exists(data_path):
         os.makedirs(data_path)
 
@@ -21,7 +26,7 @@ def load_ocean_heat_data(data_path="../data"):
         df_ocean.to_csv(os.path.join(data_path, OCEAN_HEAT_FILENAME))
 
     else:
-        df_ocean = pd.read_csv(
+        df_ocean = pd.read_csv(  # noqa
             os.path.join(data_path, OCEAN_HEAT_FILENAME),
             index_col=["Date"],
             parse_dates=True,
