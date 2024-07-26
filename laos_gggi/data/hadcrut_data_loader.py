@@ -2,7 +2,7 @@ import os
 from os.path import exists
 from urllib.request import urlretrieve
 from laos_gggi.const_vars import HADCRUT_URL
-from laos_gggi.shapefiles_data_loader import load_shapefile
+from laos_gggi.data.shapefiles_data_loader import load_shapefile
 import geopandas as geo
 import pandas as pd
 import xarray as xr
@@ -13,7 +13,7 @@ _log = logging.getLogger(__name__)
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def process_hadcrut_data(output_path="data", force_reload=False, repair_ISO_codes=True):
+def load_hadcrut_data(output_path="data", force_reload=False, repair_ISO_codes=True):
     output_path = os.path.join(ROOT_DIR, output_path)
     hadcrut_raw_path = os.path.join(output_path, "hadcrut_temperature_raw.nc")
     hadcrut_processed_path = os.path.join(

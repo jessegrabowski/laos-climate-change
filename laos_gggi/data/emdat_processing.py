@@ -12,7 +12,7 @@ from laos_gggi.const_vars import (
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def process_emdat(data_path="data", force_reload=False):
+def load_emdat_data(data_path="data", force_reload=False):
     output_files = ["probability_data_set", "intensity_data_set"]  # noqa
     data_path = os.path.join(ROOT_DIR, data_path)
 

@@ -1,18 +1,18 @@
 import pandas as pd
-from laos_gggi.emdat_processing import process_emdat
-from laos_gggi.world_bank_data_loader import download_wb_data
-from laos_gggi.GPCC_data_loader import download_gpcc_data
-from laos_gggi.co2_processing import process_co2
-from laos_gggi.ocean_heat_processing import load_ocean_heat
-from laos_gggi.hadcrut_data_loader import process_hadcrut_data
+from laos_gggi.data.emdat_processing import load_emdat_data
+from laos_gggi.data.world_bank_data_loader import load_wb_data
+from laos_gggi.data.GPCC_data_loader import load_gpcc_data
+from laos_gggi.data.co2_processing import load_co2_data
+from laos_gggi.data.ocean_heat_processing import load_ocean_heat_data
+from laos_gggi.data.hadcrut_data_loader import load_hadcrut_data
 
 
-def final_data():
+def load_all_data():
     # Create the dictionary that contains the combined files
     merged_dict = {}
 
     # 1. EM-DAT data representing number of events per year (index: Year, ISO3)
-    emdat = process_emdat()
+    emdat = load_emdat_data()
     merged_dict["emdat_events"] = emdat["df_prob_filtered_adjusted"].drop(
         ["Subregion"], axis=1
     )
@@ -21,7 +21,7 @@ def final_data():
     merged_dict["emdat_damage"] = emdat["df_inten_filtered_adjusted"]
 
     # 3. The WB data, index (Year, ISO3)
-    merged_dict["wb_data"] = download_wb_data()
+    merged_dict["wb_data"] = load_wb_data()
     merged_dict["wb_data"] = (
         merged_dict["wb_data"]
         .reset_index()
@@ -30,7 +30,7 @@ def final_data():
     )
     # 4 A single dataframe containing all of the timeseries-only data: GPCC + NOAA + NECI, index: Year
     # 4.1 GPCC: precipitation
-    gpcc = download_gpcc_data()
+    gpcc = load_gpcc_data()
     gpcc = gpcc.reset_index().rename(columns={"country_code": "ISO"})
     gpcc["year"] = pd.to_datetime(gpcc["time"]).dt.year
     merged_dict["gpcc"] = gpcc.pivot_table(
@@ -41,19 +41,19 @@ def final_data():
     )
 
     # 4.2 NOAA: CO2
-    co2 = process_co2()
+    co2 = load_co2_data()
     co2.reset_index(inplace=True)
     co2["year"] = co2["Date"].dt.year
     merged_dict["co2"] = co2.pivot_table(values="co2", index="year", aggfunc="sum")
 
     # 4.3 NECI: ocean temperature
-    ocean_heat = load_ocean_heat()
+    ocean_heat = load_ocean_heat_data()
     ocean_heat["year"] = ocean_heat.reset_index()["Date"].dt.year.values
     ocean_heat = ocean_heat.pivot_table(values="Temp", index="year", aggfunc="mean")
     merged_dict["ocean_temperature"] = ocean_heat
 
     # 4.4 HACRUT: surface temperature
-    surface_temp = process_hadcrut_data()
+    surface_temp = load_hadcrut_data()
     merged_dict["surface_temp"] = surface_temp
 
     merged_dict["surface_temp_agg"] = surface_temp.reset_index().pivot_table(

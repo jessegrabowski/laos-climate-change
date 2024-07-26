@@ -4,7 +4,7 @@ from os.path import exists
 from laos_gggi.const_vars import CO2_URL, CO2_FILENAME
 
 
-def process_co2(data_path="../data"):
+def load_co2_data(data_path="../data"):
     if not exists(data_path):
         os.makedirs(data_path)
 

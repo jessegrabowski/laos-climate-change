@@ -4,7 +4,7 @@ from os.path import exists
 from laos_gggi.const_vars import OCEAN_HEAT_FILENAME, OCEAN_HEAT_URL
 
 
-def load_ocean_heat(data_path="../data"):
+def load_ocean_heat_data(data_path="../data"):
     if not exists(data_path):
         os.makedirs(data_path)
 
