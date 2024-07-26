@@ -4,6 +4,7 @@ from laos_gggi.world_bank_data_loader import download_wb_data
 from laos_gggi.GPCC_data_loader import download_gpcc_data
 from laos_gggi.co2_processing import process_co2
 from laos_gggi.ocean_heat_processing import load_ocean_heat
+from laos_gggi.hadcrut_data_loader import process_hadcrut_data
 
 
 def final_data():
@@ -51,6 +52,14 @@ def final_data():
     ocean_heat = ocean_heat.pivot_table(values="Temp", index="year", aggfunc="mean")
     merged_dict["ocean_temperature"] = ocean_heat
 
+    # 4.4 HACRUT: surface temperature
+    surface_temp = process_hadcrut_data()
+    merged_dict["surface_temp"] = surface_temp
+
+    merged_dict["surface_temp_agg"] = surface_temp.reset_index().pivot_table(
+        values="surface_temperature_dev", index=["year"], aggfunc="mean"
+    )
+
     # ISO reconciliation: emdat and world
     emdat_iso = merged_dict["emdat_damage"].index.get_level_values(0).unique()
     world_iso = merged_dict["wb_data"].index.get_level_values(0).unique()
@@ -82,10 +91,6 @@ def final_data():
     # ISO reconciliation: gpcc
     merged_dict_iso = merged_dict["wb_data"].index.get_level_values(0).unique()
     gpcc_iso = merged_dict["gpcc"].index.get_level_values(0).unique()
-    # Codes in gpcc but not in world
-    ", ".join(list(set(gpcc_iso) - set(merged_dict_iso)))
-    # Codes in world but not in gpcc
-    ", ".join(list(set(merged_dict_iso) - set(gpcc_iso)))
 
     # Drop codes not in both
     common_codes2 = set(merged_dict_iso).intersection(set(gpcc_iso))
@@ -100,21 +105,16 @@ def final_data():
         .loc[lambda x: x.index.get_level_values(0).isin(common_codes2)]
         .copy()
     )
-    merged_dict["emdat_damage"] = (
-        merged_dict["emdat_damage"]
-        .loc[lambda x: x.index.get_level_values(0).isin(common_codes2)]
-        .copy()
-    )
+    # ISO reconciliation: hadcrut
+    merged_dict_iso = merged_dict["wb_data"].index.get_level_values(0).unique()
+    hadcrut_iso = merged_dict["surface_temp"].index.get_level_values(0).unique()
 
-    merged_dict["emdat_events"] = (
-        merged_dict["emdat_events"]
-        .loc[lambda x: x.index.get_level_values(0).isin(common_codes2)]
-        .copy()
-    )
+    # Drop codes not in both
+    common_codes2 = set(merged_dict_iso).intersection(set(hadcrut_iso))
 
-    merged_dict["wb_data"] = (
-        merged_dict["wb_data"]
-        .loc[merged_dict["wb_data"].index.get_level_values(0).isin(common_codes2)]
+    merged_dict["surface_temp"] = (
+        merged_dict["surface_temp"]
+        .loc[lambda x: x.index.get_level_values(0).isin(common_codes2)]
         .copy()
     )
 
@@ -159,6 +159,17 @@ def final_data():
         how="left",
     )
 
+    merged_dict["df_panel"] = pd.merge(
+        merged_dict["df_panel"],
+        merged_dict["surface_temp"]
+        .reset_index()
+        .rename(columns={"year": "Start_Year"})
+        .set_index(["ISO", "Start_Year"]),
+        right_index=True,
+        left_index=True,
+        how="left",
+    )
+
     # Merging time series
     merged_dict["df_time_series"] = pd.merge(
         merged_dict["co2"],
@@ -171,6 +182,14 @@ def final_data():
     merged_dict["df_time_series"] = pd.merge(
         merged_dict["df_time_series"],
         merged_dict["gpcc_agg"],
+        left_index=True,
+        right_index=True,
+        how="outer",
+    )
+
+    merged_dict["df_time_series"] = pd.merge(
+        merged_dict["df_time_series"],
+        merged_dict["surface_temp_agg"],
         left_index=True,
         right_index=True,
         how="outer",

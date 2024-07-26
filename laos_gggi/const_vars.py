@@ -592,7 +592,13 @@ ISO_DICTIONARY = {
     "Zambia": "ZMB",
     "Zimbabwe": "ZWE",
 }
-WB_INDICATORS = ["EN.POP.DNST", "NY.GDP.PCAP.KD"]
-WB_RENAME_DICT = {"EN.POP.DNST": "population_density", "NY.GDP.PCAP.KD": "gdp_per_cap"}
+WB_INDICATORS = ["EN.POP.DNST", "NY.GDP.PCAP.KD", "SP.POP.TOTL"]
+WB_RENAME_DICT = {
+    "EN.POP.DNST": "population_density",
+    "NY.GDP.PCAP.KD": "gdp_per_cap",
+    "SP.POP.TOTL": "Population",
+}
 
 REGIONS = ["Asia", "Europe", "Africa", "Oceania", "Americas"]
+
+HADCRUT_URL = "https://crudata.uea.ac.uk/cru/data/temperature/HadCRUT.5.0.2.0.analysis.anomalies.ensemble_mean.nc"
