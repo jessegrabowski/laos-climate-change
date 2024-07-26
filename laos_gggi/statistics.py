@@ -1,5 +1,5 @@
 import pandas as pd
-from statsmodels.api.tsa import adfuller
+from statsmodels.tsa.stattools import adfuller
 
 
 # Descriptive stats function
