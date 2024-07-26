@@ -6,6 +6,7 @@ from laos_gggi.data import (
     load_co2_data,
     load_ocean_heat_data,
     load_hadcrut_data,
+    load_shapefile,
     load_all_data,
 )
 
@@ -25,5 +26,6 @@ __all__ = [
     "load_co2_data",
     "load_ocean_heat_data",
     "load_hadcrut_data",
+    "load_shapefile",
     "load_all_data",
 ]

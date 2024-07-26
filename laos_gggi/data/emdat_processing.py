@@ -1,13 +1,13 @@
+import numpy as np
 import pandas as pd
 import os
 from os.path import exists
 
-from laos_gggi.const_vars import (
+from laos_gggi.const_vars import (  # noqa
     INTENSITY_COLS,
     EM_DAT_COL_DICT,
-    PROB_COLS,  # noqa
-)  # noqa
-
+    PROB_COLS,
+)
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -22,167 +22,73 @@ def load_emdat_data(data_path="data", force_reload=False):
     emdat_path = os.path.join(data_path, "emdat.xlsx")
     if not exists(emdat_path):
         raise NotImplementedError(
-            "No EM-DAT data was found at `/data/emdat.xlsx`. Please make an account at https://public.emdat.be/, download the database, and place it in `/data/emdat.xlsx`"
+            "No EM-DAT data was found at `/data/emdat.xlsx`. Please make an account at https://public.emdat.be/, "
+            "download the database, and place it in `/data/emdat.xlsx`"
         )
 
-    df = pd.read_excel(data_path + "/emdat.xlsx", sheet_name="EM-DAT Data").rename(
-        columns=EM_DAT_COL_DICT
+    df_raw = (
+        pd.read_excel(data_path + "/emdat.xlsx", sheet_name="EM-DAT Data")
+        .rename(columns=EM_DAT_COL_DICT)
+        .assign(Start_Year=lambda x: pd.to_datetime(x.Start_Year, format="%Y"))
     )
 
-    # Raw versions
-    df_raw = df
+    # Useful constants
+    region_dict = (
+        df_raw[["ISO", "Region"]].drop_duplicates().set_index("ISO").to_dict()["Region"]
+    )  #  noqa
+    subregion_dict = (
+        df_raw[["ISO", "Subregion"]]
+        .drop_duplicates()
+        .set_index("ISO")
+        .to_dict()["Subregion"]
+    )  #  noqa
+    years = pd.date_range(start="1969-01-01", end="2024-01-01", freq="YS-JAN")
+    ISO_codes = df_raw["ISO"].unique()
 
-    df_raw_filtered = df.query(
+    # Define the complete combination of years and ISO codes
+    complete_index = pd.MultiIndex.from_product(
+        [ISO_codes, years], names=["ISO", "Start_Year"]
+    ).sort_values()
+
+    # Raw versions
+    df_raw_filtered = df_raw.query(
         "Total_Affected >1000 &  Deaths >100 & Start_Year > 1970"
     )
 
-    df_raw_filtered_adj = df.query("Total_Affected >1000 & Start_Year > 1970")
+    df_raw_filtered_adj = df_raw.query("Total_Affected >1000 & Start_Year > 1970")
 
-    # Define the complete combination of years and ISO codes
-    # years = list(range(1969, 2024))
-    years = pd.date_range(start="1969-01-01", end="2024-01-01", freq="YS-JAN")
-    ISO_codes = df["ISO"].unique()
-    complete_df = pd.DataFrame(
-        columns=["col_1"],
-        index=pd.MultiIndex.from_product(
-            [ISO_codes, years],
-            names=[
-                "ISO",
-                "Start_Year",
-            ],
-        ),
-    ).sort_index()
-
-    # df_prob_unfiltered
-    df_prob_unfiltered = (
-        df_raw.copy()
-        .query("`Disaster Type` in @PROB_COLS")
-        .groupby(["Disaster Type", "ISO", "Start_Year", "Region", "Subregion"])
-        .size()
-        .unstack("Disaster Type")
-        .fillna(0)
-        .astype(int)
-        .reset_index()
-        .set_index(["ISO", "Start_Year"])
-        .sort_index()
-    )
-    df_prob_unfiltered_B = (
-        pd.merge(
-            complete_df,
-            df_prob_unfiltered[
-                ["Drought", "Extreme temperature", "Flood", "Storm", "Wildfire"]
-            ],
-            right_index=True,
-            left_index=True,
-            how="left",
-        )
-        .reset_index()
-        .set_index(["ISO"])
-    )
-
-    df_prob_unfiltered = (
-        (
-            pd.merge(
-                df_prob_unfiltered_B,
-                df_prob_unfiltered.reset_index()
-                .set_index("ISO")[["Region", "Subregion"]]
-                .drop_duplicates(),
-                right_index=True,
-                left_index=True,
-                how="left",
+    def process_prob_df(df):
+        result = (
+            df.copy()
+            .query("`Disaster Type` in @PROB_COLS")
+            .groupby(["Disaster Type", "ISO", "Start_Year", "Region", "Subregion"])
+            .size()
+            .unstack("Disaster Type")
+            .reset_index()
+            .set_index(["ISO", "Start_Year"])
+            .sort_index()
+            .reindex(complete_index)
+            .assign(
+                Region=lambda x: x.index.get_level_values(0).map(region_dict.get),
+                Subregion=lambda x: x.index.get_level_values(0).map(subregion_dict.get),
             )
+            .fillna(0)
+            .sort_index()
         )
-        .reset_index()
-        .set_index(["ISO", "Start_Year"])
-    )
 
-    # df_prob_filtered
-    df_prob_filtered = (
-        df_raw_filtered.copy()
-        .query("`Disaster Type` in @PROB_COLS")
-        .groupby(["Disaster Type", "ISO", "Start_Year", "Region", "Subregion"])
-        .size()
-        .unstack("Disaster Type")
-        .fillna(0)
-        .astype(int)
-        .reset_index()
-        .set_index(["ISO", "Start_Year"])
-        .sort_index()
-    )
-    df_prob_filtered_B = (
-        pd.merge(
-            complete_df,
-            df_prob_filtered[
-                ["Drought", "Extreme temperature", "Flood", "Storm", "Wildfire"]
-            ],
-            right_index=True,
-            left_index=True,
-            how="left",
+        assert result.shape[0] == len(complete_index)
+        assert np.all(
+            result.index.get_level_values(0) == complete_index.get_level_values(0)
         )
-        .reset_index()
-        .set_index(["ISO"])
-    )
-
-    df_prob_filtered = (
-        (
-            pd.merge(
-                df_prob_filtered_B,
-                df_prob_filtered.reset_index()
-                .set_index("ISO")[["Region", "Subregion"]]
-                .drop_duplicates(),
-                right_index=True,
-                left_index=True,
-                how="left",
-            )
+        assert np.all(
+            result.index.get_level_values(1) == complete_index.get_level_values(1)
         )
-        .reset_index()
-        .set_index(["ISO", "Start_Year"])
-    )
+        return result
 
-    # df_prob_filtered_adjusted
-    df_prob_filtered_adjusted = (
-        df_raw_filtered_adj.copy()
-        .query("`Disaster Type` in @PROB_COLS")
-        .groupby(["Disaster Type", "ISO", "Start_Year", "Region", "Subregion"])
-        .size()
-        .unstack("Disaster Type")
-        .fillna(0)
-        .astype(int)
-        .reset_index()
-        .set_index(["ISO", "Start_Year"])
-        .sort_index()
-    )
-    df_prob_filtered_adjusted_B = (
-        pd.merge(
-            complete_df,
-            df_prob_filtered_adjusted[
-                ["Drought", "Extreme temperature", "Flood", "Storm", "Wildfire"]
-            ],
-            right_index=True,
-            left_index=True,
-            how="left",
-        )
-        .reset_index()
-        .set_index(["ISO"])
-    )
+    df_prob_unfiltered = process_prob_df(df_raw)
+    df_prob_filtered = process_prob_df(df_raw_filtered)
+    df_prob_filtered_adjusted = process_prob_df(df_raw_filtered_adj)
 
-    df_prob_filtered_adjusted = (
-        (
-            pd.merge(
-                df_prob_filtered_adjusted_B,
-                df_prob_filtered_adjusted.reset_index()
-                .set_index("ISO")[["Region", "Subregion"]]
-                .drop_duplicates(),
-                right_index=True,
-                left_index=True,
-                how="left",
-            )
-        )
-        .reset_index()
-        .set_index(["ISO", "Start_Year"])
-    )
-
-    # df_inten_unfiltered
     damage_vars = [
         "Deaths",
         "Injured",
@@ -193,100 +99,33 @@ def load_emdat_data(data_path="data", force_reload=False):
         "Total_Damage_Adjusted",
     ]
 
-    df_inten_unfiltered = (
-        df_raw.copy()
-        .query("`Disaster Type` in @PROB_COLS")[INTENSITY_COLS]
-        .pivot_table(index=["ISO", "Start_Year"], values=damage_vars, aggfunc="sum")
-        .fillna(0)
-        .astype(int)
-        .sort_index()
-    )
-
-    df_inten_unfiltered = (
-        pd.merge(
-            complete_df,
-            df_inten_unfiltered[
-                [
-                    "Deaths",
-                    "Injured",
-                    "Numb_Affected",
-                    "Homeless",
-                    "Total_Affected",
-                    "Total_Damage",
-                    "Total_Damage_Adjusted",
-                ]
-            ],
-            right_index=True,
-            left_index=True,
-            how="left",
+    def process_damage_df(df):
+        result = (
+            df.copy()
+            .query("`Disaster Type` in @PROB_COLS")[INTENSITY_COLS]
+            .pivot_table(index=["ISO", "Start_Year"], values=damage_vars, aggfunc="sum")
+            .sort_index()
+            .reindex(complete_index)
+            .assign(
+                Region=lambda x: x.index.get_level_values(0).map(region_dict.get),
+                Subregion=lambda x: x.index.get_level_values(0).map(subregion_dict.get),
+            )
+            .sort_index()
+            .fillna(0)
         )
-        .reset_index()
-        .set_index(["ISO", "Start_Year"])
-    )
-
-    # df_inten_filtered
-    df_inten_filtered = (
-        df_raw_filtered.copy()
-        .query("`Disaster Type` in @PROB_COLS")[INTENSITY_COLS]
-        .pivot_table(index=["ISO", "Start_Year"], values=damage_vars, aggfunc="sum")
-        .fillna(0)
-        .astype(int)
-        .sort_index()
-    )
-
-    df_inten_filtered = (
-        pd.merge(
-            complete_df,
-            df_inten_filtered[
-                [
-                    "Deaths",
-                    "Injured",
-                    "Numb_Affected",
-                    "Homeless",
-                    "Total_Affected",
-                    "Total_Damage",
-                    "Total_Damage_Adjusted",
-                ]
-            ],
-            right_index=True,
-            left_index=True,
-            how="left",
+        assert result.shape[0] == len(complete_index)
+        assert np.all(
+            result.index.get_level_values(0) == complete_index.get_level_values(0)
         )
-        .reset_index()
-        .set_index(["ISO", "Start_Year"])
-    )
-
-    # df_inten_filtered_adjusted
-    df_inten_filtered_adjusted = (
-        df_raw_filtered_adj.copy()
-        .query("`Disaster Type` in @PROB_COLS")[INTENSITY_COLS]
-        .pivot_table(index=["ISO", "Start_Year"], values=damage_vars, aggfunc="sum")
-        .fillna(0)
-        .astype(int)
-        .sort_index()
-    )
-
-    df_inten_filtered_adjusted = (
-        pd.merge(
-            complete_df,
-            df_inten_filtered_adjusted[
-                [
-                    "Deaths",
-                    "Injured",
-                    "Numb_Affected",
-                    "Homeless",
-                    "Total_Affected",
-                    "Total_Damage",
-                    "Total_Damage_Adjusted",
-                ]
-            ],
-            right_index=True,
-            left_index=True,
-            how="left",
+        assert np.all(
+            result.index.get_level_values(1) == complete_index.get_level_values(1)
         )
-        .reset_index()
-        .set_index(["ISO", "Start_Year"])
-    )
+
+        return result
+
+    df_inten_unfiltered = process_damage_df(df_raw)
+    df_inten_filtered = process_damage_df(df_raw_filtered)
+    df_inten_filtered_adjusted = process_damage_df(df_raw_filtered_adj)
 
     result = {
         "df_raw": df_raw,
@@ -299,4 +138,5 @@ def load_emdat_data(data_path="data", force_reload=False):
         "df_inten_filtered": df_inten_filtered,
         "df_inten_filtered_adjusted": df_inten_filtered_adjusted,
     }
+
     return result
