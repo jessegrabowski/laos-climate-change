@@ -2,7 +2,7 @@ import os
 from os.path import exists
 from urllib.request import urlretrieve
 from laos_gggi.const_vars import GPCC_YEARS, MAKE_GPCC_URL
-from laos_gggi.shapefiles_data_loader import load_shapefile
+from laos_gggi.data.shapefiles_data_loader import load_shapefile
 import geopandas as geo
 import pandas as pd
 import gzip
@@ -12,10 +12,10 @@ import xarray as xr
 import logging
 
 _log = logging.getLogger(__name__)
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
-def download_gpcc_data(output_path="data", force_reload=False, repair_ISO_codes=True):
+def load_gpcc_data(output_path="data", force_reload=False, repair_ISO_codes=True):
     def path_to_GPCC(years: str, extracted=False):
         fname = f"gpcc_raw_{years}.nc"
         fname += ".gz" if not extracted else ""

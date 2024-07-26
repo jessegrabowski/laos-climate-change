@@ -7,7 +7,7 @@ from laos_gggi.const_vars import WORLD_URL, WORLD_FILENAME, LAOS_URL, LAOS_FILEN
 import logging
 
 _log = logging.getLogger(__name__)
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def download_shapefile(which, output_path="data/shapefiles", force_reload=False):

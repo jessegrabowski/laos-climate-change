@@ -2,7 +2,7 @@ import os
 from os.path import exists
 from urllib.request import urlretrieve
 from laos_gggi.const_vars import HADCRUT_URL
-from laos_gggi.shapefiles_data_loader import load_shapefile
+from laos_gggi.data.shapefiles_data_loader import load_shapefile
 import geopandas as geo
 import pandas as pd
 import xarray as xr
@@ -10,10 +10,10 @@ import xarray as xr
 import logging
 
 _log = logging.getLogger(__name__)
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
-def process_hadcrut_data(output_path="data", force_reload=False, repair_ISO_codes=True):
+def load_hadcrut_data(output_path="data", force_reload=False, repair_ISO_codes=True):
     output_path = os.path.join(ROOT_DIR, output_path)
     hadcrut_raw_path = os.path.join(output_path, "hadcrut_temperature_raw.nc")
     hadcrut_processed_path = os.path.join(
@@ -75,7 +75,7 @@ def process_hadcrut_data(output_path="data", force_reload=False, repair_ISO_code
             cols_to_use
         ].rename(columns={"tas_mean": "surface_temperature_dev"})
 
-        result_df["year"] = result_df["time"].dt.year
+        result_df["year"] = pd.to_datetime(result_df["time"].dt.year, format="%Y")
 
         result_df = (
             result_df.pivot_table(
@@ -92,6 +92,10 @@ def process_hadcrut_data(output_path="data", force_reload=False, repair_ISO_code
         _log.info(f"Saving processed GPCC data to {hadcrut_processed_path}")
         result_df.to_csv(hadcrut_processed_path)
     else:
-        result_df = pd.read_csv(hadcrut_processed_path).set_index(["ISO", "year"])
+        result_df = (
+            pd.read_csv(hadcrut_processed_path)
+            .assign(year=lambda x: pd.to_datetime(x.year, format="%Y"))
+            .set_index(["ISO", "year"])
+        )
 
     return result_df

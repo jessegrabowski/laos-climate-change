@@ -3,8 +3,12 @@ import os
 from os.path import exists
 from laos_gggi.const_vars import CO2_URL, CO2_FILENAME
 
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-def process_co2(data_path="../data"):
+
+def load_co2_data(data_path=None):
+    if data_path is None:
+        data_path = os.path.join(ROOT_DIR, "data")
     if not exists(data_path):
         os.makedirs(data_path)
 
@@ -19,7 +23,7 @@ def process_co2(data_path="../data"):
         df_co2.to_csv(os.path.join(data_path, CO2_FILENAME))
 
     else:
-        df_co2 = pd.read_csv(
+        df_co2 = pd.read_csv(  # noqa
             os.path.join(data_path, CO2_FILENAME), index_col=["Date"], parse_dates=True
         )
 
