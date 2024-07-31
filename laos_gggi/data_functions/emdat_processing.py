@@ -32,10 +32,15 @@ def load_emdat_data(data_path="data", force_reload=False):
         .assign(Start_Year=lambda x: pd.to_datetime(x.Start_Year, format="%Y"))
     )
 
-    df_raw["disaster_class"] = df_raw["Disaster Type"]
-    df_raw["disaster_class"].loc[df_raw["Disaster Type"].isin(["Storm", "Flood"])] = (
-        "Hydrometereological"
-    )
+    disaster_class_dict = {
+        "Storm": "Hydrometereological",
+        "Flood": "Hydrometereological",
+        "Wildfire": "Climatological",
+        "Extreme temperature": "Climatological",
+        "Drought": "Climatological",
+    }
+
+    df_raw["disaster_class"] = df_raw["Disaster Type"].map(disaster_class_dict.get)
 
     df_raw["disaster_class"].loc[
         df_raw["Disaster Type"].isin(["Wildfire", "Extreme temperature", "Drought"])
