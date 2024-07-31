@@ -68,7 +68,6 @@ def load_emdat_data(data_path="data", force_reload=False):
     df_raw_filtered = df_raw.query(
         "Total_Affected >1000 &  Deaths >100 & Start_Year > 1970"
     )
-    #
     df_raw_filtered_adj = df_raw.query("Total_Affected >1000 & Start_Year > 1970")
 
     def process_prob_df(df):
