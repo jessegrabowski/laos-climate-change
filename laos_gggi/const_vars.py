@@ -33,6 +33,7 @@ INTENSITY_COLS = [  # noqa
     "Total_Affected",
     "Total_Damage",
     "Total_Damage_Adjusted",
+    "Disaster Type",
 ]
 
 EM_DAT_COL_DICT = {  # noqa
