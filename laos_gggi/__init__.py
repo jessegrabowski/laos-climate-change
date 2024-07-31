@@ -1,5 +1,5 @@
 import logging
-from laos_gggi.data import (
+from laos_gggi.data_functions import (
     load_emdat_data,
     load_wb_data,
     load_gpcc_data,
