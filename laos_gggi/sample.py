@@ -1,7 +1,6 @@
 import os
 import pathlib
 import warnings
-from typing import Optional
 
 import arviz as az
 import pymc as pm
