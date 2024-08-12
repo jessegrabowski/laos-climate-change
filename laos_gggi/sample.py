@@ -1,6 +1,5 @@
 import os
 import pathlib
-import warnings
 
 import arviz as az
 import pymc as pm
@@ -43,10 +42,7 @@ def sample_or_load(
             idata = pm.sample(**sample_kwargs)
             idata = pm.sample_posterior_predictive(idata, extend_inferencedata=True)
             idata = pm.compute_log_likelihood(idata, extend_inferencedata=True)
-            try:
-                if _fp.exists():
-                    os.remove(_fp)
-                az.to_netcdf(idata, _fp)
-            except Exception as exc:
-                warnings.warn(f"Failed to save: {exc}")
+            if _fp.exists():
+                os.remove(_fp)
+            az.to_netcdf(idata, _fp)
     return idata
