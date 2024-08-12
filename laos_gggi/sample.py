@@ -12,7 +12,7 @@ def sample_or_load(
     *,
     model: pm.Model = None,
     resample: bool = False,
-    sample_kwargs: Optional[dict] = None,
+    sample_kwargs: dict | None = None,
 ) -> az.InferenceData:
     """
     Sample the model or load the model from disk.
