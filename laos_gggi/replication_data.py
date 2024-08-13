@@ -30,9 +30,6 @@ def create_replication_data():
 
     # Fill NaN values for disasters and emdat_damage
     disasters = disasters.fillna(0)
-    emdat_damage = emdat_damage.fillna(0)
-    emdat_damage_hydro = emdat_damage_hydro.fillna(0)
-    emdat_damage_clim = emdat_damage_clim.fillna(0)
 
     # Obtain each country's precipitation deviation from the average for its 30-year base climatology period 1961–1990
     countries = precipitation.reset_index()["ISO"].unique()

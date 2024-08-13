@@ -21,21 +21,11 @@ def load_all_data():
     # 2. EM-DAT data representing the event damages (index: Year, ISO3)
     merged_dict["emdat_damage"] = emdat["df_inten_filtered_adjusted"]
 
-    emdat["df_inten_filtered_adjusted_hydro"] = emdat[
-        "df_inten_filtered_adjusted_hydro"
-    ].drop(columns=["Region", "Subregion"])
-    for x in emdat["df_inten_filtered_adjusted_hydro"].columns:
-        emdat["df_inten_filtered_adjusted_hydro"].rename(
-            columns={f"{x}": (f"{x}" + "_hydro")}, inplace=True
-        )
+    emdat["df_inten_filtered_adjusted_hydro"] = (emdat["df_inten_filtered_adjusted_hydro"].drop(columns=["Region", "Subregion"]).rename(columns = lambda x: f'{x}_hydro'))
 
-    emdat["df_inten_filtered_adjusted_clim"] = emdat[
+    emdat["df_inten_filtered_adjusted_clim"] =  (emdat[
         "df_inten_filtered_adjusted_clim"
-    ].drop(columns=["Region", "Subregion"])
-    for x in emdat["df_inten_filtered_adjusted_clim"].columns:
-        emdat["df_inten_filtered_adjusted_clim"].rename(
-            columns={f"{x}": (f"{x}" + "_clim")}, inplace=True
-        )
+    ].drop(columns=["Region", "Subregion"]).rename(columns = lambda x: f'{x}_clim'))
 
     merged_dict["emdat_damage"] = pd.merge(
         merged_dict["emdat_damage"],
