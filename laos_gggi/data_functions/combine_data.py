@@ -21,6 +21,41 @@ def load_all_data():
     # 2. EM-DAT data representing the event damages (index: Year, ISO3)
     merged_dict["emdat_damage"] = emdat["df_inten_filtered_adjusted"]
 
+    emdat["df_inten_filtered_adjusted_hydro"] = (
+        emdat["df_inten_filtered_adjusted_hydro"]
+        .drop(columns=["Region", "Subregion"])
+        .rename(columns=lambda x: f"{x}_hydro")
+    )
+
+    emdat["df_inten_filtered_adjusted_clim"] = (
+        emdat["df_inten_filtered_adjusted_clim"]
+        .drop(columns=["Region", "Subregion"])
+        .rename(columns=lambda x: f"{x}_clim")
+    )
+
+    merged_dict["emdat_damage"] = pd.merge(
+        merged_dict["emdat_damage"],
+        emdat["df_inten_filtered_adjusted_hydro"],
+        left_index=True,
+        right_index=True,
+        how="left",
+    )
+
+    merged_dict["emdat_damage"] = pd.merge(
+        merged_dict["emdat_damage"],
+        emdat["df_inten_filtered_adjusted_clim"],
+        left_index=True,
+        right_index=True,
+        how="left",
+    )
+
+    merged_dict["df_inten_filtered_adjusted_hydro"] = emdat[
+        "df_inten_filtered_adjusted_hydro"
+    ]
+    merged_dict["df_inten_filtered_adjusted_clim"] = emdat[
+        "df_inten_filtered_adjusted_hydro"
+    ]
+
     # 3. The WB data, index (Year, ISO3)
     merged_dict["wb_data"] = load_wb_data()
     merged_dict["wb_data"] = (
