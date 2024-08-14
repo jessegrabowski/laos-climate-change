@@ -8,8 +8,7 @@ def create_replication_data():
     # Load data
     data = load_all_data()
     df_clim = data["df_time_series"][["co2", "Temp", "precip"]].iloc[1:-1]
-    emdat_damage = data["emdat_damage"]["Total_Damage_Adjusted"]
-    emdat_damage_hydro = data["emdat_damage"]["Total_Damage_Adjusted_hydro"]
+    emdat_damage_hydro = data["emdat_damage"]["Total_Damage_Adjusted_hydro"]  # noga
     emdat_damage_clim = data["emdat_damage"]["Total_Damage_Adjusted_clim"]
     hydro_disasters = data["emdat_events"][["Flood", "Storm"]]
     climate_disasters = data["emdat_events"][
