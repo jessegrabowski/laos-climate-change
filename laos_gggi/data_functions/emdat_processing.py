@@ -1,3 +1,4 @@
+from pyprojroot import here
 import numpy as np
 import pandas as pd
 import os
@@ -9,12 +10,10 @@ from laos_gggi.const_vars import (  # noqa
     PROB_COLS,
 )
 
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 
 def load_emdat_data(data_path="data", force_reload=False):
     output_files = ["probability_data_set", "intensity_data_set"]  # noqa
-    data_path = os.path.join(ROOT_DIR, data_path)
+    data_path = here(data_path)
 
     if not exists(data_path):
         os.makedirs(data_path)
@@ -27,7 +26,7 @@ def load_emdat_data(data_path="data", force_reload=False):
         )
 
     df_raw = (
-        pd.read_excel(data_path + "/emdat.xlsx", sheet_name="EM-DAT Data")
+        pd.read_excel(os.path.join(data_path, "emdat.xlsx"), sheet_name="EM-DAT Data")
         .rename(columns=EM_DAT_COL_DICT)
         .assign(Start_Year=lambda x: pd.to_datetime(x.Start_Year, format="%Y"))
     )
@@ -42,8 +41,9 @@ def load_emdat_data(data_path="data", force_reload=False):
 
     df_raw["disaster_class"] = df_raw["Disaster Type"].map(disaster_class_dict.get)
 
-    df_raw["disaster_class"].loc[
-        df_raw["Disaster Type"].isin(["Wildfire", "Extreme temperature", "Drought"])
+    df_raw.loc[
+        df_raw["Disaster Type"].isin(["Wildfire", "Extreme temperature", "Drought"]),
+        "disaster_class",
     ] = "Climatological"
 
     # Useful constants
