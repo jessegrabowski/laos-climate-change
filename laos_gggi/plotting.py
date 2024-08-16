@@ -9,6 +9,23 @@ import math
 from laos_gggi.const_vars import REGIONS
 
 
+def configure_plot_style():
+    config = {
+        "figure.figsize": (14, 4),
+        "figure.constrained_layout.use": True,
+        "figure.facecolor": "w",
+        "axes.grid": False,
+        "grid.linewidth": 0.5,
+        "grid.linestyle": "--",
+        "axes.spines.top": False,
+        "axes.spines.bottom": False,
+        "axes.spines.left": False,
+        "axes.spines.right": False,
+    }
+
+    plt.rcParams.update(config)
+
+
 def prepare_gridspec_figure(n_cols: int, n_plots: int) -> tuple[GridSpec, list]:
     """
      Prepare a figure with a grid of subplots. Centers the last row of plots if the number of plots is not square.
