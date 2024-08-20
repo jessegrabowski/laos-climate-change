@@ -7,6 +7,24 @@ from scipy import stats
 import numpy as np
 import math
 from laos_gggi.const_vars import REGIONS
+import arviz as az
+
+
+def configure_plot_style():
+    config = {
+        "figure.figsize": (14, 4),
+        "figure.constrained_layout.use": True,
+        "figure.facecolor": "w",
+        "axes.grid": False,
+        "grid.linewidth": 0.5,
+        "grid.linestyle": "--",
+        "axes.spines.top": False,
+        "axes.spines.bottom": False,
+        "axes.spines.left": False,
+        "axes.spines.right": False,
+    }
+
+    plt.rcParams.update(config)
 
 
 def prepare_gridspec_figure(n_cols: int, n_plots: int) -> tuple[GridSpec, list]:
@@ -203,3 +221,41 @@ def subplots_function_regions(
     fig.legend(REGIONS, loc="lower right", ncol=5, fontsize=16)
     plt.suptitle(title, fontsize=subplot_title_fontsize + 10)
     fig.tight_layout(rect=[0, 0, 1, 0.95])
+
+
+def plot_ppc_loopit(
+    idata: az.InferenceData, target_name: str, title: str | None = None, **ppc_kwargs
+) -> list[plt.Axes]:
+    """
+    Plot the posterior predictive check (PPC) and the leave-one-out predictive interval (LOO-PIT) for a given target variable.
+
+    Parameters
+    ----------
+    idata : arviz.InferenceData
+        The inference data object containing the posterior samples.
+    title : str
+        The title for the plot.
+    target_name : str, optional
+        The name of the target variable. If None, the first variable in the posterior predictive data is used.
+
+    Returns
+    -------
+    list
+        A list of matplotlib axes objects representing the plot.
+    """
+
+    fig = plt.figure(figsize=(12, 9))
+    gs = plt.GridSpec(2, 2, figure=fig)
+    ax_ppc = fig.add_subplot(gs[0, :])
+    ax_loo = fig.add_subplot(gs[1, 0])
+    ax_ecdf = fig.add_subplot(gs[1, 1])
+
+    az.plot_ppc(idata, ax=ax_ppc, var_names=[target_name], **ppc_kwargs)
+    for ax, ecdf in zip([ax_loo, ax_ecdf], [False, True]):
+        az.plot_loo_pit(idata, y=target_name, ecdf=ecdf, ax=ax)
+
+    if title is None:
+        title = target_name
+    ax_ppc.set_title(title)
+    ax_ppc.set_xlabel("")
+    return fig.axes
