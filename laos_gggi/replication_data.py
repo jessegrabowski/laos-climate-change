@@ -62,7 +62,8 @@ def create_replication_data():
     dev_from_trend_ocean_temp = df_clim["Temp"].dropna() - trend_ocean_temp
 
     # Obtain the natural logarithms of population density and GDP per capita
-    development_indicators["population"] = development_indicators["SP.POP.TOTL"]
+
+    development_indicators["population"] = development_indicators["Population"]
     development_indicators["ln_population_density"] = np.log(
         development_indicators["population_density"]
     )

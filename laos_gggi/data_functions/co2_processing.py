@@ -1,14 +1,13 @@
+from pyprojroot import here
 import pandas as pd
 import os
 from os.path import exists
 from laos_gggi.const_vars import CO2_URL, CO2_FILENAME
 
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 
 def load_co2_data(data_path=None):
     if data_path is None:
-        data_path = os.path.join(ROOT_DIR, "data")
+        data_path = here("data")
     if not exists(data_path):
         os.makedirs(data_path)
 

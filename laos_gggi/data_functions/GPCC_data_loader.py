@@ -1,3 +1,4 @@
+from pyprojroot import here
 import os
 from os.path import exists
 from urllib.request import urlretrieve
@@ -12,7 +13,6 @@ import xarray as xr
 import logging
 
 _log = logging.getLogger(__name__)
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def load_gpcc_data(output_path="data", force_reload=False, repair_ISO_codes=True):
@@ -21,7 +21,7 @@ def load_gpcc_data(output_path="data", force_reload=False, repair_ISO_codes=True
         fname += ".gz" if not extracted else ""
         return os.path.join(output_path, "gpcc", fname)
 
-    output_path = os.path.join(ROOT_DIR, output_path)
+    output_path = here(output_path)
     path_to_GPCC_unzipped = os.path.join(output_path, "gpcc/gpcc_raw_1981_1990.nc")
     gpcc_processed_path = os.path.join(output_path, "gpcc/gpcc_precipitations.csv")
 

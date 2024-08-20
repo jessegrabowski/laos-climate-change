@@ -1,3 +1,4 @@
+from pyprojroot import here
 import os
 from os.path import exists
 from urllib.request import urlretrieve
@@ -10,11 +11,10 @@ import xarray as xr
 import logging
 
 _log = logging.getLogger(__name__)
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def load_hadcrut_data(output_path="data", force_reload=False, repair_ISO_codes=True):
-    output_path = os.path.join(ROOT_DIR, output_path)
+    output_path = here(output_path)
     hadcrut_raw_path = os.path.join(output_path, "hadcrut_temperature_raw.nc")
     hadcrut_processed_path = os.path.join(
         output_path, "hadcrut_temperature_processed.csv"
@@ -94,7 +94,7 @@ def load_hadcrut_data(output_path="data", force_reload=False, repair_ISO_codes=T
     else:
         result_df = (
             pd.read_csv(hadcrut_processed_path)
-            .assign(year=lambda x: pd.to_datetime(x.year, format="%Y"))
+            .assign(year=lambda x: pd.to_datetime(x.year))
             .set_index(["ISO", "year"])
         )
 

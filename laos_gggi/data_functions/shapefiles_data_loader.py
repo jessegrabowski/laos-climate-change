@@ -1,3 +1,4 @@
+from pyprojroot import here
 import os
 from os.path import exists
 from urllib.request import urlretrieve
@@ -7,16 +8,21 @@ from laos_gggi.const_vars import WORLD_URL, WORLD_FILENAME, LAOS_URL, LAOS_FILEN
 import logging
 
 _log = logging.getLogger(__name__)
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+shapefile_name_dict = {
+    "world": WORLD_FILENAME.replace(".zip", ""),
+    "laos": LAOS_FILENAME.replace(".zip", ""),
+}
 
 
 def download_shapefile(which, output_path="data/shapefiles", force_reload=False):
     if which.lower() not in ["laos", "world"]:
         raise ValueError(f'which should be one of ["world", "laos"], got {which}')
-    url = LAOS_URL if which.lower() == "Laos" else WORLD_URL
-    filename = LAOS_FILENAME if which.lower() == "Laos" else WORLD_FILENAME
+    url = LAOS_URL if which.lower() == "laos" else WORLD_URL
+    filename = LAOS_FILENAME if which.lower() == "laos" else WORLD_FILENAME
 
-    output_path = os.path.join(ROOT_DIR, output_path)
+    output_path = here(output_path)
     path_to_file = os.path.join(output_path, filename)
 
     if not exists(output_path):
@@ -30,17 +36,15 @@ def download_shapefile(which, output_path="data/shapefiles", force_reload=False)
 def extract_shapefiles(which: str, output_path="data/shapefiles", force_reload=False):
     if which.lower() not in ["world", "laos"]:
         raise ValueError(f'which should be one of ["world", "laos"], got {which}')
-    filename = (
-        "wb_countries_admin0_10m"
-        if which.lower() == "world"
-        else "lao_adm_ngd_20191112_shp"
-    )
-    shapefile_path = os.path.join(ROOT_DIR, output_path, filename)
+    filename = shapefile_name_dict[which.lower()]
+    shapefile_path = str(here(os.path.join(output_path, filename)))
 
-    if not exists(shapefile_path) or force_reload:
+    if not os.path.isdir(shapefile_path) or force_reload:
         _log.info(f"Extracting {shapefile_path}")
-        with ZipFile(shapefile_path + ".zip", "r") as zObject:
-            zObject.extractall(path=output_path)
+        fname = filename + ".zip"
+
+        with ZipFile(here(os.path.join(output_path, fname)), "r") as zObject:
+            zObject.extractall(path=here(output_path))
 
 
 def load_shapefile(
@@ -54,11 +58,11 @@ def load_shapefile(
         else "lao_adm_ngd_20191112_shp"
     )
 
-    shapefile_path = os.path.join(ROOT_DIR, output_path, filename)
+    shapefile_path = str(here(os.path.join(output_path, filename)))
     download_shapefile(which, output_path, force_reload=force_reload)
     extract_shapefiles(which, output_path, force_reload=force_reload)
 
-    df = gpd.read_file(shapefile_path.replace(".zip", ""))
+    df = gpd.read_file(shapefile_path.replace(".zip", ""), layer=0)
 
     if which == "world" and repair_ISO_codes:
         # The ISO codes are not 1:1 with geometries. This code cleans things up, mostly
