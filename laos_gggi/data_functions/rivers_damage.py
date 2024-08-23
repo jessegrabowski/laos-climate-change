@@ -45,7 +45,7 @@ def create_hydro_rivers_damage():
         )
 
         def get_distance_to_rivers(rivers, points):
-            ret = pd.Series(np.nan, index=points.index, name="closest_river")
+            ret = pd.Series(np.nan, index=points.index, name="Closest River")
             rivers_km = rivers.copy().to_crs("EPSG:3395")
             points_km = points.copy().to_crs("EPSG:3395")
             for idx, row in tqdm(points_km.iterrows(), total=points.shape[0]):
