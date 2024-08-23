@@ -7,7 +7,7 @@ import geopandas as gpd
 from laos_gggi.data_functions.rivers_data_loader import load_rivers_data
 from laos_gggi import load_emdat_data, load_shapefile
 from laos_gggi.const_vars import RIVERS_HYDRO_DAMAGE_FILENAME
-from laos_gggi.distance_to_rivers import get_distance_to_rivers
+from laos_gggi.statistics import get_distance_to_rivers
 
 
 def create_hydro_rivers_damage():
