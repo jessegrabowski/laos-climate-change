@@ -36,6 +36,7 @@ def load_rivers_data(data_path=here("data/rivers")):
             zObject.extractall(path=here(data_path))
 
     if not os.path.isfile(os.path.join(data_path, BIG_RIVERS_FILENAME)):
+        _log.info("Loading and processing rivers data")
         df = gpd.read_file(here(r"data\rivers\HydroRIVERS_v10_shp\HydroRIVERS_v10.shp"))
         big_rivers = df.query("ORD_CLAS == 1 and ORD_FLOW < 5")
         big_rivers.to_file(os.path.join(data_path, BIG_RIVERS_FILENAME))

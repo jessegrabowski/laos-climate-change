@@ -1,13 +1,13 @@
 import pandas as pd
 from pyprojroot import here
 import os
-from tqdm.notebook import tqdm
 import numpy as np
 import geopandas as gpd
 
 from laos_gggi.data_functions.rivers_data_loader import load_rivers_data
 from laos_gggi import load_emdat_data, load_shapefile
 from laos_gggi.const_vars import RIVERS_HYDRO_DAMAGE_FILENAME
+from laos_gggi.distance_to_rivers import get_distance_to_rivers
 
 
 def create_hydro_rivers_damage():
@@ -44,17 +44,11 @@ def create_hydro_rivers_damage():
             crs=world.crs,
         )
 
-        def get_distance_to_rivers(rivers, points):
-            ret = pd.Series(np.nan, index=points.index, name="closest_river")
-            rivers_km = rivers.copy().to_crs("EPSG:3395")
-            points_km = points.copy().to_crs("EPSG:3395")
-            for idx, row in tqdm(points_km.iterrows(), total=points.shape[0]):
-                ret.loc[idx] = rivers_km.distance(row.geometry).min()
-            return ret
-
         closest_river = get_distance_to_rivers(big_rivers, damage_df)
 
-        damage_df = damage_df.join(closest_river / 1000)
+        damage_df = damage_df.join(
+            closest_river / 1000
+        )  # Note: we are dividing by 1000 to convert meters to km (because EPSG:3395 is in meters)
 
         damage_df.rename(columns={"Total_Damage": "Total_Damage_Hydro"}, inplace=True)
 
