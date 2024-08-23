@@ -44,7 +44,7 @@ def create_hydro_rivers_damage():
             crs=world.crs,
         )
 
-        def get_distance_to_rivers(rivers, points):
+        def get_distance_to_rivers(rivers, points, crs="EPSG:3395"):
             ret = pd.Series(np.nan, index=points.index, name="Closest River")
             rivers_km = rivers.copy().to_crs("EPSG:3395")
             points_km = points.copy().to_crs("EPSG:3395")
