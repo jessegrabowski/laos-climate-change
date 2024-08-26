@@ -57,7 +57,12 @@ def create_hydro_rivers_damage():
         )
 
         damage_df.to_file(os.path.join(data_path, RIVERS_HYDRO_DAMAGE_FILENAME))
+
     else:
         damage_df = gpd.read_file(os.path.join(data_path, RIVERS_HYDRO_DAMAGE_FILENAME))
+        damage_df = damage_df.rename(columns = {'River Basi': 'River Basin',
+                                                'Total_Dama': 'Total_Damage_Hydro',
+                                                'closest_ri': 'closest_river',
+                                                'log_damage': "log_damage_hydro"})
 
     return damage_df
