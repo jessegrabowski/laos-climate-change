@@ -66,6 +66,31 @@ RIVERS_SHAPEFILE_FILENAME = "HydroRIVERS_v10.shp"
 RIVERS_ZIP_FILENAME = "rivers_zip_file.zip"
 BIG_RIVERS_FILENAME = "big_rivers.shp"
 RIVERS_HYDRO_DAMAGE_FILENAME = "rivers_hydro_damage.shp"
+RIVERS_FLOODS_DAMAGE_FILENAME = "rivers_floods_damage.shp"
+LAOS_LOCATION_DICTIONARY = {
+    "Vientiane": {"Latitude": 17.9757, "Longitude": 102.6331},
+    "Louang-Namtha, Bolikhamxai, Khammouan, Savannakhet, Champasak, Salavan, Vientiane, Vientiane capital province": {
+        "Latitude": 19.0,
+        "Longitude": 102.0,
+    },
+    "Xay, Beng districts (Oudomxai province), Khop, Xienghone, Ngeun, Xayabury districts (Xaignabouli province), Bolikhanh, Paksane, Pakkading, Thaphabath districts (Bolikhamxai province), Nakai, Mahaxay, Nongbok, Xebangfay, Hinboon districts (Khammuan province), Pek, Kham, Thathom districts (Xiangkhouang province), Kasy, Feuang, Mad, Hom districts (Vientiane province)": {
+        "Latitude": 19.5,
+        "Longitude": 103.5,
+    },
+    "Salavan, Champasak, Attapu, Savannakhet, Xekong provinces": {
+        "Latitude": 16.5,
+        "Longitude": 106.0,
+    },
+    "Houaphan, Bolikhamxai, Khammouan, Louang-Namtha provinces": {
+        "Latitude": 19.0,
+        "L`ongitude": 104.0,
+    },
+    "Luang Prabang city (Louangphrabang distrcit, Louangphabang province), Oudomxai, Salavan, Xaignabouli, Xiangkhouang, Houaphan, Bokeo provinces": {
+        "Latitude": 19.9,
+        "Longitude": 102.1,
+    },
+}
+
 
 POPULATION_DENSITY_URL = (
     "https://api.worldbank.org/v2/en/indicator/EN.POP.DNST?downloadformat=csv"

@@ -1,7 +1,6 @@
 import pandas as pd
 from statsmodels.tsa.stattools import adfuller
 from tqdm.notebook import tqdm
-import numpy as np
 
 
 # Descriptive stats function
@@ -100,9 +99,19 @@ def ADF_test_summary(df, maxlag=None, autolag="BIC", missing="error"):
 
 
 def get_distance_to_rivers(rivers, points, crs="EPSG:3395"):
-    ret = pd.Series(np.nan, index=points.index, name="closest_river")
+    ret = pd.DataFrame(
+        index=points.index, columns=["closest_river", "ORD_FLOW", "HYRIV_ID"]
+    )
     rivers_km = rivers.copy().to_crs(crs)
     points_km = points.copy().to_crs(crs)
     for idx, row in tqdm(points_km.iterrows(), total=points.shape[0]):
-        ret.loc[idx] = rivers_km.distance(row.geometry).min()
+        series = rivers_km.distance(row.geometry)
+        ret.loc[idx, "closest_river"] = series.min()
+
+        index = series[series == series.min()].index[0]
+        ret.loc[idx, "ORD_FLOW"] = rivers_km.loc[index]["ORD_FLOW"]
+        ret.loc[idx, "HYRIV_ID"] = rivers_km.loc[index]["HYRIV_ID"]
+
+    ret["ORD_FLOW"] = ret["ORD_FLOW"].astype("int")
+    ret["closest_river"] = ret["closest_river"].astype("float")
     return ret
