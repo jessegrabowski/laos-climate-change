@@ -102,7 +102,7 @@ def create_floods_rivers_damage():
         )
 
         for x in LAOS_LOCATION_DICTIONARY.keys():
-            index = pd.Index(floods_damages["Location"]).get_loc(x)
+            index = floods_damages[floods_damages["DisNo."] == x].index
             floods_damages.loc[index, "Latitude"] = LAOS_LOCATION_DICTIONARY[x][
                 "Latitude"
             ]

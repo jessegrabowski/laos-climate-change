@@ -68,27 +68,12 @@ BIG_RIVERS_FILENAME = "big_rivers.shp"
 RIVERS_HYDRO_DAMAGE_FILENAME = "rivers_hydro_damage.shp"
 RIVERS_FLOODS_DAMAGE_FILENAME = "rivers_floods_damage.shp"
 LAOS_LOCATION_DICTIONARY = {
-    "Vientiane": {"Latitude": 17.9757, "Longitude": 102.6331},
-    "Louang-Namtha, Bolikhamxai, Khammouan, Savannakhet, Champasak, Salavan, Vientiane, Vientiane capital province": {
-        "Latitude": 19.0,
-        "Longitude": 102.0,
-    },
-    "Xay, Beng districts (Oudomxai province), Khop, Xienghone, Ngeun, Xayabury districts (Xaignabouli province), Bolikhanh, Paksane, Pakkading, Thaphabath districts (Bolikhamxai province), Nakai, Mahaxay, Nongbok, Xebangfay, Hinboon districts (Khammuan province), Pek, Kham, Thathom districts (Xiangkhouang province), Kasy, Feuang, Mad, Hom districts (Vientiane province)": {
-        "Latitude": 19.5,
-        "Longitude": 103.5,
-    },
-    "Salavan, Champasak, Attapu, Savannakhet, Xekong provinces": {
-        "Latitude": 16.5,
-        "Longitude": 106.0,
-    },
-    "Houaphan, Bolikhamxai, Khammouan, Louang-Namtha provinces": {
-        "Latitude": 19.0,
-        "L`ongitude": 104.0,
-    },
-    "Luang Prabang city (Louangphrabang distrcit, Louangphabang province), Oudomxai, Salavan, Xaignabouli, Xiangkhouang, Houaphan, Bokeo provinces": {
-        "Latitude": 19.9,
-        "Longitude": 102.1,
-    },
+    "1971-0048-LAO": {"Latitude": 17.9757, "Longitude": 102.6331},
+    "2000-0583-LAO": {"Latitude": 19.0, "Longitude": 102.0},
+    "2013-0338-LAO": {"Latitude": 19.5, "Longitude": 103.5},
+    "2013-0417-LAO": {"Latitude": 16.5, "Longitude": 106.0},
+    "2015-0324-LAO": {"Latitude": 19.0, "Longitude": 104.0},
+    "2016-0316-LAO": {"Latitude": 19.9, "Longitude": 102.1},
 }
 
 
