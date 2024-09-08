@@ -66,6 +66,16 @@ RIVERS_SHAPEFILE_FILENAME = "HydroRIVERS_v10.shp"
 RIVERS_ZIP_FILENAME = "rivers_zip_file.zip"
 BIG_RIVERS_FILENAME = "big_rivers.shp"
 RIVERS_HYDRO_DAMAGE_FILENAME = "rivers_hydro_damage.shp"
+RIVERS_FLOODS_DAMAGE_FILENAME = "rivers_floods_damage.shp"
+LAOS_LOCATION_DICTIONARY = {
+    "1971-0048-LAO": {"Latitude": 17.9757, "Longitude": 102.6331},
+    "2000-0583-LAO": {"Latitude": 19.0, "Longitude": 102.0},
+    "2013-0338-LAO": {"Latitude": 19.5, "Longitude": 103.5},
+    "2013-0417-LAO": {"Latitude": 16.5, "Longitude": 106.0},
+    "2015-0324-LAO": {"Latitude": 19.0, "Longitude": 104.0},
+    "2016-0316-LAO": {"Latitude": 19.9, "Longitude": 102.1},
+}
+
 
 POPULATION_DENSITY_URL = (
     "https://api.worldbank.org/v2/en/indicator/EN.POP.DNST?downloadformat=csv"
