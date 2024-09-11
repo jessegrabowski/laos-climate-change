@@ -6,7 +6,7 @@ from laos_gggi.data_functions.ocean_heat_processing import load_ocean_heat_data
 from laos_gggi.data_functions.hadcrut_data_loader import load_hadcrut_data
 from laos_gggi.data_functions.combine_data import load_all_data
 from laos_gggi.data_functions.shapefiles_data_loader import load_shapefile
-
+from laos_gggi.data_functions.rivers_data_loader import load_rivers_data
 
 __all__ = [
     "load_emdat_data",
@@ -17,4 +17,5 @@ __all__ = [
     "load_hadcrut_data",
     "load_shapefile",
     "load_all_data",
+    "load_rivers_data",
 ]
