@@ -40,8 +40,14 @@ def load_rivers_data(data_path=here("data/rivers")):
 
     if not os.path.isfile(os.path.join(data_path, BIG_RIVERS_FILENAME)):
         _log.info("Loading and processing rivers data")
-        df = gpd.read_file(here(r"data\rivers\HydroRIVERS_v10_shp\HydroRIVERS_v10.shp"))
-        big_rivers = df.query("ORD_CLAS == 1 and ORD_FLOW < 5")
+        df = gpd.read_file(
+            here(
+                os.path.join(
+                    "data", "rivers", "HydroRIVERS_v10_shp", "HydroRIVERS_v10.shp"
+                )
+            )
+        )
+        big_rivers = df.query("ORD_FLOW < 5")
         big_rivers.to_file(os.path.join(data_path, BIG_RIVERS_FILENAME))
     else:
         big_rivers = gpd.read_file(os.path.join(data_path, BIG_RIVERS_FILENAME))
