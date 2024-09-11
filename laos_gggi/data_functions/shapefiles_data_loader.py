@@ -4,7 +4,14 @@ from os.path import exists
 from urllib.request import urlretrieve
 from zipfile import ZipFile
 import geopandas as gpd
-from laos_gggi.const_vars import WORLD_URL, WORLD_FILENAME, LAOS_URL, LAOS_FILENAME
+from laos_gggi.const_vars import (
+    WORLD_URL,
+    WORLD_FILENAME,
+    LAOS_URL,
+    LAOS_FILENAME,
+    COASTLINE_FILENAME,
+    COASTLINE_URL,
+)
 import logging
 
 _log = logging.getLogger(__name__)
@@ -13,14 +20,26 @@ _log = logging.getLogger(__name__)
 shapefile_name_dict = {
     "world": WORLD_FILENAME.replace(".zip", ""),
     "laos": LAOS_FILENAME.replace(".zip", ""),
+    "coastline": COASTLINE_FILENAME.replace(".zip", ""),
+}
+
+shapefile_url_dict = {"world": WORLD_URL, "laos": LAOS_URL, "coastline": COASTLINE_URL}
+
+shapefile_filename_dict = {
+    "world": "wb_countries_admin0_10m",
+    "laos": "lao_adm_ngd_20191112_shp",
+    "coastline": "GSHHS_shp/f",
 }
 
 
+VALID_CHOICES = list(shapefile_name_dict.keys())
+
+
 def download_shapefile(which, output_path="data/shapefiles", force_reload=False):
-    if which.lower() not in ["laos", "world"]:
-        raise ValueError(f'which should be one of ["world", "laos"], got {which}')
-    url = LAOS_URL if which.lower() == "laos" else WORLD_URL
-    filename = LAOS_FILENAME if which.lower() == "laos" else WORLD_FILENAME
+    if which.lower() not in VALID_CHOICES:
+        raise ValueError(f"which should be one of {VALID_CHOICES}, got {which}")
+    url = shapefile_url_dict[which.lower()]
+    filename = shapefile_name_dict[which.lower()] + ".zip"
 
     output_path = here(output_path)
     path_to_file = os.path.join(output_path, filename)
@@ -34,9 +53,9 @@ def download_shapefile(which, output_path="data/shapefiles", force_reload=False)
 
 
 def extract_shapefiles(which: str, output_path="data/shapefiles", force_reload=False):
-    if which.lower() not in ["world", "laos"]:
-        raise ValueError(f'which should be one of ["world", "laos"], got {which}')
-    filename = shapefile_name_dict[which.lower()]
+    if which.lower() not in VALID_CHOICES:
+        raise ValueError(f"which should be one of {VALID_CHOICES}, got {which}")
+    filename = shapefile_filename_dict[which.lower()]
     shapefile_path = str(here(os.path.join(output_path, filename)))
 
     if not os.path.isdir(shapefile_path) or force_reload:
@@ -50,13 +69,9 @@ def extract_shapefiles(which: str, output_path="data/shapefiles", force_reload=F
 def load_shapefile(
     which, output_path="data/shapefiles", force_reload=False, repair_ISO_codes=True
 ):
-    if which.lower() not in ["world", "laos"]:
-        raise ValueError(f'which should be one of ["world", "laos"], got {which}')
-    filename = (
-        "wb_countries_admin0_10m"
-        if which.lower() == "world"
-        else "lao_adm_ngd_20191112_shp"
-    )
+    if which.lower() not in VALID_CHOICES:
+        raise ValueError(f"which should be one of {VALID_CHOICES}, got {which}")
+    filename = shapefile_filename_dict[which.lower()]
 
     shapefile_path = str(here(os.path.join(output_path, filename)))
     download_shapefile(which, output_path, force_reload=force_reload)
