@@ -55,12 +55,13 @@ def download_shapefile(which, output_path="data/shapefiles", force_reload=False)
 def extract_shapefiles(which: str, output_path="data/shapefiles", force_reload=False):
     if which.lower() not in VALID_CHOICES:
         raise ValueError(f"which should be one of {VALID_CHOICES}, got {which}")
+    zip_filename = shapefile_name_dict[which.lower()]
     filename = shapefile_filename_dict[which.lower()]
     shapefile_path = str(here(os.path.join(output_path, filename)))
 
     if not os.path.isdir(shapefile_path) or force_reload:
         _log.info(f"Extracting {shapefile_path}")
-        fname = filename + ".zip"
+        fname = zip_filename + ".zip"
 
         with ZipFile(here(os.path.join(output_path, fname)), "r") as zObject:
             zObject.extractall(path=here(output_path))
