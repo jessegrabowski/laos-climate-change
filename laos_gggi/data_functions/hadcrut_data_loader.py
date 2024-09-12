@@ -94,7 +94,7 @@ def load_hadcrut_data(output_path="data", force_reload=False, repair_ISO_codes=T
     else:
         result_df = (
             pd.read_csv(hadcrut_processed_path)
-            .assign(year=lambda x: pd.to_datetime(x.year))
+            .assign(year=lambda x: pd.to_datetime(x.year, format="%Y"))
             .set_index(["ISO", "year"])
         )
 
