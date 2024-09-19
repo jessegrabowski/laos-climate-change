@@ -618,3 +618,8 @@ WB_RENAME_DICT = {
 REGIONS = ["Asia", "Europe", "Africa", "Oceania", "Americas"]
 
 HADCRUT_URL = "https://crudata.uea.ac.uk/cru/data/temperature/HadCRUT.5.0.2.0.analysis.anomalies.ensemble_mean.nc"
+
+COASTLINE_FILENAME = "gshhg-shp-2.3.7.zip"
+COASTLINE_URL = (
+    "https://www.ngdc.noaa.gov/mgg/shorelines/data/gshhg/latest/gshhg-shp-2.3.7.zip"
+)

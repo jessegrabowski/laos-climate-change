@@ -10,12 +10,12 @@ from laos_gggi.const_vars import REGIONS
 import arviz as az
 
 
-def configure_plot_style():
+def configure_plot_style(add_grid=False):
     config = {
         "figure.figsize": (14, 4),
         "figure.constrained_layout.use": True,
         "figure.facecolor": "w",
-        "axes.grid": False,
+        "axes.grid": add_grid,
         "grid.linewidth": 0.5,
         "grid.linestyle": "--",
         "axes.spines.top": False,
