@@ -4,7 +4,6 @@ from laos_gggi.data_functions.world_bank_data_loader import load_wb_data
 from laos_gggi.data_functions.GPCC_data_loader import load_gpcc_data
 from laos_gggi.data_functions.co2_processing import load_co2_data
 from laos_gggi.data_functions.ocean_heat_processing import load_ocean_heat_data
-from laos_gggi.data_functions.hadcrut_data_loader import load_hadcrut_data
 from functools import partial, reduce
 
 
@@ -93,12 +92,12 @@ def load_all_data():
     merged_dict["ocean_temperature"] = ocean_heat
 
     # 4.4 HACRUT: surface temperature
-    surface_temp = load_hadcrut_data()
+    # surface_temp = load_hadcrut_data()
 
-    merged_dict["surface_temp"] = surface_temp
-    merged_dict["surface_temp_agg"] = surface_temp.reset_index().pivot_table(
-        values="surface_temperature_dev", index=["year"], aggfunc="mean"
-    )
+    # merged_dict["surface_temp"] = surface_temp
+    # merged_dict["surface_temp_agg"] = surface_temp.reset_index().pivot_table(
+    #     values="surface_temperature_dev", index=["year"], aggfunc="mean"
+    # )
 
     # ISO reconciliation: emdat and world
     emdat_iso = merged_dict["emdat_damage"].index.get_level_values(0).unique()
@@ -146,17 +145,17 @@ def load_all_data():
         .copy()
     )
     # ISO reconciliation: hadcrut
-    merged_dict_iso = merged_dict["wb_data"].index.get_level_values(0).unique()
-    hadcrut_iso = merged_dict["surface_temp"].index.get_level_values(0).unique()
-
-    # Drop codes not in both
-    common_codes2 = set(merged_dict_iso).intersection(set(hadcrut_iso))
-
-    merged_dict["surface_temp"] = (
-        merged_dict["surface_temp"]
-        .loc[lambda x: x.index.get_level_values(0).isin(common_codes2)]
-        .copy()
-    )
+    # merged_dict_iso = merged_dict["wb_data"].index.get_level_values(0).unique()
+    # # hadcrut_iso = merged_dict["surface_temp"].index.get_level_values(0).unique()
+    #
+    # # Drop codes not in both
+    # common_codes2 = set(merged_dict_iso).intersection(set(hadcrut_iso))
+    #
+    # merged_dict["surface_temp"] = (
+    #     merged_dict["surface_temp"]
+    #     .loc[lambda x: x.index.get_level_values(0).isin(common_codes2)]
+    #     .copy()
+    # )
 
     # 5 Country constants
     merged_dict["country_constants"] = (
@@ -191,12 +190,12 @@ def load_all_data():
                 .rename(columns={"year": "Start_Year"})
                 .set_index(["ISO", "Start_Year"])
             ),
-            (
-                merged_dict["surface_temp"]
-                .reset_index()
-                .rename(columns={"year": "Start_Year"})
-                .set_index(["ISO", "Start_Year"])
-            ),
+            # (
+            #     merged_dict["surface_temp"]
+            #     .reset_index()
+            #     .rename(columns={"year": "Start_Year"})
+            #     .set_index(["ISO", "Start_Year"])
+            # ),
         ],
     )
 
@@ -207,7 +206,7 @@ def load_all_data():
             merged_dict["co2"],
             merged_dict["ocean_temperature"],
             merged_dict["gpcc_agg"],
-            merged_dict["surface_temp_agg"],
+            # merged_dict["surface_temp_agg"],
         ],
     )
 

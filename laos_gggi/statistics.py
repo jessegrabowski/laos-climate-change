@@ -1,6 +1,9 @@
-import pandas as pd
 from statsmodels.tsa.stattools import adfuller
+from joblib import Parallel, delayed
+import pandas as pd
 from tqdm.notebook import tqdm
+import numpy as np
+import geopandas as gpd
 
 
 # Descriptive stats function
@@ -115,3 +118,77 @@ def get_distance_to_rivers(rivers, points, crs="EPSG:3395"):
     ret["ORD_FLOW"] = ret["ORD_FLOW"].astype("int")
     ret["closest_river"] = ret["closest_river"].astype("float")
     return ret
+
+
+def get_distance_to(gdf, points, return_columns=None, crs="EPSG:3395", n_cores=-1):
+    if return_columns is None:
+        return_columns = []
+
+    gdf_km = gdf.copy().to_crs(crs)
+    points_km = points.copy().to_crs(crs)
+
+    def get_closest(idx, row, gdf_km, return_columns):
+        series = gdf_km.distance(row.geometry)
+        index = series[series == series.min()].index[0]
+
+        ret_vals = (series.min(),)
+        for col in return_columns:
+            ret_vals += (gdf_km.loc[index][col],)
+
+        return ret_vals
+
+    with Parallel(n_cores, require="sharedmem") as pool:
+        results = pool(
+            delayed(get_closest)(idx, row, gdf_km, return_columns)
+            for idx, row in tqdm(points_km.iterrows(), total=points.shape[0])
+        )
+    return pd.DataFrame(
+        results, columns=["distance_to_closest"] + return_columns, index=points.index
+    )
+
+
+def create_grid_from_shape(shapefile, rivers, coastline, grid_size=100):
+    long_min, lat_min, long_max, lat_max = shapefile.dissolve().bounds.values.ravel()
+    long_grid = np.linspace(long_min, long_max, grid_size)
+    lat_grid = np.linspace(lat_min, lat_max, grid_size)
+
+    grid = np.column_stack([x.ravel() for x in np.meshgrid(long_grid, lat_grid)])
+    grid = gpd.GeoSeries(gpd.points_from_xy(*grid.T), crs="EPSG:4326")
+    grid = gpd.GeoDataFrame({"geometry": grid})
+
+    point_overlay = grid.overlay(shapefile, how="intersection")
+    points = point_overlay.geometry
+    points = points.to_frame().assign(
+        long=lambda x: x.geometry.x, lat=lambda x: x.geometry.y
+    )
+
+    # Obtain distance with rivers
+    distances_to_rivers = get_distance_to(
+        rivers, points=points, return_columns=["ORD_FLOW", "HYRIV_ID"]
+    ).rename(columns={"distance_to_closest": "distance_to_river"})
+
+    points = pd.merge(
+        points, distances_to_rivers, left_index=True, right_index=True, how="left"
+    )
+
+    # Obtain Laos distance with coastlines
+    distances_to_coastlines = get_distance_to(
+        coastline.boundary, points=points, return_columns=None
+    ).rename(columns={"distance_to_closest": "distance_to_coastline"})
+
+    points = pd.merge(
+        points, distances_to_coastlines, left_index=True, right_index=True, how="left"
+    )
+
+    # Create log of distances
+    points = points.assign(
+        log_distance_to_river=lambda x: np.log(x.distance_to_river),
+        log_distance_to_coastline=lambda x: np.log(x.distance_to_coastline),
+    )
+
+    if "ISO_A3" in point_overlay.columns:
+        points["ISO"] = point_overlay.ISO_A3
+    else:
+        points["ISO"] = "LAO"
+
+    return points
