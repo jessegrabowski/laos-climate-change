@@ -124,7 +124,7 @@ def load_synthetic_non_disaster_points(rng=None, force_generate=False):
         coastline = load_shapefile("coastline")
         rivers = load_rivers_data()
 
-        data = load_disaster_point_data()
+        data = load_disaster_point_data().dropna(subset="Region")
 
         # "Melt" the world into 5 regions - Americas, Europe, Asia, Afria, Oceania. This corresponds with the
         # "Regions" column from EMDAT
@@ -132,7 +132,7 @@ def load_synthetic_non_disaster_points(rng=None, force_generate=False):
             world.replace({"North America": "Americas", "South America": "Americas"})
             .query('CONTINENT != "Seven seas (open ocean)"')
             .dissolve("CONTINENT")
-            .loc[data.Region.dropna().unique()]
+            .loc[data.Region.unique()]
         )
 
         # For every region, sample a random point for each disaster observed in that region
