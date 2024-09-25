@@ -23,7 +23,7 @@ FPATH_FEATURES = here(
     os.path.join(DATA_FOLDER, "disaster_locations_gpt_repaired_w_features.csv")
 )
 
-SYNTHETIC_DATA = here(os.path.join(DATA_FOLDER, "synthetic_non_disasters_hydro.csv"))
+FPATH_SYNTHETIC_DATA = here(os.path.join(DATA_FOLDER, "synthetic_non_disasters.csv"))
 
 
 def load_data(fpath):
@@ -119,7 +119,7 @@ def load_synthetic_non_disaster_points(rng=None, force_generate=False):
         seed = sum(map(ord, "Laos GGGI Climate Adaptation"))
         rng = np.random.default_rng(seed)
 
-    if not os.path.exists(SYNTHETIC_DATA) or force_generate:
+    if not os.path.exists(FPATH_SYNTHETIC_DATA) or force_generate:
         world = load_shapefile("world")
         coastline = load_shapefile("coastline")
         rivers = load_rivers_data()
@@ -187,14 +187,16 @@ def load_synthetic_non_disaster_points(rng=None, force_generate=False):
         not_disasters["twin_emdat_index"] = data.index.get_level_values(0)
         not_disasters["twin_location_id"] = data.index.get_level_values(1)
         not_disasters.sort_index().drop(columns=["geometry"]).to_csv(
-            here("data/synthetic_non_disasters.csv")
+            FPATH_SYNTHETIC_DATA
         )
 
     else:
-        not_disasters = pd.read_csv(here("data/synthetic_non_disasters_hydro.csv"))
+        not_disasters = pd.read_csv(FPATH_SYNTHETIC_DATA, index_col=0)
         not_disasters["geometry"] = gpd.points_from_xy(
             not_disasters.long, not_disasters.lat
         )
-        not_disasters = gpd.GeoDataFrame(not_disasters, crs="EPSG:")
+
+        # EPSG:4326 is hard-coded so we don't have to load the data if this file exists! This might cause bugs :\
+        not_disasters = gpd.GeoDataFrame(not_disasters, crs="EPSG:4326")
 
     return not_disasters
