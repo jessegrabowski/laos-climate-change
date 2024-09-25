@@ -5,7 +5,8 @@ import numpy as np
 import geopandas as gpd
 
 from laos_gggi.data_functions.rivers_data_loader import load_rivers_data
-from laos_gggi import load_emdat_data, load_shapefile
+from laos_gggi.data_functions.emdat_processing import load_emdat_data
+from laos_gggi.data_functions.shapefiles_data_loader import load_shapefile
 from laos_gggi.const_vars import (
     RIVERS_HYDRO_DAMAGE_FILENAME,
     RIVERS_FLOODS_DAMAGE_FILENAME,
