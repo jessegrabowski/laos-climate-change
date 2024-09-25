@@ -8,6 +8,9 @@ from laos_gggi.data_functions import (
     load_hadcrut_data,
     load_shapefile,
     load_all_data,
+    load_disaster_point_data,
+    load_synthetic_non_disaster_points,
+    load_rivers_data,
 )
 
 
@@ -28,4 +31,7 @@ __all__ = [
     "load_hadcrut_data",
     "load_shapefile",
     "load_all_data",
+    "load_disaster_point_data",
+    "load_rivers_data",
+    "load_synthetic_non_disaster_points",
 ]

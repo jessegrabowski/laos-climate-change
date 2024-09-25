@@ -7,6 +7,10 @@ from laos_gggi.data_functions.hadcrut_data_loader import load_hadcrut_data
 from laos_gggi.data_functions.combine_data import load_all_data
 from laos_gggi.data_functions.shapefiles_data_loader import load_shapefile
 from laos_gggi.data_functions.rivers_data_loader import load_rivers_data
+from laos_gggi.data_functions.disaster_point_data import (
+    load_synthetic_non_disaster_points,
+    load_disaster_point_data,
+)
 
 __all__ = [
     "load_emdat_data",
@@ -18,4 +22,6 @@ __all__ = [
     "load_shapefile",
     "load_all_data",
     "load_rivers_data",
+    "load_disaster_point_data",
+    "load_synthetic_non_disaster_points",
 ]
