@@ -115,7 +115,7 @@ def load_disaster_point_data():
 
     return data
 
-
+ 
 def load_grid_point_data(region="laos", grid_size=400):
     if region not in ["laos", "sea"]:
         raise ValueError(f"Unknown grid: {region}")
