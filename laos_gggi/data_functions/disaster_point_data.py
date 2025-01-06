@@ -1,7 +1,7 @@
 # ruff: noqa: E402
-
 from pyprojroot import here
 import sys
+import logging
 
 from laos_gggi.data_functions.shapefiles_data_loader import load_shapefile
 from laos_gggi.data_functions.emdat_processing import load_emdat_data
@@ -15,6 +15,8 @@ import geopandas as gpd  # noqa
 import os  # noqa
 import numpy as np  # noqa
 
+_log = logging.getLogger(__name__)
+
 DATA_FOLDER = "data"
 FPATH_RAW = here(
     os.path.join(DATA_FOLDER, "disaster_locations_gpt_repaired_w_features.csv")
@@ -23,7 +25,7 @@ FPATH_FEATURES = here(
     os.path.join(DATA_FOLDER, "disaster_locations_gpt_repaired_w_features.csv")
 )
 
-FPATH_SYNTHETIC_DATA = here(os.path.join(DATA_FOLDER, "synthetic_non_disasters.csv"))
+SYNTHETIC_DATA_BASENAME = "synthetic_non_disasters.csv"
 
 
 def load_data(fpath):
@@ -114,65 +116,218 @@ def load_disaster_point_data():
     return data
 
 
-def load_synthetic_non_disaster_points(rng=None, force_generate=False):
+def load_grid_point_data(region="laos", grid_size=400):
+    if region not in ["laos", "sea"]:
+        raise ValueError(f"Unknown grid: {region}")
+
+    fname = f"{region}_points_{grid_size}.shp"
+    folder_path = here(os.path.join(DATA_FOLDER, "shapefiles", fname))
+
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+
+    fpath = os.path.join(folder_path, f"{fname}.shp")
+
+    if os.path.exists(fpath):
+        _log.info(f"Loading data found at {fpath}")
+        points = gpd.read_file(fpath)
+        points = points.rename(
+            columns={
+                "distance_t": "distance_to_river",
+                "distance_1": "distance_to_coastline",
+                "log_distan": "log_distance_to_river",
+                "log_dist_1": "log_distance_to_coastline",
+            }
+        )
+
+    else:
+        _log.info("Loading shapefiles and rivers data")
+        world = load_shapefile("world")
+
+        iso_list = ["LAO", "VNM", "KHM", "THA"] if region == "sea" else ["LAO"]  #  noqa
+        point_map = world.query("ISO_A3 in @iso_list")
+
+        rivers = load_rivers_data()
+        coastline = load_shapefile("coastline")
+
+        _log.info("Computing point grid and features")
+        lon_min, lat_min, lon_max, lat_max = point_map.dissolve().bounds.values.ravel()
+        lon_grid = np.linspace(lon_min, lon_max, grid_size)
+        lat_grid = np.linspace(lat_min, lat_max, grid_size)
+
+        grid = np.column_stack([x.ravel() for x in np.meshgrid(lon_grid, lat_grid)])
+        grid = gpd.GeoSeries(gpd.points_from_xy(*grid.T), crs="EPSG:4326")
+        grid = gpd.GeoDataFrame({"geometry": grid})
+
+        points = grid.overlay(point_map, how="intersection").geometry
+        points = points.to_frame().assign(
+            lon=lambda x: x.geometry.x, lat=lambda x: x.geometry.y
+        )
+
+        # Obtain distance with rivers
+        distances_rivers = get_distance_to(
+            rivers,
+            points=points,
+            return_columns=["ORD_FLOW", "HYRIV_ID"],
+            name="rivers",
+        ).rename(columns={"distance_to_closest": "distance_to_river"})
+
+        points = pd.merge(
+            points, distances_rivers, left_index=True, right_index=True, how="left"
+        )
+
+        # Obtain sea distance with coastlines
+        distances_coastlines = get_distance_to(
+            coastline.boundary, points=points, return_columns=None, name="coastline"
+        ).rename(columns={"distance_to_closest": "distance_to_coastline"})
+
+        points = pd.merge(
+            points, distances_coastlines, left_index=True, right_index=True, how="left"
+        )
+
+        # Assign is_island column
+        points["is_island"] = False
+
+        # Create log of distances
+        points = points.assign(
+            log_distance_to_river=lambda x: np.log(x.distance_to_river)
+        )
+        points = points.assign(
+            log_distance_to_coastline=lambda x: np.log(x.distance_to_coastline)
+        )
+
+        points.to_file(fpath)
+
+    return points
+
+
+def _sample_by_region(data, world, multiplier=1, rng=None):
+    if rng is None:
+        rng = np.random.default_rng()
+
+    # "Melt" the world into 5 regions - Americas, Europe, Asia, Afria, Oceania. This corresponds with the
+    # "Regions" column from EMDAT
+    simple_world = (
+        world.replace({"North America": "Americas", "South America": "Americas"})
+        .query('CONTINENT != "Seven seas (open ocean)"')
+        .dissolve("CONTINENT")
+        .loc[data.Region.unique()]
+    )
+    disasters_per_region = data.groupby("Region").size().values * multiplier
+
+    # For every region, sample a random point for each disaster observed in that region
+    not_disasters = (
+        simple_world.sample_points(disasters_per_region, rng=rng)
+        .explode()
+        .reset_index()
+        .rename(columns={"CONTINENT": "Region", "sampled_points": "geometry"})
+        .set_geometry("geometry")
+    )
+
+    not_disasters["ISO"] = (
+        gpd.sjoin(world, not_disasters, predicate="contains")
+        .sort_values(by="index_right")
+        .ISO_A3.values
+    )
+
+    return not_disasters
+
+
+def _sample_by_country(data, world, multiplier=1, rng=None):
+    if rng is None:
+        rng = np.random.default_rng()
+
+    simple_world = (
+        world.replace({"North America": "Americas", "South America": "Americas"})
+        .query('CONTINENT != "Seven seas (open ocean)"')
+        .dissolve("CONTINENT")
+        .loc[data.Region.unique()]
+    )
+
+    world_subset = (
+        world.query("ISO_A3 in @data.ISO.unique()").set_index("ISO_A3").sort_index()
+    )
+    disasters_per_country = data.groupby("ISO").size().sort_index() * multiplier
+
+    not_disasters = (
+        world_subset.sample_points(disasters_per_country, rng=rng)
+        .explode()
+        .reset_index()
+        .rename(columns={"ISO_A3": "ISO", "sampled_points": "geometry"})
+        .set_geometry("geometry")
+    )
+
+    not_disasters = not_disasters.join(
+        gpd.sjoin(simple_world.reset_index(), not_disasters, predicate="contains")
+        .sort_values(by="index_right")
+        .set_index("index_right")
+        .CONTINENT
+    )
+
+    return not_disasters.rename(columns={"CONTINENT": "Region"})
+
+
+def make_synthetic_data_fpath(by, multipler):
+    name, ext = os.path.splitext(SYNTHETIC_DATA_BASENAME)
+    fname = f"{name}_{by}_times_{multipler}{ext}"
+
+    return here(os.path.join(DATA_FOLDER, fname))
+
+
+def load_synthetic_non_disaster_points(
+    rng=None, force_generate=False, by="region", multiplier=1
+):
     if rng is None:
         seed = sum(map(ord, "Laos GGGI Climate Adaptation"))
         rng = np.random.default_rng(seed)
 
-    if not os.path.exists(FPATH_SYNTHETIC_DATA) or force_generate:
+    fpath = make_synthetic_data_fpath(by, multiplier)
+
+    if not os.path.exists(fpath) or force_generate:
         world = load_shapefile("world")
         coastline = load_shapefile("coastline")
         rivers = load_rivers_data()
 
         data = load_disaster_point_data().dropna(subset="Region")
 
-        # "Melt" the world into 5 regions - Americas, Europe, Asia, Afria, Oceania. This corresponds with the
-        # "Regions" column from EMDAT
-        simple_world = (
-            world.replace({"North America": "Americas", "South America": "Americas"})
-            .query('CONTINENT != "Seven seas (open ocean)"')
-            .dissolve("CONTINENT")
-            .loc[data.Region.unique()]
-        )
+        if by == "region":
+            _log.info("Sampling non-disasters by region")
+            not_disasters = _sample_by_region(
+                data, world, multiplier=multiplier, rng=rng
+            )
+        elif by == "country":
+            _log.info("Sampling non-disasters by country")
+            not_disasters = _sample_by_country(
+                data, world, multiplier=multiplier, rng=rng
+            )
+        else:
+            raise ValueError(f"Unknown value for `by`: {by}")
 
-        # For every region, sample a random point for each disaster observed in that region
-        not_disasters = (
-            simple_world.sample_points(data.groupby("Region").size().values, rng=rng)
-            .explode()
-            .reset_index()
-            .rename(columns={"CONTINENT": "Region", "sampled_points": "geometry"})
-            .set_geometry("geometry")
-        )
+        _log.info("Adding geospatial features to synthetic data")
 
-        # Compute geospatial features for the artifical data
-        iso_dicts = [
-            gpd.sjoin(world.loc[[i]], not_disasters, predicate="contains")[
-                ["ISO_A3", "index_right"]
-            ]
-            .set_index("index_right")
-            .to_dict()["ISO_A3"]
-            for i in world.index
-        ]
         island_dict = (
             data[["ISO", "is_island"]]
             .drop_duplicates()
             .set_index("ISO")
             .to_dict()["is_island"]
         )
-        not_disasters = not_disasters.join(
-            pd.Series({k: v for d in iso_dicts for k, v in d.items()}, name="ISO")
-        )
         not_disasters["is_island"] = not_disasters["ISO"].map(island_dict.get)
 
         distances = get_distance_to(
-            rivers, points=not_disasters, return_columns=["ORD_FLOW", "HYRIV_ID"]
+            rivers,
+            points=not_disasters,
+            return_columns=["ORD_FLOW", "HYRIV_ID"],
+            name="rivers",
         ).rename(columns={"distance_to_closest": "distance_to_river"})
         not_disasters = not_disasters.join(distances).assign(
             distance_to_river=lambda x: x.distance_to_river / 1000
         )
 
         distances = get_distance_to(
-            coastline.boundary, points=not_disasters, return_columns=None
+            coastline.boundary,
+            points=not_disasters,
+            return_columns=None,
+            name="coastline",
         ).rename(columns={"distance_to_closest": "distance_to_coastline"})
         not_disasters = not_disasters.join(distances).assign(
             distance_to_coastline=lambda x: x.distance_to_coastline / 1000
@@ -181,20 +336,21 @@ def load_synthetic_non_disaster_points(rng=None, force_generate=False):
         not_disasters["long"] = not_disasters.geometry.apply(lambda x: x.x)
         not_disasters["lat"] = not_disasters.geometry.apply(lambda x: x.y)
 
-        # Match each synthetic datapoint with a real datapoint and save the "twin" index
-        # Use this to merge more features (start date, disaster class) onto the fake data
-        not_disasters.sort_values(by=["Region", "ISO"], inplace=True)
-        not_disasters["twin_emdat_index"] = data.index.get_level_values(0)
-        not_disasters["twin_location_id"] = data.index.get_level_values(1)
-        not_disasters.sort_index().drop(columns=["geometry"]).to_csv(
-            FPATH_SYNTHETIC_DATA
+        not_disasters.sort_values(by=["ISO"], inplace=True)
+        not_disasters["Start_Year"] = np.random.choice(
+            data.Start_Year.unique(), size=not_disasters.shape[0], replace=True
         )
+        not_disasters.reset_index(inplace=True, drop=True)
+
+        not_disasters.sort_index().drop(columns=["geometry"]).to_csv(fpath)
 
     else:
-        not_disasters = pd.read_csv(FPATH_SYNTHETIC_DATA, index_col=0)
+        _log.info(f"Loading data found at {fpath}")
+        not_disasters = pd.read_csv(fpath, index_col=0)
         not_disasters["geometry"] = gpd.points_from_xy(
             not_disasters.long, not_disasters.lat
         )
+        not_disasters["Start_Year"] = pd.to_datetime(not_disasters["Start_Year"])
 
         # EPSG:4326 is hard-coded so we don't have to load the data if this file exists! This might cause bugs :\
         not_disasters = gpd.GeoDataFrame(not_disasters, crs="EPSG:4326")

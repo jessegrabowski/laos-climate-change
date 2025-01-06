@@ -259,3 +259,106 @@ def plot_ppc_loopit(
     ax_ppc.set_title(title)
     ax_ppc.set_xlabel("")
     return fig.axes
+
+
+# Function to create plot inputs
+def generate_plot_inputs(idata, df):
+    # Extract predictions
+    predictions = idata.posterior_predictive["y_hat"].mean(dim=["chain", "draw"])
+    predictions = (
+        predictions.to_dataframe()
+        .drop(columns=["ISO"])
+        .reset_index()
+        .rename(columns={"y_hat": "predictions"})
+    )
+
+    hdi_mean = az.hdi(idata.posterior_predictive.y_hat)
+
+    hdi = hdi_mean["y_hat"].to_dataframe().drop(columns=["ISO"]).reset_index()
+
+    hdi_mean_50 = az.hdi(idata.posterior_predictive.y_hat, hdi_prob=0.5)
+
+    hdi_50 = hdi_mean_50["y_hat"].to_dataframe().drop(columns=["ISO"]).reset_index()
+
+    # Merge results and predictions in one df
+    df_predictions = df[["ISO"]]
+
+    # 95% HDI
+    df_predictions = pd.merge(
+        df_predictions,
+        hdi.query('hdi == "lower"')[["ISO", "y_hat"]],
+        left_on=["ISO"],
+        right_on=["ISO"],
+        how="left",
+    ).rename(columns={"y_hat": "lower_y_hat_95"})
+    df_predictions = pd.merge(
+        df_predictions,
+        hdi.query('hdi == "higher"')[["ISO", "y_hat"]],
+        left_on=["ISO"],
+        right_on=["ISO"],
+        how="left",
+    ).rename(columns={"y_hat": "higher_y_hat_95"})
+    # 50% HDI
+    df_predictions = pd.merge(
+        df_predictions,
+        hdi_50.query('hdi == "lower"')[["ISO", "y_hat"]],
+        left_on=["ISO"],
+        right_on=["ISO"],
+        how="left",
+    ).rename(columns={"y_hat": "lower_y_hat_50"})
+    df_predictions = pd.merge(
+        df_predictions,
+        hdi_50.query('hdi == "higher"')[["ISO", "y_hat"]],
+        left_on=["ISO"],
+        right_on=["ISO"],
+        how="left",
+    ).rename(columns={"y_hat": "higher_y_hat_50"})
+
+    # Predictions
+    df_predictions = pd.merge(
+        df_predictions, predictions, left_on=["ISO"], right_on=["ISO"], how="left"
+    ).rename(columns={"y_hat": "predictions"})
+
+    return df_predictions
+
+
+# Plotting function
+def plotting_function(idata, country: str):
+    df_predictions = generate_plot_inputs(idata=idata)
+
+    # Filter country
+    data = df_predictions.query("ISO == @country")
+
+    fig, ax = plt.subplots()
+    ax.plot(
+        data["year"],
+        data["predictions"],
+        zorder=1000,
+        color="tab:red",
+        label="Mean Predicted Disaster Count",
+    )
+    ax.scatter(data["year"], data["is_disaster"], color="k", label="Actual prob")
+    ax.fill_between(
+        data["year"],
+        data["higher_y_hat_95"],
+        data["lower_y_hat_95"],
+        alpha=0.25,
+        color="tab:blue",
+        label="95% HDI",
+    )
+    ax.fill_between(
+        data["year"],
+        data["lower_y_hat_50"],
+        data["higher_y_hat_50"],
+        alpha=0.5,
+        color="tab:blue",
+        label="50% HDI",
+    )
+    ax.legend(loc="upper left")
+
+    # plt.title(f"{country} disaster count and predictions")
+
+    plt.xlabel("Year")
+    plt.ylabel("Disaster Count")
+
+    plt.show()

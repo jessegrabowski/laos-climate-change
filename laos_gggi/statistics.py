@@ -120,7 +120,9 @@ def get_distance_to_rivers(rivers, points, crs="EPSG:3395"):
     return ret
 
 
-def get_distance_to(gdf, points, return_columns=None, crs="EPSG:3395", n_cores=-1):
+def get_distance_to(
+    gdf, points, return_columns=None, crs="EPSG:3395", n_cores=-1, name=None
+):
     if return_columns is None:
         return_columns = []
 
@@ -137,10 +139,15 @@ def get_distance_to(gdf, points, return_columns=None, crs="EPSG:3395", n_cores=-
 
         return ret_vals
 
+    if name is not None:
+        desc = f"Calculating distances to {name}"
+    else:
+        desc = None
+
     with Parallel(n_cores, require="sharedmem") as pool:
         results = pool(
             delayed(get_closest)(idx, row, gdf_km, return_columns)
-            for idx, row in tqdm(points_km.iterrows(), total=points.shape[0])
+            for idx, row in tqdm(points_km.iterrows(), total=points.shape[0], desc=desc)
         )
     return pd.DataFrame(
         results, columns=["distance_to_closest"] + return_columns, index=points.index
@@ -192,3 +199,22 @@ def create_grid_from_shape(shapefile, rivers, coastline, grid_size=100):
         points["ISO"] = "LAO"
 
     return points
+
+
+def load_island_table():
+    import wikipedia as wp
+
+    html = wp.page("List_of_island_countries").html().encode("UTF-8")
+    island_table = (
+        pd.read_html(html, skiprows=0)[0]
+        .droplevel(axis=1, level=0)
+        .dropna(how="all")
+        .iloc[1:]
+        .reset_index(drop=True)
+        .assign(
+            ISO_2=lambda x: x["ISO code"].str.split().str[0],
+            ISO_3=lambda x: x["ISO code"].str.split().str[1].replace({"or": "GBR"}),
+        )
+    )
+
+    return island_table
