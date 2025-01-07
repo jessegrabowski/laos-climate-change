@@ -4,6 +4,7 @@ import pandas as pd
 from tqdm.notebook import tqdm
 import numpy as np
 import geopandas as gpd
+import arviz as az
 
 
 # Descriptive stats function
@@ -218,3 +219,22 @@ def load_island_table():
     )
 
     return island_table
+
+
+def prediction_to_gpd_df(prediction_idata: az.InferenceData, variable : str , points : pd.DataFrame() ):
+    # Tranform predictions to DF
+    predictions_df = (prediction_idata.posterior_predictive.mean(dim=("chain", "draw"))[variable]
+                                                                .to_dataframe().reset_index() )
+
+    # Merge predictions with Laos points
+    predictions_df = pd.merge(predictions_df, points, 
+                                       left_index=True, right_index=True,
+                                       how = "left")
+
+    #Transform into geo Data Frame
+    predictions_df_geo = gpd.GeoDataFrame(
+                    predictions_df,
+        geometry=gpd.points_from_xy(predictions_df["lon"], predictions_df["lat"]), crs="EPSG:4326"
+                )
+
+    return predictions_df_geo
