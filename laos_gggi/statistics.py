@@ -5,6 +5,7 @@ from tqdm.notebook import tqdm
 import numpy as np
 import geopandas as gpd
 import arviz as az
+import pymc as pm
 
 
 # Descriptive stats function
@@ -221,20 +222,78 @@ def load_island_table():
     return island_table
 
 
-def prediction_to_gpd_df(prediction_idata: az.InferenceData, variable : str , points : pd.DataFrame() ):
-    # Tranform predictions to DF
-    predictions_df = (prediction_idata.posterior_predictive.mean(dim=("chain", "draw"))[variable]
-                                                                .to_dataframe().reset_index() )
+def prediction_to_gpd_df(
+    prediction_idata: az.InferenceData, variables: list, points: pd.DataFrame()
+):
+    predictions_dict = {}
+    predictions_dict_geo = {}
 
-    # Merge predictions with Laos points
-    predictions_df = pd.merge(predictions_df, points, 
-                                       left_index=True, right_index=True,
-                                       how = "left")
+    for variable in variables:
+        # Tranform predictions to DF
+        predictions_dict[variable] = (
+            prediction_idata.posterior_predictive.mean(dim=("chain", "draw"))[variable]
+            .to_dataframe()
+            .reset_index()
+        )
+        # Merge predictions with Laos points
+        predictions_dict[variable] = pd.merge(
+            predictions_dict[variable],
+            points,
+            left_index=True,
+            right_index=True,
+            how="left",
+        )
 
-    #Transform into geo Data Frame
-    predictions_df_geo = gpd.GeoDataFrame(
-                    predictions_df,
-        geometry=gpd.points_from_xy(predictions_df["lon"], predictions_df["lat"]), crs="EPSG:4326"
-                )
+        # Transform into geo Data Frame
+        predictions_dict_geo[variable] = gpd.GeoDataFrame(
+            predictions_dict[variable],
+            geometry=gpd.points_from_xy(
+                predictions_dict[variable]["lon"], predictions_dict[variable]["lat"]
+            ),
+            crs="EPSG:4326",
+        )
 
-    return predictions_df_geo
+    return predictions_dict_geo
+
+
+def set_plotting_data(df, features, ISO_list):
+    iso_idx = df["ISO"].apply(lambda x: ISO_list.index(x))
+
+    pm.set_data(
+        {
+            "X_gp": df[["lat", "long"]],
+            "Y": np.full(df.shape[0], 0),
+            "ISO_idx": iso_idx,
+            "X": df[features],
+            "is_island": df["is_island"],
+        },
+        coords={"obs_idx": df.index.values},
+    )
+
+
+def add_data(
+    features: list[str], target: str, df: pd.DataFrame, add_time: bool = False
+):
+    with pm.modelcontext(None):
+        X = pm.Data("X", df[features], dims=["obs_idx", "feature"])
+        Y = pm.Data("Y", df[target], dims=["obs_idx"])
+    return X, Y
+
+
+def add_country_effect():
+    with pm.modelcontext(None):
+        country_effect_mu = pm.Normal("country_effect_mu", mu=0, sigma=1)
+        country_effect_scale = pm.Gamma("country_effect_scale", alpha=2, beta=1)
+        country_effect_offset = pm.Normal("country_effect_offset", sigma=1, dims="ISO")
+        country_effect = pm.Deterministic(
+            "country_effect",
+            country_effect_mu + country_effect_scale * country_effect_offset,
+            dims="ISO",
+        )
+
+    return (
+        country_effect,
+        country_effect_mu,
+        country_effect_scale,
+        country_effect_offset,
+    )
