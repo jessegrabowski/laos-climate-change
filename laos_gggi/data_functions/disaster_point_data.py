@@ -115,10 +115,15 @@ def load_disaster_point_data():
 
     return data
 
- 
-def load_grid_point_data(region="laos", grid_size=400):
-    if region not in ["laos", "sea"]:
+
+def load_grid_point_data(
+    region="laos", grid_size=400, iso_list: list = None, force_reload: bool = False
+):
+    if region not in ["laos", "sea", "custom"]:
         raise ValueError(f"Unknown grid: {region}")
+
+    if region == "custom" and iso_list is None:
+        raise ValueError("Must provide an iso_list for custom region")
 
     fname = f"{region}_points_{grid_size}.shp"
     folder_path = here(os.path.join(DATA_FOLDER, "shapefiles", fname))
@@ -128,7 +133,7 @@ def load_grid_point_data(region="laos", grid_size=400):
 
     fpath = os.path.join(folder_path, f"{fname}.shp")
 
-    if os.path.exists(fpath):
+    if os.path.exists(fpath) and not force_reload:
         _log.info(f"Loading data found at {fpath}")
         points = gpd.read_file(fpath)
         points = points.rename(
@@ -140,11 +145,27 @@ def load_grid_point_data(region="laos", grid_size=400):
             }
         )
 
-    else:
+    elif not os.path.exists(fpath) or force_reload:
         _log.info("Loading shapefiles and rivers data")
         world = load_shapefile("world")
 
-        iso_list = ["LAO", "VNM", "KHM", "THA"] if region == "sea" else ["LAO"]  #  noqa
+        if region == "sea":
+            iso_list = [
+                "MMR",  # Myanmar
+                "THA",  # Thailand
+                "LAO",  # Laos
+                "KHM",  # Cambodia
+                "VNM",  # Vietnam
+                "IDN",  # Indonesia
+                "MYS",  # Malaysia
+                "SGP",  # Singapore
+                "PHL",  # Philippines
+                "BRN",  # Brunei
+                "TLS",  # Timor-Leste
+            ]
+        elif region == "laos":
+            iso_list = ["LAO"]  #  noqa
+
         point_map = world.query("ISO_A3 in @iso_list")
 
         rivers = load_rivers_data()
