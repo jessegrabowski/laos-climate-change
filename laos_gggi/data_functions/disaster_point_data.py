@@ -158,9 +158,9 @@ def load_grid_point_data(
                 "VNM",  # Vietnam
                 "IDN",  # Indonesia
                 "MYS",  # Malaysia
-                "SGP",  # Singapore
+                # "SGP",  # Singapore
                 "PHL",  # Philippines
-                "BRN",  # Brunei
+                # "BRN",  # Brunei
                 "TLS",  # Timor-Leste
             ]
         elif region == "laos":
