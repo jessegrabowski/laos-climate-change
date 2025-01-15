@@ -100,9 +100,9 @@ def create_replication_data():
         how="left",
     )
 
-    df = pd.merge(
-        df, data["surface_temp"], right_index=True, left_index=True, how="left"
-    )
+    # df = pd.merge(
+    #     df, data["surface_temp"], right_index=True, left_index=True, how="left"
+    # )
     df = pd.merge(
         df,
         emdat_damage_hydro.reset_index()
