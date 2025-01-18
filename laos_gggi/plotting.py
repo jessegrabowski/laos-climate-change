@@ -9,6 +9,7 @@ import math
 from laos_gggi.const_vars import REGIONS
 import arviz as az
 import geopandas as gpd
+from laos_gggi.statistics import get_distance_to_rivers
 
 
 def configure_plot_style(add_grid=False):
@@ -369,79 +370,6 @@ def plotting_function(idata, country: str):
 
 
 ############################################ Functions for the damage model  #############################################
-
-
-# Function to create plot inputs
-def generate_plot_inputs(
-    target_variable: str,
-    idata,
-    disaster_type: str = "hydrological_disasters",
-    df=pd.DataFrame,
-):
-    # Extract predictions
-    predictions = idata.posterior_predictive["damage"].mean(dim=["chain", "draw"])
-    predictions = (
-        predictions.to_dataframe()
-        .drop(columns=["year", "ISO"])
-        .reset_index()
-        .rename(columns={"damage": "predictions"})
-    )
-
-    hdi_mean = az.hdi(idata.posterior_predictive.damage)
-
-    hdi = hdi_mean["damage"].to_dataframe().drop(columns=["year", "ISO"]).reset_index()
-
-    hdi_mean_50 = az.hdi(idata.posterior_predictive.damage, hdi_prob=0.5)
-
-    hdi_50 = (
-        hdi_mean_50["damage"].to_dataframe().drop(columns=["year", "ISO"]).reset_index()
-    )
-
-    # Merge results and predictions in one df
-    df_predictions = df[[target_variable, "ISO", "year"]]
-
-    # 95% HDI
-    df_predictions = pd.merge(
-        df_predictions,
-        hdi.query('hdi == "lower"')[["ISO", "year", "damage"]],
-        left_on=["ISO", "year"],
-        right_on=["ISO", "year"],
-        how="left",
-    ).rename(columns={"damage": "lower_damage_95"})
-    df_predictions = pd.merge(
-        df_predictions,
-        hdi.query('hdi == "higher"')[["ISO", "year", "damage"]],
-        left_on=["ISO", "year"],
-        right_on=["ISO", "year"],
-        how="left",
-    ).rename(columns={"damage": "higher_damage_95"})
-    # 50% HDI
-    df_predictions = pd.merge(
-        df_predictions,
-        hdi_50.query('hdi == "lower"')[["ISO", "year", "damage"]],
-        left_on=["ISO", "year"],
-        right_on=["ISO", "year"],
-        how="left",
-    ).rename(columns={"damage": "lower_damage_50"})
-    df_predictions = pd.merge(
-        df_predictions,
-        hdi_50.query('hdi == "higher"')[["ISO", "year", "damage"]],
-        left_on=["ISO", "year"],
-        right_on=["ISO", "year"],
-        how="left",
-    ).rename(columns={"damage": "higher_damage_50"})
-
-    # Predictions
-    df_predictions = pd.merge(
-        df_predictions,
-        predictions,
-        left_on=["ISO", "year"],
-        right_on=["ISO", "year"],
-        how="left",
-    ).rename(columns={"damage": "predictions"})
-
-    return df_predictions
-
 
 def plotting_function(idata, country: str, df: pd.DataFrame, target_variable: str):
     df_predictions = generate_plot_inputs(
