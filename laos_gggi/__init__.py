@@ -11,6 +11,7 @@ from laos_gggi.data_functions import (
     load_disaster_point_data,
     load_synthetic_non_disaster_points,
     load_rivers_data,
+    load_model_df,
 )
 
 
@@ -34,4 +35,5 @@ __all__ = [
     "load_disaster_point_data",
     "load_rivers_data",
     "load_synthetic_non_disaster_points",
+    "load_model_df",
 ]
