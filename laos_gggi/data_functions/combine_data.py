@@ -6,13 +6,15 @@ from laos_gggi.data_functions.GPCC_data_loader import load_gpcc_data
 from laos_gggi.data_functions.co2_processing import load_co2_data
 from laos_gggi.data_functions.ocean_heat_processing import load_ocean_heat_data
 
-from laos_gggi.data_functions.disaster_point_data import load_disaster_point_data, load_synthetic_non_disaster_points
+from laos_gggi.data_functions.disaster_point_data import (
+    load_disaster_point_data,
+    load_synthetic_non_disaster_points,
+)
 from functools import partial, reduce
 from laos_gggi.const_vars import MODEL_DF_FILENAME
 from pyprojroot import here
 from os.path import exists
 import os
-
 
 
 def load_all_data():
@@ -220,43 +222,72 @@ def load_all_data():
 
     return merged_dict
 
+
 def load_model_df():
     data_path = here("data")
     if not exists(data_path):
         os.makedirs(data_path)
 
     if not os.path.isfile(os.path.join(data_path, MODEL_DF_FILENAME)):
-
         all_data = load_all_data()
-        panel_data = all_data["df_panel"][['population_density', 'gdp_per_cap', 'Population', 'precip']]
+        panel_data = all_data["df_panel"][
+            ["population_density", "gdp_per_cap", "Population", "precip"]
+        ]
         co2 = all_data["df_time_series"]["co2"]
 
         disasters = load_disaster_point_data()
-        not_disasters = load_synthetic_non_disaster_points(by='country', multiplier=3)
+        not_disasters = load_synthetic_non_disaster_points(by="country", multiplier=3)
 
-        merged_df = pd.concat([not_disasters.assign(is_disaster=0),
-                               disasters.reset_index().assign(is_disaster=1)],
-                              ignore_index=True)
+        merged_df = pd.concat(
+            [
+                not_disasters.assign(is_disaster=0),
+                disasters.reset_index().assign(is_disaster=1),
+            ],
+            ignore_index=True,
+        )
         from statsmodels.tsa.seasonal import STL
 
         precipitation = all_data["gpcc"]
-        precip_deviation = precipitation.groupby('ISO').transform(lambda x: x - x.iloc[:30].mean()).rename(
-            columns={'precip': 'precip_deviation'})
+        precip_deviation = (
+            precipitation.groupby("ISO")
+            .transform(lambda x: x - x.iloc[:30].mean())
+            .rename(columns={"precip": "precip_deviation"})
+        )
 
-        df_clim = all_data["df_time_series"][["co2", "Temp", "precip"]].iloc[1:-1].dropna(subset=['Temp'])
+        df_clim = (
+            all_data["df_time_series"][["co2", "Temp", "precip"]]
+            .iloc[1:-1]
+            .dropna(subset=["Temp"])
+        )
         trend = STL(pd.DataFrame(df_clim["Temp"].dropna()), period=3).fit().trend
-        dev_from_trend_ocean_temp = (df_clim['Temp'] - trend).to_frame(name='dev_ocean_temp')
+        dev_from_trend_ocean_temp = (df_clim["Temp"] - trend).to_frame(
+            name="dev_ocean_temp"
+        )
 
         from functools import reduce
-        df = reduce(lambda l, r: pd.merge(l, r, left_on=['ISO', 'Start_Year'], right_index=True, how='left'),
-                    [merged_df, panel_data, precip_deviation])
-        df = reduce(lambda l, r: pd.merge(l, r, left_on=['Start_Year'], right_index=True, how='left'),
-                    [df, co2, dev_from_trend_ocean_temp])
+
+        df = reduce(
+            lambda l, r: pd.merge(
+                l, r, left_on=["ISO", "Start_Year"], right_index=True, how="left"
+            ),
+            [merged_df, panel_data, precip_deviation],
+        )
+        df = reduce(
+            lambda l, r: pd.merge(
+                l, r, left_on=["Start_Year"], right_index=True, how="left"
+            ),
+            [df, co2, dev_from_trend_ocean_temp],
+        )
 
         # Creating log variables
-        log_list = ["distance_to_river", "distance_to_coastline", "Total_Affected", "Total_Damage_Adjusted",
-                    "population_density",
-                    "gdp_per_cap"]
+        log_list = [
+            "distance_to_river",
+            "distance_to_coastline",
+            "Total_Affected",
+            "Total_Damage_Adjusted",
+            "population_density",
+            "gdp_per_cap",
+        ]
         for y in log_list:
             df[f"log_{y}"] = np.log(df[y])
 
@@ -265,22 +296,41 @@ def load_model_df():
         df["log_gdp_per_cap_squared"] = 2 * df["log_gdp_per_cap"]
 
         # Delimiting data set
-        columns_to_use = ['ISO', 'Start_Year', "is_disaster", 'distance_to_river', 'distance_to_coastline',
-                          "Population", "co2", "precip_deviation", "dev_ocean_temp", 'population_density',
-                          'gdp_per_cap', "lat", "long", "geometry"]
+        columns_to_use = [
+            "ISO",
+            "Start_Year",
+            "is_disaster",
+            "distance_to_river",
+            "distance_to_coastline",
+            "Population",
+            "co2",
+            "precip_deviation",
+            "dev_ocean_temp",
+            "population_density",
+            "gdp_per_cap",
+            "lat",
+            "long",
+            "geometry",
+        ]
 
-        features = ['log_distance_to_river', 'log_distance_to_coastline',
-                    "Population", "co2", "precip_deviation", "dev_ocean_temp", 'log_population_density',
-                    'log_population_density_squared',
-                    'log_gdp_per_cap', 'log_gdp_per_cap_squared', ]
+        features = [
+            "log_distance_to_river",
+            "log_distance_to_coastline",
+            "Population",
+            "co2",
+            "precip_deviation",
+            "dev_ocean_temp",
+            "log_population_density",
+            "log_population_density_squared",
+            "log_gdp_per_cap",
+            "log_gdp_per_cap_squared",
+        ]
 
         model_df = df[list(set(columns_to_use).union(set(features)))].dropna()
 
-        print(os.path.join(data_path, MODEL_DF_FILENAME))
         model_df.to_csv(os.path.join(data_path, MODEL_DF_FILENAME))
 
     else:
-        print(os.path.join(data_path, MODEL_DF_FILENAME))
         model_df = pd.read_csv(  # noqa
             os.path.join(data_path, MODEL_DF_FILENAME),
         )

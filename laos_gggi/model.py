@@ -3,8 +3,9 @@ import pandas as pd
 import pytensor
 from pytensor.tensor import TensorVariable
 from joblib import Parallel, delayed
-import pandas as pd
 from tqdm.notebook import tqdm
+import pytensor
+import pytensor.tensor as pt
 
 
 def add_hierarchical_effect(
@@ -134,52 +135,48 @@ def add_data(
 
 
 def add_country_effect():
-  with pm.modelcontext(None):
-    country_effect_mu = pm.Normal('country_effect_mu', mu = 0, sigma = 1)
-    country_effect_scale = pm.Gamma('country_effect_scale', alpha=2, beta=1)
-    country_effect_offset = pm.Normal('country_effect_offset', sigma=1, dims="ISO")
-    country_effect = pm.Deterministic('country_effect', country_effect_mu + country_effect_scale * country_effect_offset, dims="ISO")
-  return country_effect, country_effect_mu, country_effect_scale, country_effect_offset
-
-#Redefine add data
-def add_data(features: list[str], df: pd.DataFrame, 
-             target: str | None = None, name = None, dims=None, dtype=None):
-    X_name = 'X' if name is None else f'X_{name}'
-    Y_name = 'Y' if name is None else f'Y_{name}'
-    
-    if dtype is None:
-        dtype = pytensor.config.floatX
-        
     with pm.modelcontext(None):
-        X = pm.Data(X_name, df[features].astype(dtype), dims=dims)
-        
-        if target is not None:
-            Y = pm.Data(Y_name, df[target].astype(dtype), dims=dims[0] if dims is not None else dims)
-            return X, Y
-        
-    return X
+        country_effect_mu = pm.Normal("country_effect_mu", mu=0, sigma=1)
+        country_effect_scale = pm.Gamma("country_effect_scale", alpha=2, beta=1)
+        country_effect_offset = pm.Normal("country_effect_offset", sigma=1, dims="ISO")
+        country_effect = pm.Deterministic(
+            "country_effect",
+            country_effect_mu + country_effect_scale * country_effect_offset,
+            dims="ISO",
+        )
+    return (
+        country_effect,
+        country_effect_mu,
+        country_effect_scale,
+        country_effect_offset,
+    )
 
 
 def get_distance_to(gdf, points, return_columns=None, crs="EPSG:3395", n_cores=-1):
     if return_columns is None:
         return_columns = []
-        
+
     gdf_km = gdf.copy().to_crs(crs)
     points_km = points.copy().to_crs(crs)
-    
+
     def get_closest(idx, row, gdf_km, return_columns):
         series = gdf_km.distance(row.geometry)
         index = series[series == series.min()].index[0]
 
-        ret_vals = (series.min(), )
+        ret_vals = (series.min(),)
         for col in return_columns:
-            ret_vals += (gdf_km.loc[index][col], )
-        
+            ret_vals += (gdf_km.loc[index][col],)
+
         return ret_vals
-    
-    with Parallel(n_cores, require='sharedmem') as pool:
-        results = pool(delayed(get_closest)(idx, row, gdf_km, return_columns) for idx, row in tqdm(points_km.iterrows(), total=points.shape[0]))
-    return pd.DataFrame(results, columns = ['distance_to_closest'] + return_columns, index=points.index)
+
+    with Parallel(n_cores, require="sharedmem") as pool:
+        results = pool(
+            delayed(get_closest)(idx, row, gdf_km, return_columns)
+            for idx, row in tqdm(points_km.iterrows(), total=points.shape[0])
+        )
+    return pd.DataFrame(
+        results, columns=["distance_to_closest"] + return_columns, index=points.index
+    )
 
 
 def compute_center(X):

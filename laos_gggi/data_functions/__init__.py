@@ -24,5 +24,5 @@ __all__ = [
     "load_rivers_data",
     "load_disaster_point_data",
     "load_synthetic_non_disaster_points",
-    "load_model_df"
+    "load_model_df",
 ]
