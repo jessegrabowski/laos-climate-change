@@ -365,3 +365,108 @@ def plotting_function(idata, country: str):
     plt.ylabel("Disaster Count")
 
     plt.show()
+
+
+
+############################################ Functions for the damage model  #############################################
+
+# Function to create plot inputs
+def generate_plot_inputs(target_variable: str, idata, disaster_type: str = "hydrological_disasters", df = pd.DataFrame ):
+    #Extract predictions
+    predictions = idata.posterior_predictive['damage'].mean(dim=['chain', 'draw'])
+    predictions = predictions.to_dataframe().drop(columns = ["year", "ISO"]).reset_index().rename(
+                        columns = {"damage": "predictions"})
+
+    hdi_mean = az.hdi(idata.posterior_predictive.damage)
+
+    hdi = hdi_mean['damage'].to_dataframe().drop(columns = ["year", "ISO"]).reset_index()
+
+    hdi_mean_50 = az.hdi(idata.posterior_predictive.damage, hdi_prob=.5)
+    
+    hdi_50 = hdi_mean_50['damage'].to_dataframe().drop(columns = ["year", "ISO"]).reset_index()
+
+    #Merge results and predictions in one df
+    df_predictions = df[[target_variable, "ISO", "year"]]
+
+    #95% HDI
+    df_predictions = ( pd.merge(df_predictions,  hdi.query('hdi == "lower"')[["ISO", "year", "damage"]] , 
+             left_on= ["ISO", "year"], right_on= ["ISO", "year"], how = "left")
+                     .rename(columns = {"damage": "lower_damage_95"}))
+    df_predictions = (pd.merge(df_predictions, hdi.query('hdi == "higher"')[["ISO", "year", "damage"]] ,
+         left_on= ["ISO", "year"], right_on= ["ISO", "year"], how = "left")
+                     .rename(columns = {"damage": "higher_damage_95"}))
+    #50% HDI
+    df_predictions = ( pd.merge(df_predictions,  hdi_50.query('hdi == "lower"')[["ISO", "year", "damage"]] , 
+             left_on= ["ISO", "year"], right_on= ["ISO", "year"], how = "left")
+                     .rename(columns = {"damage": "lower_damage_50"}))
+    df_predictions = (pd.merge(df_predictions, hdi_50.query('hdi == "higher"')[["ISO", "year", "damage"]] ,
+         left_on= ["ISO", "year"], right_on= ["ISO", "year"], how = "left")
+                     .rename(columns = {"damage": "higher_damage_50"}))
+    
+    #Predictions
+    df_predictions = (pd.merge(df_predictions, predictions ,
+             left_on= ["ISO", "year"], right_on= ["ISO", "year"], how = "left")
+             .rename(columns = {"damage": "predictions"}))
+    
+    return df_predictions
+
+
+def plotting_function(idata, country: str, df: pd.DataFrame, target_variable: str):
+    df_predictions = generate_plot_inputs(idata = idata, df = df, target_variable = target_variable)
+
+    #Filter country
+    data = df_predictions.query("ISO == @country")
+    # data["damage_adjusted"] = (data["damage"])
+    # cols_to_millions = ["predictions", "damage_adjusted", "higher_damage_95", "lower_damage_95", "lower_damage_50", "higher_damage_50"]
+    # data[cols_to_millions] = data[cols_to_millions] /1e6
+    
+    fig, ax = plt.subplots()
+    ax.plot(data["year"], data["predictions"] , zorder=1000, color='tab:red', label=f'Mean  hydrometereological events damage')
+    ax.scatter(data["year"], np.exp(data[target_variable].astype(float)) , color='k', label= ("Real hydrometereological events damage in millions of dollars"))
+    ax.fill_between(data["year"], data["higher_damage_95"] , data["lower_damage_95"], alpha=0.25, color='tab:blue', label='95% HDI')
+    ax.fill_between(data["year"], data["lower_damage_50"], data["higher_damage_50"], alpha=0.5, color='tab:blue', label='50% HDI')
+    ax.legend(loc='upper left')
+
+    #plt.title(f"{country} disaster count and predictions")
+
+    plt.xlabel("Year")
+    plt.ylabel("hydrometereological events damage in millions of dollars")
+    
+    plt.show();
+
+
+def create_grid_from_shape(shapefile, rivers, coastline, grid_size = 100):
+    long_min, lat_min, long_max, lat_max = shapefile.dissolve().bounds.values.ravel()
+    long_grid = np.linspace(long_min, long_max, grid_size)
+    lat_grid = np.linspace(lat_min, lat_max, grid_size)
+
+    grid = np.column_stack([x.ravel() for x in np.meshgrid(long_grid, lat_grid)])
+    grid = gpd.GeoSeries(gpd.points_from_xy(*grid.T), crs='EPSG:4326')
+    grid = gpd.GeoDataFrame({'geometry': grid})
+
+    point_overlay = grid.overlay(shapefile, how='intersection')
+    points = point_overlay.geometry
+    points = points.to_frame().assign(long = lambda x: x.geometry.x, lat = lambda x: x.geometry.y)
+    
+    #Obtain distance with rivers
+    distances_to_rivers = (get_distance_to(rivers, points=points, return_columns=['ORD_FLOW', 'HYRIV_ID'])
+                           .rename(columns={'distance_to_closest':'distance_to_river'}))
+
+    points = pd.merge(points, distances_to_rivers, left_index= True, right_index= True, how = "left")
+    
+    #Obtain Laos distance with coastlines
+    distances_to_coastlines = (get_distance_to(coastline.boundary, points=points, return_columns=None)
+                              .rename(columns={'distance_to_closest':'distance_to_coastline'}))
+
+    points =  pd.merge(points, distances_to_coastlines, left_index= True, right_index= True, how = "left")
+    
+    #Create log of distances
+    points = points.assign(log_distance_to_river = lambda x: np.log(x.distance_to_river),
+                           log_distance_to_coastline = lambda x: np.log(x.distance_to_coastline))
+    
+    if 'ISO_A3' in point_overlay.columns:
+        points['ISO'] = point_overlay.ISO_A3
+    else:
+        points['ISO'] = 'LAO'
+        
+    return points
