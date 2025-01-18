@@ -4,7 +4,6 @@ import pytensor
 from pytensor.tensor import TensorVariable
 from joblib import Parallel, delayed
 from tqdm.notebook import tqdm
-import pytensor
 import pytensor.tensor as pt
 
 
