@@ -69,10 +69,11 @@ def create_replication_data():
     development_indicators["ln_population_density"] = np.log(
         development_indicators["population_density"]
     )
+    development_indicators["ln_population_density"]
     development_indicators["ln_gdp_pc"] = np.log(development_indicators["gdp_per_cap"])
-    development_indicators["square_ln_gdp_p"] = (
-        (development_indicators["ln_gdp_pc"]) * (development_indicators["ln_gdp_pc"])
-    )
+    development_indicators["square_ln_gdp_pc"] = (
+    (development_indicators["ln_gdp_pc"]) * (development_indicators["ln_gdp_pc"])
+    ) 
 
     # Merging everything into one df
     df = pd.merge(
@@ -132,7 +133,7 @@ def create_replication_data():
         "population",
         "ln_population_density",
         "ln_gdp_pc",
-        "square_ln_gdp_p",
+        "square_ln_gdp_pc",
         "dev_from_trend_ocean_temp",
         "co2",
         "precip_deviation",
@@ -143,6 +144,7 @@ def create_replication_data():
     df = df[cols_to_use]
     df = df.dropna()
     df["population"] = df["population"] / 1e6
+    df["ln_population_density_squared"] = df["ln_population_density"] ** 2
 
     # Creating the time trend
     df["time_period"] = (df["year"].dt.year - 1980) / 100
@@ -155,4 +157,10 @@ def create_replication_data():
         df["Total_Damage_Adjusted_clim"] + df["Total_Damage_Adjusted_hydro"]
     )
 
+    # Hydro damage in millions
+    df["Total_Damage_Adjusted_hydro_millions"] = df["Total_Damage_Adjusted_hydro"] * 1e-6
+    df["Total_Damage_Adjusted_all_millions"] = df["Total_Damage_Adjusted_all"] * 1e-6
+
+    df["ln_Total_Damage_Adjusted_all_millions"] = np.log(df["Total_Damage_Adjusted_all_millions"] + 1e-6)
+    df["ln_Total_Damage_Adjusted_hydro_millions"] = np.log(df["Total_Damage_Adjusted_hydro_millions"] + 1e-6)
     return df
