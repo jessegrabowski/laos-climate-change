@@ -72,8 +72,8 @@ def create_replication_data():
     development_indicators["ln_population_density"]
     development_indicators["ln_gdp_pc"] = np.log(development_indicators["gdp_per_cap"])
     development_indicators["square_ln_gdp_pc"] = (
-    (development_indicators["ln_gdp_pc"]) * (development_indicators["ln_gdp_pc"])
-    ) 
+        (development_indicators["ln_gdp_pc"]) * (development_indicators["ln_gdp_pc"])
+    )
 
     # Merging everything into one df
     df = pd.merge(
@@ -158,9 +158,13 @@ def create_replication_data():
     )
 
     # Hydro damage in millions
-    df["Total_Damage_Adjusted_hydro_millions"] = df["Total_Damage_Adjusted_hydro"] * 1e-6
-    df["Total_Damage_Adjusted_all_millions"] = df["Total_Damage_Adjusted_all"] * 1e-6
+    df["Total_Damage_Adjusted_hydro_millions"] = (
+        df["Total_Damage_Adjusted_hydro"] * 1e-6
+    )
+    df["damage_millions"] = df["Total_Damage_Adjusted_all"] * 1e-6
 
-    df["ln_Total_Damage_Adjusted_all_millions"] = np.log(df["Total_Damage_Adjusted_all_millions"] + 1e-6)
-    df["ln_Total_Damage_Adjusted_hydro_millions"] = np.log(df["Total_Damage_Adjusted_hydro_millions"] + 1e-6)
+    df["ln_damage_millions"] = np.log(df["damage_millions"] + 1e-6)
+    df["ln_Total_Damage_Adjusted_hydro_millions"] = np.log(
+        df["Total_Damage_Adjusted_hydro_millions"] + 1e-6
+    )
     return df
