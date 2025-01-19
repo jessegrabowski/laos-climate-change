@@ -372,85 +372,146 @@ def plotting_function(idata, country: str):
 ############################################ Functions for the damage model  #############################################
 # Function to create plot inputs
 
-def generate_plot_inputs_damages(target_variable: str, idata, disaster_type: str = "hydrological_disasters", df=pd.DataFrame):
+
+def generate_plot_inputs_damages(
+    target_variable: str,
+    idata,
+    disaster_type: str = "hydrological_disasters",
+    df=pd.DataFrame,
+):
     # Extract predictions
-    predictions = idata.posterior_predictive['Total_Damage_Adjusted_millions'].mean(dim=['chain', 'draw'])
-    predictions = predictions.to_dataframe().drop(columns=["year", "ISO"]).reset_index().rename(
-        columns={target_variable: "predictions"})
+    predictions = idata.posterior_predictive["damage_millions"].mean(
+        dim=["chain", "draw"]
+    )
+    predictions = (
+        predictions.to_dataframe()
+        .drop(columns=["year", "ISO"])
+        .reset_index()
+        .rename(columns={target_variable: "predictions"})
+    )
 
-    hdi_mean = az.hdi(idata.posterior_predictive.Total_Damage_Adjusted_millions, hdi_prob=.75)
+    hdi_mean = az.hdi(idata.posterior_predictive.damage_millions, hdi_prob=0.75)
 
-    hdi = hdi_mean['Total_Damage_Adjusted_millions'].to_dataframe().drop(columns=["year", "ISO"]).reset_index()
+    hdi = (
+        hdi_mean["damage_millions"]
+        .to_dataframe()
+        .drop(columns=["year", "ISO"])
+        .reset_index()
+    )
 
-    hdi_mean_50 = az.hdi(idata.posterior_predictive.Total_Damage_Adjusted_millions, hdi_prob=.5)
+    hdi_mean_50 = az.hdi(idata.posterior_predictive.damage_millions, hdi_prob=0.5)
 
-    hdi_50 = hdi_mean_50['Total_Damage_Adjusted_millions'].to_dataframe().drop(columns=["year", "ISO"]).reset_index()
+    hdi_50 = (
+        hdi_mean_50["damage_millions"]
+        .to_dataframe()
+        .drop(columns=["year", "ISO"])
+        .reset_index()
+    )
 
     # Merge results and predictions in one df
     df_predictions = df[[target_variable, "ISO", "year"]]
 
     # Obtain mean hdis per year and countries
-    lower_hdi_95_mean =  hdi.query('hdi == "lower"')[["ISO", "year", "Total_Damage_Adjusted_millions"]].rename(columns={"Total_Damage_Adjusted_millions": "lower_damage_95"})
+    lower_hdi_75_mean = hdi.query('hdi == "lower"')[
+        ["ISO", "year", "damage_millions"]
+    ].rename(columns={"damage_millions": "lower_damage_75"})
 
-    higher_hdi_95_mean =  hdi.query('hdi == "higher"')[["ISO", "year", "Total_Damage_Adjusted_millions"]].rename(columns={"Total_Damage_Adjusted_millions": "higher_damage_95"})
+    higher_hdi_75_mean = hdi.query('hdi == "higher"')[
+        ["ISO", "year", "damage_millions"]
+    ].rename(columns={"damage_millions": "higher_damage_75"})
 
     lower_hdi_50_mean = hdi_50.query('hdi == "lower"')[
-        ["ISO", "year", "Total_Damage_Adjusted_millions"]].rename(columns={"Total_Damage_Adjusted_millions": "lower_damage_50"})
+        ["ISO", "year", "damage_millions"]
+    ].rename(columns={"damage_millions": "lower_damage_50"})
 
     higher_hdi_50_mean = hdi_50.query('hdi == "higher"')[
-        ["ISO", "year", "Total_Damage_Adjusted_millions"]].rename(columns={"Total_Damage_Adjusted_millions": "higher_damage_50"})
+        ["ISO", "year", "damage_millions"]
+    ].rename(columns={"damage_millions": "higher_damage_50"})
 
     predictions_mean = predictions
 
-    # 95% HDI
-    df_predictions = (pd.merge(df_predictions, lower_hdi_95_mean,
-                               left_on=["ISO", "year"], right_on=["ISO", "year"], how="left")
-                      )
-    df_predictions = (pd.merge(df_predictions, higher_hdi_95_mean,
-                               left_on=["ISO", "year"], right_on=["ISO", "year"], how="left")
-                      )
+    # 75% HDI
+    df_predictions = pd.merge(
+        df_predictions,
+        lower_hdi_75_mean,
+        left_on=["ISO", "year"],
+        right_on=["ISO", "year"],
+        how="left",
+    )
+    df_predictions = pd.merge(
+        df_predictions,
+        higher_hdi_75_mean,
+        left_on=["ISO", "year"],
+        right_on=["ISO", "year"],
+        how="left",
+    )
     # 50% HDI
-    df_predictions = (pd.merge(df_predictions, lower_hdi_50_mean,
-                               left_on=["ISO", "year"], right_on=["ISO", "year"], how="left")
-                      )
-    df_predictions = (pd.merge(df_predictions, higher_hdi_50_mean,
-                               left_on=["ISO", "year"], right_on=["ISO", "year"], how="left")
-                      )
+    df_predictions = pd.merge(
+        df_predictions,
+        lower_hdi_50_mean,
+        left_on=["ISO", "year"],
+        right_on=["ISO", "year"],
+        how="left",
+    )
+    df_predictions = pd.merge(
+        df_predictions,
+        higher_hdi_50_mean,
+        left_on=["ISO", "year"],
+        right_on=["ISO", "year"],
+        how="left",
+    )
     # Predictions
-    df_predictions = (pd.merge(df_predictions, predictions_mean,
-                               left_on=["ISO", "year"], right_on=["ISO", "year"], how="left")
-                      )
+    df_predictions = pd.merge(
+        df_predictions,
+        predictions_mean,
+        left_on=["ISO", "year"],
+        right_on=["ISO", "year"],
+        how="left",
+    )
     return df_predictions
 
 
-
-def plotting_function_damages(idata, country: str, df: pd.DataFrame, target_variable: str):
-    df_predictions = generate_plot_inputs_damages(idata=idata, df=df, target_variable = target_variable)
+def plotting_function_damages(
+    idata, country: str, df: pd.DataFrame, target_variable: str
+):
+    df_predictions = generate_plot_inputs_damages(
+        idata=idata, df=df, target_variable=target_variable
+    )
 
     # Filter country
     data = df_predictions.query("ISO == @country")
-    # data["damage_adjusted"] = (data["damage"])
-    # cols_to_millions = ["predictions", "damage_adjusted", "higher_damage_95", "lower_damage_95", "lower_damage_50", "higher_damage_50"]
-    # data[cols_to_millions] = data[cols_to_millions] /1e6
 
     fig, ax = plt.subplots()
-    # ax.plot(data["year"], data["predictions"], zorder=1000, color='tab:red',
-    #         label=f'Mean  hydrometereological events damage')
-    ax.scatter(data["year"], (data[target_variable].astype(float)), color='k',
-               label=("Real hydrometereological events damage in millions of dollars"))
-    ax.fill_between(data["year"], data["higher_damage_95"], data["lower_damage_95"], alpha=0.25, color='tab:blue',
-                    label='95% HDI')
-    ax.fill_between(data["year"], data["lower_damage_50"], data["higher_damage_50"], alpha=0.5, color='tab:blue',
-                    label='50% HDI')
-    ax.legend(loc='upper left')
+    ax.scatter(
+        data["year"],
+        (data[target_variable].astype(float)),
+        color="k",
+        label=("Real hydrometereological events damage in millions of dollars"),
+    )
+    ax.fill_between(
+        data["year"],
+        data["higher_damage_75"],
+        data["lower_damage_75"],
+        alpha=0.25,
+        color="tab:blue",
+        label="75% HDI",
+    )
+    ax.fill_between(
+        data["year"],
+        data["lower_damage_50"],
+        data["higher_damage_50"],
+        alpha=0.5,
+        color="tab:blue",
+        label="50% HDI",
+    )
+    ax.legend(loc="upper left")
 
     # plt.title(f"{country} disaster count and predictions")
 
     plt.xlabel("year")
     plt.ylabel("hydrometereological events damage in millions of dollars")
 
-    return data
-    # plt.show();
+    plt.show()
 
 
 def create_grid_from_shape(shapefile, rivers, coastline, grid_size=100):
