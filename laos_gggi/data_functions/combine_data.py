@@ -11,7 +11,7 @@ from laos_gggi.data_functions.disaster_point_data import (
     load_synthetic_non_disaster_points,
 )
 from functools import partial, reduce
-from laos_gggi.const_vars import MODEL_DF_FILENAME
+from laos_gggi.const_vars import MODEL_DF_FILENAME, DAMAGE_DF_FILENAME
 from pyprojroot import here
 from os.path import exists
 import os
@@ -294,6 +294,8 @@ def load_model_df():
         # Creating the squared log variables
         df["log_population_density_squared"] = 2 * df["log_population_density"]
         df["log_gdp_per_cap_squared"] = 2 * df["log_gdp_per_cap"]
+        df["Total_Damage_Adjusted_millions"] = df["Total_Damage_Adjusted"] * 1e-6
+        df["log_Total_Damage_Adjusted_millions"] = np.log(df["Total_Damage_Adjusted_millions"])
 
         # Delimiting data set
         columns_to_use = [
@@ -308,9 +310,9 @@ def load_model_df():
             "dev_ocean_temp",
             "population_density",
             "gdp_per_cap",
-            "lat",
-            "long",
-            "geometry",
+            # "lat",
+            # "long",
+            # "geometry",
         ]
 
         features = [
@@ -324,15 +326,29 @@ def load_model_df():
             "log_population_density_squared",
             "log_gdp_per_cap",
             "log_gdp_per_cap_squared",
+            "log_Total_Damage_Adjusted_millions",
+            "Total_Damage_Adjusted_millions"
         ]
+
+        # Filter for Hydrometereological disasters
+
+        hydro_met_disasters = ['Hydrological', 'Meteorological']
+        df = df.rename(columns={"Disaster Subgroup": "disaster_subgroup"})
+        # df = df.query('disaster_subgroup in @hydro_met_disasters')
 
         model_df = df[list(set(columns_to_use).union(set(features)))].dropna()
 
         model_df.to_csv(os.path.join(data_path, MODEL_DF_FILENAME))
+
 
     else:
         model_df = pd.read_csv(  # noqa
             os.path.join(data_path, MODEL_DF_FILENAME),
         )
 
+
     return model_df
+
+
+
+
