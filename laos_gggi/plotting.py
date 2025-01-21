@@ -27,7 +27,9 @@ def configure_plot_style(add_grid=False):
     plt.rcParams.update(config)
 
 
-def prepare_gridspec_figure(n_cols: int, n_plots: int) -> tuple[GridSpec, list]:
+def prepare_gridspec_figure(
+    n_cols: int, n_plots: int, figure: plt.Figure | None = None
+) -> tuple[GridSpec, list]:
     """
      Prepare a figure with a grid of subplots. Centers the last row of plots if the number of plots is not square.
 
@@ -37,6 +39,8 @@ def prepare_gridspec_figure(n_cols: int, n_plots: int) -> tuple[GridSpec, list]:
          The number of columns in the grid.
      n_plots : int
          The number of subplots in the grid.
+    figure: plt.Figure, optional
+        Figure on which to plot, passed to GridSpec constructor.
 
     Returns
     -------
@@ -50,7 +54,7 @@ def prepare_gridspec_figure(n_cols: int, n_plots: int) -> tuple[GridSpec, list]:
     has_remainder = remainder > 0
     n_rows = n_plots // n_cols + int(has_remainder)
 
-    gs = GridSpec(2 * n_rows, 2 * n_cols)
+    gs = GridSpec(2 * n_rows, 2 * n_cols, figure=figure)
     plot_locs = []
 
     for i in range(n_rows - int(has_remainder)):
@@ -237,7 +241,6 @@ def plot_ppc_loopit(
         The title for the plot.
     target_name : str, optional
         The name of the target variable. If None, the first variable in the posterior predictive data is used.
-
     Returns
     -------
     list
