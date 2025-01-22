@@ -8,7 +8,7 @@ from laos_gggi.data_functions.emdat_processing import load_emdat_data
 from laos_gggi.data_functions.rivers_damage import load_rivers_data
 from laos_gggi.statistics import get_distance_to
 
-sys.path.insert(0, str(here()))  
+sys.path.insert(0, str(here()))
 
 import pandas as pd  # noqa
 import geopandas as gpd  # noqa
@@ -117,7 +117,12 @@ def load_disaster_point_data():
 
 
 def load_grid_point_data(
-    region="laos", grid_size=400, iso_list: list = None, force_reload: bool = False, file_reg_name : str = None
+    region="laos",
+    grid_size=400,
+    iso_list: list = None,
+    force_reload: bool = False,
+    file_reg_name: str = None,
+    altered_shape_file=None,
 ):
     if region not in ["laos", "sea", "custom"]:
         raise ValueError(f"Unknown grid: {region}")
@@ -126,11 +131,10 @@ def load_grid_point_data(
         raise ValueError("Must provide an iso_list for custom region")
 
     if (region == "custom") and file_reg_name is None:
-        raise ValueError(f"Please provide a file_reg_name for the custom region")
-        
+        raise ValueError("Please provide a file_reg_name for the custom region")
+
     if (region == "laos") or (region == "sea"):
         file_reg_name = region
-        
 
     fname = f"{file_reg_name}_points_{grid_size}.shp"
     folder_path = here(os.path.join(DATA_FOLDER, "shapefiles", fname))
@@ -173,7 +177,11 @@ def load_grid_point_data(
         elif region == "laos":
             iso_list = ["LAO"]  #  noqa
 
-        point_map = world.query("ISO_A3 in @iso_list")
+        if altered_shape_file is None:
+            point_map = world.query("ISO_A3 in @iso_list")
+
+        else:
+            point_map = altered_shape_file
 
         rivers = load_rivers_data()
         coastline = load_shapefile("coastline")
