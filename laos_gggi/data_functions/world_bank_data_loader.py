@@ -15,12 +15,12 @@ import logging
 _log = logging.getLogger(__name__)
 
 
-def load_wb_data(folder_path="data"):
+def load_wb_data(folder_path="data", force_reload=False):
     path_to_wb_data = here(os.path.join(folder_path, "world_bank.csv"))
     if not exists(folder_path):
         os.makedirs(folder_path)
 
-    if not exists(path_to_wb_data):
+    if not exists(path_to_wb_data) or force_reload:
         # Importing data
         wb_df = wb.download(
             indicator=WB_INDICATORS,
