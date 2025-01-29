@@ -248,7 +248,7 @@ def prediction_to_gpd_df(
         predictions_dict_geo[variable] = gpd.GeoDataFrame(
             predictions_dict[variable],
             geometry=gpd.points_from_xy(
-                predictions_dict[variable]["lon"], predictions_dict[variable]["lat"]
+                predictions_dict[variable]["long"], predictions_dict[variable]["lat"]
             ),
             crs="EPSG:4326",
         )
