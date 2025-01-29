@@ -608,11 +608,19 @@ ISO_DICTIONARY = {
     "Zambia": "ZMB",
     "Zimbabwe": "ZWE",
 }
-WB_INDICATORS = ["EN.POP.DNST", "NY.GDP.PCAP.KD", "SP.POP.TOTL"]
+WB_INDICATORS = [
+    "EN.POP.DNST",
+    "NY.GDP.PCAP.KD",
+    "SP.POP.TOTL",
+    "NY.GDP.MKTP.CD",
+    "AG.SRF.TOTL.K2",
+]
 WB_RENAME_DICT = {
     "EN.POP.DNST": "population_density",
     "NY.GDP.PCAP.KD": "gdp_per_cap",
     "SP.POP.TOTL": "Population",
+    "NY.GDP.MKTP.CD": "real_gdp",
+    "AG.SRF.TOTL.K2": "surface_area_km2",
 }
 
 REGIONS = ["Asia", "Europe", "Africa", "Oceania", "Americas"]
