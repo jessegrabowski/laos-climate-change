@@ -623,6 +623,7 @@ WB_RENAME_DICT = {
     "SP.POP.TOTL": "Population",
     "NY.GDP.MKTP.CD": "real_gdp",
     "AG.SRF.TOTL.K2": "surface_area_km2",
+
 }
 
 REGIONS = ["Asia", "Europe", "Africa", "Oceania", "Americas"]
