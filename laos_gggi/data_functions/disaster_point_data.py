@@ -397,9 +397,11 @@ def load_synthetic_non_disaster_points(
 
     return not_disasters
 
+
 def load_non_disaster_grid(grid: gpd.GeoDataFrame ,
                            grid_name: str,
-                           force_generate: bool = False ):
+                           force_generate: bool = False ,
+                           three_dimensioal_grid: bool = False , ):
     fpath = here(os.path.join(DATA_FOLDER, grid_name))
 
     if not os.path.exists(fpath) or force_generate:
@@ -413,19 +415,22 @@ def load_non_disaster_grid(grid: gpd.GeoDataFrame ,
                          .rename(columns={"ISO_A3": "ISO"}))
         not_disasters["is_disaster"] = 0
 
-        # # Obtain years and ISOs
-        # years = load_disaster_point_data()["Start_Year"].unique()
-        # country_ISOs = not_disasters["ISO"].unique()
-        #
-        # # Create the Cartesian product of the two arrays
-        # combinations = list(itertools.product(years, country_ISOs))
-        # combinations_df = pd.DataFrame(combinations, columns=['Start_Date', 'ISO']).sort_values("ISO")
-        #
-        # # Merge files and create not_disasters_grid
-        # not_disasters_grid = pd.merge(not_disasters, combinations_df, left_on="ISO", right_on="ISO", how="left")
-        not_disasters = not_disasters.rename(columns={"Start_Date": "Start_Year", "lon":"long"})
-        not_disasters["Start_Year"] = "2020-01-01"
-        not_disasters["Start_Year"] =  pd.to_datetime(not_disasters["Start_Year"])
+        if three_dimensioal_grid:
+            # Obtain years and ISOs
+            years = load_disaster_point_data()["Start_Year"].unique()
+            country_ISOs = not_disasters["ISO"].unique()
+
+            # Create the Cartesian product of the two arrays
+            combinations = list(itertools.product(years, country_ISOs))
+            combinations_df = pd.DataFrame(combinations, columns=['Start_Date', 'ISO']).sort_values("ISO")
+
+            # Merge files and create not_disasters_grid
+            not_disasters = pd.merge(not_disasters, combinations_df, left_on="ISO", right_on="ISO", how="left").rename(columns={"Start_Date": "Start_Year", "lon":"long"})
+
+        else:
+            not_disasters = not_disasters.rename(columns={"Start_Date": "Start_Year", "lon":"long"})
+            not_disasters["Start_Year"] = "2020-01-01"
+            not_disasters["Start_Year"] =  pd.to_datetime(not_disasters["Start_Year"])
 
         # Save file
         not_disasters.to_csv(fpath)
