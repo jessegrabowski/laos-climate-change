@@ -168,4 +168,5 @@ data/*
 
 # Ignore idata
 *.idata
-**idata**
+*.netcdf
+*.ncdf
