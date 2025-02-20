@@ -165,3 +165,8 @@ cython_debug/
 **/emdat_processed .csv
 .DS_Store
 data/*
+
+# Ignore idata
+*.idata
+*.netcdf
+*.ncdf
