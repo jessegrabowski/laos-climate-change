@@ -23,6 +23,8 @@ dependencies:
   - pymc
   - pytensor
   - arviz
+  - preliz
+  - pymc-extras
   - nutpie
 
   # Not Bayes
@@ -34,10 +36,14 @@ dependencies:
   - pysal
 
   # Etc
-  - jupyter
-  - notebook
+  - notebook<7
 
   # Testing
   - pytest
   - pytest-cov
   - pre-commit
+  - pip
+
+  - pip:
+      - git+https://github.com/aseyboldt/nutpie.git@transforms
+      - git+https://github.com/aseyboldt/flowjax.git@add-mvscale
