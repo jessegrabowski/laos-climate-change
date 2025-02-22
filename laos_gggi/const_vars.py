@@ -61,6 +61,8 @@ CO2_URL = "https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_annmean_mlo.csv"
 CO2_FILENAME = "noaa_co2.csv"
 OCEAN_HEAT_URL = "https://www.ncei.noaa.gov/data/oceans/woa/DATA_ANALYSIS/3M_HEAT_CONTENT/DATA/basin/3month/ohc_levitus_climdash_seasonal.csv"
 OCEAN_HEAT_FILENAME = "ncei_global_ocean_heat.csv"
+MODEL_DF_FILENAME = "model_df.csv"
+DAMAGE_DF_FILENAME = "damage_df.csv"
 RIVERS_URL = "https://data.hydrosheds.org/file/HydroRIVERS/HydroRIVERS_v10_shp.zip"
 RIVERS_SHAPEFILE_FILENAME = "HydroRIVERS_v10.shp"
 RIVERS_ZIP_FILENAME = "rivers_zip_file.zip"
@@ -621,6 +623,7 @@ WB_RENAME_DICT = {
     "SP.POP.TOTL": "Population",
     "NY.GDP.MKTP.CD": "real_gdp",
     "AG.SRF.TOTL.K2": "surface_area_km2",
+
 }
 
 REGIONS = ["Asia", "Europe", "Africa", "Oceania", "Americas"]
