@@ -54,7 +54,7 @@ def load_all_data():
         "df_inten_filtered_adjusted_hydro"
     ]
     merged_dict["df_inten_filtered_adjusted_clim"] = emdat[
-        "df_inten_filtered_adjusted_hydro"
+        "df_inten_filtered_adjusted_clim"
     ]
 
     # 3. The WB data, index (Year, ISO3)
