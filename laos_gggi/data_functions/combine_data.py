@@ -20,7 +20,7 @@ def load_all_data():
     # 2. EM-DAT data representing the event damages (index: Year, ISO3)
     merged_dict["emdat_damage"] = emdat["df_inten_filtered_adjusted"]
     merged_dict["emdat_damage_hydro"] = emdat["df_inten_filtered_adjusted_hydro"]
-    merged_dict["emdat_damage_clim"] = emdat["df_inten_filtered_adjusted"]
+    merged_dict["emdat_damage_clim"] = emdat["df_inten_filtered_adjusted_clim"]
 
     emdat["df_inten_filtered_adjusted_hydro"] = (
         emdat["df_inten_filtered_adjusted_hydro"]
