@@ -71,7 +71,10 @@ def prepare_gridspec_figure(
     return gs, plot_locs
 
 
-def _plot_single_kde(data: pd.Series, axis=None, bins=30, color="tab:blue"):
+def _plot_single_kde(data: pd.Series, axis=None, bins=30, color="tab:blue", 
+                     box_font_size = 13,
+                     exclude_negative = False,
+                    turn_off_title = False):
     """
     Plot a single KDE plot on a given axis.
 
@@ -92,12 +95,17 @@ def _plot_single_kde(data: pd.Series, axis=None, bins=30, color="tab:blue"):
          The axis the plot was created on.
     """
     data = data.dropna()
+    data_array = np.array(data)
     if axis is None:
         fig, axis = plt.subplots()
 
     axis.hist(data, bins=bins, density=True, facecolor="none", edgecolor="k", lw=0.5)
     axis.hist(data, bins=bins, density=True, facecolor=color, alpha=0.25)
-    sns.kdeplot(data, ax=axis, lw=2, c="k", ls="--")
+    # az.plot_kde(data_array, ax =  axis)
+    if exclude_negative:
+        sns.kdeplot(data, ax=axis, lw=2, c="k", ls="--",  clip=(0, None))
+    else:
+        sns.kdeplot(data, ax=axis, lw=2, c="k", ls="--",)
 
     n, minmax, mean, var, skew, kurt = stats.describe(data.values.squeeze())
     jb = stats.jarque_bera(data.values.squeeze())
@@ -109,10 +117,14 @@ def _plot_single_kde(data: pd.Series, axis=None, bins=30, color="tab:blue"):
         f'{name:<5} = {" " if value > 0 else ""}{value:<3.3f}'
         for name, value in zip(names, values)
     )
-    box = AnchoredText(text, loc="upper left", prop={"fontfamily": "monospace"})
+    box = AnchoredText(text, loc="upper left", prop={"fontfamily": "monospace","size": box_font_size})
     box.patch.set_alpha(0.5)
     axis.add_artist(box)
-    axis.set_title(data.name)
+
+    if turn_off_title:
+        axis.set_title("")
+    else:
+        axis.set_title(data.name)
 
     return axis
 
@@ -122,6 +134,10 @@ def plot_descriptive(
     n_cols: int = 3,
     bins: int = 30,
     color: str = "tab:blue",
+    title_font_Size = 22,
+    labels_font_size = 20,
+    ticks_font_Size = 20,
+    exclude_negative = False,
     **figure_kwargs,
 ):
     """
@@ -152,7 +168,7 @@ def plot_descriptive(
 
     if n_plots == 1:
         fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
-        return _plot_single_kde(df, axis=ax, bins=bins, color=color)
+        return _plot_single_kde(df, axis=ax, bins=bins, color=color, exclude_negative =  exclude_negative)
 
     fig = plt.figure(figsize=figsize, dpi=dpi, **figure_kwargs)
 
@@ -162,20 +178,26 @@ def plot_descriptive(
     for name, loc in zip(df.columns, locs):
         axis = fig.add_subplot(gs[loc])
         _plot_single_kde(df[name], axis=axis, bins=bins, color=color)
+        axis.set_title(name, size = title_font_Size )
+        axis.set_xlabel(name, fontsize=labels_font_size)
+        axis.set_ylabel("density", fontsize=labels_font_size)
+        axis.tick_params(axis='both', which='major', labelsize=ticks_font_Size)
 
     return fig
 
 
-# Aggregated plotting function
+# Aggregated plotting function\
 def subplots_function(
     df,
     var_list,
     index,
     aggregation_funct,
-    title,
+    # title,
     graph_rows=2,
     figure_size=(20, 18),
-    subplot_title_fontsize=14,
+    subplot_title_fontsize=22,
+    axis_label_fontsize=18,
+    tick_label_fontsize=16,
 ):
     fig, axs = plt.subplots(graph_rows, 2, figsize=figure_size)
 
@@ -186,12 +208,18 @@ def subplots_function(
             df.pivot_table(values=x, index=index, aggfunc=aggregation_funct)[x]
         )
         axs[a, b].set_title(x, fontsize=subplot_title_fontsize)
+        axs[a, b].set_xlabel(index, fontsize=axis_label_fontsize)
+        axs[a, b].set_ylabel(x, fontsize=axis_label_fontsize)
+        axs[a, b].tick_params(axis='both', which='major', labelsize=tick_label_fontsize)
 
     if (len(var_list) % 2) != 0:
         axs[graph_rows - 1, 1].set_axis_off()
 
-    plt.suptitle(title, fontsize=subplot_title_fontsize + 10)
+    # plt.suptitle(title, fontsize=subplot_title_fontsize + 10)
+
     fig.tight_layout()
+    plt.show()
+
 
 
 # Aggregated plotting function for regions
