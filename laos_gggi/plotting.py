@@ -504,14 +504,19 @@ def plotting_function_damages(
         color="tab:blue",
         label="50% HDI",
     )
-    ax.legend(loc="upper left")
+    ax.legend(loc="upper left", fontsize  = 14)
+    ax.set_xlabel("Value", fontsize=14)  # X-axis label
+    ax.set_ylabel("Frequency", fontsize=14)  # Y-axis label
+    ax.tick_params(axis='both', which='major', labelsize=12)
 
     # plt.title(f"{country} disaster count and predictions")
 
     plt.xlabel("year")
-    plt.ylabel("hydrometereological events damage in millions of dollars")
+    plt.ylabel("Disaster damages in 2000 USD millions")
 
     plt.show()
+
+    return fig
 
 
 def create_grid_from_shape(shapefile, rivers, coastline, grid_size=100):
