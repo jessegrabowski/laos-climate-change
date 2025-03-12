@@ -504,10 +504,10 @@ def plotting_function_damages(
         color="tab:blue",
         label="50% HDI",
     )
-    ax.legend(loc="upper left", fontsize  = 14)
+    ax.legend(loc="upper left", fontsize=14)
     ax.set_xlabel("Value", fontsize=14)  # X-axis label
     ax.set_ylabel("Frequency", fontsize=14)  # Y-axis label
-    ax.tick_params(axis='both', which='major', labelsize=12)
+    ax.tick_params(axis="both", which="major", labelsize=12)
 
     # plt.title(f"{country} disaster count and predictions")
 

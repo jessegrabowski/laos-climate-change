@@ -6,7 +6,7 @@ from laos_gggi.const_vars import (
     RIVERS_SHAPEFILE_FILENAME,
     RIVERS_ZIP_FILENAME,
     BIG_RIVERS_FILENAME,
-    MEDIUM_BIG_RIVERS_FILENAME
+    MEDIUM_BIG_RIVERS_FILENAME,
 )
 import logging
 import urllib.request
@@ -59,7 +59,6 @@ def load_rivers_data(data_path=here("data/rivers"), include_medium: bool = False
             medium_and_big_rivers = gpd.read_file(here(path_to_medium_big_rivers))
         return medium_and_big_rivers
 
-
     elif not include_medium:
         if not os.path.isfile(here(path_to_big_rivers)):
             _log.info("Loading and processing rivers data")
@@ -71,11 +70,10 @@ def load_rivers_data(data_path=here("data/rivers"), include_medium: bool = False
                 )
             )
 
-
             big_rivers = df.query("ORD_FLOW < 5")
             big_rivers.to_file(here(path_to_big_rivers))
 
         if os.path.isfile(here(path_to_big_rivers)):
             big_rivers = gpd.read_file(here(path_to_big_rivers))
-        
+
         return big_rivers
