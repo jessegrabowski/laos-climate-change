@@ -4,6 +4,7 @@ from laos_gggi.data_functions.world_bank_data_loader import load_wb_data
 from laos_gggi.data_functions.GPCC_data_loader import load_gpcc_data
 from laos_gggi.data_functions.co2_processing import load_co2_data
 from laos_gggi.data_functions.ocean_heat_processing import load_ocean_heat_data
+
 from functools import partial, reduce
 
 
