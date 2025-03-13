@@ -53,7 +53,6 @@ def sample_or_load(
     This function performs posterior and posterior predictive sampling of a PyMC model. It either loads the model from disk or samples it using the provided model and sample_kwargs. If the file already exists and resampling is not requested, it loads the data from disk. Otherwise, it samples the model, performs posterior predictive sampling, and saves the resulting inference data to disk.
     """
     _fp = pathlib.Path(fp)
-    model = pm.modelcontext(model)
 
     sample_kwargs = {} if sample_kwargs is None else sample_kwargs
     compile_kwargs = {} if compile_kwargs is None else compile_kwargs
@@ -66,7 +65,7 @@ def sample_or_load(
         idata.load()  # Force load to avoid mismatch if the memory is overwritten before idata is used
         return idata
 
-    with model:
+    with pm.modelcontext(model):
         idata = pm.sample(**sample_kwargs)
         if sample_kwargs.get("nuts_sampler", "pymc") == "nutpie":
             idata = drop_transformed(idata)
