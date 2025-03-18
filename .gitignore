@@ -170,3 +170,7 @@ data/*
 *.idata
 *.netcdf
 *.ncdf
+
+# Ignore the specific notebook
+notebooks/final_paper/03_damage_modeling_2025_usd.ipynb
+notebooks/final_paper/04_damage_curves.ipynb
