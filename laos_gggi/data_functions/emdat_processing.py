@@ -39,7 +39,6 @@ def load_emdat_data(data_path="data", force_reload=False):
         "Drought": "Climatological",
     }
 
-
     df_raw["disaster_class"] = df_raw["Disaster Type"].map(disaster_class_dict.get)
 
     df_raw.loc[
