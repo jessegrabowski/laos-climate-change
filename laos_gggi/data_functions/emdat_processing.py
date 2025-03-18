@@ -39,8 +39,6 @@ def load_emdat_data(data_path="data", force_reload=False):
         "Drought": "Climatological",
     }
 
-    hydro_cols = ["Flood", "Storm"]
-    clim_cols = ["Wildfire", "Extreme temperature", "Drought"]
 
     df_raw["disaster_class"] = df_raw["Disaster Type"].map(disaster_class_dict.get)
 
