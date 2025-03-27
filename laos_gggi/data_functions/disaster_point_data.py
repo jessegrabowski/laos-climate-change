@@ -436,7 +436,7 @@ def load_non_disaster_grid(
             not_disasters = not_disasters.rename(
                 columns={"Start_Date": "Start_Year", "lon": "long"}
             )
-            not_disasters["Start_Year"] = "2020-01-01"
+            not_disasters["Start_Year"] = "1984-01-01"
             not_disasters["Start_Year"] = pd.to_datetime(not_disasters["Start_Year"])
 
         # Save file
