@@ -15,6 +15,9 @@ import geopandas as gpd  # noqa
 import os  # noqa
 import numpy as np  # noqa
 
+import itertools
+
+
 _log = logging.getLogger(__name__)
 
 DATA_FOLDER = "data"
@@ -231,6 +234,7 @@ def load_grid_point_data(
         points = points.assign(
             log_distance_to_coastline=lambda x: np.log(x.distance_to_coastline)
         )
+        points.rename(columns={"lon": "long"})
 
         points.to_file(fpath)
 
@@ -336,11 +340,6 @@ def load_synthetic_non_disaster_points(
             not_disasters = _sample_by_country(
                 data, world, multiplier=multiplier, rng=rng
             )
-        else:
-            raise ValueError(f"Unknown value for `by`: {by}")
-
-        _log.info("Adding geospatial features to synthetic data")
-
         island_dict = (
             data[["ISO", "is_island"]]
             .drop_duplicates()
@@ -390,5 +389,60 @@ def load_synthetic_non_disaster_points(
 
         # EPSG:4326 is hard-coded so we don't have to load the data if this file exists! This might cause bugs :\
         not_disasters = gpd.GeoDataFrame(not_disasters, crs="EPSG:4326")
+
+    return not_disasters
+
+
+def load_non_disaster_grid(
+    grid: gpd.GeoDataFrame,
+    grid_name: str,
+    force_generate: bool = False,
+    three_dimensioal_grid: bool = False,
+):
+    fpath = here(os.path.join(DATA_FOLDER, grid_name))
+
+    if not os.path.exists(fpath) or force_generate:
+        world = load_shapefile("world")
+
+        # We merge the grid with the world shapefile to get the ISO
+        not_disasters = gpd.sjoin(
+            grid,
+            world[["geometry", "ISO_A3"]],
+            how="left",
+        ).rename(columns={"ISO_A3": "ISO"})
+        not_disasters["is_disaster"] = 0
+
+        if three_dimensioal_grid:
+            # Obtain years and ISOs
+            years = load_disaster_point_data()["Start_Year"].unique()
+            country_ISOs = not_disasters["ISO"].unique()
+
+            # Create the Cartesian product of the two arrays
+            combinations = list(itertools.product(years, country_ISOs))
+            combinations_df = pd.DataFrame(
+                combinations, columns=["Start_Date", "ISO"]
+            ).sort_values("ISO")
+
+            # Merge files and create not_disasters_grid
+            not_disasters = pd.merge(
+                not_disasters,
+                combinations_df,
+                left_on="ISO",
+                right_on="ISO",
+                how="left",
+            ).rename(columns={"Start_Date": "Start_Year", "lon": "long"})
+
+        else:
+            not_disasters = not_disasters.rename(
+                columns={"Start_Date": "Start_Year", "lon": "long"}
+            )
+            not_disasters["Start_Year"] = "1984-01-01"
+            not_disasters["Start_Year"] = pd.to_datetime(not_disasters["Start_Year"])
+
+        # Save file
+        not_disasters.to_csv(fpath)
+
+    if os.path.exists(fpath):
+        not_disasters = pd.read_csv(fpath, index_col=0)
 
     return not_disasters
