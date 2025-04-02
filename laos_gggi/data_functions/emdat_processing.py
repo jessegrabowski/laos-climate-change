@@ -85,7 +85,6 @@ def load_emdat_data(data_path="data", force_reload=False):
                 Region=lambda x: x.index.get_level_values(0).map(region_dict.get),
                 Subregion=lambda x: x.index.get_level_values(0).map(subregion_dict.get),
             )
-            .fillna(0)
             .sort_index()
         )
 
@@ -124,8 +123,8 @@ def load_emdat_data(data_path="data", force_reload=False):
                 Subregion=lambda x: x.index.get_level_values(0).map(subregion_dict.get),
             )
             .sort_index()
-            .fillna(0)
         )
+
         assert result.shape[0] == len(complete_index)
         assert np.all(
             result.index.get_level_values(0) == complete_index.get_level_values(0)

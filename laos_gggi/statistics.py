@@ -6,6 +6,13 @@ import numpy as np
 import geopandas as gpd
 import arviz as az
 import pymc as pm
+from sklearn.preprocessing import StandardScaler as Standardize
+
+
+def nan_or_sum(x):
+    if np.isnan(x).all():
+        return np.nan
+    return np.nansum(x)
 
 
 # Descriptive stats function
@@ -297,3 +304,16 @@ def add_country_effect():
         country_effect_scale,
         country_effect_offset,
     )
+
+
+def standardize(df: pd.DataFrame, columns: list[str], transformer_fitted=None):
+    if transformer_fitted is None:
+        transformer_fitted = Standardize().fit(df[columns])
+
+    columns_stand = [x + "__standardized" for x in columns]
+    df_stand = pd.DataFrame(
+        transformer_fitted.transform(df[columns]), columns=columns_stand, index=df.index
+    )
+    df_stand = pd.concat([df, df_stand], axis=1)
+
+    return transformer_fitted, df_stand

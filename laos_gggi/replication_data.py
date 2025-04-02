@@ -1,5 +1,6 @@
 import pandas as pd
 from laos_gggi import load_all_data
+from laos_gggi.statistics import nan_or_sum
 from statsmodels.tsa.seasonal import STL
 import numpy as np
 
@@ -10,7 +11,7 @@ def create_replication_data():
     df_clim = data["df_time_series"][["co2", "Temp", "precip"]].iloc[1:-1]
     emdat_damage_hydro = data["emdat_damage"][
         ["Total_Damage_Adjusted_hydro", "Total_Affected_hydro"]
-    ]  # noga
+    ]
     emdat_damage_clim = data["emdat_damage"]["Total_Damage_Adjusted_clim"]
     hydro_disasters = data["emdat_events"][["Flood", "Storm"]]
     climate_disasters = data["emdat_events"][
@@ -22,20 +23,11 @@ def create_replication_data():
 
     # Calculate total climatological and hydrological disasters columns
 
-    disasters["climatological_disasters"] = (
-        climate_disasters.fillna(0).astype(int).sum(axis=1)
-    )
-    disasters["hydrological_disasters"] = (
-        hydro_disasters.fillna(0).astype(int).sum(axis=1)
-    )
-
-    # Fill NaN values for disasters and emdat_damage
-    disasters = disasters.fillna(0)
+    disasters["climatological_disasters"] = climate_disasters.apply(nan_or_sum, axis=1)
+    disasters["hydrological_disasters"] = hydro_disasters.apply(nan_or_sum, axis=1)
 
     # Obtain each country's precipitation deviation from the average for its 30-year base climatology period 1961–1990
     countries = precipitation.reset_index()["ISO"].unique()
-
-    precip_deviation = pd.DataFrame()
 
     precip_deviation = pd.DataFrame(columns=countries)
     for x in countries:
@@ -142,7 +134,7 @@ def create_replication_data():
         "Total_Affected_hydro",
     ]
     df = df[cols_to_use]
-    df = df.dropna()
+    # df = df.dropna()
     df["population"] = df["population"] / 1e6
     df["ln_population_density_squared"] = df["ln_population_density"] ** 2
 
