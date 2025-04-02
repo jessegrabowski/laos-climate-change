@@ -172,7 +172,8 @@ data/*
 *.ncdf
 
 # Ignore archive
-notebooks/final_paper/geo_damage_model/archive
+notebooks/geo_damage_model/archive
+notebooks/final_paper/archive
 
 # Ignore specific notebooks
 notebooks/final_paper/04_damage_curves.ipynb
