@@ -171,7 +171,10 @@ data/*
 *.netcdf
 *.ncdf
 
-# Ignore the specific notebook
+# Ignore archive
+notebooks/final_paper/geo_damage_model/archive
+
+# Ignore specific notebooks
 notebooks/final_paper/04_damage_curves.ipynb
 notebooks/final_paper/01_assorted_graphs_and_things.ipynb
 notebooks/dsge/DSGE Model.ipynb
