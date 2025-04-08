@@ -634,3 +634,24 @@ COASTLINE_FILENAME = "gshhg-shp-2.3.7.zip"
 COASTLINE_URL = (
     "https://www.ngdc.noaa.gov/mgg/shorelines/data/gshhg/latest/gshhg-shp-2.3.7.zip"
 )
+
+IPCC_PREDICTIONS_RAW_NAME = "AR6-SYR-LR-CSB2-F1-Panel(a).xlsx"
+IPCC_URL = "https://sedac.ciesin.columbia.edu/ddc/ar6-syr-lr-cross-section-box2-fig1a/data/AR6-SYR-LR-CSB2-F1-Panel(a).xlsx"
+IPCC_PROCESSED_FILENAME = "ipcc_predictions.csv"
+IPCC_COLS = [
+    "Panel emissions - SSP1-19 - x (year)",
+    "Panel emissions - SSP1-19 - y",
+    "Panel emissions - SSP1-26 - y",
+    "Panel emissions - SSP2-45 - y",
+    "Panel emissions - SSP3-70 - y",
+    "Panel emissions - SSP5-85 - y",
+]
+
+IPCC_RENAME_DICT = {
+    "Panel emissions - SSP1-19 - x (year)": "year",
+    "Panel emissions - SSP1-19 - y": "SSP1-19",
+    "Panel emissions - SSP1-26 - y": "SSP1-26",
+    "Panel emissions - SSP2-45 - y": "SSP2-45",
+    "Panel emissions - SSP3-70 - y": "SSP3-70",
+    "Panel emissions - SSP5-85 - y": "SSP5-85",
+}

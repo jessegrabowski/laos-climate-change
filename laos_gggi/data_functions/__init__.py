@@ -11,6 +11,7 @@ from laos_gggi.data_functions.disaster_point_data import (
     load_synthetic_non_disaster_points,
     load_disaster_point_data,
 )
+from laos_gggi.data_functions.ipcc_scenarios_loader import process_ipcc_scenarios
 
 __all__ = [
     "load_emdat_data",
@@ -24,4 +25,5 @@ __all__ = [
     "load_rivers_data",
     "load_disaster_point_data",
     "load_synthetic_non_disaster_points",
+    "process_ipcc_scenarios",
 ]
