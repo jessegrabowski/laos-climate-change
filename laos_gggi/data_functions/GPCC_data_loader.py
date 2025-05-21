@@ -56,7 +56,7 @@ def load_gpcc_data(output_path="data", force_reload=False, repair_ISO_codes=True
         # Import the world shapefile
         _log.info("Loading world shapefile as GeoDataFrame")
         world_shapefile = load_shapefile(
-            "world", force_reload=force_reload, repair_ISO_codes=repair_ISO_codes
+            "world", force_reload=False, repair_ISO_codes=repair_ISO_codes
         ).rename(
             columns={
                 "ISO_A3": "country_code",
