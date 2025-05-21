@@ -101,6 +101,7 @@ def load_disaster_point_data():
             .dropna(how="all")
             .iloc[1:]
             .reset_index(drop=True)
+            .droplevel(axis=1, level=1)
             .assign(
                 ISO_2=lambda x: x["ISO code"].str.split().str[0],
                 ISO_3=lambda x: x["ISO code"].str.split().str[1].replace({"or": "GBR"}),
