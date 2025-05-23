@@ -308,28 +308,37 @@ def _sample_by_country(data, world, multiplier=1, rng=None):
     return not_disasters.rename(columns={"CONTINENT": "Region"})
 
 
-def make_synthetic_data_fpath(by, multipler):
+def make_synthetic_data_fpath(by, multipler, list_name):
     name, ext = os.path.splitext(SYNTHETIC_DATA_BASENAME)
-    fname = f"{name}_{by}_times_{multipler}{ext}"
+    fname = f"{name}_{by}_times_{multipler}_{list_name}_{ext}"
 
     return here(os.path.join(DATA_FOLDER, fname))
 
 
 def load_synthetic_non_disaster_points(
-    rng=None, force_generate=False, by="region", multiplier=1
+    countries,
+    list_name: str,
+    rng=None,
+    force_generate=False,
+    by="region",
+    multiplier=1,
 ):
     if rng is None:
         seed = sum(map(ord, "Laos GGGI Climate Adaptation"))
         rng = np.random.default_rng(seed)
 
-    fpath = make_synthetic_data_fpath(by, multiplier)
+    fpath = make_synthetic_data_fpath(by, multiplier, list_name)
 
     if not os.path.exists(fpath) or force_generate:
         world = load_shapefile("world")
         coastline = load_shapefile("coastline")
         rivers = load_rivers_data()
 
-        data = load_disaster_point_data().dropna(subset="Region")
+        data = (
+            load_disaster_point_data()
+            .dropna(subset="Region")
+            .query("ISO in @countries")
+        )
 
         if by == "region":
             _log.info("Sampling non-disasters by region")
