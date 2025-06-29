@@ -15,12 +15,6 @@ def nan_or_sum(x):
     return np.nansum(x)
 
 
-def nan_or_sum(x):
-    if np.isnan(x).all():
-        return np.nan
-    return np.nansum(x)
-
-
 # Descriptive stats function
 def descriptive_stats_function(df, varlist):
     # Sum stats
