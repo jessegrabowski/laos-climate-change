@@ -57,6 +57,9 @@ def sample_or_load(
     sample_kwargs = {} if sample_kwargs is None else sample_kwargs
     compile_kwargs = {} if compile_kwargs is None else compile_kwargs
 
+    sample_kwargs = {} if sample_kwargs is None else sample_kwargs
+    compile_kwargs = {} if compile_kwargs is None else compile_kwargs
+
     # Create directory structure if necessary
     os.makedirs(_fp.parent, exist_ok=True)
 

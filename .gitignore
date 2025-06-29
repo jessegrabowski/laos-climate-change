@@ -176,6 +176,8 @@ notebooks/geo_damage_model/archive
 notebooks/final_paper/archive
 
 # Ignore specific notebooks
+notebooks/final_paper/03_damage_modeling_2025_usd.ipynb
 notebooks/final_paper/04_damage_curves.ipynb
+notebooks/geo_damage_model/05_geo_event_model_laos-neighbors_tight.ipynb
 notebooks/final_paper/01_assorted_graphs_and_things.ipynb
 notebooks/dsge/DSGE Model.ipynb
