@@ -171,7 +171,6 @@ data/*
 *.netcdf
 *.ncdf
 
-<<<<<<< HEAD
 # Ignore archive
 notebooks/geo_damage_model/archive
 notebooks/final_paper/archive
