@@ -51,4 +51,3 @@ dependencies:
   - pip:
       - flowjax
       - corner
-
