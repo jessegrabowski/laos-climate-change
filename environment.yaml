@@ -27,6 +27,7 @@ dependencies:
   - pymc-extras
   - nutpie>=0.14.2
 
+
   # Not Bayes
   - scikit-learn
   - statsmodels
@@ -43,3 +44,8 @@ dependencies:
   - pytest-cov
   - pre-commit
   - pip
+
+
+  - pip:
+      - git+https://github.com/aseyboldt/nutpie.git@transforms
+      - git+https://github.com/aseyboldt/flowjax.git@add-mvscale
