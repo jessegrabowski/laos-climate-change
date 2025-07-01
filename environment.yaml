@@ -35,9 +35,12 @@ dependencies:
   # Geospatial
   - geopandas
   - pysal
+  - geopy
 
   # Etc
   - notebook<7
+  - openai
+  - wikipedia
 
   # Testing
   - pytest
