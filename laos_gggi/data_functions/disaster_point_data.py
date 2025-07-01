@@ -308,9 +308,9 @@ def _sample_by_country(data, world, multiplier=1, rng=None):
     return not_disasters.rename(columns={"CONTINENT": "Region"})
 
 
-def make_synthetic_data_fpath(by, multipler, list_name):
+def make_synthetic_data_fpath(by: str, multipler: int, list_name: str):
     name, ext = os.path.splitext(SYNTHETIC_DATA_BASENAME)
-    fname = f"{name}_{by}_times_{multipler}_{list_name}_{ext}"
+    fname = f"{name}_{by}_times_{str(multipler)}_{list_name}_{ext}"
 
     return here(os.path.join(DATA_FOLDER, fname))
 
