@@ -70,11 +70,9 @@ def process_ipcc_scenarios(data_path=None, force_reload: bool = False):
                     + ipcc_preds_proc.loc[y - 5, col]
                 )
 
-                # Extend data to all the years
-    full_years = pd.DataFrame(list(range(2020, 2101)), columns=["year"])
-    ipcc_preds_proc_ext = pd.merge(
-        full_years, ipcc_preds_proc, left_on="year", right_index=True, how="left"
-    )
+    # Extend data to all the years
+    years_index = pd.date_range(start="2020-01-01", end="2101-01-01", freq="YE").year
+    ipcc_preds_proc_ext = ipcc_preds_proc.reindex(years_index)
 
     # Interpolate vaulues
     ipcc_preds_proc_ext = ipcc_preds_proc_ext.interpolate(method="linear").drop(
