@@ -73,7 +73,14 @@ def prepare_gridspec_figure(
     return gs, plot_locs
 
 
-def _plot_single_kde(data: pd.Series, axis=None, bins=30, color="tab:blue"):
+def _plot_single_kde(
+    data: pd.Series,
+    axis=None,
+    bins=30,
+    color="tab:blue",
+    leg_loc="upper left",
+    set_title: bool = True,
+):
     """
     Plot a single KDE plot on a given axis.
 
@@ -111,10 +118,11 @@ def _plot_single_kde(data: pd.Series, axis=None, bins=30, color="tab:blue"):
         f'{name:<5} = {" " if value > 0 else ""}{value:<3.3f}'
         for name, value in zip(names, values)
     )
-    box = AnchoredText(text, loc="upper left", prop={"fontfamily": "monospace"})
+    box = AnchoredText(text, loc=leg_loc, prop={"fontfamily": "monospace"})
     box.patch.set_alpha(0.5)
     axis.add_artist(box)
-    axis.set_title(data.name)
+    if set_title:
+        axis.set_title(data.name)
 
     return axis
 
@@ -124,6 +132,8 @@ def plot_descriptive(
     n_cols: int = 3,
     bins: int = 30,
     color: str = "tab:blue",
+    leg_loc="upper left",
+    labels_size: int = 14,
     **figure_kwargs,
 ):
     """
@@ -163,7 +173,14 @@ def plot_descriptive(
 
     for name, loc in zip(df.columns, locs):
         axis = fig.add_subplot(gs[loc])
-        _plot_single_kde(df[name], axis=axis, bins=bins, color=color)
+        axis.set_ylabel("Density", fontsize=labels_size)
+        _plot_single_kde(
+            df[name],
+            axis=axis,
+            bins=bins,
+            color=color,
+            leg_loc=leg_loc,
+        )
 
     return fig
 
