@@ -26,6 +26,7 @@ def configure_plot_style(add_grid=False):
         "axes.spines.right": False,
     }
 
+    pd.set_option("display.float_format", "{:.2f}".format)
     plt.rcParams.update(config)
 
 
