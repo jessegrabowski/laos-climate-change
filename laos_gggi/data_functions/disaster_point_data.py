@@ -187,7 +187,7 @@ def load_grid_point_data(
         else:
             point_map = altered_shape_file
 
-        rivers = load_rivers_data()
+        rivers = load_rivers_data(include_medium=True)
         coastline = load_shapefile("coastline")
 
         _log.info("Computing point grid and features")
