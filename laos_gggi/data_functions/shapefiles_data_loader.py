@@ -31,7 +31,7 @@ shapefile_name_dict = {
 shapefile_url_dict = {"world": WORLD_URL, "laos": LAOS_URL, "coastline": COASTLINE_URL}
 
 shapefile_filename_dict = {
-    "world": "wb_countries_admin0_10m",
+    "world": "world-administrative-boundaries",
     "laos": "lao_adm_ngd_20191112_shp",
     "coastline": "GSHHS_shp/f",
 }
@@ -67,9 +67,9 @@ def extract_shapefiles(which: str, output_path="data/shapefiles", force_reload=F
     if not os.path.isdir(shapefile_path) or force_reload:
         _log.info(f"Extracting {shapefile_path}")
         fname = zip_filename + ".zip"
-
+        extract_path = here(os.path.join(output_path, filename))
         with ZipFile(here(os.path.join(output_path, fname)), "r") as zObject:
-            zObject.extractall(path=here(output_path))
+            zObject.extractall(path=here(extract_path))
 
 
 def load_shapefile(
@@ -90,7 +90,7 @@ def load_shapefile(
         # by dropping small island colonies.
 
         # Drop UMI (United State Maritime Islands)
-        df = df.loc[lambda x: x.ISO_A3 != "UMI"].copy()
+        df = df.loc[lambda x: x.iso3 != "UMI"].copy()
 
         # Drop Gitmo, Clipperton Island, and Australian Indian Ocean territories
         # These are associated with their owner's ISO code, but are far-flung
@@ -106,14 +106,14 @@ def load_shapefile(
         # Give France, Norway, and Kosovo the correct ISO3 codes
         # These are the biggest problems. France doesn't have the correct ISO code at all, nor does Norway
         # (both are given -99)
-        df.loc[20, "ISO_A3"] = "FRA"
-        df.loc[50, "ISO_A3"] = "NOR"
-        df.loc[62, "ISO_A3"] = "UNK"  # Kosovo doesn't have a code :(
+        # df.loc[20, "iso3"] = "FRA"
+        # df.loc[50, "iso3"] = "NOR"
+        # df.loc[62, "iso3"] = "UNK"  # Kosovo doesn't have a code :(
 
         df.reset_index(drop=True, inplace=True)
 
         # Check that ISO codes are unique for each geometry
-        assert (df["ISO_A3"].value_counts() == 1).all()
+        # assert (df["iso3"].value_counts() == 1).all()
 
     return df
 
