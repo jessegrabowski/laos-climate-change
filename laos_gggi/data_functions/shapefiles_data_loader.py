@@ -121,6 +121,7 @@ def load_shapefile(
 
         # Check that ISO codes are unique for each geometry
         assert (df["iso3"].value_counts() == 1).all()
+        df.rename(columns={"iso3": "ISO_A3"}, inplace=True)
 
     return df
 
