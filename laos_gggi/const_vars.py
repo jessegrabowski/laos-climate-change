@@ -52,8 +52,8 @@ EM_DAT_COL_DICT = {  # noqa
 }
 
 
-WORLD_URL = "https://public.opendatasoft.com/api/explore/v2.1/catalog/datasets/world-administrative-boundaries/exports/shp?lang=en&timezone=Europe%2FBerlin"  # noqa
-WORLD_FILENAME = "world-administrative-boundaries.zip"  # noqa
+WORLD_URL = "https://datacatalog.worldbank.org/search/dataset/0038272/World-Bank-Official-Boundaries"  # noqa
+WORLD_FILENAME = "World Bank Official Boundaries - Admin 0_all_layers.zip"  # noqa
 LAOS_URL = "https://data.humdata.org/dataset/9eb6aff1-9e3f-43d3-99a6-f415fe4b4dff/resource/1d6edf99-5303-4b31-8909-dd70cda78443/download/lao_adm_ngd_20191112_shp.zip"  # noqa
 LAOS_FILENAME = "lao_adm_ngd_20191112_shp.zip"  # noqa
 

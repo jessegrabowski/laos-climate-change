@@ -53,8 +53,15 @@ def download_shapefile(which, output_path="data/shapefiles", force_reload=False)
         os.makedirs(output_path)
 
     if not exists(path_to_file) or force_reload:
-        _log.info(f"Downloading {which} shapefiles to {output_path}")
-        urlretrieve(url, path_to_file)
+        if which == "world":
+            _log.warning(
+                f"World shapefile must be downloaded manually from {WORLD_URL}. Select 'World Bank Official Boundaries (Shapefiles)', download the file 'World Bank Official Boundaries - Admin 0_all_layers.zip', store it as {WORLD_FILENAME} in data/shapefiles",
+                UserWarning,
+            )
+            return
+        else:
+            _log.info(f"Downloading {which} shapefiles to {output_path}")
+            urlretrieve(url, path_to_file)
 
 
 def extract_shapefiles(which: str, output_path="data/shapefiles", force_reload=False):
@@ -90,7 +97,7 @@ def load_shapefile(
         # by dropping small island colonies.
 
         # Drop UMI (United State Maritime Islands)
-        df = df.loc[lambda x: x.iso3 != "UMI"].copy()
+        df = df.loc[lambda x: x.ISO_A3 != "UMI"].copy()
 
         # Drop Gitmo, Clipperton Island, and Australian Indian Ocean territories
         # These are associated with their owner's ISO code, but are far-flung
@@ -106,14 +113,14 @@ def load_shapefile(
         # Give France, Norway, and Kosovo the correct ISO3 codes
         # These are the biggest problems. France doesn't have the correct ISO code at all, nor does Norway
         # (both are given -99)
-        # df.loc[20, "iso3"] = "FRA"
-        # df.loc[50, "iso3"] = "NOR"
-        # df.loc[62, "iso3"] = "UNK"  # Kosovo doesn't have a code :(
+        df.loc[20, "iso3"] = "FRA"
+        df.loc[50, "iso3"] = "NOR"
+        df.loc[62, "iso3"] = "UNK"  # Kosovo doesn't have a code :(
 
         df.reset_index(drop=True, inplace=True)
 
         # Check that ISO codes are unique for each geometry
-        # assert (df["iso3"].value_counts() == 1).all()
+        assert (df["iso3"].value_counts() == 1).all()
 
     return df
 
