@@ -121,6 +121,8 @@ def load_shapefile(
 
         # Check that ISO codes are unique for each geometry
         assert (df["iso3"].value_counts() == 1).all()
+
+        # Previous version of the world Bank shapefile had a column called ISO_A3. Now it was changed to iso3. We apply the rename to keep the resto of our code stable.
         df.rename(columns={"iso3": "ISO_A3"}, inplace=True)
 
     return df
