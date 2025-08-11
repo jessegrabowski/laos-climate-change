@@ -6,6 +6,7 @@ from zipfile import ZipFile
 import geopandas as gpd
 import numpy as np
 import pandas as pd
+from shapely.ops import unary_union
 
 from laos_gggi.data_functions.rivers_data_loader import load_rivers_data
 from laos_gggi.const_vars import (
@@ -31,7 +32,7 @@ shapefile_name_dict = {
 shapefile_url_dict = {"world": WORLD_URL, "laos": LAOS_URL, "coastline": COASTLINE_URL}
 
 shapefile_filename_dict = {
-    "world": "wb_countries_admin0_10m",
+    "world": "world-administrative-boundaries",
     "laos": "lao_adm_ngd_20191112_shp",
     "coastline": "GSHHS_shp/f",
 }
@@ -53,8 +54,15 @@ def download_shapefile(which, output_path="data/shapefiles", force_reload=False)
         os.makedirs(output_path)
 
     if not exists(path_to_file) or force_reload:
-        _log.info(f"Downloading {which} shapefiles to {output_path}")
-        urlretrieve(url, path_to_file)
+        if which == "world":
+            _log.warning(
+                f"World shapefile must be downloaded manually from {WORLD_URL}. Select 'World Bank Official Boundaries (Shapefiles)', download the file 'World Bank Official Boundaries - Admin 0_all_layers.zip', store it as {WORLD_FILENAME} in data/shapefiles",
+                UserWarning,
+            )
+            return
+        else:
+            _log.info(f"Downloading {which} shapefiles to {output_path}")
+            urlretrieve(url, path_to_file)
 
 
 def extract_shapefiles(which: str, output_path="data/shapefiles", force_reload=False):
@@ -67,9 +75,9 @@ def extract_shapefiles(which: str, output_path="data/shapefiles", force_reload=F
     if not os.path.isdir(shapefile_path) or force_reload:
         _log.info(f"Extracting {shapefile_path}")
         fname = zip_filename + ".zip"
-
+        extract_path = here(os.path.join(output_path, filename))
         with ZipFile(here(os.path.join(output_path, fname)), "r") as zObject:
-            zObject.extractall(path=here(output_path))
+            zObject.extractall(path=here(extract_path))
 
 
 def load_shapefile(
@@ -89,30 +97,25 @@ def load_shapefile(
         # The ISO codes are not 1:1 with geometries. This code cleans things up, mostly
         # by dropping small island colonies.
 
-        # Drop UMI (United State Maritime Islands)
-        df = df.loc[lambda x: x.ISO_A3 != "UMI"].copy()
+        # Previous version of the world Bank shapefile had a column called ISO_A3. Now it was changed to iso3. We apply the rename to keep the resto of our code stable.
+        df.rename(columns={"iso3": "ISO_A3"}, inplace=True)
 
-        # Drop Gitmo, Clipperton Island, and Australian Indian Ocean territories
-        # These are associated with their owner's ISO code, but are far-flung
-        df.drop(labels=[129, 232, 238, 239], inplace=True)
+        # Select only Member States
+        df = df.query('WB_STATUS == "Member State"')
 
-        # Drop the Netherland's overseas holdings (Bonaire, Saint Eustatius, Saba)
-        # Ditto -- they are labeled as the Netherlands
-        df.drop(labels=[234, 235, 236], inplace=True)
+        # We drop some islands ouside of Portugal map
+        df = df.drop(index=124)
 
-        # Drop Tokelau (NZ)
-        df.drop(labels=[249], inplace=True)
+        # We integrated some splitted territories into the main country, for example: Crimea and Ukraine.
+        for ISO in ["PRT", "ZWE", "UKR"]:
+            indexes = list(df.query("ISO_A3 == @ISO").index)
+            merged_geom = unary_union(df.query("ISO_A3 == @ISO")["geometry"])
+            df = df.drop(index=indexes[1:])
+            df.loc[indexes[0], "geometry"] = merged_geom
 
-        # Give France, Norway, and Kosovo the correct ISO3 codes
-        # These are the biggest problems. France doesn't have the correct ISO code at all, nor does Norway
-        # (both are given -99)
-        df.loc[20, "ISO_A3"] = "FRA"
-        df.loc[50, "ISO_A3"] = "NOR"
-        df.loc[62, "ISO_A3"] = "UNK"  # Kosovo doesn't have a code :(
+        # df.reset_index(drop=True, inplace=True)
 
-        df.reset_index(drop=True, inplace=True)
-
-        # Check that ISO codes are unique for each geometry
+        # # Check that ISO codes are unique for each geometry
         assert (df["ISO_A3"].value_counts() == 1).all()
 
     return df
