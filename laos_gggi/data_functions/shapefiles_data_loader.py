@@ -6,6 +6,7 @@ from zipfile import ZipFile
 import geopandas as gpd
 import numpy as np
 import pandas as pd
+from shapely.ops import unary_union
 
 from laos_gggi.data_functions.rivers_data_loader import load_rivers_data
 from laos_gggi.const_vars import (
@@ -96,34 +97,26 @@ def load_shapefile(
         # The ISO codes are not 1:1 with geometries. This code cleans things up, mostly
         # by dropping small island colonies.
 
-        # Drop UMI (United State Maritime Islands)
-        df = df.loc[lambda x: x.ISO_A3 != "UMI"].copy()
-
-        # Drop Gitmo, Clipperton Island, and Australian Indian Ocean territories
-        # These are associated with their owner's ISO code, but are far-flung
-        df.drop(labels=[129, 232, 238, 239], inplace=True)
-
-        # Drop the Netherland's overseas holdings (Bonaire, Saint Eustatius, Saba)
-        # Ditto -- they are labeled as the Netherlands
-        df.drop(labels=[234, 235, 236], inplace=True)
-
-        # Drop Tokelau (NZ)
-        df.drop(labels=[249], inplace=True)
-
-        # Give France, Norway, and Kosovo the correct ISO3 codes
-        # These are the biggest problems. France doesn't have the correct ISO code at all, nor does Norway
-        # (both are given -99)
-        df.loc[20, "iso3"] = "FRA"
-        df.loc[50, "iso3"] = "NOR"
-        df.loc[62, "iso3"] = "UNK"  # Kosovo doesn't have a code :(
-
-        df.reset_index(drop=True, inplace=True)
-
-        # Check that ISO codes are unique for each geometry
-        assert (df["iso3"].value_counts() == 1).all()
-
         # Previous version of the world Bank shapefile had a column called ISO_A3. Now it was changed to iso3. We apply the rename to keep the resto of our code stable.
         df.rename(columns={"iso3": "ISO_A3"}, inplace=True)
+
+        # Select only Member States
+        df = df.query('WB_STATUS == "Member State"')
+
+        # We drop some islands ouside of Portugal map
+        df = df.drop(index=124)
+
+        # We integrated some splitted territories into the main country, for example: Crimea and Ukraine.
+        for ISO in ["PRT", "ZWE", "UKR"]:
+            indexes = list(df.query("ISO_A3 == @ISO").index)
+            merged_geom = unary_union(df.query("ISO_A3 == @ISO")["geometry"])
+            df = df.drop(index=indexes[1:])
+            df.loc[indexes[0], "geometry"] = merged_geom
+
+        # df.reset_index(drop=True, inplace=True)
+
+        # # Check that ISO codes are unique for each geometry
+        assert (df["ISO_A3"].value_counts() == 1).all()
 
     return df
 
