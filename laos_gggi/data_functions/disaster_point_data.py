@@ -127,6 +127,7 @@ def load_grid_point_data(
     force_reload: bool = False,
     file_reg_name: str = None,
     altered_shape_file=None,
+    include_medium_rivers: bool = True,
 ):
     if region not in ["laos", "sea", "custom"]:
         raise ValueError(f"Unknown grid: {region}")
@@ -187,7 +188,7 @@ def load_grid_point_data(
         else:
             point_map = altered_shape_file
 
-        rivers = load_rivers_data(include_medium=True)
+        rivers = load_rivers_data(include_medium=include_medium_rivers)
         coastline = load_shapefile("coastline")
 
         _log.info("Computing point grid and features")
