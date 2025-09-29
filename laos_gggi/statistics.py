@@ -18,7 +18,7 @@ def nan_or_sum(x):
 # Descriptive stats function
 def descriptive_stats_function(df, varlist):
     # Sum stats
-    sum_stats = df.describe()
+    sum_stats = df[varlist].describe()
     # Kurtosis
     kurtosis = pd.Series()
     for x in varlist:

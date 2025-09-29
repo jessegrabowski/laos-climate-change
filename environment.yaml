@@ -41,6 +41,8 @@ dependencies:
   - notebook<7
   - openai
   - wikipedia
+  - pyprojroot
+  - wbdata
 
   # Testing
   - pytest
