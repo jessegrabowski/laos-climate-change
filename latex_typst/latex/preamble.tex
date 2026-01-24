@@ -1,18 +1,7 @@
 % =============================================================================
 % PREAMBLE - Package Configuration and Custom Commands
 % =============================================================================
-
-% -----------------------------------------------------------------------------
-% Page Layout
-% -----------------------------------------------------------------------------
-\usepackage[a4paper, margin=2.5cm]{geometry}
-
-% -----------------------------------------------------------------------------
-% Fonts
-% -----------------------------------------------------------------------------
-\usepackage[T1]{fontenc}
-\usepackage{tgheros}
-\renewcommand{\familydefault}{\sfdefault}
+% Note: elsarticle class automatically loads graphicx and natbib
 
 % -----------------------------------------------------------------------------
 % Language and Encoding
@@ -21,7 +10,7 @@
 \usepackage[english]{babel}
 
 % -----------------------------------------------------------------------------
-% Colors
+% Colors (for hyperref and other uses)
 % -----------------------------------------------------------------------------
 \usepackage{xcolor}
 \definecolor{OECDblue}{HTML}{4472C4}
@@ -47,7 +36,7 @@
 % -----------------------------------------------------------------------------
 % Graphics and Figures
 % -----------------------------------------------------------------------------
-\usepackage{graphicx}
+% graphicx is loaded by elsarticle, but we can add additional packages
 \usepackage{subcaption}
 \usepackage{float}
 \usepackage{placeins}
@@ -80,39 +69,10 @@
 }
 
 % -----------------------------------------------------------------------------
-% Section Formatting
-% -----------------------------------------------------------------------------
-\usepackage{titlesec}
-
-\titleformat{\section}
-  {\normalfont\Large\bfseries\color{OECDblue}}
-  {\thesection}{1em}{}
-\titlespacing*{\section}{0pt}{1.4em}{1em}
-
-\titleformat{\subsection}
-  {\normalfont\normalsize\bfseries\color{OECDblue}}
-  {\thesubsection}{1em}{}
-\titlespacing*{\subsection}{0pt}{1.2em}{0.8em}
-
-\titleformat{\subsubsection}
-  {\normalfont\normalsize\bfseries}
-  {\thesubsubsection}{1em}{}
-
-% -----------------------------------------------------------------------------
-% Table of Contents and Lists
-% -----------------------------------------------------------------------------
-\usepackage{tocloft}
-\setcounter{tocdepth}{2}
-\setcounter{secnumdepth}{3}
-
-\renewcommand{\cftsecfont}{\bfseries}
-\renewcommand{\cftsecpagefont}{\bfseries}
-
-% -----------------------------------------------------------------------------
 % Bibliography
 % -----------------------------------------------------------------------------
-\usepackage{natbib}
-\bibliographystyle{agsm}
+% natbib is loaded by elsarticle
+% Note: \bibliographystyle moved to main.tex before \bibliography command
 \setcitestyle{authoryear,round,semicolon}
 
 % -----------------------------------------------------------------------------
@@ -156,7 +116,7 @@
 % -----------------------------------------------------------------------------
 % Miscellaneous
 % -----------------------------------------------------------------------------
-\usepackage{microtype}
+\usepackage[expansion=false]{microtype}
 \usepackage{url}
 
 \widowpenalty=10000

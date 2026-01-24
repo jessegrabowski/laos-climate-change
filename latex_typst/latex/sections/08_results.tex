@@ -103,6 +103,7 @@ The sampling results for the damage model are presented on table 10, while the i
 The effective sample sizes (ess\_tail) are generally high, indicating that the MCMC chains have mixed well and that the posterior distributions are well-characterized. The variables alpha\_X[ln\_population\_density], alpha\_X[ln\_gdp\_pc], and beta\_GX[ln\_population\_density] present the lowest ess\_tails, however the values are all equal or greater to 280, which still represent a reasonable size for posterior drawing.
 
 \input{tables/damage_results}
+\FloatBarrier
 
 The damage model results and predictions for Lao are presented in Figure~\ref{fig:results_damages_lao}. This plot shows the in-sample damage predictions conditional on the occurrence of a disaster. We can observe how the country has experienced in the last decade three disasters that surpass in terms of damage all previous disasters. In that regard the 2018 flood was particularly destructive, with damages outside the 80\% HDI. Interestingly, all the reported events are contained in the 95\% HDI, with only two events outside the 80\% HDI.
 
@@ -123,10 +124,11 @@ Results for Costa Rica are presented in Figure~\ref{fig:results_damages_cr}. All
     \label{fig:results_damages_cr}
     \includegraphics[width=\textwidth]{results/result_damages_cr.png}
 \end{figure}
+\FloatBarrier
 
 Therefore, our model predicts that Costa Rica will have a greater exposure to more impactful events in the coming decades, while the projected mean damage of each event is not projected to increase in the case of Laos. Nevertheless, it is necessary to underscore that the total exposure is measured by the interaction of damages and frequency, which we will explore in the next section.
 
-\FloatBarrier
+
 \subsection{Country level damages curve}
 
 To produce the damage curves, we combine the results of the damage and frequency models. Figure~\ref{fig:damage_curves_lao} presents the damage curves for Laos. The vertical axis corresponds to damages in millions of USD, while the horizontal axis represents the probability associated with each damage level. As expected, most of the probability mass corresponds to low-damage events. However, as we consider less probable disasters, the magnitude of damages increases. The most relevant finding is that the model projects an upward shift in Laos' damage curve, indicating that more impactful events will become more frequent, and more frequent events are projected to generate greater damages.
@@ -180,15 +182,15 @@ The data also show that damages from more frequent events are rising sharply, un
     \label{fig:damage_barplots_cr}
     \includegraphics[width=\textwidth]{results/damagecurves_barplots_cr.png}
 \end{figure}
-
 \FloatBarrier
+
 \subsection{Geospatial patterns model}
 
 \subsubsection{HSGP modeling}
 
 First, we implement a simplified geospatial model that relies solely on an HSGP component to estimate the probability of a disaster occurring at any given point within a country. This simplified HSGP version uses only latitude and longitude as independent variables, making it time-independent.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \captionwithnoteandshort{HSGP event probability predictions for Cambodia, Thailand, Laos and Vietnam}{HSGP event probability predictions for Cambodia, Thailand, Laos and Vietnam}{The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of one disaster.}
     \label{fig:hsgp_sea}
@@ -205,12 +207,14 @@ HSGP parameter values for Cambodia, Thailand, Laos and Vietnam, and HSGP paramet
 
 Figure~\ref{fig:hsgp_lao} presents the results specifically for Lao. Based only on the coordinates of previous disasters, the model is able to identify a risk zone in the center-left area of the country, precisely where a big number of rivers merge. It also identifies a risk area closer to the capital Vientiane, and in two more points in the lower right area of the country.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \captionwithnoteandshort{HSGP event probability predictions for Lao}{HSGP event probability predictions for Lao}{The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of one disaster.}
     \label{fig:hsgp_lao}
-    \includegraphics[width=\textwidth]{results/event_HSGP_lao_pred.png}
+    \includegraphics[width=0.75\textwidth]{results/event_HSGP_lao_pred.png}
 \end{figure}
+
+\FloatBarrier
 
 The results for Central America are presented on Figure~\ref{fig:hsgp_ca}. It is possible to observe how the model successfully captures the disaster patterns.
 
@@ -263,7 +267,7 @@ Figure~\ref{fig:decomposed_result_lao} presents the decomposition of the effects
     \centering
     \captionwithnoteandshort{Decomposition of the full model event probability predictions for Lao}{Decomposition of the full model event probability predictions for Lao}{}
     \label{fig:decomposed_result_lao}
-    \includegraphics[width=\textwidth]{results/decomposed_effect_lao.png}
+    \includegraphics[width=1.1\textwidth]{results/decomposed_effect_lao.png}
 \end{figure}
 
 The static geospatial perspective is highly valuable in itself; nevertheless, we are interested in understanding how exposure to climate change risks evolves over time and how it is affected by projected climate trends. To do this, we multiply the geospatial event probability by the mean number of events the country is projected to experience per year. This provides the total event probability per year for each point. We then project these values over time to understand how risk evolves as atmospheric CO\textsubscript{2} increases. Figure~\ref{fig:results_lao_yearly} shows how local exposure increases over time for Laos.
@@ -272,7 +276,7 @@ The static geospatial perspective is highly valuable in itself; nevertheless, we
     \centering
     \captionwithnoteandshort{Full model event probability predictions for Lao through time}{Full model event probability predictions for Lao through time}{}
     \label{fig:results_lao_yearly}
-    \includegraphics[width=\textwidth]{results/full_model_yearly_lao.png}
+    \includegraphics[width=1.1\textwidth]{results/full_model_yearly_lao.png}
 \end{figure}
 
 We now present the results for Central America and Costa Rica. Figure~\ref{fig:results_ca_full} shows the results for the whole region, while Figure~\ref{fig:results_cr_full} presents the estimations specifically for Costa Rica. In the case of Costa Rica, we observe how the riskiest areas seem to be concentrated in the great metropolitan area, which contains most of the country's population.
@@ -293,7 +297,7 @@ Figure~\ref{fig:decomposed_result_cr} shows the decomposition of the effects. In
     \centering
     \captionwithnoteandshort{Full model event probability predictions for Costa Rica}{Full model event probability predictions for Costa Rica}{The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of at least one disaster.}
     \label{fig:results_cr_full}
-    \includegraphics[width=0.8\textwidth]{results/full_model_cr_2018.png}
+    \includegraphics[width=0.7\textwidth]{results/full_model_cr_2018.png}
 \end{figure}
 
 \FloatBarrier
@@ -304,7 +308,7 @@ Figure~\ref{fig:decomposed_result_cr} shows the decomposition of the effects. In
     \centering
     \captionwithnoteandshort{Decomposition of the full model event probability predictions for Costa Rica}{Decomposition of the full model event probability predictions for Costa Rica}{}
     \label{fig:decomposed_result_cr}
-    \includegraphics[width=\textwidth]{results/decomposed_effect_cr.png}
+    \includegraphics[width=1.1\textwidth]{results/decomposed_effect_cr.png}
 \end{figure}
 
 To conclude this section, we present on Figure~\ref{fig:results_cr_yearly} the projected geospatial risk for Costa Rica. Similar to the case of Lao, we can observe how the probability of event increases in the riskier areas as atmospheric CO2 projections grow through time. The projections show a greater exposure for the Greater Metropolitan Area, Guanacaste and the south of the Caribbean.
@@ -313,7 +317,7 @@ To conclude this section, we present on Figure~\ref{fig:results_cr_yearly} the p
     \centering
     \captionwithnoteandshort{Full model event probability predictions for Costa Rica through time}{Full model event probability predictions for Costa Rica through time}{}
     \label{fig:results_cr_yearly}
-    \includegraphics[width=0.95\textwidth]{results/full_model_yearly_cr.png}
+    \includegraphics[width=1.1\textwidth]{results/full_model_yearly_cr.png}
 \end{figure}
 
 \FloatBarrier
@@ -334,7 +338,7 @@ These locations are shown in Figure~\ref{fig:locs_cr_map}.
     \centering
     \captionwithnoteandshort{Selected locations}{Selected locations}{}
     \label{fig:locs_cr_map}
-    \includegraphics[width=0.50\textwidth]{results/loc_cr_map.png}
+    \includegraphics[width=0.65\textwidth]{results/loc_cr_map.png}
 \end{figure}
 
 \FloatBarrier
@@ -342,14 +346,16 @@ These locations are shown in Figure~\ref{fig:locs_cr_map}.
 Table 14 shows the yearly probability of an event happening on each point through time. We can observe that Desamparados presents the greater probability and Cariari the lowest one from the three points. Also it is possible to observe how the risk exposure increases for all the locations across time.
 
 \input{tables/location_prob_cr}
+\FloatBarrier
 
 We use the local probability to scale down the national expected damage, and produce a local level return year curves. These curves do not consider local characteristics of infrastructure, or physical capital, but are local projections of the national damages using the local event probability (which does capture some of this patterns via the HSGP component).
 
 This local projections allows us to quantify the climate change risk exposure at a granular level, and produce approximations of the impacts that particular communities can suffer due to climate change related disasters. To exemplify this, we present on Figure~\ref{fig:return_years_fila} the return year curves for El Bamb\'{u} (Filadelfia, Guanacaste). Consistent with what has been observed in the previous results, the return year curves reveal a growing pattern in terms of damage exposures as more severe events become more frequent, and more frequent events become more severe.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \captionwithnoteandshort{Geolocated projected return year curves for El Bamb\'{u} (Filadelfia, Guanacaste)}{Geolocated projected return year curves for El Bamb\'{u} (Filadelfia, Guanacaste)}{Estimated damages are measured in millions of 2025 USD.}
     \label{fig:return_years_fila}
     \includegraphics[width=\textwidth]{results/filadelfia_return_years.png}
 \end{figure}
+\FloatBarrier

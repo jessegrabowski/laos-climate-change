@@ -1,39 +1,49 @@
 % =============================================================================
 % Estimating Climate Change Risk Exposure: a probabilistic approach
 % =============================================================================
-\documentclass[11pt,a4paper]{article}
+\documentclass[preprint,12pt,authoryear]{elsarticle}
 
 % Load preamble with all packages and settings
 \input{preamble}
+
+\journal{}
 
 \begin{document}
 
 % =============================================================================
 % FRONT MATTER
 % =============================================================================
-\pagenumbering{roman}
+\begin{frontmatter}
 
-% Title Page
-\input{sections/01_title_page}
+\title{Estimating Climate Change Risk Exposure: a probabilistic approach}
 
-% Table of Contents
+\author[label1]{Camilo Saldarriaga}
+\ead{juan_camilo.saldarriaga@edu.escp.eu}
+\affiliation[label1]{organization={ESCP Business School}}
+
+\author[label2]{Jesse Grabowski}
+\ead{jessegrabowski@gmail.com}
+\affiliation[label2]{organization={Paris-1 Panth\'{e}on-Sorbonne}}
+
+\author[label3]{Jan Rielaender}
+\ead{Jan.RIELAENDER@oecd.org}
+\affiliation[label3]{organization={OECD Development Center}}
+
+\begin{abstract}
+This paper develops a methodology to quantify countries' exposure to climate change--related disasters, focusing on hydrometeorological events such as floods and storms. We introduce the Probabilistic Geospatial Risk (PGR) model, a fully Bayesian, multi-level system integrating time series, frequency, damage, and spatial sub-models. The framework captures uncertainty across the entire distribution of disaster frequency and damages, enabling robust estimation of both mean and tail risks. Using data from the EM-DAT disaster database, the World Bank, GPCC, and NOAA, we estimate disaster probabilities and damage distributions as functions of climate and development indicators. We further apply a Hilbert Space Gaussian Process (HSGP) to model fine-grained geospatial patterns of disaster occurrence within countries, complemented by state-space projections of climate and economic covariates. The model is demonstrated through two case studies---Costa Rica and the Lao People's Democratic Republic. The resulting geolocalized damage curves and return-year estimates provide a transparent, reproducible tool for assessing future exposure to climate-related risks. This probabilistic approach advances the literature by integrating uncertainty quantification, geospatial modeling, and economic impact estimation into a coherent framework suitable for policy analysis and climate adaptation planning.
+\end{abstract}
+
+\begin{keyword}
+Climate change risk \sep Bayesian modeling \sep hydrometeorological disasters \sep geo-spatial modeling \sep probabilistic risk assessment \sep damage curves \sep uncertainty quantification
+\end{keyword}
+
+\end{frontmatter}
+
 \newpage
-\tableofcontents
-
-% List of Figures
-\newpage
-\listoffigures
-
-% List of Tables
-\newpage
-\listoftables
 
 % =============================================================================
 % MAIN CONTENT
 % =============================================================================
-\newpage
-\pagenumbering{arabic}
-
 \input{sections/03_introduction}
 \input{sections/04_literature_review}
 \input{sections/05_modeling_approach}
@@ -41,25 +51,23 @@
 \input{sections/07_data}
 \clearpage
 \input{sections/08_results}
+\newpage
 \input{sections/09_conclusions}
+\newpage
 
 % =============================================================================
 % BIBLIOGRAPHY
 % =============================================================================
-\newpage
-\renewcommand{\bibname}{}
-\section*{References}
-\addcontentsline{toc}{section}{References}
+\bibliographystyle{elsarticle-harv}
 \bibliography{references}
 
 % =============================================================================
 % APPENDICES
 % =============================================================================
-\newpage
-% Remove letter prefix from appendix sections
 \appendix
 \renewcommand{\thesection}{Annex \arabic{section}}
 \setcounter{section}{0}
+\newpage
 \input{sections/annex_1}
 \newpage
 \input{sections/annex_2}

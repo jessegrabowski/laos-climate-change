@@ -1,189 +1,257 @@
-\begin{thebibliography}{xx}
-
-\harvarditem[Abril-Pla et~al.]{Abril-Pla, Andreani, Carroll, Dong, Fonnesbeck,
-  Kochurov, Kumar, Lao, Luhmann, Martin et~al.}{2023}{abril2023pymc}
-Abril-Pla, O., Andreani, V., Carroll, C., Dong, L., Fonnesbeck, C.~J.,
-  Kochurov, M., Kumar, R., Lao, J., Luhmann, C.~C., Martin, O.~A. et~al.
-  \harvardyearleft 2023\harvardyearright , `Pymc: a modern, and comprehensive
-  probabilistic programming framework in python', {\em PeerJ Computer Science}
-  {\bf 9},~e1516.
-
-\harvarditem[Besag et~al.]{Besag, York \harvardand\
-  Molli{\'e}}{1991}{besag1991bayesian}
-Besag, J., York, J. \harvardand\ Molli{\'e}, A.  \harvardyearleft
-  1991\harvardyearright , `Bayesian image restoration, with two applications in
-  spatial statistics', {\em Annals of the Institute of Statistical Mathematics}
-  {\bf 43}(1),~1--20.
-
-\harvarditem[Botzen et~al.]{Botzen, Deschenes \harvardand\
-  Sanders}{2019}{Botzen2019}
-Botzen, W. J.~W., Deschenes, O. \harvardand\ Sanders, M.  \harvardyearleft
-  2019\harvardyearright , `The economic impacts of natural disasters: A review
-  of models and empirical studies', {\em Review of Environmental Economics and
-  Policy} .
-
-\harvarditem{Bouwer}{2011}{bouwer2011have}
-Bouwer, L.~M.  \harvardyearleft 2011\harvardyearright , `Have disaster losses
-  increased due to anthropogenic climate change?', {\em Bulletin of the
-  American Meteorological Society} {\bf 92}(1),~39--46.
-
-\harvarditem[Bradbury et~al.]{Bradbury, Frostig, Hawkins, Johnson, Leary,
-  Maclaurin \harvardand\ Wanderman-Milne}{2018}{jax2018}
-Bradbury, J., Frostig, R., Hawkins, P., Johnson, M.~J., Leary, C., Maclaurin,
-  D. \harvardand\ Wanderman-Milne, S.  \harvardyearleft 2018\harvardyearright ,
-  `{JAX}: composable transformations of {Python+NumPy} programs', {\em GitHub
-  repository} .
-\newblock Accessed July 2, 2025.
-
-\harvarditem{{Centre for Research on the Epidemiology of
-  Disasters}}{2024}{cred_emdat_2024}
-{Centre for Research on the Epidemiology of Disasters}  \harvardyearleft
-  2024\harvardyearright , `{EM-DAT: The International Disaster Database}'.
-\newline\harvardurl{https://www.emdat.be/}
-
-\harvarditem[Gelman et~al.]{Gelman, Carlin, Stern \harvardand\
-  Rubin}{1995}{gelman1995bayesian}
-Gelman, A., Carlin, J.~B., Stern, H.~S. \harvardand\ Rubin, D.~B.
-  \harvardyearleft 1995\harvardyearright , {\em Bayesian data analysis},
-  Chapman and Hall/CRC.
-
-\harvarditem{Grabowski}{2023}{pymc-extras-statespace}
-Grabowski, J.  \harvardyearleft 2023\harvardyearright , `pymc-devs/pymc-extras:
-  {P}ull {R}equest 174, {PyMCStatespace}', GitHub.
-\newline\harvardurl{https://github.com/pymc-devs/pymc-extras/pull/174}
-
-\harvarditem[Hoffman et~al.]{Hoffman, Gelman et~al.}{2014}{hoffman2014no}
-Hoffman, M.~D., Gelman, A. et~al.  \harvardyearleft 2014\harvardyearright ,
-  `The no-u-turn sampler: adaptively setting path lengths in hamiltonian monte
-  carlo.', {\em J. Mach. Learn. Res.} {\bf 15}(1),~1593--1623.
-
-\harvarditem{Howard \harvardand\ Sterner}{2017}{Howard2017}
-Howard, P.~H. \harvardand\ Sterner, T.  \harvardyearleft 2017\harvardyearright
-  , `Few and not so far between: A meta-analysis of climate damage estimates',
-  {\em Environmental and Resource Economics} {\bf 68}(1),~197--225.
-\newline\harvardurl{https://doi.org/10.1007/s10640-017-0166-z}
-
-\harvarditem[Hyndman et~al.]{Hyndman, Koehler, Ord \harvardand\
-  Snyder}{2008}{ets_time_series}
-Hyndman, R.~J., Koehler, A.~B., Ord, K. \harvardand\ Snyder, R.~D.
-  \harvardyearleft 2008\harvardyearright , {\em Forecasting with Exponential
-  Smoothing: The State Space Approach}, Springer-Verlag, Berlin, Heidelberg.
-
-\harvarditem{{Intergovernmental Panel on Climate Change
-  (IPCC)}}{2021}{IPCC_AR6_WGI_2021}
-{Intergovernmental Panel on Climate Change (IPCC)}  \harvardyearleft
-  2021\harvardyearright , `Climate change 2021: The physical science basis.
+\begin{thebibliography}{30}
+\expandafter\ifx\csname natexlab\endcsname\relax\def\natexlab#1{#1}\fi
+\providecommand{\url}[1]{\texttt{#1}}
+\providecommand{\href}[2]{#2}
+\providecommand{\path}[1]{#1}
+\providecommand{\DOIprefix}{doi:}
+\providecommand{\ArXivprefix}{arXiv:}
+\providecommand{\URLprefix}{URL: }
+\providecommand{\Pubmedprefix}{pmid:}
+\providecommand{\doi}[1]{\href{http://dx.doi.org/#1}{\path{#1}}}
+\providecommand{\Pubmed}[1]{\href{pmid:#1}{\path{#1}}}
+\providecommand{\bibinfo}[2]{#2}
+\ifx\xfnm\relax \def\xfnm[#1]{\unskip,\space#1}\fi
+%Type = Article
+\bibitem[{Abril-Pla et~al.(2023)Abril-Pla, Andreani, Carroll, Dong, Fonnesbeck,
+  Kochurov, Kumar, Lao, Luhmann, Martin et~al.}]{abril2023pymc}
+\bibinfo{author}{Abril-Pla, O.}, \bibinfo{author}{Andreani, V.},
+  \bibinfo{author}{Carroll, C.}, \bibinfo{author}{Dong, L.},
+  \bibinfo{author}{Fonnesbeck, C.J.}, \bibinfo{author}{Kochurov, M.},
+  \bibinfo{author}{Kumar, R.}, \bibinfo{author}{Lao, J.},
+  \bibinfo{author}{Luhmann, C.C.}, \bibinfo{author}{Martin, O.A.}, et~al.,
+  \bibinfo{year}{2023}.
+\newblock \bibinfo{title}{Pymc: a modern, and comprehensive probabilistic
+  programming framework in python}.
+\newblock \bibinfo{journal}{PeerJ Computer Science} \bibinfo{volume}{9},
+  \bibinfo{pages}{e1516}.
+%Type = Article
+\bibitem[{Besag et~al.(1991)Besag, York and Molli{\'e}}]{besag1991bayesian}
+\bibinfo{author}{Besag, J.}, \bibinfo{author}{York, J.},
+  \bibinfo{author}{Molli{\'e}, A.}, \bibinfo{year}{1991}.
+\newblock \bibinfo{title}{Bayesian image restoration, with two applications in
+  spatial statistics}.
+\newblock \bibinfo{journal}{Annals of the Institute of Statistical Mathematics}
+  \bibinfo{volume}{43}, \bibinfo{pages}{1--20}.
+%Type = Article
+\bibitem[{Botzen et~al.(2019)Botzen, Deschenes and Sanders}]{Botzen2019}
+\bibinfo{author}{Botzen, W.J.W.}, \bibinfo{author}{Deschenes, O.},
+  \bibinfo{author}{Sanders, M.}, \bibinfo{year}{2019}.
+\newblock \bibinfo{title}{The economic impacts of natural disasters: A review
+  of models and empirical studies}.
+\newblock \bibinfo{journal}{Review of Environmental Economics and Policy} .
+%Type = Article
+\bibitem[{Bouwer(2011)}]{bouwer2011have}
+\bibinfo{author}{Bouwer, L.M.}, \bibinfo{year}{2011}.
+\newblock \bibinfo{title}{Have disaster losses increased due to anthropogenic
+  climate change?}
+\newblock \bibinfo{journal}{Bulletin of the American Meteorological Society}
+  \bibinfo{volume}{92}, \bibinfo{pages}{39--46}.
+\newblock \DOIprefix\doi{10.1175/2010BAMS3092.1}.
+%Type = Article
+\bibitem[{Bradbury et~al.(2018)Bradbury, Frostig, Hawkins, Johnson, Leary,
+  Maclaurin and Wanderman-Milne}]{jax2018}
+\bibinfo{author}{Bradbury, J.}, \bibinfo{author}{Frostig, R.},
+  \bibinfo{author}{Hawkins, P.}, \bibinfo{author}{Johnson, M.J.},
+  \bibinfo{author}{Leary, C.}, \bibinfo{author}{Maclaurin, D.},
+  \bibinfo{author}{Wanderman-Milne, S.}, \bibinfo{year}{2018}.
+\newblock \bibinfo{title}{{JAX}: composable transformations of {Python+NumPy}
+  programs}.
+\newblock \bibinfo{journal}{GitHub repository} \bibinfo{note}{Accessed July 2,
+  2025}.
+%Type = Misc
+\bibitem[{{Centre for Research on the Epidemiology of
+  Disasters}(2024)}]{cred_emdat_2024}
+\bibinfo{author}{{Centre for Research on the Epidemiology of Disasters}},
+  \bibinfo{year}{2024}.
+\newblock \bibinfo{title}{{EM-DAT: The International Disaster Database}}.
+\newblock \URLprefix \url{https://www.emdat.be/}.
+%Type = Book
+\bibitem[{Gelman et~al.(1995)Gelman, Carlin, Stern and
+  Rubin}]{gelman1995bayesian}
+\bibinfo{author}{Gelman, A.}, \bibinfo{author}{Carlin, J.B.},
+  \bibinfo{author}{Stern, H.S.}, \bibinfo{author}{Rubin, D.B.},
+  \bibinfo{year}{1995}.
+\newblock \bibinfo{title}{Bayesian data analysis}.
+\newblock \bibinfo{publisher}{Chapman and Hall/CRC}.
+%Type = Misc
+\bibitem[{Grabowski(2023)}]{pymc-extras-statespace}
+\bibinfo{author}{Grabowski, J.}, \bibinfo{year}{2023}.
+\newblock \bibinfo{title}{pymc-devs/pymc-extras: {P}ull {R}equest 174,
+  {PyMCStatespace}}.
+\newblock \bibinfo{howpublished}{GitHub}.
+\newblock \URLprefix \url{https://github.com/pymc-devs/pymc-extras/pull/174}.
+%Type = Article
+\bibitem[{Hoffman et~al.(2014)Hoffman, Gelman et~al.}]{hoffman2014no}
+\bibinfo{author}{Hoffman, M.D.}, \bibinfo{author}{Gelman, A.}, et~al.,
+  \bibinfo{year}{2014}.
+\newblock \bibinfo{title}{The no-u-turn sampler: adaptively setting path
+  lengths in hamiltonian monte carlo.}
+\newblock \bibinfo{journal}{J. Mach. Learn. Res.} \bibinfo{volume}{15},
+  \bibinfo{pages}{1593--1623}.
+%Type = Article
+\bibitem[{Howard and Sterner(2017)}]{Howard2017}
+\bibinfo{author}{Howard, P.H.}, \bibinfo{author}{Sterner, T.},
+  \bibinfo{year}{2017}.
+\newblock \bibinfo{title}{Few and not so far between: A meta-analysis of
+  climate damage estimates}.
+\newblock \bibinfo{journal}{Environmental and Resource Economics}
+  \bibinfo{volume}{68}, \bibinfo{pages}{197--225}.
+\newblock \URLprefix \url{https://doi.org/10.1007/s10640-017-0166-z},
+  \DOIprefix\doi{10.1007/s10640-017-0166-z}.
+%Type = Book
+\bibitem[{Hyndman et~al.(2008)Hyndman, Koehler, Ord and
+  Snyder}]{ets_time_series}
+\bibinfo{author}{Hyndman, R.J.}, \bibinfo{author}{Koehler, A.B.},
+  \bibinfo{author}{Ord, K.}, \bibinfo{author}{Snyder, R.D.},
+  \bibinfo{year}{2008}.
+\newblock \bibinfo{title}{Forecasting with Exponential Smoothing: The State
+  Space Approach}.
+\newblock \bibinfo{publisher}{Springer-Verlag}, \bibinfo{address}{Berlin,
+  Heidelberg}.
+%Type = Misc
+\bibitem[{{Intergovernmental Panel on Climate Change
+  (IPCC)}(2021)}]{IPCC_AR6_WGI_2021}
+\bibinfo{author}{{Intergovernmental Panel on Climate Change (IPCC)}},
+  \bibinfo{year}{2021}.
+\newblock \bibinfo{title}{Climate change 2021: The physical science basis.
   contribution of working group i to the sixth assessment report of the
-  intergovernmental panel on climate change'.
-
-\harvarditem{{Intergovernmental Panel on Climate Change (IPCC)}}{2022{\em
-  a}}{IPCC_AR6_WGII_2022}
-{Intergovernmental Panel on Climate Change (IPCC)}  \harvardyearleft 2022{\em
-  a}\harvardyearright , `Climate change 2022: Impacts, adaptation and
+  intergovernmental panel on climate change}.
+%Type = Misc
+\bibitem[{{Intergovernmental Panel on Climate Change
+  (IPCC)}(2022a)}]{IPCC_AR6_WGII_2022}
+\bibinfo{author}{{Intergovernmental Panel on Climate Change (IPCC)}},
+  \bibinfo{year}{2022}a.
+\newblock \bibinfo{title}{Climate change 2022: Impacts, adaptation and
   vulnerability. contribution of working group ii to the sixth assessment
-  report of the intergovernmental panel on climate change'.
-
-\harvarditem{{Intergovernmental Panel on Climate Change (IPCC)}}{2022{\em
-  b}}{IPCC_AR6_WGIII_2022}
-{Intergovernmental Panel on Climate Change (IPCC)}  \harvardyearleft 2022{\em
-  b}\harvardyearright , `Climate change 2022: Mitigation of climate change.
+  report of the intergovernmental panel on climate change}.
+%Type = Misc
+\bibitem[{{Intergovernmental Panel on Climate Change
+  (IPCC)}(2022b)}]{IPCC_AR6_WGIII_2022}
+\bibinfo{author}{{Intergovernmental Panel on Climate Change (IPCC)}},
+  \bibinfo{year}{2022}b.
+\newblock \bibinfo{title}{Climate change 2022: Mitigation of climate change.
   contribution of working group iii to the sixth assessment report of the
-  intergovernmental panel on climate change'.
-
-\harvarditem{{Intergovernmental Panel on Climate Change
-  (IPCC)}}{2023}{ipcc_ar6}
-{Intergovernmental Panel on Climate Change (IPCC)}  \harvardyearleft
-  2023\harvardyearright , {\em {Climate Change 2023: Synthesis Report.
-  Contribution of Working Groups I, II and III to the Sixth Assessment Report
-  of the Intergovernmental Panel on Climate Change}}, IPCC, Geneva,
-  Switzerland.
-\newblock Full volume (Chapters 1-7, Annexes, excluding SPM pp. 1-34).
-
-\harvarditem{Kahn}{2005}{Kahn2005}
-Kahn, M.~E.  \harvardyearleft 2005\harvardyearright , `The death toll from
-  natural disasters: the role of income, geography, and institutions', {\em
-  Review of Economics and Statistics} {\bf 87}(2),~271--284.
-
-\harvarditem{Langer \harvardand\ Developers}{2023}{nutpie2023}
-Langer, L.~S. \harvardand\ Developers, P.  \harvardyearleft
-  2023\harvardyearright , `nutpie: A jax-based nuts sampler for pymc',
-  \url{https://github.com/pymc-devs/nutpie}.
-\newblock Version 0.0.5.
-
-\harvarditem{Lehner \harvardand\ Grill}{2013}{lehner_global_2013}
-Lehner, B. \harvardand\ Grill, G.  \harvardyearleft 2013\harvardyearright ,
-  `Global river hydrography and network routing: baseline data and new
-  approaches to study the world's large river systems', {\em Hydrological
-  Processes} {\bf 27}(15),~2171--2186.
-\newblock Data downloaded from \url{www.hydrosheds.org}.
-
-\harvarditem[L\'opez et~al.]{L\'opez, Thomas \harvardand\
-  Troncoso}{2015}{lopez_climate_2015}
-L\'opez, R.~E., Thomas, V. \harvardand\ Troncoso, P.  \harvardyearleft
-  2015\harvardyearright , `Climate change and natural disasters'.
-
-\harvarditem[Nakicenovic et~al.]{Nakicenovic, Alcamo, Davis, de~Vries, Fenhann,
-  Gaffin, Gregory, Gr{\"u}bler, Jung, Kram et~al.}{2000}{ipcc}
-Nakicenovic, N., Alcamo, J., Davis, G., de~Vries, B., Fenhann, J., Gaffin, S.,
-  Gregory, K., Gr{\"u}bler, A., Jung, T.~Y., Kram, T. et~al.  \harvardyearleft
-  2000\harvardyearright , {\em Special Report on Emissions Scenarios: A Special
+  intergovernmental panel on climate change}.
+%Type = Book
+\bibitem[{{Intergovernmental Panel on Climate Change (IPCC)}(2023)}]{ipcc_ar6}
+\bibinfo{author}{{Intergovernmental Panel on Climate Change (IPCC)}},
+  \bibinfo{year}{2023}.
+\newblock \bibinfo{title}{{Climate Change 2023: Synthesis Report. Contribution
+  of Working Groups I, II and III to the Sixth Assessment Report of the
+  Intergovernmental Panel on Climate Change}}.
+\newblock \bibinfo{publisher}{IPCC}, \bibinfo{address}{Geneva, Switzerland}.
+\newblock \DOIprefix\doi{10.59327/IPCC/AR6-9789291691647}. \bibinfo{note}{full
+  volume (Chapters 1-7, Annexes, excluding SPM pp. 1-34)}.
+%Type = Article
+\bibitem[{Kahn(2005)}]{Kahn2005}
+\bibinfo{author}{Kahn, M.E.}, \bibinfo{year}{2005}.
+\newblock \bibinfo{title}{The death toll from natural disasters: the role of
+  income, geography, and institutions}.
+\newblock \bibinfo{journal}{Review of Economics and Statistics}
+  \bibinfo{volume}{87}, \bibinfo{pages}{271--284}.
+%Type = Misc
+\bibitem[{Langer and Developers(2023)}]{nutpie2023}
+\bibinfo{author}{Langer, L.S.}, \bibinfo{author}{Developers, P.},
+  \bibinfo{year}{2023}.
+\newblock \bibinfo{title}{nutpie: A jax-based nuts sampler for pymc}.
+\newblock \bibinfo{howpublished}{\url{https://github.com/pymc-devs/nutpie}}.
+\newblock \bibinfo{note}{Version 0.0.5}.
+%Type = Article
+\bibitem[{Lehner and Grill(2013)}]{lehner_global_2013}
+\bibinfo{author}{Lehner, B.}, \bibinfo{author}{Grill, G.},
+  \bibinfo{year}{2013}.
+\newblock \bibinfo{title}{Global river hydrography and network routing:
+  baseline data and new approaches to study the world's large river systems}.
+\newblock \bibinfo{journal}{Hydrological Processes} \bibinfo{volume}{27},
+  \bibinfo{pages}{2171--2186}.
+\newblock \bibinfo{note}{Data downloaded from \url{www.hydrosheds.org}}.
+%Type = Article
+\bibitem[{L\'opez et~al.(2015)L\'opez, Thomas and
+  Troncoso}]{lopez_climate_2015}
+\bibinfo{author}{L\'opez, R.E.}, \bibinfo{author}{Thomas, V.},
+  \bibinfo{author}{Troncoso, P.}, \bibinfo{year}{2015}.
+\newblock \bibinfo{title}{Climate change and natural disasters} .
+%Type = Book
+\bibitem[{Nakicenovic et~al.(2000)Nakicenovic, Alcamo, Davis, de~Vries,
+  Fenhann, Gaffin, Gregory, Gr{\"u}bler, Jung, Kram et~al.}]{ipcc}
+\bibinfo{author}{Nakicenovic, N.}, \bibinfo{author}{Alcamo, J.},
+  \bibinfo{author}{Davis, G.}, \bibinfo{author}{de~Vries, B.},
+  \bibinfo{author}{Fenhann, J.}, \bibinfo{author}{Gaffin, S.},
+  \bibinfo{author}{Gregory, K.}, \bibinfo{author}{Gr{\"u}bler, A.},
+  \bibinfo{author}{Jung, T.Y.}, \bibinfo{author}{Kram, T.}, et~al.,
+  \bibinfo{year}{2000}.
+\newblock \bibinfo{title}{Special Report on Emissions Scenarios: A Special
   Report of Working Group III of the Intergovernmental Panel on Climate
-  Change}, Cambridge University Press, Cambridge, UK.
-\newline\harvardurl{https://www.ipcc.ch/report/emissions-scenarios/}
-
-\harvarditem{{NOAA}}{2024}{noaa_co2_2024}
-{NOAA}  \harvardyearleft 2024\harvardyearright , `Trends in atmospheric carbon
-  dioxide (co2)', \url{https://gml.noaa.gov/ccgg/trends/}.
-
-\harvarditem{Nordhaus}{2019}{nordhaus2019climate}
-Nordhaus, W.  \harvardyearleft 2019\harvardyearright , `Climate change: The
-  ultimate challenge for economics', {\em American Economic Review} {\bf
-  109}(6),~1991--2014.
-
-\harvarditem{OpenAI}{2024}{openai2024gpt4omini}
-OpenAI  \harvardyearleft 2024\harvardyearright , `Gpt-4o-mini'.
-\newblock Large language model.
-\newline\harvardurl{https://openai.com}
-
-\harvarditem{Pearl}{2009}{pearl2009causality}
-Pearl, J.  \harvardyearleft 2009\harvardyearright , {\em Causality}, Cambridge
-  university press.
-
-\harvarditem{Schneider}{2022}{gpcc_2022}
-Schneider, e.~a.  \harvardyearleft 2022\harvardyearright , `Gpcc full data
-  monthly product version 2022', [Dat file]. GPCC: Global Precipitation
-  Climatology Centre.
-\newblock Extracted on May 2024 from
-  \url{http://dx.doi.org/10.5676/DWD_GPCC/FD_M_V2022_100}.
-
-\harvarditem{{The World Bank}}{2024{\em a}}{worldbank_boundaries_2024}
-{The World Bank}  \harvardyearleft 2024{\em a}\harvardyearright , `World bank
-  official boundaries', [Data file].
-\newblock Retrieved on May 2024 from
-  \url{https://datacatalog.worldbank.org/search/dataset/0038272/World-Bank-Official-Boundaries}.
-
-\harvarditem{{The World Bank}}{2024{\em b}}{worldbank_wdi_2024}
-{The World Bank}  \harvardyearleft 2024{\em b}\harvardyearright , `World
-  development indicators', [Data file].
-\newblock Retrieved on May 2024 from
-  \url{https://databank.worldbank.org/source/}.
-
-\harvarditem{{U.S. Bureau of Labor Statistics}}{2024}{fred_cpi}
-{U.S. Bureau of Labor Statistics}  \harvardyearleft 2024\harvardyearright ,
-  `Consumer price index for all urban consumers: All items in u.s. city average
-  (cpiaucns)'.
-\newblock Accessed via FRED, Federal Reserve Bank of St. Louis.
-\newline\harvardurl{https://fred.stlouisfed.org/series/CPIAUCNS}
-
-\harvarditem{Van~Aalst}{2006}{vanaalst2006impacts}
-Van~Aalst, M.~K.  \harvardyearleft 2006\harvardyearright , `The impacts of
-  climate change on the risk of natural disasters', {\em Disasters} {\bf
-  30}(1),~5--18.
-
-\harvarditem[Zhang et~al.]{Zhang, Huang, Lawrimore, Menne \harvardand\
-  Smith}{2019}{zhang_noaa_2019}
-Zhang, H.-M., Huang, B., Lawrimore, J.~H., Menne, M.~J. \harvardand\ Smith,
-  T.~M.  \harvardyearleft 2019\harvardyearright , `Noaa global surface
-  temperature dataset (noaaglobaltemp)'.
+  Change}.
+\newblock \bibinfo{publisher}{Cambridge University Press},
+  \bibinfo{address}{Cambridge, UK}.
+\newblock \URLprefix \url{https://www.ipcc.ch/report/emissions-scenarios/}.
+%Type = Misc
+\bibitem[{{NOAA}(2024)}]{noaa_co2_2024}
+\bibinfo{author}{{NOAA}}, \bibinfo{year}{2024}.
+\newblock \bibinfo{title}{Trends in atmospheric carbon dioxide (co2)}.
+\newblock \bibinfo{howpublished}{\url{https://gml.noaa.gov/ccgg/trends/}}.
+%Type = Article
+\bibitem[{Nordhaus(2019)}]{nordhaus2019climate}
+\bibinfo{author}{Nordhaus, W.}, \bibinfo{year}{2019}.
+\newblock \bibinfo{title}{Climate change: The ultimate challenge for
+  economics}.
+\newblock \bibinfo{journal}{American Economic Review} \bibinfo{volume}{109},
+  \bibinfo{pages}{1991--2014}.
+%Type = Misc
+\bibitem[{OpenAI(2024)}]{openai2024gpt4omini}
+\bibinfo{author}{OpenAI}, \bibinfo{year}{2024}.
+\newblock \bibinfo{title}{Gpt-4o-mini}.
+\newblock \URLprefix \url{https://openai.com}. \bibinfo{note}{large language
+  model}.
+%Type = Book
+\bibitem[{Pearl(2009)}]{pearl2009causality}
+\bibinfo{author}{Pearl, J.}, \bibinfo{year}{2009}.
+\newblock \bibinfo{title}{Causality}.
+\newblock \bibinfo{publisher}{Cambridge university press}.
+%Type = Misc
+\bibitem[{Schneider(2022)}]{gpcc_2022}
+\bibinfo{author}{Schneider, e.a.}, \bibinfo{year}{2022}.
+\newblock \bibinfo{title}{Gpcc full data monthly product version 2022}.
+\newblock \bibinfo{howpublished}{[Dat file]. GPCC: Global Precipitation
+  Climatology Centre}.
+\newblock \bibinfo{note}{Extracted on May 2024 from
+  \url{http://dx.doi.org/10.5676/DWD_GPCC/FD_M_V2022_100}}.
+%Type = Misc
+\bibitem[{{The World Bank}(2024a)}]{worldbank_boundaries_2024}
+\bibinfo{author}{{The World Bank}}, \bibinfo{year}{2024}a.
+\newblock \bibinfo{title}{World bank official boundaries}.
+\newblock \bibinfo{howpublished}{[Data file]}.
+\newblock \bibinfo{note}{Retrieved on May 2024 from
+  \url{https://datacatalog.worldbank.org/search/dataset/0038272/World-Bank-Official-Boundaries}}.
+%Type = Misc
+\bibitem[{{The World Bank}(2024b)}]{worldbank_wdi_2024}
+\bibinfo{author}{{The World Bank}}, \bibinfo{year}{2024}b.
+\newblock \bibinfo{title}{World development indicators}.
+\newblock \bibinfo{howpublished}{[Data file]}.
+\newblock \bibinfo{note}{Retrieved on May 2024 from
+  \url{https://databank.worldbank.org/source/}}.
+%Type = Misc
+\bibitem[{{U.S. Bureau of Labor Statistics}(2024)}]{fred_cpi}
+\bibinfo{author}{{U.S. Bureau of Labor Statistics}}, \bibinfo{year}{2024}.
+\newblock \bibinfo{title}{Consumer price index for all urban consumers: All
+  items in u.s. city average (cpiaucns)}.
+\newblock \URLprefix \url{https://fred.stlouisfed.org/series/CPIAUCNS}.
+  \bibinfo{note}{accessed via FRED, Federal Reserve Bank of St. Louis}.
+%Type = Article
+\bibitem[{Van~Aalst(2006)}]{vanaalst2006impacts}
+\bibinfo{author}{Van~Aalst, M.K.}, \bibinfo{year}{2006}.
+\newblock \bibinfo{title}{The impacts of climate change on the risk of natural
+  disasters}.
+\newblock \bibinfo{journal}{Disasters} \bibinfo{volume}{30},
+  \bibinfo{pages}{5--18}.
+%Type = Misc
+\bibitem[{Zhang et~al.(2019)Zhang, Huang, Lawrimore, Menne and
+  Smith}]{zhang_noaa_2019}
+\bibinfo{author}{Zhang, H.M.}, \bibinfo{author}{Huang, B.},
+  \bibinfo{author}{Lawrimore, J.H.}, \bibinfo{author}{Menne, M.J.},
+  \bibinfo{author}{Smith, T.M.}, \bibinfo{year}{2019}.
+\newblock \bibinfo{title}{Noaa global surface temperature dataset
+  (noaaglobaltemp)}.
 
 \end{thebibliography}
