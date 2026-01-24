@@ -1,0 +1,67 @@
+% =============================================================================
+% Estimating Climate Change Risk Exposure: a probabilistic approach
+% =============================================================================
+\documentclass[11pt,a4paper]{article}
+
+% Load preamble with all packages and settings
+\input{preamble}
+
+\begin{document}
+
+% =============================================================================
+% FRONT MATTER
+% =============================================================================
+\pagenumbering{roman}
+
+% Title Page
+\input{sections/01_title_page}
+
+% Table of Contents
+\newpage
+\tableofcontents
+
+% List of Figures
+\newpage
+\listoffigures
+
+% List of Tables
+\newpage
+\listoftables
+
+% =============================================================================
+% MAIN CONTENT
+% =============================================================================
+\newpage
+\pagenumbering{arabic}
+
+\input{sections/03_introduction}
+\input{sections/04_literature_review}
+\input{sections/05_modeling_approach}
+\input{sections/06_methodology}
+\input{sections/07_data}
+\clearpage
+\input{sections/08_results}
+\input{sections/09_conclusions}
+
+% =============================================================================
+% BIBLIOGRAPHY
+% =============================================================================
+\newpage
+\renewcommand{\bibname}{}
+\section*{References}
+\addcontentsline{toc}{section}{References}
+\bibliography{references}
+
+% =============================================================================
+% APPENDICES
+% =============================================================================
+\newpage
+% Remove letter prefix from appendix sections
+\appendix
+\renewcommand{\thesection}{Annex \arabic{section}}
+\setcounter{section}{0}
+\input{sections/annex_1}
+\newpage
+\input{sections/annex_2}
+
+\end{document}

@@ -1,0 +1,355 @@
+% =============================================================================
+% Results
+% =============================================================================
+
+\section{Results}
+\label{sec:results}
+
+As a first step we present the results of the time series models for both countries. These results are extremely important as they allow us to project the covariates of the other models into the future, which is a requisite to produce predictions of the model results in the years to come.
+
+\subsection{Time series model results}
+
+The goal of the time series model is to generate predictions for the covariates used in the disaster frequency, disaster damages, and geospatial patterns models. This allows us to project the models into the future and evaluate the impact of different CO\textsubscript{2} scenarios on country-level damage curves. First, we present the results for the global-level time series of CO\textsubscript{2} and ocean temperature, along with the deviation of ocean temperature from its trend. We observe that both atmospheric CO\textsubscript{2} and ocean temperature are projected to continue their upward trends, though the growth rate of ocean temperature is expected to smooth over time.
+
+\begin{figure}[htbp]
+    \centering
+    \captionwithnoteandshort{Time series predictions for the global-level covariates}{Time series predictions for the global-level covariates}{CO2 is measured in Gigatons, ocean temperature is measured in Fahrenheit degrees, and ocean temperature deviation from its mean is measured in standard deviation units.}
+    \label{fig:global_time_series}
+    \includegraphics[width=\textwidth]{results/time_series_pred_atmospheric_cols.png}
+\end{figure}
+
+In the case of CO\textsubscript{2} emissions, we are interested in contrasting our projections with those developed by the IPCC (Intergovernmental Panel on Climate Change). The IPCC created several Special Report on Emissions Scenarios (SRES) \citep{ipcc} to model possible future climate conditions based on different socioeconomic pathways. Among these, A2 and B1 represent contrasting scenarios of global development and CO\textsubscript{2} emissions. Scenario A2 describes a high CO\textsubscript{2} emissions trajectory, often considered conservative in its assumptions, while scenario B1 represents an optimistic low CO\textsubscript{2} emissions pathway. Table 8 shows the comparison between these two scenarios.
+
+\input{tables/co2_ipcc_scenarios}
+
+\FloatBarrier
+
+Figure~\ref{fig:co2_projections} compares the trajectory of IPCC scenarios A2 and B1 with our own projections. We observe that scenario B1 aligns relatively closely with what our time series model projects, while scenario A2 shows a significant divergence. Our focus is on understanding how different CO\textsubscript{2} trajectories might impact the damage curves for the countries analyzed. To address this question, we will model the damage curves using both scenario A2 and our own projections.
+
+\begin{figure}[htbp]
+    \centering
+    \captionwithnoteandshort{IPCC and own projections of atmospheric CO\textsubscript{2}}{IPCC and own projections of atmospheric CO\textsubscript{2}}{CO2 is measured in Gigatons, while ocean temperature is measured in Fahrenheit degrees. The deviation of ocean temperature from its trend value is measured in standard deviations.}
+    \label{fig:co2_projections}
+    \includegraphics[width=\textwidth]{results/ipcc_co2_pred.png}
+\end{figure}
+
+Regarding the country-level variables, Figures~\ref{fig:cr_time_series} and \ref{fig:lao_time_series} present the projections for Costa Rica and Laos, respectively. In both cases, we observe an upward trend in GDP and population. For Costa Rica, the GDP growth rate surpasses the population growth rate, resulting in a rising GDP per capita. In contrast, for Laos, the projected population growth rate exceeds the GDP growth rate during a certain period, leading to a decline in GDP per capita. In the case of precipitation, the time series for both countries stabilize after following the current trend for a few years.
+
+\begin{figure}[htbp]
+    \centering
+    \captionwithnoteandshort{Time series predictions for Costa Rica country level variables}{Time series predictions for Costa Rica country level variables}{Population is measured in millions, real GDP in millions of USD, and precipitation is the whole monthly mean in millimeters.}
+    \label{fig:cr_time_series}
+    \includegraphics[width=\textwidth]{results/time_series_pred_cr.png}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \captionwithnoteandshort{Time series predictions for Laos country level variables}{Time series predictions for Laos country level variables}{Population is measured in millions, real GDP in millions of USD, and precipitation is the whole monthly mean in millimeters.}
+    \label{fig:lao_time_series}
+    \includegraphics[width=\textwidth]{results/time_series_pred_lao.png}
+\end{figure}
+
+\FloatBarrier
+\subsection{Disaster frequency model}
+
+The sampling statistics of the frequency model are presented on tables 8 and 9. The sampling was implemented without divergences. The r\_hat values for the results show a healthy sampling process. According to the Gelman--Rubin convergence diagnostic, the values of 1.00 mean that MCMC chains have converged to the same target posterior distribution. The only exception is the case of beta\_GY, which has some r\_hat values above 1.00. In general, the ess\_tail, which measures the effective sample size in the tails of the posterior distribution, reveal that we have reasonable sampling sizes, with the lowest one being 945.
+
+\input{tables/event_frequency_results_1}
+\input{tables/event_frequency_results_2}
+
+Figure~\ref{fig:event_freq_res_lao} presents the model results for Lao. Here the blue line provides the mean in-sample prediction, while the shaded region corresponds to the 95\% High-Density-Interval (the darker the shade, the darker the probability for that value). We can see how the model succeeds to capture the general trend of the event's frequency, and how almost the observed number of events lie inside the 95\% HDI values. In general, Lao presents a mean yearly number of events lower than one, with a trend to grow during the last decade, where the mean number of events increases up to one.
+
+\begin{figure}[htbp]
+    \centering
+    \captionwithnoteandshort{Event Frequency model results for Lao}{Event Frequency model results for Lao}{Black points correspond to the observed numbers, blue line to the in-sample mean prediction, and shaded region to the 95\% HDI, where lighter shadow reflects lower probability.}
+    \label{fig:event_freq_res_lao}
+    \includegraphics[width=\textwidth]{results/result_event_freq_lao.png}
+\end{figure}
+
+Figure~\ref{fig:event_freq_pred_lao} reveals a clear upward trend in the number of yearly events, with the mean value increasing up to 3. The 95\% Highest Density Interval (HDI) extends up to 6 events. This means that by 2020, we could be 95\% confident that the number of hydrometeorological disasters in Laos was fewer than 3. By 2060, however, this number could increase to 6. (It is important to highlight that, for the purposes of this study, we are only considering events reported to affect more than 1,000 people).
+
+\begin{figure}[htbp]
+    \centering
+    \captionwithnoteandshort{Event Frequency predictions for Lao}{Event Frequency predictions for Lao}{Blue line to the mean prediction, and shaded region to the 95\% HDI, where lighter shadow reflects lower probability.}
+    \label{fig:event_freq_pred_lao}
+    \includegraphics[width=\textwidth]{results/result_event_freq_pred_lao.png}
+\end{figure}
+
+Figure~\ref{fig:event_freq_res_cr} presents the model results for Costa Rica. The mean number of yearly disasters in the country starts around 0.5, with a growing trend that makes it approach one. It is worth noting that in 2008 Costa Rica registered 4 events in one single year. In general we observe that the 95\% High Density Interval manages to capture all the yearly values.
+
+\begin{figure}[htbp]
+    \centering
+    \captionwithnoteandshort{Event Frequency model results for Costa Rica}{Event Frequency model results for Costa Rica}{Black points correspond to the observed numbers, blue line to the in-sample mean prediction, and shaded region to the 95\% HDI.}
+    \label{fig:event_freq_res_cr}
+    \includegraphics[width=\textwidth]{results/result_event_freq_cri.png}
+\end{figure}
+
+Figure~\ref{fig:event_freq_res_pred_cr} presents the projected trends. Just like in the case of Laos, we observe a growing trend, nevertheless in the case of Costa Rica, with the mean value reaching 2.5 in 2060, and the upper band of the 95\% HDI growing up to 6 yearly disasters.
+
+\begin{figure}[htbp]
+    \centering
+    \captionwithnoteandshort{Event Frequency predictions for Costa Rica}{Event Frequency predictions for Costa Rica}{Black points correspond to the observed numbers, blue line to the in-sample mean prediction, and shaded region to the 95\% HDI.}
+    \label{fig:event_freq_res_pred_cr}
+    \includegraphics[width=\textwidth]{results/result_event_freq_pred_cr.png}
+\end{figure}
+
+We can conclude then that both countries are exposed to an increase of the number of hydrometeorological events in the years to come according to our model.
+
+\FloatBarrier
+\subsection{Damages model}
+
+The sampling results for the damage model are presented on table 10, while the in sample model predictions are presented on Figures~\ref{fig:results_damages_lao} and \ref{fig:results_damages_cr}. The model was successfully sampled without divergences. From table 10 it is possible to observe that almost all variables have a r\_hat of 1.00 which reveals a healthy posterior approximation. However three particular variables have r\_hat values greater to 1.01: alpha\_X[ln\_population\_density], alpha\_X[ln\_gdp\_pc], and beta\_GX[ln\_population\_density]. This reveals the MCMC had some conversion troubles for those particular variables. However, all the variables remain under the 1.05 threshold.
+
+The effective sample sizes (ess\_tail) are generally high, indicating that the MCMC chains have mixed well and that the posterior distributions are well-characterized. The variables alpha\_X[ln\_population\_density], alpha\_X[ln\_gdp\_pc], and beta\_GX[ln\_population\_density] present the lowest ess\_tails, however the values are all equal or greater to 280, which still represent a reasonable size for posterior drawing.
+
+\input{tables/damage_results}
+
+The damage model results and predictions for Lao are presented in Figure~\ref{fig:results_damages_lao}. This plot shows the in-sample damage predictions conditional on the occurrence of a disaster. We can observe how the country has experienced in the last decade three disasters that surpass in terms of damage all previous disasters. In that regard the 2018 flood was particularly destructive, with damages outside the 80\% HDI. Interestingly, all the reported events are contained in the 95\% HDI, with only two events outside the 80\% HDI.
+
+In terms of the projected values, the model does not project a growing trend in terms of the projected damages. Here it is important to take into consideration that the model has country-level hierarchy for different parameters, which means it infers different relations between covariates for countries.
+
+\begin{figure}[htbp]
+    \centering
+    \captionwithnoteandshort{Damage model results for Laos}{Damage model results for Laos}{Red points correspond to the observed damages, light blue line corresponds to the 97.5\% HDI, and wider blue line corresponds to 90\% HDI. Damages are expressed in 2025 USD millions.}
+    \label{fig:results_damages_lao}
+    \includegraphics[width=\textwidth]{results/result_damages_lao.png}
+\end{figure}
+
+Results for Costa Rica are presented in Figure~\ref{fig:results_damages_cr}. All the registered events lie inside the 97.5\% HDI. The two more destructive events correspond to the impact of Hurricane Cesar in 1996 and Hurricane Otto in 2017. Those are the only events outside the 80\% HDI. In the case of the Central American country we do observe an increasing trend for the projected damages. With the upper band of the 97.5\% of the High Density Interval increasing from 800 USD millions in 2020 to almost 1100 USD millions by 2060.
+
+\begin{figure}[htbp]
+    \centering
+    \captionwithnoteandshort{Damage model results for Costa Rica}{Damage model results for Costa Rica}{Red points correspond to the observed damages, light blue line corresponds to the 95\% HDI, and wider blue line corresponds to 90\% HDI. Damages are expressed in 2025 USD millions.}
+    \label{fig:results_damages_cr}
+    \includegraphics[width=\textwidth]{results/result_damages_cr.png}
+\end{figure}
+
+Therefore, our model predicts that Costa Rica will have a greater exposure to more impactful events in the coming decades, while the projected mean damage of each event is not projected to increase in the case of Laos. Nevertheless, it is necessary to underscore that the total exposure is measured by the interaction of damages and frequency, which we will explore in the next section.
+
+\FloatBarrier
+\subsection{Country level damages curve}
+
+To produce the damage curves, we combine the results of the damage and frequency models. Figure~\ref{fig:damage_curves_lao} presents the damage curves for Laos. The vertical axis corresponds to damages in millions of USD, while the horizontal axis represents the probability associated with each damage level. As expected, most of the probability mass corresponds to low-damage events. However, as we consider less probable disasters, the magnitude of damages increases. The most relevant finding is that the model projects an upward shift in Laos' damage curve, indicating that more impactful events will become more frequent, and more frequent events are projected to generate greater damages.
+
+\begin{figure}[htbp]
+    \centering
+    \captionwithnoteandshort{Lao damage curves}{Lao damage curves}{}
+    \label{fig:damage_curves_lao}
+    \includegraphics[width=\textwidth]{results/damage_curves_lao.png}
+\end{figure}
+
+A more intuitive way of presenting the damage curves corresponds to the idea of \textbf{return years}. Table 12 and Figure~\ref{fig:damage_barplots_lao} present the projected year returns for Lao. The projected return year values illustrate a clear escalation of climate-related disaster risks for Laos over time. While the frequency of smaller-scale events (e.g., 2-year and 1-year returns) remains negligible, the table shows a marked increase in damages for rarer, high-impact events. For instance, the 100-year return value rises from approximately USD 611 million in 2000 to over USD 2.1 billion by 2055. Similarly, the 50-year return value more than triples within the same period. This pattern underscores how the severity of extreme events is expected to intensify, placing growing economic and social pressure on the country.
+
+\input{tables/return_years_lao}
+
+\FloatBarrier
+
+Importantly, the results also suggest that moderate return periods (10-year and 4-year events) will increasingly contribute to the overall risk landscape. By 2055, a 10-year return event is projected to cause damages exceeding USD 117 million, compared to just USD 23 million in 2000. This shift means that not only will catastrophic events become more damaging, but recurrent disasters will also impose higher recurring costs.
+
+
+
+\begin{figure}[htbp]
+    \centering
+    \captionwithnoteandshort{Lao damage barplots}{Lao damage barplots}{}
+    \label{fig:damage_barplots_lao}
+    \includegraphics[width=\textwidth]{results/damagecurves_barplots_lao.png}
+\end{figure}
+
+Figure~\ref{fig:damage_curves_cr} presents the results for Costa Rica. In this case, we observe an even more pronounced increase in projected exposure to climate change--related disasters. In 2000, the probability of a disaster causing damages of USD 1,000 million was below 1\%; however, by 2055, that probability is projected to rise to nearly 5\%.
+
+\begin{figure}[htbp]
+    \centering
+    \captionwithnoteandshort{CR damage curves}{CR damage curves}{}
+    \label{fig:damage_curves_cr}
+    \includegraphics[width=\textwidth]{results/damage_curves_cr.png}
+\end{figure}
+
+Table 13 and Figure~\ref{fig:damage_barplots_cr} present the return-year translations of the damage curves for Costa Rica. The projected return year values reveal a steep rise in expected damages from hydrometeorological disasters over the coming decades for the Central American nation. For rare but extreme events, the increase is particularly dramatic: the 100-year return value grows from about USD 1.2 billion in 2000 to more than USD 6.5 billion by 2055. Likewise, the 50-year return damages more than quadruple over the same period. This upward trend highlights how climate change is projected to significantly amplify the economic impacts of extreme disasters.
+
+\input{tables/return_years_cr}
+
+\FloatBarrier
+
+The data also show that damages from more frequent events are rising sharply, underscoring the increasing cost of recurrent disasters. For example, a 10-year return event is projected to escalate from about USD 32 million in 2000 to over USD 400 million by 2055, while 4-year return events---once negligible---are expected to reach nearly USD 47 million by mid-century. This shift suggests that climate change will not only increase the burden of catastrophic losses but also impose growing, recurring costs on communities and infrastructure.
+
+
+
+\begin{figure}[htbp]
+    \centering
+    \captionwithnoteandshort{CR damage barplots}{CR damage barplots}{}
+    \label{fig:damage_barplots_cr}
+    \includegraphics[width=\textwidth]{results/damagecurves_barplots_cr.png}
+\end{figure}
+
+\FloatBarrier
+\subsection{Geospatial patterns model}
+
+\subsubsection{HSGP modeling}
+
+First, we implement a simplified geospatial model that relies solely on an HSGP component to estimate the probability of a disaster occurring at any given point within a country. This simplified HSGP version uses only latitude and longitude as independent variables, making it time-independent.
+
+\begin{figure}[htbp]
+    \centering
+    \captionwithnoteandshort{HSGP event probability predictions for Cambodia, Thailand, Laos and Vietnam}{HSGP event probability predictions for Cambodia, Thailand, Laos and Vietnam}{The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of one disaster.}
+    \label{fig:hsgp_sea}
+    \includegraphics[width=0.8\textwidth]{results/event_HSGP_sea_pred.png}
+\end{figure}
+
+\FloatBarrier
+
+The results, shown in Figure~\ref{fig:hsgp_sea}, cover Cambodia, Thailand, Laos, and Vietnam. It is striking to see how the model can infer the outlines of major rivers purely from disaster occurrence patterns. We also observe that certain coastal regions exhibit greater exposure to disasters. This reinforces the idea that the HSGP component of the model represents a strong tool to account for omitted variables, as it is able to capture patterns of geographical patterns not explicitly included in the model. These results also confirm the notion that distance to rivers and coastlines represent a clear risk factor in the region.
+
+HSGP parameter values for Cambodia, Thailand, Laos and Vietnam, and HSGP parameter values for Central America can be found on Tables 16 and 17 of Annex 2 respectively.
+
+
+
+Figure~\ref{fig:hsgp_lao} presents the results specifically for Lao. Based only on the coordinates of previous disasters, the model is able to identify a risk zone in the center-left area of the country, precisely where a big number of rivers merge. It also identifies a risk area closer to the capital Vientiane, and in two more points in the lower right area of the country.
+
+\begin{figure}[htbp]
+    \centering
+    \captionwithnoteandshort{HSGP event probability predictions for Lao}{HSGP event probability predictions for Lao}{The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of one disaster.}
+    \label{fig:hsgp_lao}
+    \includegraphics[width=\textwidth]{results/event_HSGP_lao_pred.png}
+\end{figure}
+
+The results for Central America are presented on Figure~\ref{fig:hsgp_ca}. It is possible to observe how the model successfully captures the disaster patterns.
+
+\begin{figure}[H]
+    \centering
+    \captionwithnoteandshort{HSGP event probability predictions for Central America}{HSGP event probability predictions for Central America}{The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of one disaster.}
+    \label{fig:hsgp_ca}
+    \includegraphics[width=1.1\textwidth]{results/hsgp_central_america.png}
+\end{figure}
+
+The results for Costa Rica, presented in Figure~\ref{fig:hsgp_cr}, show a different pattern from those observed in Laos. The HSGP locates most of the risk in the central region of the country, known as the Greater Metropolitan Area, which is home to the majority of the population. It also indicates elevated risk in Guanacaste, particularly around Liberia, another major population center. Finally, the HSGP component estimates considerable risk along the Caribbean coast near the border with Panama, a region well known for its susceptibility to floods.
+
+\begin{figure}[H]
+    \centering
+    \captionwithnoteandshort{HSGP event probability predictions for Costa Rica}{HSGP event probability predictions for Costa Rica}{The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of one disaster.}
+    \label{fig:hsgp_cr}
+    \includegraphics[width=0.8\textwidth]{results/hsgp_cr.png}
+\end{figure}
+
+\FloatBarrier
+\subsubsection{Full model}
+
+Now, we present the estimated results for the full model, starting with Laos and its neighboring countries. It is important to highlight that we choose Lao, Costa Rica and their neighboring countries as examples, nevertheless, the model can generate estimations and results for almost any country or region in the world for which the data is available.
+
+For an easier understanding, we present the results in maps, however, the model produces specific probabilities for each point of the country, which can be used for specific computations. We will present an example of this later.
+
+Tables 18 and 19 on Annex 2 contain the main parameter values of both Full Model estimations. Figure~\ref{fig:results_sea_full} shows the results for Cambodia, Thailand, Laos, and Vietnam. It is possible to observe that the distance to rivers is a relevant determinant of exposure to hydrometeorological events. However, it is not just the distance to any river that matters---the model combines the geospatial patterns identified by the HSGP with river distance information to determine high-risk areas. Consequently, some areas have a relatively low probability of events despite being close to rivers.
+
+The same is true for distance to the coastline. The model is able to determine which coastal regions pose the greatest risk, as can be seen in the eastern part of the region. As mentioned earlier, this is due to the capacity of the HSGP component to identify and project geospatial patterns, which helps account for missing covariates.
+
+\begin{figure}[htbp]
+    \centering
+    \captionwithnoteandshort{Full model event probability predictions for Cambodia, Thailand, Laos and Vietnam}{Full model event probability predictions for Cambodia, Thailand, Laos and Vietnam}{The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of at least one disaster.}
+    \label{fig:results_sea_full}
+    \includegraphics[width=0.9\textwidth]{results/full_model_sea_2018.png}
+\end{figure}
+
+We now zoom in to examine in more detail the specific results for Laos. Figure~\ref{fig:results_lao_full} presents the results for the country. Once again, we can see how the model is able to identify which rivers represent greater risks according to the geospatial patterns of past disasters.
+
+\begin{figure}[H]
+    \centering
+    \captionwithnoteandshort{Full model event probability predictions for Lao}{Full model event probability predictions for Lao}{The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of at least one disaster.}
+    \label{fig:results_lao_full}
+    \includegraphics[width=0.9\textwidth]{results/full_model_lao_2018.png}
+\end{figure}
+
+Figure~\ref{fig:decomposed_result_lao} presents the decomposition of the effects for Lao. It is important to consider that besides the effects plotted, the event probability risk is also affected by the country effect, the climate covariates and the country-level covariates, which do not vary at the geospatial level. The decomposition of the effects allows to identify that the HSGP component dominates the projected probability values. It also shows that despite having a lower weight, the distance to coastline has some positive impact, as can be seen in the lower right segment.
+
+\begin{figure}[htbp]
+    \centering
+    \captionwithnoteandshort{Decomposition of the full model event probability predictions for Lao}{Decomposition of the full model event probability predictions for Lao}{}
+    \label{fig:decomposed_result_lao}
+    \includegraphics[width=\textwidth]{results/decomposed_effect_lao.png}
+\end{figure}
+
+The static geospatial perspective is highly valuable in itself; nevertheless, we are interested in understanding how exposure to climate change risks evolves over time and how it is affected by projected climate trends. To do this, we multiply the geospatial event probability by the mean number of events the country is projected to experience per year. This provides the total event probability per year for each point. We then project these values over time to understand how risk evolves as atmospheric CO\textsubscript{2} increases. Figure~\ref{fig:results_lao_yearly} shows how local exposure increases over time for Laos.
+
+\begin{figure}[htbp]
+    \centering
+    \captionwithnoteandshort{Full model event probability predictions for Lao through time}{Full model event probability predictions for Lao through time}{}
+    \label{fig:results_lao_yearly}
+    \includegraphics[width=\textwidth]{results/full_model_yearly_lao.png}
+\end{figure}
+
+We now present the results for Central America and Costa Rica. Figure~\ref{fig:results_ca_full} shows the results for the whole region, while Figure~\ref{fig:results_cr_full} presents the estimations specifically for Costa Rica. In the case of Costa Rica, we observe how the riskiest areas seem to be concentrated in the great metropolitan area, which contains most of the country's population.
+
+\begin{figure}[H]
+    \centering
+    \captionwithnoteandshort{Full model event probability predictions for Central America}{Full model event probability predictions for Central America}{The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of at least one disaster.}
+    \label{fig:results_ca_full}
+    \includegraphics[width=0.9\textwidth]{results/full_model_ca_2018.png}
+\end{figure}
+
+\FloatBarrier
+
+
+Figure~\ref{fig:decomposed_result_cr} shows the decomposition of the effects. In the case of Costa Rica, we observe the particularity that distance to the coastline has a very limited influence on event probability, with shorter distances to the coastline leading to slight decreases in event probability. One possible explanation for this is the concentration of recorded disasters in more densely populated areas (such as the Greater Metropolitan Area in the center of the country), which results in a lower estimated probability along the coasts, where population density is much lower.
+
+\begin{figure}[H]
+    \centering
+    \captionwithnoteandshort{Full model event probability predictions for Costa Rica}{Full model event probability predictions for Costa Rica}{The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of at least one disaster.}
+    \label{fig:results_cr_full}
+    \includegraphics[width=0.8\textwidth]{results/full_model_cr_2018.png}
+\end{figure}
+
+\FloatBarrier
+
+
+
+\begin{figure}[htbp]
+    \centering
+    \captionwithnoteandshort{Decomposition of the full model event probability predictions for Costa Rica}{Decomposition of the full model event probability predictions for Costa Rica}{}
+    \label{fig:decomposed_result_cr}
+    \includegraphics[width=\textwidth]{results/decomposed_effect_cr.png}
+\end{figure}
+
+To conclude this section, we present on Figure~\ref{fig:results_cr_yearly} the projected geospatial risk for Costa Rica. Similar to the case of Lao, we can observe how the probability of event increases in the riskier areas as atmospheric CO2 projections grow through time. The projections show a greater exposure for the Greater Metropolitan Area, Guanacaste and the south of the Caribbean.
+
+\begin{figure}[htbp]
+    \centering
+    \captionwithnoteandshort{Full model event probability predictions for Costa Rica through time}{Full model event probability predictions for Costa Rica through time}{}
+    \label{fig:results_cr_yearly}
+    \includegraphics[width=0.95\textwidth]{results/full_model_yearly_cr.png}
+\end{figure}
+
+\FloatBarrier
+\subsection{Geolocated return year curves}
+
+One of the main contributions of this paper is to provide local-level estimates of event probabilities and the expected damages caused by climate change--related disasters. This approach is not intended to replace on-site hydrological studies, but rather to offer a low-cost and efficient tool that can provide initial approximations of risk.
+
+The model makes it possible to compute these values for any point within the analyzed country. To illustrate this, we focus on three specific locations in Costa Rica:
+\begin{itemize}
+    \item Desamparados (San Jos\'{e}).
+    \item El Bamb\'{u} (Filadelfia, Guanacaste).
+    \item Cariari (Pococ\'{i}, Lim\'{o}n).
+\end{itemize}
+
+These locations are shown in Figure~\ref{fig:locs_cr_map}.
+
+\begin{figure}[htbp]
+    \centering
+    \captionwithnoteandshort{Selected locations}{Selected locations}{}
+    \label{fig:locs_cr_map}
+    \includegraphics[width=0.50\textwidth]{results/loc_cr_map.png}
+\end{figure}
+
+\FloatBarrier
+
+Table 14 shows the yearly probability of an event happening on each point through time. We can observe that Desamparados presents the greater probability and Cariari the lowest one from the three points. Also it is possible to observe how the risk exposure increases for all the locations across time.
+
+\input{tables/location_prob_cr}
+
+We use the local probability to scale down the national expected damage, and produce a local level return year curves. These curves do not consider local characteristics of infrastructure, or physical capital, but are local projections of the national damages using the local event probability (which does capture some of this patterns via the HSGP component).
+
+This local projections allows us to quantify the climate change risk exposure at a granular level, and produce approximations of the impacts that particular communities can suffer due to climate change related disasters. To exemplify this, we present on Figure~\ref{fig:return_years_fila} the return year curves for El Bamb\'{u} (Filadelfia, Guanacaste). Consistent with what has been observed in the previous results, the return year curves reveal a growing pattern in terms of damage exposures as more severe events become more frequent, and more frequent events become more severe.
+
+\begin{figure}[htbp]
+    \centering
+    \captionwithnoteandshort{Geolocated projected return year curves for El Bamb\'{u} (Filadelfia, Guanacaste)}{Geolocated projected return year curves for El Bamb\'{u} (Filadelfia, Guanacaste)}{Estimated damages are measured in millions of 2025 USD.}
+    \label{fig:return_years_fila}
+    \includegraphics[width=\textwidth]{results/filadelfia_return_years.png}
+\end{figure}

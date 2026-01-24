@@ -1,0 +1,56 @@
+This is BibTeX, Version 0.99d
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: main.aux
+Reallocating 'name_of_file' (item size: 1) to 5 items.
+The style file: agsm.bst
+Reallocating 'name_of_file' (item size: 1) to 11 items.
+Database file #1: references.bib
+Warning--entry type for "IPCC_AR6_WGI_2021" isn't style-file defined
+--line 377 of file references.bib
+Warning--entry type for "IPCC_AR6_WGII_2022" isn't style-file defined
+--line 393 of file references.bib
+Warning--entry type for "IPCC_AR6_WGIII_2022" isn't style-file defined
+--line 409 of file references.bib
+Warning--can't use both author and editor fields in ipcc_ar6
+You've used 30 entries,
+            2909 wiz_defined-function locations,
+            820 strings with 10654 characters,
+and the built_in function-call counts, 162710 in all, are:
+= -- 27154
+> -- 1753
+< -- 0
++ -- 13219
+- -- 539
+* -- 14195
+:= -- 32089
+add.period$ -- 39
+call.type$ -- 30
+change.case$ -- 415
+chr.to.int$ -- 28
+cite$ -- 31
+duplicate$ -- 412
+empty$ -- 881
+format.name$ -- 621
+if$ -- 29195
+int.to.chr$ -- 7
+int.to.str$ -- 0
+missing$ -- 22
+newline$ -- 108
+num.names$ -- 310
+pop$ -- 179
+preamble$ -- 1
+purify$ -- 450
+quote$ -- 0
+skip$ -- 345
+stack$ -- 0
+substring$ -- 39054
+swap$ -- 55
+text.length$ -- 420
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 110
+warning$ -- 1
+while$ -- 646
+width$ -- 0
+write$ -- 401
+(There were 4 warnings)

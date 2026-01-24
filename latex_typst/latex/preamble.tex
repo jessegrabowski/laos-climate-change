@@ -1,0 +1,171 @@
+% =============================================================================
+% PREAMBLE - Package Configuration and Custom Commands
+% =============================================================================
+
+% -----------------------------------------------------------------------------
+% Page Layout
+% -----------------------------------------------------------------------------
+\usepackage[a4paper, margin=2.5cm]{geometry}
+
+% -----------------------------------------------------------------------------
+% Fonts
+% -----------------------------------------------------------------------------
+\usepackage[T1]{fontenc}
+\usepackage{tgheros}
+\renewcommand{\familydefault}{\sfdefault}
+
+% -----------------------------------------------------------------------------
+% Language and Encoding
+% -----------------------------------------------------------------------------
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+
+% -----------------------------------------------------------------------------
+% Colors
+% -----------------------------------------------------------------------------
+\usepackage{xcolor}
+\definecolor{OECDblue}{HTML}{4472C4}
+\definecolor{lightblue}{HTML}{DBE5F1}
+
+% -----------------------------------------------------------------------------
+% Mathematics
+% -----------------------------------------------------------------------------
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{mathtools}
+\usepackage{bm}
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\newcommand{\EE}{\mathbb{E}}
+\newcommand{\PP}{\mathbb{P}}
+\newcommand{\RR}{\mathbb{R}}
+\newcommand{\NN}{\mathcal{N}}
+\newcommand{\dd}{\mathrm{d}}
+
+% -----------------------------------------------------------------------------
+% Graphics and Figures
+% -----------------------------------------------------------------------------
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{placeins}
+\graphicspath{{images/}}
+
+% -----------------------------------------------------------------------------
+% Tables
+% -----------------------------------------------------------------------------
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{longtable}
+
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
+
+% -----------------------------------------------------------------------------
+% Captions
+% -----------------------------------------------------------------------------
+\usepackage[font=small, labelfont=bf, position=top]{caption}
+
+\newcommand{\captionwithnote}[2]{%
+  \caption[#1]{\textbf{#1}\ifx&#2&\else\\[0.5em]\small #2\fi}%
+}
+
+\newcommand{\captionwithnoteandshort}[3]{%
+  \caption[#1]{\textbf{#2}\ifx&#3&\else\\[0.5em]\small #3\fi}%
+}
+
+% -----------------------------------------------------------------------------
+% Section Formatting
+% -----------------------------------------------------------------------------
+\usepackage{titlesec}
+
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{OECDblue}}
+  {\thesection}{1em}{}
+\titlespacing*{\section}{0pt}{1.4em}{1em}
+
+\titleformat{\subsection}
+  {\normalfont\normalsize\bfseries\color{OECDblue}}
+  {\thesubsection}{1em}{}
+\titlespacing*{\subsection}{0pt}{1.2em}{0.8em}
+
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\bfseries}
+  {\thesubsubsection}{1em}{}
+
+% -----------------------------------------------------------------------------
+% Table of Contents and Lists
+% -----------------------------------------------------------------------------
+\usepackage{tocloft}
+\setcounter{tocdepth}{2}
+\setcounter{secnumdepth}{3}
+
+\renewcommand{\cftsecfont}{\bfseries}
+\renewcommand{\cftsecpagefont}{\bfseries}
+
+% -----------------------------------------------------------------------------
+% Bibliography
+% -----------------------------------------------------------------------------
+\usepackage{natbib}
+\bibliographystyle{agsm}
+\setcitestyle{authoryear,round,semicolon}
+
+% -----------------------------------------------------------------------------
+% Hyperlinks
+% -----------------------------------------------------------------------------
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=OECDblue,
+    citecolor=OECDblue,
+    urlcolor=OECDblue,
+    pdftitle={Estimating Climate Change Risk Exposure: a probabilistic approach},
+    pdfauthor={Camilo Saldarriaga, Jesse Grabowski, Jan Rielaender},
+}
+
+% -----------------------------------------------------------------------------
+% Paragraph Formatting
+% -----------------------------------------------------------------------------
+\setlength{\parindent}{1.8em}
+\setlength{\parskip}{0.65em}
+\usepackage{setspace}
+\setstretch{1.25}
+
+% -----------------------------------------------------------------------------
+% Lists
+% -----------------------------------------------------------------------------
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=2em, itemsep=0.5em}
+\setlist[enumerate]{leftmargin=2em, itemsep=0.5em}
+
+% -----------------------------------------------------------------------------
+% Text alignment
+% -----------------------------------------------------------------------------
+\usepackage{ragged2e}
+
+% -----------------------------------------------------------------------------
+% Footnotes
+% -----------------------------------------------------------------------------
+\usepackage[hang,flushmargin]{footmisc}
+
+% -----------------------------------------------------------------------------
+% Miscellaneous
+% -----------------------------------------------------------------------------
+\usepackage{microtype}
+\usepackage{url}
+
+\widowpenalty=10000
+\clubpenalty=10000
+
+% -----------------------------------------------------------------------------
+% Document Metadata
+% -----------------------------------------------------------------------------
+\newcommand{\doctitle}{Estimating Climate Change Risk Exposure: a probabilistic approach}
+\newcommand{\docauthors}{Camilo Saldarriaga, Jesse Grabowski, Jan Rielaender}
+\newcommand{\dockeywords}{Climate change risk, Bayesian modeling, hydrometeorological disasters, geo-spatial modeling, probabilistic risk assessment, damage curves, uncertainty quantification}
+\newcommand{\docjelcodes}{Q54, Q51, C11, C150, C53, Q56, D81}

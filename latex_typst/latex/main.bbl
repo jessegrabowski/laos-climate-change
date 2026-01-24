@@ -1,0 +1,189 @@
+\begin{thebibliography}{xx}
+
+\harvarditem[Abril-Pla et~al.]{Abril-Pla, Andreani, Carroll, Dong, Fonnesbeck,
+  Kochurov, Kumar, Lao, Luhmann, Martin et~al.}{2023}{abril2023pymc}
+Abril-Pla, O., Andreani, V., Carroll, C., Dong, L., Fonnesbeck, C.~J.,
+  Kochurov, M., Kumar, R., Lao, J., Luhmann, C.~C., Martin, O.~A. et~al.
+  \harvardyearleft 2023\harvardyearright , `Pymc: a modern, and comprehensive
+  probabilistic programming framework in python', {\em PeerJ Computer Science}
+  {\bf 9},~e1516.
+
+\harvarditem[Besag et~al.]{Besag, York \harvardand\
+  Molli{\'e}}{1991}{besag1991bayesian}
+Besag, J., York, J. \harvardand\ Molli{\'e}, A.  \harvardyearleft
+  1991\harvardyearright , `Bayesian image restoration, with two applications in
+  spatial statistics', {\em Annals of the Institute of Statistical Mathematics}
+  {\bf 43}(1),~1--20.
+
+\harvarditem[Botzen et~al.]{Botzen, Deschenes \harvardand\
+  Sanders}{2019}{Botzen2019}
+Botzen, W. J.~W., Deschenes, O. \harvardand\ Sanders, M.  \harvardyearleft
+  2019\harvardyearright , `The economic impacts of natural disasters: A review
+  of models and empirical studies', {\em Review of Environmental Economics and
+  Policy} .
+
+\harvarditem{Bouwer}{2011}{bouwer2011have}
+Bouwer, L.~M.  \harvardyearleft 2011\harvardyearright , `Have disaster losses
+  increased due to anthropogenic climate change?', {\em Bulletin of the
+  American Meteorological Society} {\bf 92}(1),~39--46.
+
+\harvarditem[Bradbury et~al.]{Bradbury, Frostig, Hawkins, Johnson, Leary,
+  Maclaurin \harvardand\ Wanderman-Milne}{2018}{jax2018}
+Bradbury, J., Frostig, R., Hawkins, P., Johnson, M.~J., Leary, C., Maclaurin,
+  D. \harvardand\ Wanderman-Milne, S.  \harvardyearleft 2018\harvardyearright ,
+  `{JAX}: composable transformations of {Python+NumPy} programs', {\em GitHub
+  repository} .
+\newblock Accessed July 2, 2025.
+
+\harvarditem{{Centre for Research on the Epidemiology of
+  Disasters}}{2024}{cred_emdat_2024}
+{Centre for Research on the Epidemiology of Disasters}  \harvardyearleft
+  2024\harvardyearright , `{EM-DAT: The International Disaster Database}'.
+\newline\harvardurl{https://www.emdat.be/}
+
+\harvarditem[Gelman et~al.]{Gelman, Carlin, Stern \harvardand\
+  Rubin}{1995}{gelman1995bayesian}
+Gelman, A., Carlin, J.~B., Stern, H.~S. \harvardand\ Rubin, D.~B.
+  \harvardyearleft 1995\harvardyearright , {\em Bayesian data analysis},
+  Chapman and Hall/CRC.
+
+\harvarditem{Grabowski}{2023}{pymc-extras-statespace}
+Grabowski, J.  \harvardyearleft 2023\harvardyearright , `pymc-devs/pymc-extras:
+  {P}ull {R}equest 174, {PyMCStatespace}', GitHub.
+\newline\harvardurl{https://github.com/pymc-devs/pymc-extras/pull/174}
+
+\harvarditem[Hoffman et~al.]{Hoffman, Gelman et~al.}{2014}{hoffman2014no}
+Hoffman, M.~D., Gelman, A. et~al.  \harvardyearleft 2014\harvardyearright ,
+  `The no-u-turn sampler: adaptively setting path lengths in hamiltonian monte
+  carlo.', {\em J. Mach. Learn. Res.} {\bf 15}(1),~1593--1623.
+
+\harvarditem{Howard \harvardand\ Sterner}{2017}{Howard2017}
+Howard, P.~H. \harvardand\ Sterner, T.  \harvardyearleft 2017\harvardyearright
+  , `Few and not so far between: A meta-analysis of climate damage estimates',
+  {\em Environmental and Resource Economics} {\bf 68}(1),~197--225.
+\newline\harvardurl{https://doi.org/10.1007/s10640-017-0166-z}
+
+\harvarditem[Hyndman et~al.]{Hyndman, Koehler, Ord \harvardand\
+  Snyder}{2008}{ets_time_series}
+Hyndman, R.~J., Koehler, A.~B., Ord, K. \harvardand\ Snyder, R.~D.
+  \harvardyearleft 2008\harvardyearright , {\em Forecasting with Exponential
+  Smoothing: The State Space Approach}, Springer-Verlag, Berlin, Heidelberg.
+
+\harvarditem{{Intergovernmental Panel on Climate Change
+  (IPCC)}}{2021}{IPCC_AR6_WGI_2021}
+{Intergovernmental Panel on Climate Change (IPCC)}  \harvardyearleft
+  2021\harvardyearright , `Climate change 2021: The physical science basis.
+  contribution of working group i to the sixth assessment report of the
+  intergovernmental panel on climate change'.
+
+\harvarditem{{Intergovernmental Panel on Climate Change (IPCC)}}{2022{\em
+  a}}{IPCC_AR6_WGII_2022}
+{Intergovernmental Panel on Climate Change (IPCC)}  \harvardyearleft 2022{\em
+  a}\harvardyearright , `Climate change 2022: Impacts, adaptation and
+  vulnerability. contribution of working group ii to the sixth assessment
+  report of the intergovernmental panel on climate change'.
+
+\harvarditem{{Intergovernmental Panel on Climate Change (IPCC)}}{2022{\em
+  b}}{IPCC_AR6_WGIII_2022}
+{Intergovernmental Panel on Climate Change (IPCC)}  \harvardyearleft 2022{\em
+  b}\harvardyearright , `Climate change 2022: Mitigation of climate change.
+  contribution of working group iii to the sixth assessment report of the
+  intergovernmental panel on climate change'.
+
+\harvarditem{{Intergovernmental Panel on Climate Change
+  (IPCC)}}{2023}{ipcc_ar6}
+{Intergovernmental Panel on Climate Change (IPCC)}  \harvardyearleft
+  2023\harvardyearright , {\em {Climate Change 2023: Synthesis Report.
+  Contribution of Working Groups I, II and III to the Sixth Assessment Report
+  of the Intergovernmental Panel on Climate Change}}, IPCC, Geneva,
+  Switzerland.
+\newblock Full volume (Chapters 1-7, Annexes, excluding SPM pp. 1-34).
+
+\harvarditem{Kahn}{2005}{Kahn2005}
+Kahn, M.~E.  \harvardyearleft 2005\harvardyearright , `The death toll from
+  natural disasters: the role of income, geography, and institutions', {\em
+  Review of Economics and Statistics} {\bf 87}(2),~271--284.
+
+\harvarditem{Langer \harvardand\ Developers}{2023}{nutpie2023}
+Langer, L.~S. \harvardand\ Developers, P.  \harvardyearleft
+  2023\harvardyearright , `nutpie: A jax-based nuts sampler for pymc',
+  \url{https://github.com/pymc-devs/nutpie}.
+\newblock Version 0.0.5.
+
+\harvarditem{Lehner \harvardand\ Grill}{2013}{lehner_global_2013}
+Lehner, B. \harvardand\ Grill, G.  \harvardyearleft 2013\harvardyearright ,
+  `Global river hydrography and network routing: baseline data and new
+  approaches to study the world's large river systems', {\em Hydrological
+  Processes} {\bf 27}(15),~2171--2186.
+\newblock Data downloaded from \url{www.hydrosheds.org}.
+
+\harvarditem[L\'opez et~al.]{L\'opez, Thomas \harvardand\
+  Troncoso}{2015}{lopez_climate_2015}
+L\'opez, R.~E., Thomas, V. \harvardand\ Troncoso, P.  \harvardyearleft
+  2015\harvardyearright , `Climate change and natural disasters'.
+
+\harvarditem[Nakicenovic et~al.]{Nakicenovic, Alcamo, Davis, de~Vries, Fenhann,
+  Gaffin, Gregory, Gr{\"u}bler, Jung, Kram et~al.}{2000}{ipcc}
+Nakicenovic, N., Alcamo, J., Davis, G., de~Vries, B., Fenhann, J., Gaffin, S.,
+  Gregory, K., Gr{\"u}bler, A., Jung, T.~Y., Kram, T. et~al.  \harvardyearleft
+  2000\harvardyearright , {\em Special Report on Emissions Scenarios: A Special
+  Report of Working Group III of the Intergovernmental Panel on Climate
+  Change}, Cambridge University Press, Cambridge, UK.
+\newline\harvardurl{https://www.ipcc.ch/report/emissions-scenarios/}
+
+\harvarditem{{NOAA}}{2024}{noaa_co2_2024}
+{NOAA}  \harvardyearleft 2024\harvardyearright , `Trends in atmospheric carbon
+  dioxide (co2)', \url{https://gml.noaa.gov/ccgg/trends/}.
+
+\harvarditem{Nordhaus}{2019}{nordhaus2019climate}
+Nordhaus, W.  \harvardyearleft 2019\harvardyearright , `Climate change: The
+  ultimate challenge for economics', {\em American Economic Review} {\bf
+  109}(6),~1991--2014.
+
+\harvarditem{OpenAI}{2024}{openai2024gpt4omini}
+OpenAI  \harvardyearleft 2024\harvardyearright , `Gpt-4o-mini'.
+\newblock Large language model.
+\newline\harvardurl{https://openai.com}
+
+\harvarditem{Pearl}{2009}{pearl2009causality}
+Pearl, J.  \harvardyearleft 2009\harvardyearright , {\em Causality}, Cambridge
+  university press.
+
+\harvarditem{Schneider}{2022}{gpcc_2022}
+Schneider, e.~a.  \harvardyearleft 2022\harvardyearright , `Gpcc full data
+  monthly product version 2022', [Dat file]. GPCC: Global Precipitation
+  Climatology Centre.
+\newblock Extracted on May 2024 from
+  \url{http://dx.doi.org/10.5676/DWD_GPCC/FD_M_V2022_100}.
+
+\harvarditem{{The World Bank}}{2024{\em a}}{worldbank_boundaries_2024}
+{The World Bank}  \harvardyearleft 2024{\em a}\harvardyearright , `World bank
+  official boundaries', [Data file].
+\newblock Retrieved on May 2024 from
+  \url{https://datacatalog.worldbank.org/search/dataset/0038272/World-Bank-Official-Boundaries}.
+
+\harvarditem{{The World Bank}}{2024{\em b}}{worldbank_wdi_2024}
+{The World Bank}  \harvardyearleft 2024{\em b}\harvardyearright , `World
+  development indicators', [Data file].
+\newblock Retrieved on May 2024 from
+  \url{https://databank.worldbank.org/source/}.
+
+\harvarditem{{U.S. Bureau of Labor Statistics}}{2024}{fred_cpi}
+{U.S. Bureau of Labor Statistics}  \harvardyearleft 2024\harvardyearright ,
+  `Consumer price index for all urban consumers: All items in u.s. city average
+  (cpiaucns)'.
+\newblock Accessed via FRED, Federal Reserve Bank of St. Louis.
+\newline\harvardurl{https://fred.stlouisfed.org/series/CPIAUCNS}
+
+\harvarditem{Van~Aalst}{2006}{vanaalst2006impacts}
+Van~Aalst, M.~K.  \harvardyearleft 2006\harvardyearright , `The impacts of
+  climate change on the risk of natural disasters', {\em Disasters} {\bf
+  30}(1),~5--18.
+
+\harvarditem[Zhang et~al.]{Zhang, Huang, Lawrimore, Menne \harvardand\
+  Smith}{2019}{zhang_noaa_2019}
+Zhang, H.-M., Huang, B., Lawrimore, J.~H., Menne, M.~J. \harvardand\ Smith,
+  T.~M.  \harvardyearleft 2019\harvardyearright , `Noaa global surface
+  temperature dataset (noaaglobaltemp)'.
+
+\end{thebibliography}

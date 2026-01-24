@@ -1,0 +1,51 @@
+\babel@toc {english}{}\relax
+\contentsline {figure}{\numberline {1}{\ignorespaces Modeling approach}}{6}{figure.caption.1}%
+\contentsline {figure}{\numberline {2}{\ignorespaces Causal Graph Underlying our Approach}}{8}{figure.caption.2}%
+\contentsline {figure}{\numberline {3}{\ignorespaces Example Damage Curve}}{19}{figure.caption.3}%
+\contentsline {figure}{\numberline {4}{\ignorespaces Mean number of hydrometeorological disasters per country}}{25}{figure.caption.6}%
+\contentsline {figure}{\numberline {5}{\ignorespaces Example Damage Curve}}{26}{figure.caption.7}%
+\contentsline {figure}{\numberline {6}{\ignorespaces Kernel density for covariates included in the event frequency model}}{27}{figure.caption.9}%
+\contentsline {figure}{\numberline {7}{\ignorespaces Kernel density for yearly damages of hydrometeorological disasters}}{28}{figure.caption.11}%
+\contentsline {figure}{\numberline {8}{\ignorespaces Historical trend of yearly damages of hydrometeorological disasters}}{28}{figure.caption.12}%
+\contentsline {figure}{\numberline {9}{\ignorespaces Kernel density of damage model covariates}}{29}{figure.caption.14}%
+\contentsline {figure}{\numberline {10}{\ignorespaces Disasters with coordinates before and after the AI query}}{30}{figure.caption.15}%
+\contentsline {figure}{\numberline {11}{\ignorespaces Disaster geographical distribution by year for Lao}}{31}{figure.caption.16}%
+\contentsline {figure}{\numberline {12}{\ignorespaces Disaster geographical distribution by year for Costa Rica}}{31}{figure.caption.17}%
+\contentsline {figure}{\numberline {13}{\ignorespaces World rivers with a long-term average discharge greater than 100 m\textsuperscript {3}}}{32}{figure.caption.18}%
+\contentsline {figure}{\numberline {14}{\ignorespaces Disaster and synthetic non-disaster points for Central America}}{34}{figure.caption.19}%
+\contentsline {figure}{\numberline {15}{\ignorespaces Disaster and synthetic non-disaster points for Cambodia, Thailand, Laos and Vietnam}}{34}{figure.caption.20}%
+\contentsline {figure}{\numberline {16}{\ignorespaces Costa Rica grid with distance to rivers and coastlines}}{36}{figure.caption.23}%
+\contentsline {figure}{\numberline {17}{\ignorespaces Laos grid with distance to rivers and coastlines}}{36}{figure.caption.24}%
+\contentsline {figure}{\numberline {18}{\ignorespaces Time series evolution through time}}{37}{figure.caption.25}%
+\contentsline {figure}{\numberline {19}{\ignorespaces Time series predictions for the global-level covariates}}{38}{figure.caption.26}%
+\contentsline {figure}{\numberline {20}{\ignorespaces IPCC and own projections of atmospheric CO\textsubscript {2}}}{39}{figure.caption.28}%
+\contentsline {figure}{\numberline {21}{\ignorespaces Time series predictions for Costa Rica country level variables}}{40}{figure.caption.29}%
+\contentsline {figure}{\numberline {22}{\ignorespaces Time series predictions for Laos country level variables}}{40}{figure.caption.30}%
+\contentsline {figure}{\numberline {23}{\ignorespaces Event Frequency model results for Lao}}{42}{figure.caption.33}%
+\contentsline {figure}{\numberline {24}{\ignorespaces Event Frequency predictions for Lao}}{42}{figure.caption.34}%
+\contentsline {figure}{\numberline {25}{\ignorespaces Event Frequency model results for Costa Rica}}{43}{figure.caption.35}%
+\contentsline {figure}{\numberline {26}{\ignorespaces Event Frequency predictions for Costa Rica}}{43}{figure.caption.36}%
+\contentsline {figure}{\numberline {27}{\ignorespaces Damage model results for Laos}}{45}{figure.caption.38}%
+\contentsline {figure}{\numberline {28}{\ignorespaces Damage model results for Costa Rica}}{45}{figure.caption.39}%
+\contentsline {figure}{\numberline {29}{\ignorespaces Lao damage curves}}{46}{figure.caption.40}%
+\contentsline {figure}{\numberline {30}{\ignorespaces Lao damage barplots}}{47}{figure.caption.42}%
+\contentsline {figure}{\numberline {31}{\ignorespaces CR damage curves}}{47}{figure.caption.43}%
+\contentsline {figure}{\numberline {32}{\ignorespaces CR damage barplots}}{48}{figure.caption.45}%
+\contentsline {figure}{\numberline {33}{\ignorespaces HSGP event probability predictions for Cambodia, Thailand, Laos and Vietnam}}{49}{figure.caption.46}%
+\contentsline {figure}{\numberline {34}{\ignorespaces HSGP event probability predictions for Lao}}{50}{figure.caption.47}%
+\contentsline {figure}{\numberline {35}{\ignorespaces HSGP event probability predictions for Central America}}{51}{figure.caption.48}%
+\contentsline {figure}{\numberline {36}{\ignorespaces HSGP event probability predictions for Costa Rica}}{52}{figure.caption.49}%
+\contentsline {figure}{\numberline {37}{\ignorespaces Full model event probability predictions for Cambodia, Thailand, Laos and Vietnam}}{53}{figure.caption.50}%
+\contentsline {figure}{\numberline {38}{\ignorespaces Full model event probability predictions for Lao}}{54}{figure.caption.51}%
+\contentsline {figure}{\numberline {39}{\ignorespaces Decomposition of the full model event probability predictions for Lao}}{55}{figure.caption.52}%
+\contentsline {figure}{\numberline {40}{\ignorespaces Full model event probability predictions for Lao through time}}{55}{figure.caption.53}%
+\contentsline {figure}{\numberline {41}{\ignorespaces Full model event probability predictions for Central America}}{56}{figure.caption.54}%
+\contentsline {figure}{\numberline {42}{\ignorespaces Full model event probability predictions for Costa Rica}}{57}{figure.caption.55}%
+\contentsline {figure}{\numberline {43}{\ignorespaces Decomposition of the full model event probability predictions for Costa Rica}}{57}{figure.caption.56}%
+\contentsline {figure}{\numberline {44}{\ignorespaces Full model event probability predictions for Costa Rica through time}}{58}{figure.caption.57}%
+\contentsline {figure}{\numberline {45}{\ignorespaces Selected locations}}{58}{figure.caption.58}%
+\contentsline {figure}{\numberline {46}{\ignorespaces Geolocated projected return year curves for El Bamb\'{u} (Filadelfia, Guanacaste)}}{59}{figure.caption.60}%
+\contentsline {figure}{\numberline {47}{\ignorespaces Kernel density and histogram of the geo-spatial model data set for Costa Rica, El Salvador, Guatemala, Honduras, Nicaragua and Panama}}{65}{figure.caption.61}%
+\contentsline {figure}{\numberline {48}{\ignorespaces Kernel density and histogram of the geo-spatial model data set for Cambodia, Thailand, Laos and Vietnam}}{66}{figure.caption.62}%
+\contentsline {figure}{\numberline {49}{\ignorespaces Kernel density and histogram of the time series data}}{67}{figure.caption.63}%
+\contentsline {figure}{\numberline {50}{\ignorespaces Time series evolution through time}}{67}{figure.caption.65}%
