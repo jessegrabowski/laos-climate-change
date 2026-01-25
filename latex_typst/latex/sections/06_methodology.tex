@@ -99,7 +99,7 @@ These components have the following meanings:
 \begin{itemize}
     \item $\text{country\_fixed\_effect}$ is a model intercept with a country hierarchy. This means that it is modeled using a Bayesian hierarchical framework, which serves as an intermediary between the extremes of no-pooling (independent OLS per country) and complete pooling (a single global intercept). This structure assumes that country-level intercepts are drawn from a common global distribution, allowing for partial pooling of information across units. For countries with sparse data or extreme outliers, the hierarchical prior induces shrinkage of the country-specific estimates toward the global mean. This ``information sharing'' significantly improves the reliability of estimates for small-sample countries, effectively reducing the noise and over-fitting.
 
-    \item $\text{spatial\_random\_effect}_{i}$ accounts for spatial autocorrelation. To account for spatial autocorrelation, we incorporate a Besag-York-Molli\'{e} (BYM) specification \citep{besag1991bayesian}. This approach decomposes the $\text{spatial\_random\_effect}_{i}$ into a mixture of two distinct components to distinguish between regional trends and localized anomalies:
+\item $\text{spatial\_random\_effect}_{i}$ accounts for spatial autocorrelation. To account for spatial autocorrelation, we incorporate a Besag-York-Molli\'{e} (BYM) specification \citep{besag1991bayesian}. This approach decomposes the $\text{spatial\_}\allowbreak\text{random\_}\allowbreak\text{effect}_{i}$ into a mixture of two distinct components to distinguish between regional trends and localized anomalies:
     \begin{itemize}
         \item A global latent spatial term $\tilde{\theta}$. Captures global, unstructured variation. If a country behaves very differently from its neighbors (e.g., due to policy, geography, or data quality), this term allows for that deviation.
         \item A structured spatial term from an Intrinsic Conditional Autoregressive (ICAR) model $\phi$. The ICAR model assumes that the value of a country's spatial random effect is similar to that of its neighbors. Mathematically, this is a Gaussian Markov Random Field (GMRF) with dependence defined through an adjacency matrix $W$. This structure introduces local smoothing: nearby countries' effects ``pull'' each other.
@@ -112,9 +112,7 @@ These two terms combined using a convex combination (weighted average) determine
 \text{spatial\_random\_effect}_{i} = \sqrt{1-\rho} \cdot \tilde{\theta}_i + \sqrt{\frac{\rho}{s}} \phi_i
 \end{equation}
 
-With $s$ a scaling factor that ensures that the variance of the ICAR component is appropriately normalized.
-
-For the $\text{covariates\_effect}_{i,t}$ we introduce the time dimension $t$, and we use the following covariates:
+With $s$ a scaling factor that ensures that the variance of the ICAR component is appropriately normalized. For the $\text{covariates\_effect}_{i,t}$ we introduce the time dimension $t$, and we use the following covariates:
 
 \begin{itemize}
     \item $\text{ln\_population\_density\_standardized}_{i,t}$: log of population density for country $i$, period $t$.
