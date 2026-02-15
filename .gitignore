@@ -160,6 +160,9 @@ cython_debug/
 #.idea/
 
 
+# Latex stuff
+latex_typst/latex/main.synctex.gz
+
 # Specific documents and data: we add the set of data that we want to ignore.
 **/emdat.xlsx
 **/emdat_processed .csv
