@@ -6,9 +6,10 @@
 \footnotesize
 \setlength{\tabcolsep}{4pt}
 \renewcommand{\arraystretch}{0.9}
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{lrrrrrrrr}
 \toprule
-\textbf{Statistic} & \textbf{gdp\_CRI} & \textbf{Pop\_CRI} & \textbf{prec\_CRI} & \textbf{gdp\_LAO} & \textbf{Pop\_LAO} & \textbf{prec\_LAO} & \textbf{co2} & \textbf{Temp} \\
+\textbf{Statistic} & \textbf{\shortstack{Real GDP\\CRI}} & \textbf{\shortstack{Population\\CRI}} & \textbf{\shortstack{Precipitation\\CRI}} & \textbf{\shortstack{Real GDP\\LAO}} & \textbf{\shortstack{Population\\LAO}} & \textbf{\shortstack{Precipitation\\LAO}} & \textbf{\shortstack{Atmospheric\\CO2}} & \textbf{\shortstack{Ocean\\temperature}} \\
 \midrule
 Count & 44.00 & 44.00 & 40.00 & 40.00 & 44.00 & 40.00 & 45.00 & 45.00 \\
 Mean & -0.00 & -0.00 & 0.00 & -0.00 & 0.00 & 0.00 & -0.00 & 0.00 \\
@@ -21,5 +22,5 @@ Max & 1.58 & 1.26 & 1.94 & 1.50 & 1.47 & 1.68 & 1.85 & 1.95 \\
 Kurtosis & -1.23 & -0.99 & -0.97 & -1.43 & -0.99 & -0.97 & -1.15 & -1.11 \\
 Skewness & -0.15 & -0.52 & 0.32 & 0.27 & -0.40 & -0.21 & 0.20 & 0.30 \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table}
