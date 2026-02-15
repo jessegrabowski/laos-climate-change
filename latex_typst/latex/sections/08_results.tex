@@ -131,11 +131,13 @@ Therefore, our model predicts that Costa Rica will have a greater exposure to mo
 
 \subsection{Country level damages curve}
 
-To produce the damage curves, we combine the results of the damage and frequency models. Figure~\ref{fig:damage_curves_lao} presents the damage curves for Laos. The vertical axis corresponds to damages in millions of USD, while the horizontal axis represents the probability associated with each damage level. As expected, most of the probability mass corresponds to low-damage events. However, as we consider less probable disasters, the magnitude of damages increases. The most relevant finding is that the model projects an upward shift in Laos' damage curve, indicating that more impactful events will become more frequent, and more frequent events are projected to generate greater damages.
+"To produce the damage curves, we combine the results of the damage and frequency models. By multiplying the estimated number of events by the expected damage, we obtain the total annual damage a country is projected to experience. The key advantage, however, is that we estimate the entire probability distribution rather than relying solely on mean values. This allows us to identify the specific damage level associated with every probability percentile. As discussed previously, hydrometeorological disasters typically exhibit heavy-tailed distributions, where sporadic, extreme events drive the majority of economic impacts. This is precisely where the capacity to model the full distribution becomes invaluable: it enables the direct evaluation of tail risks and an assessment of how the risk of extreme events evolves over time.
+
+Figure~\ref{fig:damage_curves_lao} presents the damage curves for Laos. The vertical axis corresponds to damages in millions of USD, while the horizontal axis represents the probability associated with each damage level. As expected, most of the probability mass corresponds to low-damage events. However, as we consider less probable disasters, the magnitude of damages increases. The most relevant finding is that the model projects an upward shift in Laos' damage curve, indicating that more impactful events will become more frequent, and more frequent events are projected to generate greater damages.
 
 \begin{figure}[htbp]
     \centering
-    \captionwithnoteandshort{Lao damage curves}{Lao damage curves}{}
+    \captionwithnoteandshort{Lao damage curves}{Lao damage curves}{Damage curves are constructed by multiplying the probability distributions of disaster frequency by the expected damages. From the resulting joint probability distributions, we extract the tail risks to model the expected total damage a country faces during extreme events---specifically those in the higher percentiles. Each point on the curve reveals the damage associated with a specific probability percentile for a given year.}
     \label{fig:damage_curves_lao}
     \includegraphics[width=\textwidth]{results/damage_curves_lao.png}
 \end{figure}
@@ -152,7 +154,7 @@ Importantly, the results also suggest that moderate return periods (10-year and 
 
 \begin{figure}[htbp]
     \centering
-    \captionwithnoteandshort{Lao damage barplots}{Lao damage barplots}{}
+    \captionwithnoteandshort{Lao damage barplots}{Lao damage barplots}{ Each set of bars represents the mean damage caused by a disaster that happens in average every X years, where X corresponds to the Return Years values. The Damage barplot illustrates how the mean damage for each Return Years category evolve trhough time}
     \label{fig:damage_barplots_lao}
     \includegraphics[width=\textwidth]{results/damagecurves_barplots_lao.png}
 \end{figure}
@@ -161,7 +163,7 @@ Figure~\ref{fig:damage_curves_cr} presents the results for Costa Rica. In this c
 
 \begin{figure}[htbp]
     \centering
-    \captionwithnoteandshort{CR damage curves}{CR damage curves}{}
+    \captionwithnoteandshort{CR damage curves}{CR damage curves}{Damage curves are constructed by multiplying the probability distributions of disaster frequency by the expected damages. From the resulting joint probability distributions, we extract the tail risks to model the expected total damage a country faces during extreme events---specifically those in the higher percentiles. Each point on the curve reveals the damage associated with a specific probability percentile for a given year.}
     \label{fig:damage_curves_cr}
     \includegraphics[width=\textwidth]{results/damage_curves_cr.png}
 \end{figure}
@@ -192,7 +194,7 @@ First, we implement a simplified geospatial model that relies solely on an HSGP 
 
 \begin{figure}[H]
     \centering
-    \captionwithnoteandshort{HSGP event probability predictions for Cambodia, Thailand, Laos and Vietnam}{HSGP event probability predictions for Cambodia, Thailand, Laos and Vietnam}{The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of one disaster.}
+    \captionwithnoteandshort{HSGP event probability predictions for Cambodia, Thailand, Laos and Vietnam}{HSGP event probability predictions for Cambodia, Thailand, Laos and Vietnam}{The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of one disaster. Red points correspond to observed disasters.}
     \label{fig:hsgp_sea}
     \includegraphics[width=0.8\textwidth]{results/event_HSGP_sea_pred.png}
 \end{figure}
@@ -209,7 +211,7 @@ Figure~\ref{fig:hsgp_lao} presents the results specifically for Lao. Based only 
 
 \begin{figure}[H]
     \centering
-    \captionwithnoteandshort{HSGP event probability predictions for Lao}{HSGP event probability predictions for Lao}{The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of one disaster.}
+    \captionwithnoteandshort{HSGP event probability predictions for Lao}{HSGP event probability predictions for Lao}{The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of one disaster. Red points correspond to observed disasters.}
     \label{fig:hsgp_lao}
     \includegraphics[width=0.75\textwidth]{results/event_HSGP_lao_pred.png}
 \end{figure}
@@ -220,7 +222,7 @@ The results for Central America are presented on Figure~\ref{fig:hsgp_ca}. It is
 
 \begin{figure}[H]
     \centering
-    \captionwithnoteandshort{HSGP event probability predictions for Central America}{HSGP event probability predictions for Central America}{The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of one disaster.}
+    \captionwithnoteandshort{HSGP event probability predictions for Central America}{HSGP event probability predictions for Central America}{The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of one disaster. Red points correspond to observed disasters.}
     \label{fig:hsgp_ca}
     \includegraphics[width=1.1\textwidth]{results/hsgp_central_america.png}
 \end{figure}
@@ -229,7 +231,7 @@ The results for Costa Rica, presented in Figure~\ref{fig:hsgp_cr}, show a differ
 
 \begin{figure}[H]
     \centering
-    \captionwithnoteandshort{HSGP event probability predictions for Costa Rica}{HSGP event probability predictions for Costa Rica}{The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of one disaster.}
+    \captionwithnoteandshort{HSGP event probability predictions for Costa Rica}{HSGP event probability predictions for Costa Rica}{The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of one disaster. Red points correspond to observed disasters.}
     \label{fig:hsgp_cr}
     \includegraphics[width=0.8\textwidth]{results/hsgp_cr.png}
 \end{figure}
@@ -247,7 +249,7 @@ The same is true for distance to the coastline. The model is able to determine w
 
 \begin{figure}[htbp]
     \centering
-    \captionwithnoteandshort{Full model event probability predictions for Cambodia, Thailand, Laos and Vietnam}{Full model event probability predictions for Cambodia, Thailand, Laos and Vietnam}{The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of at least one disaster.}
+    \captionwithnoteandshort{Full model event probability predictions for Cambodia, Thailand, Laos and Vietnam}{Full model event probability predictions for Cambodia, Thailand, Laos and Vietnam}{The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of at least one disaster. Red points correspond to observed disasters.}
     \label{fig:results_sea_full}
     \includegraphics[width=0.9\textwidth]{results/full_model_sea_2018.png}
 \end{figure}
@@ -256,7 +258,7 @@ We now zoom in to examine in more detail the specific results for Laos. Figure~\
 
 \begin{figure}[H]
     \centering
-    \captionwithnoteandshort{Full model event probability predictions for Lao}{Full model event probability predictions for Lao}{The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of at least one disaster.}
+    \captionwithnoteandshort{Full model event probability predictions for Lao}{Full model event probability predictions for Lao}{The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of at least one disaster. Red points correspond to observed disasters.}
     \label{fig:results_lao_full}
     \includegraphics[width=0.9\textwidth]{results/full_model_lao_2018.png}
 \end{figure}
@@ -265,7 +267,7 @@ Figure~\ref{fig:decomposed_result_lao} presents the decomposition of the effects
 
 \begin{figure}[htbp]
     \centering
-    \captionwithnoteandshort{Decomposition of the full model event probability predictions for Lao}{Decomposition of the full model event probability predictions for Lao}{}
+    \captionwithnoteandshort{Decomposition of the full model event probability predictions for Lao}{ Decomposition of the full model event probability predictions for Lao}{The decomposition is given in log-odds units}
     \label{fig:decomposed_result_lao}
     \includegraphics[width=1.1\textwidth]{results/decomposed_effect_lao.png}
 \end{figure}
@@ -283,7 +285,7 @@ We now present the results for Central America and Costa Rica. Figure~\ref{fig:r
 
 \begin{figure}[H]
     \centering
-    \captionwithnoteandshort{Full model event probability predictions for Central America}{Full model event probability predictions for Central America}{The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of at least one disaster.}
+    \captionwithnoteandshort{Full model event probability predictions for Central America}{Full model event probability predictions for Central America}{The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of at least one disaster. Red points correspond to observed disasters.}
     \label{fig:results_ca_full}
     \includegraphics[width=0.9\textwidth]{results/full_model_ca_2018.png}
 \end{figure}
@@ -295,7 +297,7 @@ Figure~\ref{fig:decomposed_result_cr} shows the decomposition of the effects. In
 
 \begin{figure}[H]
     \centering
-    \captionwithnoteandshort{Full model event probability predictions for Costa Rica}{Full model event probability predictions for Costa Rica}{The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of at least one disaster.}
+    \captionwithnoteandshort{Full model event probability predictions for Costa Rica}{Full model event probability predictions for Costa Rica}{The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of at least one disaster. Red points correspond to observed disasters.}
     \label{fig:results_cr_full}
     \includegraphics[width=0.7\textwidth]{results/full_model_cr_2018.png}
 \end{figure}
@@ -306,7 +308,7 @@ Figure~\ref{fig:decomposed_result_cr} shows the decomposition of the effects. In
 
 \begin{figure}[htbp]
     \centering
-    \captionwithnoteandshort{Decomposition of the full model event probability predictions for Costa Rica}{Decomposition of the full model event probability predictions for Costa Rica}{}
+    \captionwithnoteandshort{Decomposition of the full model event probability predictions for Costa Rica}{Decomposition of the full model event probability predictions for Costa Rica}{The decomposition is given in log-odds units}
     \label{fig:decomposed_result_cr}
     \includegraphics[width=1.1\textwidth]{results/decomposed_effect_cr.png}
 \end{figure}
