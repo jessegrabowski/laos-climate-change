@@ -165,11 +165,14 @@ cython_debug/
 **/emdat_processed .csv
 .DS_Store
 data/*
+notebooks/geo_damage_model/data
+notebooks/final_paper/data/
 
 # Ignore idata
 *.idata
 *.netcdf
 *.ncdf
+*idata
 
 # Ignore archive
 notebooks/geo_damage_model/archive
