@@ -6,9 +6,10 @@
 \footnotesize
 \setlength{\tabcolsep}{4pt}
 \renewcommand{\arraystretch}{0.9}
+\resizebox{1.15\textwidth}{!}{%
 \begin{tabular}{lrrrrrrrrr}
 \toprule
-\textbf{Stat} & \textbf{is\_dis} & \textbf{log\_riv} & \textbf{log\_coast} & \textbf{Pop} & \textbf{co2} & \textbf{prec} & \textbf{ocean\_t} & \textbf{pop\_dens} & \textbf{gdp\_pc} \\
+\textbf{Statistic} & \textbf{\shortstack{Is real\\disaster}} & \textbf{\shortstack{Log distance\\to river}} & \textbf{\shortstack{Log distance\\to coast}} & \textbf{Population} & \textbf{\shortstack{Atmospheric\\CO2}} & \textbf{\shortstack{Precipitation, deviation\\from trend}} & \textbf{\shortstack{Ocean Temperature, deviation\\from trend}} & \textbf{\shortstack{Log of population\\density}} & \textbf{\shortstack{Log of GDP\\per capita}} \\
 \midrule
 Count & 30030 & 30030 & 30030 & 30030 & 30030 & 30030 & 30030 & 30030 & 30030 \\
 Mean & 0.06 & 0.00 & 0.00 & 0.00 & -0.00 & -0.00 & -0.00 & -0.00 & -0.00 \\
@@ -21,5 +22,5 @@ Max & 1.00 & 1.66 & 1.30 & 1.49 & 1.86 & 2.81 & 1.95 & 1.28 & 1.62 \\
 Kurt & 13.13 & 3.35 & 3.36 & 0.44 & -1.13 & -0.00 & -0.46 & 1.52 & -1.11 \\
 Skew & 3.89 & -1.46 & -1.57 & -1.05 & 0.20 & 0.40 & -0.01 & -1.17 & -0.17 \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table}

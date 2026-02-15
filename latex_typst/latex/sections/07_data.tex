@@ -90,7 +90,7 @@ As seen in Figure~\ref{fig:damages_kden}, the damages data is characterized by e
     \centering
     \captionwithnoteandshort{Kernel density for yearly damages of hydrometeorological disasters}{Kernel density for yearly damages of hydrometeorological disasters}{}
     \label{fig:damages_kden}
-    \includegraphics[width=0.9\textwidth]{eda/damages_kden.png}
+    \includegraphics[width=0.8\textwidth]{eda/damages_kden.png}
 \end{figure}
 \FloatBarrier
 
@@ -189,7 +189,6 @@ We then merge the disaster and synthetic non-disaster points into a single datas
     \item Log of population density.
     \item Log of population density squared.
     \item Log of GDP per capita.
-    \item Log of GDP per capita squared.
 \end{itemize}
 
 Figures~\ref{fig:ca_dis} and \ref{fig:laos_neigh_dis} show the maps of disaster and synthetic non-disaster points for both regions. Since we generate 15 random non-disaster points for every disaster, the point density is lower in countries with fewer recorded disasters. It is important to note that this does not affect the model's estimates related to event frequency, as that aspect is handled by the event component of the model, not in the geospatial component described here.
@@ -200,7 +199,7 @@ In the case of Costa Rica, we exclude Isla del Coco from the map and its surroun
     \centering
     \captionwithnoteandshort{Disaster and synthetic non-disaster points for Central America}{Disaster and synthetic non-disaster points for Central America}{Yellow points correspond to reported disasters, purple to randomly generated non-disaster points.}
     \label{fig:ca_dis}
-    \includegraphics[width=0.55\textwidth]{eda/ca_real_synth_dis.png}
+    \includegraphics[width=0.65\textwidth]{eda/ca_real_synth_dis.png}
 \end{figure}
 \FloatBarrier
 
@@ -208,7 +207,7 @@ In the case of Costa Rica, we exclude Isla del Coco from the map and its surroun
     \centering
     \captionwithnoteandshort{Disaster and synthetic non-disaster points for Cambodia, Thailand, Laos and Vietnam}{Disaster and synthetic non-disaster points for Cambodia, Thailand, Laos and Vietnam}{Yellow points correspond to reported disasters, purple to randomly generated non-disaster points.}
     \label{fig:laos_neigh_dis}
-    \includegraphics[width=0.35\textwidth]{eda/laos_neigh_real_synth_dis.png}
+    \includegraphics[width=0.45\textwidth]{eda/laos_neigh_real_synth_dis.png}
 \end{figure}
 
 \FloatBarrier

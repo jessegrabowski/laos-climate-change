@@ -6,9 +6,10 @@
 \footnotesize
 \setlength{\tabcolsep}{4pt}
 \renewcommand{\arraystretch}{0.9}
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{lrrrrrr}
 \toprule
-\textbf{Statistic} & \textbf{ln\_pop\_dens} & \textbf{ln\_gdp\_pc} & \textbf{sq\_ln\_gdp} & \textbf{precip\_dev} & \textbf{co2} & \textbf{population} \\
+\textbf{Statistic} & \textbf{\shortstack{Log of population\\density}} & \textbf{\shortstack{Log of GDP\\per capita}} & \textbf{\shortstack{Log of GDP\\per capita, squared}} & \textbf{\shortstack{Precipitation, deviation\\from trend}} & \textbf{\shortstack{Atmospheric\\CO2}} & \textbf{Population} \\
 \midrule
 Count & 2300.00 & 2300.00 & 2300.00 & 2300.00 & 2300.00 & 2300.00 \\
 Mean & 0.00 & 0.00 & 0.00 & 0.00 & 0.00 & 0.00 \\
@@ -21,5 +22,5 @@ Max & 2.08 & 2.25 & 2.48 & 5.11 & 1.74 & 2.15 \\
 Kurtosis & 0.59 & -0.47 & -0.30 & 5.76 & -1.05 & -0.04 \\
 Skewness & -0.90 & 0.39 & 0.69 & 1.08 & -0.06 & 1.34 \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table}

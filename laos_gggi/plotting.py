@@ -81,6 +81,7 @@ def _plot_single_kde(
     color="tab:blue",
     leg_loc="upper left",
     set_title: bool = True,
+    add_sum_box: bool = True,
 ):
     """
     Plot a single KDE plot on a given axis.
@@ -109,19 +110,20 @@ def _plot_single_kde(
     axis.hist(data, bins=bins, density=True, facecolor=color, alpha=0.25)
     sns.kdeplot(data, ax=axis, lw=2, c="k", ls="--")
 
-    n, minmax, mean, var, skew, kurt = stats.describe(data.values.squeeze())
-    jb = stats.jarque_bera(data.values.squeeze())
+    if add_sum_box:
+        n, minmax, mean, var, skew, kurt = stats.describe(data.values.squeeze())
+        jb = stats.jarque_bera(data.values.squeeze())
 
-    names = ["N", "Min", "Max", "Mean", "Std", "Skew", "Kurt", "JB"]
-    values = [n, minmax[0], minmax[1], mean, np.sqrt(var), skew, kurt, jb.statistic]
+        names = ["N", "Min", "Max", "Mean", "Std", "Skew", "Kurt", "JB"]
+        values = [n, minmax[0], minmax[1], mean, np.sqrt(var), skew, kurt, jb.statistic]
 
-    text = "\n".join(
-        f'{name:<5} = {" " if value > 0 else ""}{value:<3.3f}'
-        for name, value in zip(names, values)
-    )
-    box = AnchoredText(text, loc=leg_loc, prop={"fontfamily": "monospace"})
-    box.patch.set_alpha(0.5)
-    axis.add_artist(box)
+        text = "\n".join(
+            f'{name:<5} = {" " if value > 0 else ""}{value:<3.3f}'
+            for name, value in zip(names, values)
+        )
+        box = AnchoredText(text, loc=leg_loc, prop={"fontfamily": "monospace"})
+        box.patch.set_alpha(0.5)
+        axis.add_artist(box)
     if set_title:
         axis.set_title(data.name)
 
@@ -135,6 +137,7 @@ def plot_descriptive(
     color: str = "tab:blue",
     leg_loc="upper left",
     labels_size: int = 14,
+    add_sum_box: bool = True,
     **figure_kwargs,
 ):
     """
@@ -165,7 +168,9 @@ def plot_descriptive(
 
     if n_plots == 1:
         fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
-        return _plot_single_kde(df, axis=ax, bins=bins, color=color)
+        return _plot_single_kde(
+            df, axis=ax, bins=bins, color=color, add_sum_box=add_sum_box
+        )
 
     fig = plt.figure(figsize=figsize, dpi=dpi, **figure_kwargs)
 
@@ -181,6 +186,7 @@ def plot_descriptive(
             bins=bins,
             color=color,
             leg_loc=leg_loc,
+            add_sum_box=add_sum_box,
         )
 
     return fig
