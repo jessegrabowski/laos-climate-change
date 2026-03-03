@@ -265,21 +265,23 @@ We now zoom in to examine in more detail the specific results for Laos. Figure~\
 
 Figure~\ref{fig:decomposed_result_lao} presents the decomposition of the effects for Lao. It is important to consider that besides the effects plotted, the event probability risk is also affected by the country effect, the climate covariates and the country-level covariates, which do not vary at the geospatial level. The decomposition of the effects allows to identify that the HSGP component dominates the projected probability values. It also shows that despite having a lower weight, the distance to coastline has some positive impact, as can be seen in the lower right segment.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
-    \captionwithnoteandshort{Decomposition of the full model event probability predictions for Lao}{ Decomposition of the full model event probability predictions for Lao}{The decomposition is given in log-odds units}
+    \captionwithnoteandshort{Decomposition of the event probability predictions for Lao}{ Decomposition of the event probability predictions for Lao}{The decomposition is given in log-odds units}
     \label{fig:decomposed_result_lao}
     \includegraphics[width=1.1\textwidth]{results/decomposed_effect_lao.png}
 \end{figure}
 
-The static geospatial perspective is highly valuable in itself; nevertheless, we are interested in understanding how exposure to climate change risks evolves over time and how it is affected by projected climate trends. To do this, we multiply the geospatial event probability by the mean number of events the country is projected to experience per year. This provides the total event probability per year for each point. We then project these values over time to understand how risk evolves as atmospheric CO\textsubscript{2} increases. Figure~\ref{fig:results_lao_yearly} shows how local exposure increases over time for Laos.
+The static geospatial perspective is highly valuable in itself; however, given the normalization process applied to obtain the disaster probability, the value scale will remain relatively stable over time. We are interested in understanding how exposure to climate change risks evolves and how it is affected by projected climate trends. To gain a clearer perspective of how geospatial event risk evolves through time, we multiply the geospatial probability by the probability distribution of the country’s event frequency; this provides the expected number of events for each point on the map. We then project these values to understand how risk evolves as atmospheric CO\textsubscript{2} increases. Figure~\ref{fig:results_lao_yearly} shows how local exposure increases over time for Laos.
 
-\begin{figure}[htbp]
+
+\begin{figure}[H]
     \centering
-    \captionwithnoteandshort{Full model event probability predictions for Lao through time}{Full model event probability predictions for Lao through time}{}
+    \captionwithnoteandshort{Expected number of disasters for each point of Lao through time}{Expected number of disasters for each point of Lao through time}{}
     \label{fig:results_lao_yearly}
     \includegraphics[width=1.1\textwidth]{results/full_model_yearly_lao.png}
 \end{figure}
+
 
 We now present the results for Central America and Costa Rica. Figure~\ref{fig:results_ca_full} shows the results for the whole region, while Figure~\ref{fig:results_cr_full} presents the estimations specifically for Costa Rica. In the case of Costa Rica, we observe how the riskiest areas seem to be concentrated in the great metropolitan area, which contains most of the country's population.
 
@@ -308,16 +310,16 @@ Figure~\ref{fig:decomposed_result_cr} shows the decomposition of the effects. In
 
 \begin{figure}[htbp]
     \centering
-    \captionwithnoteandshort{Decomposition of the full model event probability predictions for Costa Rica}{Decomposition of the full model event probability predictions for Costa Rica}{The decomposition is given in log-odds units}
+    \captionwithnoteandshort{Decomposition of the event probability predictions for Costa Rica}{Decomposition of the event probability predictions for Costa Rica}{The decomposition is given in log-odds units}
     \label{fig:decomposed_result_cr}
     \includegraphics[width=1.1\textwidth]{results/decomposed_effect_cr.png}
 \end{figure}
 
-To conclude this section, we present on Figure~\ref{fig:results_cr_yearly} the projected geospatial risk for Costa Rica. Similar to the case of Lao, we can observe how the probability of event increases in the riskier areas as atmospheric CO2 projections grow through time. The projections show a greater exposure for the Greater Metropolitan Area, Guanacaste and the south of the Caribbean.
+To conclude this section, we present on Figure~\ref{fig:results_cr_yearly} the projected geospatial risk for Costa Rica by multiplying the geospatial event probability by the distribution of the country event frequency, this way we obtain the expected number of events per year for each point. Similar to the case of Lao, we can observe how the probability of event increases in the riskier areas as atmospheric CO2 projections grow through time. The projections show a greater exposure for the Greater Metropolitan Area, Guanacaste and the south of the Caribbean.
 
 \begin{figure}[htbp]
     \centering
-    \captionwithnoteandshort{Full model event probability predictions for Costa Rica through time}{Full model event probability predictions for Costa Rica through time}{}
+    \captionwithnoteandshort{Expected number of disasters for each point of Costa Rica through time}{Expected number of disasters for each point of Costa Rica through time}{}
     \label{fig:results_cr_yearly}
     \includegraphics[width=1.1\textwidth]{results/full_model_yearly_cr.png}
 \end{figure}
