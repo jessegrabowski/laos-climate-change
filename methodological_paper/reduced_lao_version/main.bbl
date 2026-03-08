@@ -1,4 +1,4 @@
-\begin{thebibliography}{30}
+\begin{thebibliography}{31}
 \newcommand{\enquote}[1]{#1}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
@@ -148,6 +148,11 @@ Pearl, J (2009). \emph{Causality}. Cambridge university press.
 Schneider, ea (2022). \enquote{Gpcc full data monthly product version 2022.}
   [Dat file]. GPCC: Global Precipitation Climatology Centre, extracted on May
   2024 from \url{http://dx.doi.org/10.5676/DWD_GPCC/FD_M_V2022_100}.
+
+\bibitem[{Solin and S{\"a}rkk{\"a}(2020)}]{solin2020hilbert}
+Solin, A and S{\"a}rkk{\"a}, S (2020). \enquote{Hilbert space methods for
+  reduced-rank gaussian process regression.} \emph{Statistics and Computing}
+  30(2),  419--446.
 
 \bibitem[{{The World Bank}(2024{\natexlab{a}})}]{worldbank_boundaries_2024}
 {The World Bank} (2024{\natexlab{a}}). \enquote{World bank official

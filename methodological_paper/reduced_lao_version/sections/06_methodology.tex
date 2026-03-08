@@ -9,21 +9,7 @@
 
 Uncertainty quantification lies at the heart of our modeling approach. Disaster damage data typically exhibits positive skew and long right tails, where a small number of extreme events drive the majority of observed impacts. Consequently, traditional mean-based metrics fail to capture the reality of catastrophic risk. Instead, it is the tails of the distribution that demand attention. To address this, we employ generative probabilistic modeling \citep{gelman1995bayesian} as a framework for causal inference. This approach allows us to move beyond passive observation and perform counterfactual interventions using Judea Pearl's do-operator \citep{pearl2009causality}. By simulating the full distribution of potential outcomes under the intervention $P(\text{Damage} \mid \text{do}(\text{Policy}))$, we can conduct rigorous scenario analysis that accounts for functional relationships, prior research, and the inherent uncertainty in the data.
 
-While many generative frameworks exist, PyMC \citep{abril2023pymc} focuses on Bayesian generative models. This means that not only do our models output probability distributions, we also specify probability distributions over model parameters. These parameters, jointly denoted $\theta$, can then be updated according to Bayes' theorem:
-
-\begin{equation}
-p(\theta \mid X, \mathcal{M}) = \frac{p(X \mid \theta, \mathcal{M}) p(\theta \mid \mathcal{M})}{\int p(X \mid \theta, \mathcal{M}) p(\theta \mid \mathcal{M}) \dd\theta}
-\end{equation}
-
-Where $X$ is observed data and $\mathcal{M}$ is a model parameterized by $\theta$. The left-hand quantity, $p(\theta \mid X, \mathcal{M})$, is an updated belief about the possible parameter values that $\theta$ could take on, given that we've seen data $X$. This is called a \textit{posterior}. The integral in the denominator of this expression is the sum of every possible parameter vector that could have given rise to the observed data, weighted by how likely we believe each parameter vector to be. This is infamously impossible to compute. Instead, the posterior can be approximated using sequential sampling schemes known as Markov Chain Monte Carlo (MCMC) algorithms. PyMC offers state-of-the-art MCMC algorithms, notably the No-U Turn Sampler (NUTS) \citep{hoffman2014no}.
-
-The posterior is not the central object of interest in our research. Instead, we are interested in the range of possible disaster impacts that are implied by that posterior. This leads us to the \textit{posterior predictive distribution}:
-
-\begin{equation}
-p(y \mid X, \mathcal{M}) = \int p(y \mid X, \theta, \mathcal{M}) p(\theta \mid X, \mathcal{M}) \dd\theta
-\end{equation}
-
-Where $y$ is a new piece of data, not included in $X$. This expression marginalizes the uncertainty arising from the posterior, and gives a parameter-free probability distribution over possible outcomes, given the modeling framework and the input data. Armed with the posterior predictive distribution, we can answer important distributional questions. This will be extremely useful for building damages curves and damage curves predictions, as we explain next.
+We implement all models using PyMC \citep{abril2023pymc}, a Bayesian generative modeling framework. In this approach, we specify probability distributions over model parameters (priors), update them with observed data via Bayes' theorem to obtain posterior distributions, and approximate these posteriors using Markov Chain Monte Carlo (MCMC) sampling---specifically the No-U Turn Sampler (NUTS) \citep{hoffman2014no}. Our central object of interest is the \textit{posterior predictive distribution}, which marginalizes over parameter uncertainty to produce a full probability distribution over possible outcomes. This allows us to quantify not just expected damages but also tail risks and extreme event probabilities, which are critical for building damage curves and their projections.
 
 \subsection{Modeling disaster frequency}
 
@@ -35,60 +21,7 @@ To model the number of disasters we use a Zero Inflated Binomial probability dis
 Y_{i,t} \sim \text{ZeroInflatedBinomial}(\Psi, \mu, \alpha)
 \end{equation}
 
-The Zero Inflated Binomial probability is completely defined by three parameters:
-
-\begin{itemize}
-    \item \textbf{Inflation Parameter $\Psi$}: represents the probability of an observation being an excess zero. It models the likelihood that a zero count comes from the zero-generating process rather than the Binomial process.
-    \item \textbf{Mean parameter $\mu$}: This is the mean parameter of the Negative Binomial distribution. It represents the average number of events (or counts) you would expect to see if the observation is not an excess zero.
-    \item \textbf{Variance parameter $\alpha$}: This is the dispersion parameter of the Negative Binomial distribution. It controls the variance of the distribution. Smaller values of $\alpha$ lead to more over-dispersion (greater variance relative to the mean), while larger values make the distribution approach a Poisson distribution.
-\end{itemize}
-
-Each of these three parameters is modeled with a probability distribution. In this way, we have a nested structure in which the Zero Inflated Binomial distribution that accounts for events frequency is expressed as a function of other three probability distributions. It is typical when working with a GLM to make the expected value $\mu$ the center of attention in the model, by writing it as a transformed linear function of data. The present study is no exception. We model $\mu = \EE[Y_{i,t} \mid X, \theta]$, the expected count of disasters in country $i$ during year $t$, as a function of observed covariates and parameters $\theta$.
-
-To model $\Psi$, the probability of observing zero disasters for a given country-year tuple, we use a Beta probability distribution. The Beta distribution is a family of continuous probability distributions defined on the interval $[0,1]$. It is parameterized by two positive shape parameters, typically denoted by $\alpha$ and $\beta$, which we will denote with $\tilde{\alpha}$ and $\tilde{\beta}$, to differentiate them from parameters in the latent linear model of $\mu$:
-
-\begin{equation}
-f(x|\tilde{\alpha}, \tilde{\beta}) = \frac{x^{\tilde{\alpha}-1} \cdot (1-x)^{\tilde{\beta}-1}}{B(\tilde{\alpha}, \tilde{\beta})}
-\end{equation}
-
-Where $B(\tilde{\alpha}, \tilde{\beta})$ is a normalization function of the form:
-
-\begin{equation}
-B(\tilde{\alpha}, \tilde{\beta}) = \int_0^1 s^{\tilde{\alpha}-1} (1-s)^{\tilde{\beta}-1} \dd s
-\end{equation}
-
-To model the $\alpha$ parameter we use a Gamma probability distribution. The Gamma distribution is a two-parameter family of continuous probability distributions. It is widely used in statistics due to its flexibility in modeling positive, continuous data. The Gamma distribution is strictly positive and completely defined by two parameters:
-
-\begin{itemize}
-    \item \textbf{Shape parameter $k$}: This parameter influences the shape of the distribution. It is also known as the ``shape factor.''
-    \item \textbf{Scale parameter $\theta$}: This parameter scales the distribution.
-\end{itemize}
-
-The full probability density function is given as:
-
-\begin{equation}
-f(x|k, \theta) = \frac{x^{k-1} e^{-x/\theta}}{\theta^k \Gamma(k)}
-\end{equation}
-
-Where $\Gamma(k)$ corresponds to the Gamma function:
-
-\begin{equation}
-\Gamma(k) = \int_0^{\infty} t^{k-1} e^{-t} \dd t
-\end{equation}
-
-Now we move to the core of the model, which is given by the parameter $\mu$, which we use to link a linear model to the expected disaster frequency. We assume the relationship between $\mu$ and the observed covariates $X$ is linear in some latent space. A link function is chosen to transform the latent linear space to the space of observations, which is strictly positive. Thus, for every country $i$, in every year $t$, we compute $\mu_{i,t}$ using the functional form:
-
-\begin{equation}
-\mu_{i,t} = \text{softplus}(Z_{i,t})
-\end{equation}
-
-Where $Z_{i,t}$ is the latent ``rate'' at which we observe disasters, modeled as a linear function of data. The $\text{softplus}$ function is a continuous approximation of the function $f(x) = \max(0, x)$\footnote{This max function is called the ReLU function in the deep learning literature. In the GLM literature, the canonical link function for a Zero Inflated Binomial is the exponential function. We use softplus for its superior numerical properties. In particular, we did not want exponential blowup in the mean with respect to the input data.}:
-
-\begin{equation}
-\text{softplus}(Z_{i,t}) = \log(1 + e^{Z_{i,t}})
-\end{equation}
-
-Where we define the latent rate $Z$ as the sum of three components:
+The distribution is defined by three parameters: the inflation parameter $\Psi$ (probability of excess zeros), the mean $\mu$ (expected count conditional on the Negative Binomial process), and the dispersion $\alpha$. We model $\Psi$ using a Beta prior and $\alpha$ using a Gamma prior. The expected count $\mu = \EE[Y_{i,t} \mid X, \theta]$ is the core of the model, linked to observed covariates through a GLM structure. We use a softplus link function to ensure positive rates, computing $\mu_{i,t} = \text{softplus}(Z_{i,t})$ for every country $i$ in every year $t$. The latent rate $Z$ is defined as the sum of three components:
 
 \begin{equation}
 Z = \text{country\_fixed\_effect}_{i} + \text{spatial\_random\_effect}_{i} + \text{covariates\_effect}_{i,t}
@@ -99,20 +32,14 @@ These components have the following meanings:
 \begin{itemize}
     \item $\text{country\_fixed\_effect}$ is a model intercept with a country hierarchy. This means that it is modeled using a Bayesian hierarchical framework, which serves as an intermediary between the extremes of no-pooling (independent OLS per country) and complete pooling (a single global intercept). This structure assumes that country-level intercepts are drawn from a common global distribution, allowing for partial pooling of information across units. For countries with sparse data or extreme outliers, the hierarchical prior induces shrinkage of the country-specific estimates toward the global mean. This ``information sharing'' significantly improves the reliability of estimates for small-sample countries, effectively reducing the noise and over-fitting.
 
-\item $\text{spatial\_random\_effect}_{i}$ accounts for spatial autocorrelation. To account for spatial autocorrelation, we incorporate a Besag-York-Molli\'{e} (BYM) specification \citep{besag1991bayesian}. This approach decomposes the $\text{spatial\_}\allowbreak\text{random\_}\allowbreak\text{effect}_{i}$ into a mixture of two distinct components to distinguish between regional trends and localized anomalies:
-    \begin{itemize}
-        \item A global latent spatial term $\tilde{\theta}$. Captures global, unstructured variation. If a country behaves very differently from its neighbors (e.g., due to policy, geography, or data quality), this term allows for that deviation.
-        \item A structured spatial term from an Intrinsic Conditional Autoregressive (ICAR) model $\phi$. The ICAR model assumes that the value of a country's spatial random effect is similar to that of its neighbors. Mathematically, this is a Gaussian Markov Random Field (GMRF) with dependence defined through an adjacency matrix $W$. This structure introduces local smoothing: nearby countries' effects ``pull'' each other.
-    \end{itemize}
+\item $\text{spatial\_random\_effect}_{i}$ accounts for spatial autocorrelation using a Besag-York-Molli\'{e} (BYM) specification \citep{besag1991bayesian}. The BYM decomposes the spatial effect into an unstructured term $\tilde{\theta}_i$ (capturing country-specific deviations) and a structured ICAR term $\phi_i$ (smoothing neighboring countries via an adjacency matrix $W$), combined as:
 \end{itemize}
-
-These two terms combined using a convex combination (weighted average) determined by $\rho$, a mixing coefficient:
 
 \begin{equation}
 \text{spatial\_random\_effect}_{i} = \sqrt{1-\rho} \cdot \tilde{\theta}_i + \sqrt{\frac{\rho}{s}} \phi_i
 \end{equation}
 
-With $s$ a scaling factor that ensures that the variance of the ICAR component is appropriately normalized. For the $\text{covariates\_effect}_{i,t}$ we introduce the time dimension $t$, and we use the following covariates:
+where $\rho$ is a mixing coefficient and $s$ a scaling factor for the ICAR variance. For the $\text{covariates\_effect}_{i,t}$ we introduce the time dimension $t$, and we use the following covariates:
 
 \begin{itemize}
     \item $\text{ln\_population\_density\_standardized}_{i,t}$: log of population density for country $i$, period $t$.
@@ -174,51 +101,7 @@ Where:
 
 \textbf{Hilbert Space Gaussian Process}
 
-The \textbf{Hilbert Space Gaussian Process (HSGP)} is an approximation method used to represent a Gaussian Process (GP) in a computationally efficient manner. Traditional GPs require inverting an $N \times N$ covariance matrix, which becomes computationally expensive for large datasets. HSGP approximates the GP using a finite basis function expansion, reducing the complexity.
-
-The function $\phi_k(x)$ and the corresponding spectral densities $\lambda_k$ to approximate the GP prior:
-
-\begin{equation}
-f(x) \approx \sum_{k=1}^{m} \beta_k \sqrt{\lambda_k} \phi_k(x)
-\end{equation}
-
-where:
-\begin{itemize}
-    \item $\beta_k \sim \NN(0,1)$ are the basis coefficients.
-    \item $\lambda_k$ are the eigenvalues derived from the covariance function.
-    \item $\phi_k(x)$ are the basis functions, which capture spatial variations.
-\end{itemize}
-
-Our model applies an HSGP prior to analyze the probability of a geospatial location given by (lat, long) of experiencing a climate-related disaster. The key components are:
-
-\begin{enumerate}
-    \item \textbf{Spatial Covariance Function:}
-    \begin{equation}
-    k(x, x') = \eta^2 K(x, x'; \ell)
-    \end{equation}
-    where $\eta$ is a scale parameter and $\ell$ is the length scale, drawn from a lognormal prior.
-
-    \item \textbf{Hilbert Space Representation:}
-    The GP is approximated using a Mat\'{e}rn-5/2 kernel with parameters $(m_0, m_1)$ controlling the number of basis functions. We use 35 as a value for both parameters. The basis function matrix $\Phi$ and spectral density $\sqrt{\lambda}$ define the GP prior:
-    \begin{equation}
-    \Phi, \sqrt{\lambda} = \text{gp.prior}_{\text{linearized}}(X)
-    \end{equation}
-
-    \item \textbf{Deterministic Component:}
-    \begin{equation}
-    \text{HSGP}_{\text{component}} = \Phi \cdot (\beta \odot \sqrt{\lambda})
-    \end{equation}
-    where $\beta \sim \NN(0,1)$ are the basis coefficients.
-
-    \item \textbf{Bernoulli Likelihood:}
-    The probability of a disaster occurring at a given location is modeled as a Bernoulli process with a logit link:
-    \begin{equation}
-    p = \text{HSGP}_{\text{component}}, \quad y \sim \text{Bernoulli}(\sigma(p))
-    \end{equation}
-    where $\sigma(p)$ is the logistic function mapping to probabilities.
-\end{enumerate}
-
-Given this specification, the HSGP model leverages geospatial coordinates (latitude and longitude) as inputs, allowing it to learn spatial dependencies in disaster occurrences. By reducing computational complexity, HSGP enables inference on large datasets where standard Gaussian process methods would be infeasible. The prior structure ensures smooth spatial predictions, capturing meaningful regional variations in disaster risk. This whole setup allows the model to capture the likelihood of climate-related events in different regions while maintaining scalability.
+We approximate the spatial component using a Hilbert Space Gaussian Process (HSGP) \citep{solin2020hilbert}, which replaces the standard $O(N^3)$ Gaussian Process computation with a finite basis function expansion. The HSGP projects the GP onto a set of pre-computed basis functions derived from the spectral decomposition of the covariance kernel, reducing computational cost to $O(Nm)$ where $m \ll N$ is the number of basis functions. We use a Mat\'{e}rn-5/2 kernel, which produces smooth but flexible spatial surfaces, with learned length-scale and amplitude parameters. The HSGP takes latitude and longitude as inputs and learns the spatial pattern of disaster occurrence directly from the data, capturing regional variations without requiring explicit geographic covariates. This enables scalable inference over large spatial grids while preserving the uncertainty quantification properties of the full GP.
 
 \textbf{Full model specification}
 
@@ -303,78 +186,7 @@ Several features of Figure~\ref{fig:example_curve} are worth pointing out. The c
 
 Of primary interest to us is how climate change can potentially shift these curves, and how they vary according to geospatial patterns.
 
-Climate researchers expect disasters to become both \textit{more severe} and \textit{more frequent} as the climate changes. We reason about these possibilities separately, by decomposing the problem in two parts.
-
-As explained, the distribution shown in Figure~\ref{fig:example_curve} is computed by using two probability distributions: the probability distribution of seeing events, and the probability distribution of damages in case an event happens. Formally, we denote $D: \Omega \rightarrow \RR^+$ as a random variable representing annual disaster damage, \textit{conditional on a disaster occurring}. In addition, denote $P: \Omega \rightarrow [0, 1]$ as the probability of a disaster occurring. Their joint probability distribution is defined as:
-
-\begin{equation}
-f_{P,D}(p,d) = f_{D|P}(d|p) f_P(p)
-\end{equation}
-
-This form allows for a shift in either the \textit{frequency} of disasters, represented by $f_P(p)$, or the \textit{severity} of disasters, represented by $f_{D|P}(d|p)$. To complete the model, we introduce a Bernoulli distributed random variable $I: \Omega \rightarrow \{0, 1\}$ with probability mass function:
-
-\begin{equation}
-f_{I|p}(i|p) = \begin{cases} p & \text{if } i = 1 \\ 1 - p & \text{if } i = 0 \end{cases}
-\end{equation}
-
-The full model is thus:
-
-\begin{equation}
-f_{D, I, P}(d, i, p) = f_{D|I, P}(d|i, p) f_{I|P}(i|p) f(p)
-\end{equation}
-
-The damage curve we observe in the data is the marginal distribution over damages, obtained by integrating over both $P$ and $I$:
-
-\begin{align}
-f_D(d) &= \int_0^1 \sum_{i \in \{0, 1\}} f_{D, I, P}(d, i, p) \dd p \\
-&= \int_0^1 f_{D, I, P}(d, i=0, p) \dd p + \int_0^1 f_{D, I, P}(d, i=1, p) \dd p
-\end{align}
-
-When $i = 0$, $d = 0$ by definition, so the expression simplifies significantly:
-
-\begin{align}
-\PP(D = 0) &= \int_0^1 f_{I|P}(i = 0|p) f(p) \dd p \\
-&= \int_0^1 (1 - p) f(p) \dd p \\
-&= \int_0^1 f(p) \dd p - \int_0^1 p f(p) \dd p
-\end{align}
-
-The first term here is 1, because $f(p)$ is a probability distribution. The second term is exactly the expected value of $P$. Defining $\EE[P] = \mu = \int_0^1 p f(p) \dd p$, the point mass on zero is simply:
-
-\begin{equation}
-\PP(D = 0) = 1 - \mu
-\end{equation}
-
-On the other hand, when $i = 1$ then $d > 0$ and:
-
-\begin{align}
-f_D(d) &= \int_0^1 f_{D, I, P}(d, i, p) \dd p \\
-&= \int_0^1 f_{D|I, P}(d|i=1, p) f_{I|P}(i=1|p) f(p) \dd p \\
-&= \int_0^1 f_{D|I, P}(d|i=1, p) (p) f(p) \dd p
-\end{align}
-
-Assuming $D$ and $P$ are conditionally independent given $i=1$, this expression becomes:
-
-\begin{equation}
-f_D(d) = f_{D|I}(d|i = 1) \int_0^1 p f_P(p) \dd p
-\end{equation}
-
-Once again the expected value of $P$ appears, allowing the following simplification for the marginal distribution over disasters:
-
-\begin{equation}
-f_D(d) = \begin{cases} \mu \cdot f_{D|I}(d|i = 1) & \text{if } d > 0 \\ 1 - \mu & \text{if } d = 0 \end{cases}
-\end{equation}
-
-This is a zero-inflated mixture model with a point-mass on zero representing the years with no disaster. Written this way, the two proposed mechanisms to increase disasters are clear. When disasters become more frequent, it implies that $\mu$ becomes larger. This increases the multiplier on the damage term $f_{D,I}(d, i=1)$, and shrinks the probability of not having a disaster. On the other hand, when disasters become more severe, it only scales up the damage term, while leaving the probability of not seeing a disaster unchanged. In either case, the expected damages from disasters increases. Starting from the definition of the expected value:
-
-\begin{align}
-\EE[D] &= \int_0^\infty d f_D(d) \dd d \\
-&= 0 \cdot (1 - \mu) + \mu \int_0^\infty d f_{D|I}(d|i = 1) \dd d \\
-&= \mu \EE[D|I = 1]
-\end{align}
-
-Again it is clear when $\mu$ becomes larger, the expected damages increase. Furthermore, $\EE[D|I = 1]$ is the average severity of disasters. It is equally clear that when this increases, the $\EE[D]$ also increases.
-
-This formalism provides us a framework for thinking about the channels through which climate change can cause increased disaster risk. It is silent, however, on how to actually model the quantities of interest. For starters, $D$ and $P$ are not directly observed. We can only observe the disasters (storms, floods, etc) that actually happen, and try to infer something about their frequency over time. This frequency, however, is driven by many factors, including the climate, local geography where disasters are observed, as well as human activity, including economic activity. In addition, what we observe are imperfect proxies for the true quantities of interest, introducing additional layers of uncertainty. Here is where the causal assumptions presented in Figure~\ref{fig:causal_graph} become highly relevant, as they provide a causal framework that justifies the statistical models we ultimately employ to estimate $f_P(p)$ and $f_D(d)$.
+Climate change can shift these curves through two channels: disasters can become \textit{more frequent} (increasing the probability of occurrence $\mu$) or \textit{more severe} (shifting the damage distribution conditional on occurrence). The resulting damage distribution is a zero-inflated mixture: with probability $1 - \mu$ no disaster occurs and damage is zero; with probability $\mu$ a disaster occurs and damage follows the severity distribution. Expected damages are simply $\EE[D] = \mu \cdot \EE[D|I = 1]$, the product of frequency and average severity. Both channels increase total expected damages, and the causal framework presented in Figure~\ref{fig:causal_graph} justifies the statistical models we employ to estimate each component separately.
 
 \subsection{Geolocated damage curves}
 

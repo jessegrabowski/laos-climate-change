@@ -18,45 +18,45 @@ for support: Rajesh, rajesh@wspc.com.sg
 Reallocating 'wiz_functions' (item size: 4) to 6000 items.
 Warning--can't use both author and editor fields in ipcc_ar6
 Warning--empty journal in lopez_climate_2015
-You've used 30 entries,
+You've used 31 entries,
             3275 wiz_defined-function locations,
-            866 strings with 11073 characters,
-and the built_in function-call counts, 16855 in all, are:
-= -- 1400
-> -- 676
-< -- 29
-+ -- 271
-- -- 231
-* -- 1230
-:= -- 2628
-add.period$ -- 60
-call.type$ -- 30
-change.case$ -- 228
-chr.to.int$ -- 28
-cite$ -- 32
-duplicate$ -- 1297
-empty$ -- 1236
-format.name$ -- 293
-if$ -- 3371
+            872 strings with 11227 characters,
+and the built_in function-call counts, 17562 in all, are:
+= -- 1467
+> -- 694
+< -- 31
++ -- 278
+- -- 237
+* -- 1282
+:= -- 2724
+add.period$ -- 62
+call.type$ -- 31
+change.case$ -- 235
+chr.to.int$ -- 29
+cite$ -- 33
+duplicate$ -- 1352
+empty$ -- 1290
+format.name$ -- 304
+if$ -- 3522
 int.to.chr$ -- 3
 int.to.str$ -- 1
-missing$ -- 266
-newline$ -- 100
-num.names$ -- 120
-pop$ -- 523
+missing$ -- 276
+newline$ -- 103
+num.names$ -- 124
+pop$ -- 540
 preamble$ -- 1
-purify$ -- 194
+purify$ -- 200
 quote$ -- 0
-skip$ -- 574
+skip$ -- 603
 stack$ -- 0
-substring$ -- 648
-swap$ -- 671
-text.length$ -- 9
+substring$ -- 692
+swap$ -- 707
+text.length$ -- 10
 text.prefix$ -- 0
 top$ -- 4
-type$ -- 255
+type$ -- 264
 warning$ -- 2
-while$ -- 115
+while$ -- 121
 width$ -- 0
-write$ -- 329
+write$ -- 340
 (There were 5 warnings)
