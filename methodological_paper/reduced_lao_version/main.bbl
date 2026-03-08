@@ -1,0 +1,177 @@
+\begin{thebibliography}{30}
+\newcommand{\enquote}[1]{#1}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\providecommand{\urlprefix}{URL }
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi:\discretionary{}{}{}#1}\else
+  \providecommand{\doi}{doi:\discretionary{}{}{}\begingroup
+  \urlstyle{rm}\Url}\fi
+
+\bibitem[{Abril-Pla \emph{et~al.}(2023)Abril-Pla, Andreani, Carroll, Dong,
+  Fonnesbeck, Kochurov, Kumar, Lao, Luhmann, Martin
+  \emph{et~al.}}]{abril2023pymc}
+Abril-Pla, O, Andreani, V, Carroll, C, Dong, L, Fonnesbeck, CJ, Kochurov, M,
+  Kumar, R, Lao, J, Luhmann, CC, Martin, OA \emph{et~al.} (2023).
+  \enquote{Pymc: a modern, and comprehensive probabilistic programming
+  framework in python.} \emph{PeerJ Computer Science} 9,  e1516.
+
+\bibitem[{Besag \emph{et~al.}(1991)Besag, York and
+  Molli{\'e}}]{besag1991bayesian}
+Besag, J, York, J and Molli{\'e}, A (1991). \enquote{Bayesian image
+  restoration, with two applications in spatial statistics.} \emph{Annals of
+  the Institute of Statistical Mathematics} 43(1),  1--20.
+
+\bibitem[{Botzen \emph{et~al.}(2019)Botzen, Deschenes and Sanders}]{Botzen2019}
+Botzen, WJW, Deschenes, O and Sanders, M (2019). \enquote{The economic impacts
+  of natural disasters: A review of models and empirical studies.} \emph{Review
+  of Environmental Economics and Policy} .
+
+\bibitem[{Bouwer(2011)}]{bouwer2011have}
+Bouwer, LM (2011). \enquote{Have disaster losses increased due to anthropogenic
+  climate change?} \emph{Bulletin of the American Meteorological Society}
+  92(1),  39--46, \doi{10.1175/2010BAMS3092.1}.
+
+\bibitem[{Bradbury \emph{et~al.}(2018)Bradbury, Frostig, Hawkins, Johnson,
+  Leary, Maclaurin and Wanderman-Milne}]{jax2018}
+Bradbury, J, Frostig, R, Hawkins, P, Johnson, MJ, Leary, C, Maclaurin, D and
+  Wanderman-Milne, S (2018). \enquote{{JAX}: composable transformations of
+  {Python+NumPy} programs.} \emph{GitHub repository} Accessed July 2, 2025.
+
+\bibitem[{{Centre for Research on the Epidemiology of
+  Disasters}(2024)}]{cred_emdat_2024}
+{Centre for Research on the Epidemiology of Disasters} (2024).
+  \enquote{{EM-DAT: The International Disaster Database}.}
+  \urlprefix\url{https://www.emdat.be/}.
+
+\bibitem[{Gelman \emph{et~al.}(1995)Gelman, Carlin, Stern and
+  Rubin}]{gelman1995bayesian}
+Gelman, A, Carlin, JB, Stern, HS and Rubin, DB (1995). \emph{Bayesian data
+  analysis}. Chapman and Hall/CRC.
+
+\bibitem[{Grabowski(2023)}]{pymc-extras-statespace}
+Grabowski, J (2023). \enquote{pymc-devs/pymc-extras: {P}ull {R}equest 174,
+  {PyMCStatespace}.} GitHub,
+  \urlprefix\url{https://github.com/pymc-devs/pymc-extras/pull/174}.
+
+\bibitem[{Hoffman \emph{et~al.}(2014)Hoffman, Gelman
+  \emph{et~al.}}]{hoffman2014no}
+Hoffman, MD, Gelman, A \emph{et~al.} (2014). \enquote{The no-u-turn sampler:
+  adaptively setting path lengths in hamiltonian monte carlo.} \emph{J. Mach.
+  Learn. Res.} 15(1),  1593--1623.
+
+\bibitem[{Howard and Sterner(2017)}]{Howard2017}
+Howard, PH and Sterner, T (2017). \enquote{Few and not so far between: A
+  meta-analysis of climate damage estimates.} \emph{Environmental and Resource
+  Economics} 68(1),  197--225, \doi{10.1007/s10640-017-0166-z},
+  \urlprefix\url{https://doi.org/10.1007/s10640-017-0166-z}.
+
+\bibitem[{Hyndman \emph{et~al.}(2008)Hyndman, Koehler, Ord and
+  Snyder}]{ets_time_series}
+Hyndman, RJ, Koehler, AB, Ord, K and Snyder, RD (2008). \emph{Forecasting with
+  Exponential Smoothing: The State Space Approach}. Springer-Verlag: Berlin,
+  Heidelberg, ISBN 978-3-540-71917-3.
+
+\bibitem[{{Intergovernmental Panel on Climate Change
+  (IPCC)}(2021)}]{IPCC_AR6_WGI_2021}
+{Intergovernmental Panel on Climate Change (IPCC)} (2021). \enquote{Climate
+  change 2021: The physical science basis. contribution of working group i to
+  the sixth assessment report of the intergovernmental panel on climate
+  change.} .
+
+\bibitem[{{Intergovernmental Panel on Climate Change
+  (IPCC)}(2022{\natexlab{a}})}]{IPCC_AR6_WGII_2022}
+{Intergovernmental Panel on Climate Change (IPCC)} (2022{\natexlab{a}}).
+  \enquote{Climate change 2022: Impacts, adaptation and vulnerability.
+  contribution of working group ii to the sixth assessment report of the
+  intergovernmental panel on climate change.} .
+
+\bibitem[{{Intergovernmental Panel on Climate Change
+  (IPCC)}(2022{\natexlab{b}})}]{IPCC_AR6_WGIII_2022}
+{Intergovernmental Panel on Climate Change (IPCC)} (2022{\natexlab{b}}).
+  \enquote{Climate change 2022: Mitigation of climate change. contribution of
+  working group iii to the sixth assessment report of the intergovernmental
+  panel on climate change.} .
+
+\bibitem[{{Intergovernmental Panel on Climate Change (IPCC)}(2023)}]{ipcc_ar6}
+{Intergovernmental Panel on Climate Change (IPCC)} (2023). \emph{{Climate
+  Change 2023: Synthesis Report. Contribution of Working Groups I, II and III
+  to the Sixth Assessment Report of the Intergovernmental Panel on Climate
+  Change}}. IPCC: Geneva, Switzerland, \doi{10.59327/IPCC/AR6-9789291691647},
+  full volume (Chapters 1-7, Annexes, excluding SPM pp. 1-34).
+
+\bibitem[{Kahn(2005)}]{Kahn2005}
+Kahn, ME (2005). \enquote{The death toll from natural disasters: the role of
+  income, geography, and institutions.} \emph{Review of Economics and
+  Statistics} 87(2),  271--284.
+
+\bibitem[{Langer and Developers(2023)}]{nutpie2023}
+Langer, LS and Developers, P (2023). \enquote{nutpie: A jax-based nuts sampler
+  for pymc.} \url{https://github.com/pymc-devs/nutpie}, version 0.0.5.
+
+\bibitem[{Lehner and Grill(2013)}]{lehner_global_2013}
+Lehner, B and Grill, G (2013). \enquote{Global river hydrography and network
+  routing: baseline data and new approaches to study the world's large river
+  systems.} \emph{Hydrological Processes} 27(15),  2171--2186, data downloaded
+  from \url{www.hydrosheds.org}.
+
+\bibitem[{L\'opez \emph{et~al.}(2015)L\'opez, Thomas and
+  Troncoso}]{lopez_climate_2015}
+L\'opez, RE, Thomas, V and Troncoso, P (2015). \enquote{Climate change and
+  natural disasters.}  .
+
+\bibitem[{Nakicenovic \emph{et~al.}(2000)Nakicenovic, Alcamo, Davis, de~Vries,
+  Fenhann, Gaffin, Gregory, Gr{\"u}bler, Jung, Kram \emph{et~al.}}]{ipcc}
+Nakicenovic, N, Alcamo, J, Davis, G, de~Vries, B, Fenhann, J, Gaffin, S,
+  Gregory, K, Gr{\"u}bler, A, Jung, TY, Kram, T \emph{et~al.} (2000).
+  \emph{Special Report on Emissions Scenarios: A Special Report of Working
+  Group III of the Intergovernmental Panel on Climate Change}. Cambridge
+  University Press: Cambridge, UK,
+  \urlprefix\url{https://www.ipcc.ch/report/emissions-scenarios/}.
+
+\bibitem[{{NOAA}(2024)}]{noaa_co2_2024}
+{NOAA} (2024). \enquote{Trends in atmospheric carbon dioxide (co2).}
+  \url{https://gml.noaa.gov/ccgg/trends/}.
+
+\bibitem[{Nordhaus(2019)}]{nordhaus2019climate}
+Nordhaus, W (2019). \enquote{Climate change: The ultimate challenge for
+  economics.} \emph{American Economic Review} 109(6),  1991--2014.
+
+\bibitem[{OpenAI(2024)}]{openai2024gpt4omini}
+OpenAI (2024). \enquote{Gpt-4o-mini.} \urlprefix\url{https://openai.com}, large
+  language model.
+
+\bibitem[{Pearl(2009)}]{pearl2009causality}
+Pearl, J (2009). \emph{Causality}. Cambridge university press.
+
+\bibitem[{Schneider(2022)}]{gpcc_2022}
+Schneider, ea (2022). \enquote{Gpcc full data monthly product version 2022.}
+  [Dat file]. GPCC: Global Precipitation Climatology Centre, extracted on May
+  2024 from \url{http://dx.doi.org/10.5676/DWD_GPCC/FD_M_V2022_100}.
+
+\bibitem[{{The World Bank}(2024{\natexlab{a}})}]{worldbank_boundaries_2024}
+{The World Bank} (2024{\natexlab{a}}). \enquote{World bank official
+  boundaries.} [Data file], retrieved on May 2024 from
+  \url{https://datacatalog.worldbank.org/search/dataset/0038272/World-Bank-Official-Boundaries}.
+
+\bibitem[{{The World Bank}(2024{\natexlab{b}})}]{worldbank_wdi_2024}
+{The World Bank} (2024{\natexlab{b}}). \enquote{World development indicators.}
+  [Data file], retrieved on May 2024 from
+  \url{https://databank.worldbank.org/source/}.
+
+\bibitem[{{U.S. Bureau of Labor Statistics}(2024)}]{fred_cpi}
+{U.S. Bureau of Labor Statistics} (2024). \enquote{Consumer price index for all
+  urban consumers: All items in u.s. city average (cpiaucns).}
+  \urlprefix\url{https://fred.stlouisfed.org/series/CPIAUCNS}, accessed via
+  FRED, Federal Reserve Bank of St. Louis.
+
+\bibitem[{Van~Aalst(2006)}]{vanaalst2006impacts}
+Van~Aalst, MK (2006). \enquote{The impacts of climate change on the risk of
+  natural disasters.} \emph{Disasters} 30(1),  5--18.
+
+\bibitem[{Zhang \emph{et~al.}(2019)Zhang, Huang, Lawrimore, Menne and
+  Smith}]{zhang_noaa_2019}
+Zhang, HM, Huang, B, Lawrimore, JH, Menne, MJ and Smith, TM (2019).
+  \enquote{Noaa global surface temperature dataset (noaaglobaltemp).} .
+
+\end{thebibliography}

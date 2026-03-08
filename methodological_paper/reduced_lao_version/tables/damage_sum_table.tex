@@ -1,13 +1,10 @@
 % Table: Damage Parameters Summary
 \begin{table}[htbp]
-\centering
-\captionwithnoteandshort{Statistical Summary of Damage Parameters}{Statistical Summary of Damage Parameters}{This table presents the statistical summary of various damage parameters.}
-\label{tab:damage_sum_table}
-\footnotesize
+\tbl{Statistical Summary of Damage Parameters\label{tab:damage_sum_table}}{%
 \begin{tabular}{lrrrrrrrr}
 \toprule
 \textbf{Parameter} & \textbf{Mean} & \textbf{SD} & \textbf{HDI 3\%} & \textbf{HDI 97\%} & \textbf{ESS Bulk} & \textbf{ESS Tail} & \textbf{R-hat} \\
-\midrule
+\colrule
 betas-damage-Pop-std & 0.291 & 0.935 & -1.316 & 1.333 & 6.0 & 10.0 & 4.46 \\
 betas-damage-log-pop-dens-std & -0.304 & 0.901 & -1.985 & 0.939 & 6.0 & 11.0 & 4.52 \\
 betas-damage-log-gdp-pc-std & -0.091 & 0.843 & -1.379 & 1.056 & 6.0 & 11.0 & 4.62 \\
@@ -17,6 +14,9 @@ betas-damage-precip-dev-std & -0.083 & 0.714 & -0.998 & 0.852 & 6.0 & 12.0 & 5.0
 betas-damage-log-gdp-pc-std-sq & -0.583 & 0.830 & -1.778 & 0.849 & 6.0 & 11.0 & 5.15 \\
 sigma-damage & 1.701 & 0.937 & 0.477 & 3.016 & 7.0 & 21.0 & 3.82 \\
 sigma-damage-log & 0.342 & 0.654 & -0.741 & 1.104 & 7.0 & 21.0 & 4.21 \\
-\bottomrule
-\end{tabular}
+\botrule
+\end{tabular}}
+\begin{tabnote}
+This table presents the statistical summary of various damage parameters.
+\end{tabnote}
 \end{table}

@@ -294,7 +294,7 @@ Now that we have the expected damages, we resort to the notion of \textbf{return
 
 \begin{figure}[htbp]
     \centering
-    \captionwithnoteandshort{Example Damage Curve}{Example Damage Curve for a Single Year and Disaster Type}{The left curve shows all possible damage outputs for a category of disaster (e.g. flood, earthquake, drought, etc.). The x-axis shows the possible dollar-denominated damages, while the y-axis shows the probability density associated with that damage value (higher = more probable). The black bar shows the largest interval containing 95\% of all possible outcomes (called the 95\% HDI). The right curve shows the quantile of the distribution on the left. The 100-RY disaster, associated with the 99\% quantile, is marked.}
+    \caption[Example Damage Curve]{Example Damage Curve for a Single Year and Disaster Type.\\ \small The left curve shows all possible damage outputs for a category of disaster (e.g. flood, earthquake, drought, etc.). The x-axis shows the possible dollar-denominated damages, while the y-axis shows the probability density associated with that damage value (higher = more probable). The black bar shows the largest interval containing 95\% of all possible outcomes (called the 95\% HDI). The right curve shows the quantile of the distribution on the left. The 100-RY disaster, associated with the 99\% quantile, is marked.}
     \label{fig:example_curve}
     \includegraphics[width=\textwidth]{example_damage.png}
 \end{figure}
@@ -376,7 +376,6 @@ Again it is clear when $\mu$ becomes larger, the expected damages increase. Furt
 
 This formalism provides us a framework for thinking about the channels through which climate change can cause increased disaster risk. It is silent, however, on how to actually model the quantities of interest. For starters, $D$ and $P$ are not directly observed. We can only observe the disasters (storms, floods, etc) that actually happen, and try to infer something about their frequency over time. This frequency, however, is driven by many factors, including the climate, local geography where disasters are observed, as well as human activity, including economic activity. In addition, what we observe are imperfect proxies for the true quantities of interest, introducing additional layers of uncertainty. Here is where the causal assumptions presented in Figure~\ref{fig:causal_graph} become highly relevant, as they provide a causal framework that justifies the statistical models we ultimately employ to estimate $f_P(p)$ and $f_D(d)$.
 
-\FloatBarrier
 \subsection{Geolocated damage curves}
 
 Once we have the country-level expected damages, we disaggregate these estimates spatially by leveraging our previously estimated probability of disaster occurrence at each geolocated grid point $g$. This allows us to construct geolocated damage curves, capturing how expected damages vary across space within each country. The key idea is to assign a share of national expected damages to each location, proportional to its relative disaster probability. This results in a spatially disaggregated risk map with expected damage curves for each grid point.

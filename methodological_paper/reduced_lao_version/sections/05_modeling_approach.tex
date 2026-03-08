@@ -31,7 +31,7 @@ The modeling approach consists of seven components, illustrated in Figure~\ref{f
 
 \begin{figure}[htbp]
     \centering
-    \captionwithnote{Modeling approach}{}
+    \caption{Modeling approach}
     \label{fig:modeling_approach}
     \includegraphics[width=\textwidth]{modeling_approach.png}
 \end{figure}
@@ -68,14 +68,13 @@ Combining these country level damage curves (5) and the geospatial projection of
 
 Finally, we combine all the previous outputs to build projections of event frequency, damages, geospatial patterns of disaster occurrence, and country-level damage curves, as well as geolocalized damage curves.
 
-\FloatBarrier
 \subsection{Underlying causal assumptions}
 
 To reason about our causal assumptions, we employ a causal model \`{a} la \citet{pearl2009causality}. Figure~\ref{fig:causal_graph} shows the causal assumptions underlying our approach. ``Economic Activity'' and ``Climate'', as complex, abstract systems, are unobserved processes. Instead, we observe proxies for these: GDP or population growth (in the case of the economy), or climatic indicators like atmospheric CO\textsubscript{2} or ocean temperatures (in the case of the climate). The climate, together with the location of a specific place, determine the frequency and intensity of disasters. Economic activity also contributes to disaster severity. This occurs when resources are being deployed towards adaptation and resilience (e.g. with dykes, levees, and floodwalls), or when overexploitation creates new risks (such as mudslides resulting from overdevelopment). More economic activity and higher GDP also imply more potential for damages, either from destruction of expensive infrastructure or from interruptions to economic activity. Of course, we don't actually observe the true frequency ($f_P(p)$) or severity ($f_D(d)$) variables; these we are left to infer by observing the disasters that do occur.
 
 \begin{figure}[htbp]
     \centering
-    \captionwithnoteandshort{Causal Graph Underlying our Approach}{Causal Graph Between Economic Activity, Climate, and Disasters}{Dotted circles represent unobserved variables. Arrows connect concepts causally, so that $A \rightarrow B$ implies that $A$ causes $B$.}
+    \caption[Causal Graph Underlying our Approach]{Causal Graph Between Economic Activity, Climate, and Disasters.\\ \small Dotted circles represent unobserved variables. Arrows connect concepts causally, so that $A \rightarrow B$ implies that $A$ causes $B$.}
     \label{fig:causal_graph}
     \includegraphics[width=\textwidth]{causal_graph.png}
 \end{figure}

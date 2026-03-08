@@ -1,13 +1,10 @@
 % Table: Event Frequency Results 2
-\begin{table}[H]
-\centering
-\captionwithnoteandshort{Summary Statistics 2 for frequency event model estimation}{Summary Statistics 2 for frequency event model estimation}{}
-\label{tab:event_frequency_results_2}
-\footnotesize
+\begin{table}[htbp]
+\tbl{Summary Statistics 2 for frequency event model estimation\label{tab:event_frequency_results_2}}{%
 \begin{tabular}{lrrrrrr}
 \toprule
 \textbf{Statistic} & \textbf{mean} & \textbf{sd} & \textbf{hdi\_3\%} & \textbf{hdi\_97\%} & \textbf{ess tail} & \textbf{r hat} \\
-\midrule
+\colrule
 beta[ln\_pop\_density] & 0.338 & 0.108 & 0.140 & 0.544 & 4237.0 & 1.00 \\
 beta[ln\_gdp\_pc] & -0.651 & 0.088 & -0.813 & -0.478 & 3745.0 & 1.00 \\
 beta[precip\_deviation] & 0.002 & 0.000 & 0.002 & 0.003 & 6027.0 & 1.00 \\
@@ -27,6 +24,6 @@ sigma\_X[precip\_deviation] & 1.006 & 1.010 & 0.000 & 2.868 & 3393.0 & 1.00 \\
 sigma\_X[co2] & 0.996 & 0.984 & 0.000 & 2.777 & 3547.0 & 1.00 \\
 sigma\_X[population] & 1.006 & 1.023 & 0.000 & 2.896 & 3314.0 & 1.00 \\
 zero\_prob & 0.998 & 0.002 & 0.994 & 1.000 & 3568.0 & 1.00 \\
-\bottomrule
-\end{tabular}
+\botrule
+\end{tabular}}
 \end{table}

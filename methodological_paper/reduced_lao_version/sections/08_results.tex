@@ -13,7 +13,7 @@ The goal of the time series model is to generate predictions for the covariates 
 
 \begin{figure}[htbp]
     \centering
-    \captionwithnoteandshort{Time series predictions for the global-level covariates}{Time series predictions for the global-level covariates}{CO2 is measured in Gigatons, ocean temperature is measured in Fahrenheit degrees, and ocean temperature deviation from its mean is measured in standard deviation units.}
+    \caption[Time series predictions for the global-level covariates]{Time series predictions for the global-level covariates.\\ \small CO2 is measured in Gigatons, ocean temperature is measured in Fahrenheit degrees, and ocean temperature deviation from its mean is measured in standard deviation units.}
     \label{fig:global_time_series}
     \includegraphics[width=\textwidth]{results/time_series_pred_atmospheric_cols.png}
 \end{figure}
@@ -22,12 +22,11 @@ Regarding the country-level variables, Figure~\ref{fig:lao_time_series} presents
 
 \begin{figure}[htbp]
     \centering
-    \captionwithnoteandshort{Time series predictions for Laos country level variables}{Time series predictions for Laos country level variables}{Population is measured in millions, real GDP in millions of USD, and precipitation is the whole monthly mean in millimeters.}
+    \caption[Time series predictions for Laos country level variables]{Time series predictions for Laos country level variables.\\ \small Population is measured in millions, real GDP in millions of USD, and precipitation is the whole monthly mean in millimeters.}
     \label{fig:lao_time_series}
     \includegraphics[width=\textwidth]{results/time_series_pred_lao.png}
 \end{figure}
 
-\FloatBarrier
 \subsection{Disaster frequency model}
 
 The sampling statistics of the frequency model are presented on tables 8 and 9. The sampling was implemented without divergences. The r\_hat values for the results show a healthy sampling process. According to the Gelman--Rubin convergence diagnostic, the values of 1.00 mean that MCMC chains have converged to the same target posterior distribution. The only exception is the case of beta\_GY, which has some r\_hat values above 1.00. In general, the ess\_tail, which measures the effective sample size in the tails of the posterior distribution, reveal that we have reasonable sampling sizes, with the lowest one being 945.
@@ -39,7 +38,7 @@ Figure~\ref{fig:event_freq_res_lao} presents the model results for Lao. Here the
 
 \begin{figure}[htbp]
     \centering
-    \captionwithnoteandshort{Event Frequency model results for Lao}{Event Frequency model results for Lao}{Black points correspond to the observed numbers, blue line to the in-sample mean prediction, and shaded region to the 95\% HDI, where lighter shadow reflects lower probability.}
+    \caption[Event Frequency model results for Lao]{Event Frequency model results for Lao.\\ \small Black points correspond to the observed numbers, blue line to the in-sample mean prediction, and shaded region to the 95\% HDI, where lighter shadow reflects lower probability.}
     \label{fig:event_freq_res_lao}
     \includegraphics[width=\textwidth]{results/result_event_freq_lao.png}
 \end{figure}
@@ -48,14 +47,13 @@ Figure~\ref{fig:event_freq_pred_lao} reveals a clear upward trend in the number 
 
 \begin{figure}[htbp]
     \centering
-    \captionwithnoteandshort{Event Frequency predictions for Lao}{Event Frequency predictions for Lao}{Blue line to the mean prediction, and shaded region to the 95\% HDI, where lighter shadow reflects lower probability.}
+    \caption[Event Frequency predictions for Lao]{Event Frequency predictions for Lao.\\ \small Blue line to the mean prediction, and shaded region to the 95\% HDI, where lighter shadow reflects lower probability.}
     \label{fig:event_freq_pred_lao}
     \includegraphics[width=\textwidth]{results/result_event_freq_pred_lao.png}
 \end{figure}
 
 We can conclude then that Laos is exposed to an increase of the number of hydrometeorological events in the years to come according to our model.
 
-\FloatBarrier
 \subsection{Damages model}
 
 The sampling results for the damage model are presented on table 10, while the in sample model predictions are presented on Figure~\ref{fig:results_damages_lao}. The model was successfully sampled without divergences. From table 10 it is possible to observe that almost all variables have a r\_hat of 1.00 which reveals a healthy posterior approximation. However three particular variables have r\_hat values greater to 1.01: alpha\_X[ln\_population\_density], alpha\_X[ln\_gdp\_pc], and beta\_GX[ln\_population\_density]. This reveals the MCMC had some conversion troubles for those particular variables. However, all the variables remain under the 1.05 threshold.
@@ -63,7 +61,6 @@ The sampling results for the damage model are presented on table 10, while the i
 The effective sample sizes (ess\_tail) are generally high, indicating that the MCMC chains have mixed well and that the posterior distributions are well-characterized. The variables alpha\_X[ln\_population\_density], alpha\_X[ln\_gdp\_pc], and beta\_GX[ln\_population\_density] present the lowest ess\_tails, however the values are all equal or greater to 280, which still represent a reasonable size for posterior drawing.
 
 \input{tables/damage_results}
-\FloatBarrier
 
 The damage model results and predictions for Lao are presented in Figure~\ref{fig:results_damages_lao}. This plot shows the in-sample damage predictions conditional on the occurrence of a disaster. We can observe how the country has experienced in the last decade three disasters that surpass in terms of damage all previous disasters. In that regard the 2018 flood was particularly destructive, with damages outside the 80\% HDI. Interestingly, all the reported events are contained in the 95\% HDI, with only two events outside the 80\% HDI.
 
@@ -71,7 +68,7 @@ In terms of the projected values, the model does not project a growing trend in 
 
 \begin{figure}[htbp]
     \centering
-    \captionwithnoteandshort{Damage model results for Laos}{Damage model results for Laos}{Red points correspond to the observed damages, light blue line corresponds to the 97.5\% HDI, and wider blue line corresponds to 90\% HDI. Damages are expressed in 2025 USD millions.}
+    \caption[Damage model results for Laos]{Damage model results for Laos.\\ \small Red points correspond to the observed damages, light blue line corresponds to the 97.5\% HDI, and wider blue line corresponds to 90\% HDI. Damages are expressed in 2025 USD millions.}
     \label{fig:results_damages_lao}
     \includegraphics[width=\textwidth]{results/result_damages_lao.png}
 \end{figure}
@@ -87,7 +84,7 @@ Figure~\ref{fig:damage_curves_lao} presents the damage curves for Laos. The vert
 
 \begin{figure}[htbp]
     \centering
-    \captionwithnoteandshort{Lao damage curves}{Lao damage curves}{Damage curves are constructed by multiplying the probability distributions of disaster frequency by the expected damages. From the resulting joint probability distributions, we extract the tail risks to model the expected total damage a country faces during extreme events---specifically those in the higher percentiles. Each point on the curve reveals the damage associated with a specific probability percentile for a given year.}
+    \caption[Lao damage curves]{Lao damage curves.\\ \small Damage curves are constructed by multiplying the probability distributions of disaster frequency by the expected damages. From the resulting joint probability distributions, we extract the tail risks to model the expected total damage a country faces during extreme events---specifically those in the higher percentiles. Each point on the curve reveals the damage associated with a specific probability percentile for a given year.}
     \label{fig:damage_curves_lao}
     \includegraphics[width=\textwidth]{results/damage_curves_lao.png}
 \end{figure}
@@ -96,7 +93,6 @@ A more intuitive way of presenting the damage curves corresponds to the idea of 
 
 \input{tables/return_years_lao}
 
-\FloatBarrier
 
 Importantly, the results also suggest that moderate return periods (10-year and 4-year events) will increasingly contribute to the overall risk landscape. By 2055, a 10-year return event is projected to cause damages exceeding USD 117 million, compared to just USD 23 million in 2000. This shift means that not only will catastrophic events become more damaging, but recurrent disasters will also impose higher recurring costs.
 
@@ -104,12 +100,11 @@ Importantly, the results also suggest that moderate return periods (10-year and 
 
 \begin{figure}[htbp]
     \centering
-    \captionwithnoteandshort{Lao damage barplots}{Lao damage barplots}{ Each set of bars represents the mean damage caused by a disaster that happens in average every X years, where X corresponds to the Return Years values. The Damage barplot illustrates how the mean damage for each Return Years category evolve trhough time}
+    \caption[Lao damage barplots]{Lao damage barplots.\\ \small Each set of bars represents the mean damage caused by a disaster that happens in average every X years, where X corresponds to the Return Years values. The Damage barplot illustrates how the mean damage for each Return Years category evolve trhough time}
     \label{fig:damage_barplots_lao}
     \includegraphics[width=\textwidth]{results/damagecurves_barplots_lao.png}
 \end{figure}
 
-\FloatBarrier
 
 \subsection{Geospatial patterns model}
 
@@ -117,14 +112,13 @@ Importantly, the results also suggest that moderate return periods (10-year and 
 
 First, we implement a simplified geospatial model that relies solely on an HSGP component to estimate the probability of a disaster occurring at any given point within a country. This simplified HSGP version uses only latitude and longitude as independent variables, making it time-independent.
 
-\begin{figure}[H]
+\begin{figure}[htbp]
     \centering
-    \captionwithnoteandshort{HSGP event probability predictions for Cambodia, Thailand, Laos and Vietnam}{HSGP event probability predictions for Cambodia, Thailand, Laos and Vietnam}{The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of one disaster. Red points correspond to observed disasters.}
+    \caption[HSGP event probability predictions for Cambodia, Thailand, Laos and Vietnam]{HSGP event probability predictions for Cambodia, Thailand, Laos and Vietnam.\\ \small The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of one disaster. Red points correspond to observed disasters.}
     \label{fig:hsgp_sea}
     \includegraphics[width=0.8\textwidth]{results/event_HSGP_sea_pred.png}
 \end{figure}
 
-\FloatBarrier
 
 The results, shown in Figure~\ref{fig:hsgp_sea}, cover Cambodia, Thailand, Laos, and Vietnam. It is striking to see how the model can infer the outlines of major rivers purely from disaster occurrence patterns. We also observe that certain coastal regions exhibit greater exposure to disasters. This reinforces the idea that the HSGP component of the model represents a strong tool to account for omitted variables, as it is able to capture patterns of geographical patterns not explicitly included in the model. These results also confirm the notion that distance to rivers and coastlines represent a clear risk factor in the region.
 
@@ -134,16 +128,14 @@ HSGP parameter values for Cambodia, Thailand, Laos and Vietnam can be found in A
 
 Figure~\ref{fig:hsgp_lao} presents the results specifically for Lao. Based only on the coordinates of previous disasters, the model is able to identify a risk zone in the center-left area of the country, precisely where a big number of rivers merge. It also identifies a risk area closer to the capital Vientiane, and in two more points in the lower right area of the country.
 
-\begin{figure}[H]
+\begin{figure}[htbp]
     \centering
-    \captionwithnoteandshort{HSGP event probability predictions for Lao}{HSGP event probability predictions for Lao}{The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of one disaster. Red points correspond to observed disasters.}
+    \caption[HSGP event probability predictions for Lao]{HSGP event probability predictions for Lao.\\ \small The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of one disaster. Red points correspond to observed disasters.}
     \label{fig:hsgp_lao}
     \includegraphics[width=0.75\textwidth]{results/event_HSGP_lao_pred.png}
 \end{figure}
 
-\FloatBarrier
 
-\FloatBarrier
 \subsubsection{Full model}
 
 Now, we present the estimated results for the full model, starting with Laos and its neighboring countries. It is important to highlight that we choose Lao and its neighboring countries as an example, nevertheless, the model can generate estimations and results for almost any country or region in the world for which the data is available.
@@ -156,25 +148,25 @@ The same is true for distance to the coastline. The model is able to determine w
 
 \begin{figure}[htbp]
     \centering
-    \captionwithnoteandshort{Full model event probability predictions for Cambodia, Thailand, Laos and Vietnam}{Full model event probability predictions for Cambodia, Thailand, Laos and Vietnam}{The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of at least one disaster. Red points correspond to observed disasters.}
+    \caption[Full model event probability predictions for Cambodia, Thailand, Laos and Vietnam]{Full model event probability predictions for Cambodia, Thailand, Laos and Vietnam.\\ \small The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of at least one disaster. Red points correspond to observed disasters.}
     \label{fig:results_sea_full}
     \includegraphics[width=0.9\textwidth]{results/full_model_sea_2018.png}
 \end{figure}
 
 We now zoom in to examine in more detail the specific results for Laos. Figure~\ref{fig:results_lao_full} presents the results for the country. Once again, we can see how the model is able to identify which rivers represent greater risks according to the geospatial patterns of past disasters.
 
-\begin{figure}[H]
+\begin{figure}[htbp]
     \centering
-    \captionwithnoteandshort{Full model event probability predictions for Lao}{Full model event probability predictions for Lao}{The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of at least one disaster. Red points correspond to observed disasters.}
+    \caption[Full model event probability predictions for Lao]{Full model event probability predictions for Lao.\\ \small The plot value measures the yearly probability that a disaster will happen on each specific point conditional on the occurrence of at least one disaster. Red points correspond to observed disasters.}
     \label{fig:results_lao_full}
     \includegraphics[width=0.9\textwidth]{results/full_model_lao_2018.png}
 \end{figure}
 
 Figure~\ref{fig:decomposed_result_lao} presents the decomposition of the effects for Lao. It is important to consider that besides the effects plotted, the event probability risk is also affected by the country effect, the climate covariates and the country-level covariates, which do not vary at the geospatial level. The decomposition of the effects allows to identify that the HSGP component dominates the projected probability values. It also shows that despite having a lower weight, the distance to coastline has some positive impact, as can be seen in the lower right segment.
 
-\begin{figure}[H]
+\begin{figure}[htbp]
     \centering
-    \captionwithnoteandshort{Decomposition of the event probability predictions for Lao}{ Decomposition of the event probability predictions for Lao}{The decomposition is given in log-odds units}
+    \caption[Decomposition of the event probability predictions for Lao]{Decomposition of the event probability predictions for Lao.\\ \small The decomposition is given in log-odds units}
     \label{fig:decomposed_result_lao}
     \includegraphics[width=1.1\textwidth]{results/decomposed_effect_lao.png}
 \end{figure}
@@ -182,15 +174,14 @@ Figure~\ref{fig:decomposed_result_lao} presents the decomposition of the effects
 The static geospatial perspective is highly valuable in itself; however, given the normalization process applied to obtain the disaster probability, the value scale will remain relatively stable over time. We are interested in understanding how exposure to climate change risks evolves and how it is affected by projected climate trends. To gain a clearer perspective of how geospatial event risk evolves through time, we multiply the geospatial probability by the probability distribution of the country’s event frequency; this provides the expected number of events for each point on the map. We then project these values to understand how risk evolves as atmospheric CO\textsubscript{2} increases. Figure~\ref{fig:results_lao_yearly} shows how local exposure increases over time for Laos.
 
 
-\begin{figure}[H]
+\begin{figure}[htbp]
     \centering
-    \captionwithnoteandshort{Expected number of disasters for each point of Lao through time}{Expected number of disasters for each point of Lao through time}{}
+    \caption[Expected number of disasters for each point of Lao through time]{Expected number of disasters for each point of Lao through time}
     \label{fig:results_lao_yearly}
     \includegraphics[width=1.1\textwidth]{results/full_model_yearly_lao.png}
 \end{figure}
 
 
-\FloatBarrier
 \subsection{Geolocated return year curves}
 
 One of the main contributions of this paper is to provide local-level estimates of event probabilities and the expected damages caused by climate change--related disasters. This approach is not intended to replace on-site hydrological studies, but rather to offer a low-cost and efficient tool that can provide initial approximations of risk.
@@ -198,4 +189,3 @@ One of the main contributions of this paper is to provide local-level estimates 
 The model makes it possible to compute these values for any point within the analyzed country. We use the local probability to scale down the national expected damage, and produce local level return year curves. These curves do not consider local characteristics of infrastructure, or physical capital, but are local projections of the national damages using the local event probability (which does capture some of these patterns via the HSGP component).
 
 These local projections allow us to quantify the climate change risk exposure at a granular level, and produce approximations of the impacts that particular communities can suffer due to climate change related disasters.
-\FloatBarrier

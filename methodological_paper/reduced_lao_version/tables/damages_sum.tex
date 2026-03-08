@@ -1,13 +1,10 @@
 % Table: Damages Summary
 \begin{table}[htbp]
-\centering
-\captionwithnoteandshort{Summary Statistics of Total Damage Adjusted}{Summary Statistics of Total Damage Adjusted}{This table presents the summary statistics for Hydrometereological disasters total damage adjusted in 2025 USD millions.}
-\label{tab:damages_sum}
-\small
+\tbl{Summary Statistics of Total Damage Adjusted\label{tab:damages_sum}}{%
 \begin{tabular}{lr}
 \toprule
 \textbf{Statistic} & \textbf{Total damage adjusted} \\
-\midrule
+\colrule
 Count & 2300.00 \\
 Mean & 1721.12 \\
 Standard Deviation & 8233.07 \\
@@ -18,6 +15,9 @@ Median & 172.87 \\
 Maximum & 261939.92 \\
 Kurtosis & 507.95 \\
 Skewness & 19.01 \\
-\bottomrule
-\end{tabular}
+\botrule
+\end{tabular}}
+\begin{tabnote}
+This table presents the summary statistics for Hydrometereological disasters total damage adjusted in 2025 USD millions.
+\end{tabnote}
 \end{table}

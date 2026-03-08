@@ -1,27 +1,16 @@
 % =============================================================================
-% PREAMBLE - Package Configuration and Custom Commands
+% PREAMBLE - Package Configuration for ws-cce (Climate Change Economics)
 % =============================================================================
-% Note: elsarticle class automatically loads graphicx and natbib
+% Note: ws-cce.cls loads amsmath, amssymb, amsfonts, graphicx internally
 
 % -----------------------------------------------------------------------------
-% Language and Encoding
-% -----------------------------------------------------------------------------
-\usepackage[utf8]{inputenc}
-\usepackage[english]{babel}
-
-% -----------------------------------------------------------------------------
-% Colors (for hyperref and other uses)
+% Colors
 % -----------------------------------------------------------------------------
 \usepackage{xcolor}
-\definecolor{OECDblue}{HTML}{4472C4}
-\definecolor{lightblue}{HTML}{DBE5F1}
 
 % -----------------------------------------------------------------------------
-% Mathematics
+% Mathematics (additional)
 % -----------------------------------------------------------------------------
-\usepackage{amsmath}
-\usepackage{amssymb}
-\usepackage{amsfonts}
 \usepackage{mathtools}
 \usepackage{bm}
 
@@ -34,98 +23,45 @@
 \newcommand{\dd}{\mathrm{d}}
 
 % -----------------------------------------------------------------------------
-% Graphics and Figures
+% Graphics
 % -----------------------------------------------------------------------------
-% graphicx is loaded by elsarticle, but we can add additional packages
-\usepackage{subcaption}
-\usepackage{float}
-\usepackage{placeins}
 \graphicspath{{images/}}
 
 % -----------------------------------------------------------------------------
 % Tables
 % -----------------------------------------------------------------------------
-\usepackage{booktabs}
 \usepackage{tabularx}
 \usepackage{multirow}
 \usepackage{array}
-\usepackage{longtable}
 
 \newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
 \newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
 \newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
 
-% -----------------------------------------------------------------------------
-% Captions
-% -----------------------------------------------------------------------------
-\usepackage[font=small, labelfont=bf, position=top]{caption}
-
-\newcommand{\captionwithnote}[2]{%
-  \caption[#1]{\textbf{#1}\ifx&#2&\else\\[0.5em]\small #2\fi}%
-}
-
-\newcommand{\captionwithnoteandshort}[3]{%
-  \caption[#1]{\textbf{#2}\ifx&#3&\else\\[0.5em]\small #3\fi}%
-}
-
-% -----------------------------------------------------------------------------
-% Bibliography
-% -----------------------------------------------------------------------------
-% natbib is loaded by elsarticle
-% Note: \bibliographystyle moved to main.tex before \bibliography command
-\setcitestyle{authoryear,round,semicolon}
+% Compatibility shims: ws-cce defines \toprule, \colrule, \botrule
+% Map booktabs names so existing table files compile unchanged
+\let\midrule\colrule
+\let\bottomrule\botrule
 
 % -----------------------------------------------------------------------------
 % Hyperlinks
 % -----------------------------------------------------------------------------
-\usepackage{hyperref}
+\usepackage[verbose,hypertexnames=false]{hyperref}
 \hypersetup{
-    colorlinks=true,
-    linkcolor=OECDblue,
-    citecolor=OECDblue,
-    urlcolor=OECDblue,
+    colorlinks=false,
+    allbordercolors=blue,
+    pdfborderstyle={/S/U/W 1},
     pdftitle={Estimating Climate Change Risk Exposure: a probabilistic approach},
     pdfauthor={Camilo Saldarriaga, Jesse Grabowski, Jan Rielaender},
 }
 
 % -----------------------------------------------------------------------------
-% Paragraph Formatting
+% Bibliography
 % -----------------------------------------------------------------------------
-\setlength{\parindent}{1.8em}
-\setlength{\parskip}{0.65em}
-\usepackage{setspace}
-\setstretch{1.25}
-
-% -----------------------------------------------------------------------------
-% Lists
-% -----------------------------------------------------------------------------
-\usepackage{enumitem}
-\setlist[itemize]{leftmargin=2em, itemsep=0.5em}
-\setlist[enumerate]{leftmargin=2em, itemsep=0.5em}
-
-% -----------------------------------------------------------------------------
-% Text alignment
-% -----------------------------------------------------------------------------
-\usepackage{ragged2e}
-
-% -----------------------------------------------------------------------------
-% Footnotes
-% -----------------------------------------------------------------------------
-\usepackage[hang,flushmargin]{footmisc}
+\usepackage{natbib}
 
 % -----------------------------------------------------------------------------
 % Miscellaneous
 % -----------------------------------------------------------------------------
 \usepackage[expansion=false]{microtype}
 \usepackage{url}
-
-\widowpenalty=10000
-\clubpenalty=10000
-
-% -----------------------------------------------------------------------------
-% Document Metadata
-% -----------------------------------------------------------------------------
-\newcommand{\doctitle}{Estimating Climate Change Risk Exposure: a probabilistic approach}
-\newcommand{\docauthors}{Camilo Saldarriaga, Jesse Grabowski, Jan Rielaender}
-\newcommand{\dockeywords}{Climate change risk, Bayesian modeling, hydrometeorological disasters, geo-spatial modeling, probabilistic risk assessment, damage curves, uncertainty quantification}
-\newcommand{\docjelcodes}{Q54, Q51, C11, C150, C53, Q56, D81}

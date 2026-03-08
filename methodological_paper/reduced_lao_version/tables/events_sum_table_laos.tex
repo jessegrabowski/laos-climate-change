@@ -1,13 +1,10 @@
 % Table: Events Summary Laos
 \begin{table}[htbp]
-\centering
-\captionwithnoteandshort{Descriptive Statistics for disasters in Laos}{Descriptive Statistics for disasters in Laos}{This table presents descriptive statistics for drought, flood, and storm. Other events excluded due to non occurrence.}
-\label{tab:events_sum_table_laos}
-\small
+\tbl{Descriptive Statistics for disasters in Laos\label{tab:events_sum_table_laos}}{%
 \begin{tabular}{lrrr}
 \toprule
 & \textbf{Drought} & \textbf{Flood} & \textbf{Storm} \\
-\midrule
+\colrule
 count & 3.0 & 22.0 & 8.0 \\
 mean & 0.1 & 0.8 & 0.3 \\
 std & 0.3 & 0.6 & 0.5 \\
@@ -18,6 +15,9 @@ min & 0.0 & 0.0 & 0.0 \\
 max & 1.0 & 2.0 & 2.0 \\
 kurtosis & 4.9 & -0.2 & 2.1 \\
 skewness & 2.6 & 0.1 & 1.6 \\
-\bottomrule
-\end{tabular}
+\botrule
+\end{tabular}}
+\begin{tabnote}
+This table presents descriptive statistics for drought, flood, and storm. Other events excluded due to non occurrence.
+\end{tabnote}
 \end{table}

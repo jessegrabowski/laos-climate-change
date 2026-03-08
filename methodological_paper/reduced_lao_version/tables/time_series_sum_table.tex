@@ -1,16 +1,13 @@
 % Table: Time Series Summary
 \begin{table}[htbp]
-\centering
-\captionwithnoteandshort{Descriptive Statistics of time series}{Descriptive Statistics of time series}{This table presents descriptive statistics for climate time series included in the model. The series have been standardized, and then their first difference was computed.}
-\label{tab:time_series_sum}
-\footnotesize
+\tbl{Descriptive Statistics of time series\label{tab:time_series_sum}}{%
 \setlength{\tabcolsep}{4pt}
 \renewcommand{\arraystretch}{0.9}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{lrrrrrrrr}
 \toprule
 \textbf{Statistic} & \textbf{\shortstack{Real GDP\\CRI}} & \textbf{\shortstack{Population\\CRI}} & \textbf{\shortstack{Precipitation\\CRI}} & \textbf{\shortstack{Real GDP\\LAO}} & \textbf{\shortstack{Population\\LAO}} & \textbf{\shortstack{Precipitation\\LAO}} & \textbf{\shortstack{Atmospheric\\CO2}} & \textbf{\shortstack{Ocean\\temperature}} \\
-\midrule
+\colrule
 Count & 44.00 & 44.00 & 40.00 & 40.00 & 44.00 & 40.00 & 45.00 & 45.00 \\
 Mean & -0.00 & -0.00 & 0.00 & -0.00 & 0.00 & 0.00 & -0.00 & 0.00 \\
 Std Dev & 1.01 & 1.01 & 1.01 & 1.01 & 1.01 & 1.01 & 1.01 & 1.01 \\
@@ -21,6 +18,9 @@ Median & -0.02 & 0.24 & -0.07 & -0.39 & 0.17 & 0.02 & -0.10 & -0.10 \\
 Max & 1.58 & 1.26 & 1.94 & 1.50 & 1.47 & 1.68 & 1.85 & 1.95 \\
 Kurtosis & -1.23 & -0.99 & -0.97 & -1.43 & -0.99 & -0.97 & -1.15 & -1.11 \\
 Skewness & -0.15 & -0.52 & 0.32 & 0.27 & -0.40 & -0.21 & 0.20 & 0.30 \\
-\bottomrule
-\end{tabular}}
+\botrule
+\end{tabular}}}
+\begin{tabnote}
+This table presents descriptive statistics for climate time series included in the model. The series have been standardized, and then their first difference was computed.
+\end{tabnote}
 \end{table}
