@@ -1,0 +1,75 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.3.0 Chrome/140.0.7339.249 Electron/38.7.2 Safari/537.36" version="29.3.0">
+  <diagram name="Page-1" id="LwbDmd57G9_gKwJgXP8z">
+    <mxGraphModel dx="1200" dy="815" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="LNIwdL4luDDwzBFILyUE-19" edge="1" parent="1" source="LNIwdL4luDDwzBFILyUE-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="LNIwdL4luDDwzBFILyUE-10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="LNIwdL4luDDwzBFILyUE-1" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="&lt;font style=&quot;font-size: 15px;&quot;&gt;3. Geo-spatial patterns&lt;br&gt;&amp;nbsp;of disasters&lt;/font&gt;" vertex="1">
+          <mxGeometry height="120" width="220" x="700" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="LNIwdL4luDDwzBFILyUE-6" edge="1" parent="1" source="LNIwdL4luDDwzBFILyUE-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="LNIwdL4luDDwzBFILyUE-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="LNIwdL4luDDwzBFILyUE-2" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="&lt;font style=&quot;font-size: 15px;&quot;&gt;2. Diasters expected damage&lt;/font&gt;" vertex="1">
+          <mxGeometry height="130" width="240" x="410" y="10" as="geometry" />
+        </mxCell>
+        <mxCell id="LNIwdL4luDDwzBFILyUE-5" edge="1" parent="1" source="LNIwdL4luDDwzBFILyUE-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="LNIwdL4luDDwzBFILyUE-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="LNIwdL4luDDwzBFILyUE-3" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="&lt;font style=&quot;font-size: 15px;&quot;&gt;1. Disasters frequency&lt;/font&gt;" vertex="1">
+          <mxGeometry height="120" width="240" x="140" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="LNIwdL4luDDwzBFILyUE-20" edge="1" parent="1" source="LNIwdL4luDDwzBFILyUE-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;endArrow=none;startFill=0;" target="LNIwdL4luDDwzBFILyUE-10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dVw56Phbr9UKWl_mTHHH-2" edge="1" parent="1" source="LNIwdL4luDDwzBFILyUE-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;startFill=0;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="420" y="520" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="LNIwdL4luDDwzBFILyUE-4" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="&lt;font style=&quot;font-size: 15px;&quot;&gt;5. Country-level damage curves&amp;nbsp;&lt;/font&gt;" vertex="1">
+          <mxGeometry height="120" width="220" x="310" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="LNIwdL4luDDwzBFILyUE-8" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="&lt;font style=&quot;font-size: 15px;&quot;&gt;4. Model patterns of climate and development indicators&lt;/font&gt;" vertex="1">
+          <mxGeometry height="110" width="260" x="930" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="LNIwdL4luDDwzBFILyUE-9" edge="1" parent="1" source="LNIwdL4luDDwzBFILyUE-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="LNIwdL4luDDwzBFILyUE-1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="LNIwdL4luDDwzBFILyUE-21" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="810" y="381" as="sourcePoint" />
+            <mxPoint x="810" y="461" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="LNIwdL4luDDwzBFILyUE-10" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="&lt;font style=&quot;font-size: 15px;&quot;&gt;6. Geo-localized &lt;br&gt;damage curves&lt;/font&gt;" vertex="1">
+          <mxGeometry height="80" width="220" x="700" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="LNIwdL4luDDwzBFILyUE-15" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="&lt;font style=&quot;line-height: 100%; font-size: 15px;&quot;&gt;7. Assesing future exposure &lt;br&gt;at national and local level&lt;/font&gt;" vertex="1">
+          <mxGeometry height="120" width="320" x="640" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="LNIwdL4luDDwzBFILyUE-24" edge="1" parent="1" style="endArrow=none;html=1;rounded=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="1080" y="520" as="sourcePoint" />
+            <mxPoint x="1080" y="140" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="LNIwdL4luDDwzBFILyUE-25" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;endSize=6;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="1080" y="520" as="sourcePoint" />
+            <mxPoint x="959" y="520" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="LNIwdL4luDDwzBFILyUE-29" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="420" y="520" as="sourcePoint" />
+            <mxPoint x="638" y="520" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

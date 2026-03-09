@@ -1,0 +1,71 @@
+% =============================================================================
+% PREAMBLE - Package Configuration for ws-cce (Climate Change Economics)
+% =============================================================================
+% Note: ws-cce.cls loads amsmath, amssymb, amsfonts, graphicx internally
+
+% -----------------------------------------------------------------------------
+% Colors
+% -----------------------------------------------------------------------------
+\usepackage{xcolor}
+
+% -----------------------------------------------------------------------------
+% Mathematics (additional)
+% -----------------------------------------------------------------------------
+\usepackage{mathtools}
+\usepackage{bm}
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\newcommand{\EE}{\mathbb{E}}
+\newcommand{\PP}{\mathbb{P}}
+\newcommand{\RR}{\mathbb{R}}
+\newcommand{\NN}{\mathcal{N}}
+\newcommand{\dd}{\mathrm{d}}
+
+% -----------------------------------------------------------------------------
+% Graphics
+% -----------------------------------------------------------------------------
+\usepackage{float}
+\graphicspath{{images/}}
+
+% -----------------------------------------------------------------------------
+% Tables
+% -----------------------------------------------------------------------------
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{array}
+
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
+
+% Compatibility shims: ws-cce defines \toprule, \colrule, \botrule
+% Map booktabs names so existing table files compile unchanged
+\let\midrule\colrule
+\let\bottomrule\botrule
+
+% -----------------------------------------------------------------------------
+% Hyperlinks
+% -----------------------------------------------------------------------------
+\usepackage[verbose,hypertexnames=false]{hyperref}
+\hypersetup{
+    colorlinks=false,
+    allbordercolors=blue,
+    pdfborderstyle={/S/U/W 1},
+    pdftitle={Estimating Climate Change Risk Exposure: a probabilistic approach},
+    pdfauthor={Camilo Saldarriaga, Jesse Grabowski, Jan Rielaender},
+}
+
+% -----------------------------------------------------------------------------
+% Bibliography
+% -----------------------------------------------------------------------------
+\usepackage{natbib}
+
+% -----------------------------------------------------------------------------
+% Miscellaneous
+% -----------------------------------------------------------------------------
+\usepackage[expansion=false]{microtype}
+\usepackage{url}
+
+% Suppress draft timestamp/cropmarks from ws-cce page output
+\def\cropmarks{}

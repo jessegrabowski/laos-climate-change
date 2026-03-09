@@ -128,6 +128,9 @@ ENV/
 env.bak/
 venv.bak/
 
+# Claude code
+CLAUDE.md
+
 # Spyder project settings
 .spyderproject
 .spyproject
@@ -160,16 +163,22 @@ cython_debug/
 #.idea/
 
 
+# Latex stuff
+latex_typst/latex/main.synctex.gz
+
 # Specific documents and data: we add the set of data that we want to ignore.
 **/emdat.xlsx
 **/emdat_processed .csv
 .DS_Store
 data/*
+notebooks/geo_damage_model/data
+notebooks/final_paper/data/
 
 # Ignore idata
 *.idata
 *.netcdf
 *.ncdf
+*idata
 
 # Ignore archive
 notebooks/geo_damage_model/archive

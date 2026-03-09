@@ -1,0 +1,37 @@
+\babel@toc {english}{}\relax
+\contentsline {section}{\numberline {1}Introduction}{1}{section.1}%
+\contentsline {section}{\numberline {2}Literature Review}{2}{section.2}%
+\contentsline {subsection}{\numberline {2.1}CO\textsubscript {2}, climate change and disasters}{2}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Modeling natural disasters and damage}{3}{subsection.2.2}%
+\contentsline {section}{\numberline {3}Modeling Approach}{5}{section.3}%
+\contentsline {subsection}{\numberline {3.1}General approach}{5}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Underlying causal assumptions}{8}{subsection.3.2}%
+\contentsline {section}{\numberline {4}Methodology}{9}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Uncertainty quantification}{9}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Modeling disaster frequency}{10}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}Modeling disaster damages}{13}{subsection.4.3}%
+\contentsline {subsection}{\numberline {4.4}Modeling geospatial patterns of disasters}{14}{subsection.4.4}%
+\contentsline {subsection}{\numberline {4.5}Modeling patterns of climate and development indicators}{17}{subsection.4.5}%
+\contentsline {subsection}{\numberline {4.6}Country-level damage curves}{18}{subsection.4.6}%
+\contentsline {subsection}{\numberline {4.7}Geolocated damage curves}{21}{subsection.4.7}%
+\contentsline {section}{\numberline {5}Data}{23}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Data sets summary}{23}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}Event frequency data}{24}{subsection.5.2}%
+\contentsline {subsection}{\numberline {5.3}Disaster damage data}{26}{subsection.5.3}%
+\contentsline {subsection}{\numberline {5.4}Geospatial data}{29}{subsection.5.4}%
+\contentsline {subsubsection}{\numberline {5.4.1}Local data sets for geospatial modeling}{32}{subsubsection.5.4.1}%
+\contentsline {subsection}{\numberline {5.5}Result grids}{35}{subsection.5.5}%
+\contentsline {subsection}{\numberline {5.6}Climate and development time series}{36}{subsection.5.6}%
+\contentsline {section}{\numberline {6}Results}{38}{section.6}%
+\contentsline {subsection}{\numberline {6.1}Time series model results}{38}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}Disaster frequency model}{41}{subsection.6.2}%
+\contentsline {subsection}{\numberline {6.3}Damages model}{43}{subsection.6.3}%
+\contentsline {subsection}{\numberline {6.4}Country level damages curve}{45}{subsection.6.4}%
+\contentsline {subsection}{\numberline {6.5}Geospatial patterns model}{49}{subsection.6.5}%
+\contentsline {subsubsection}{\numberline {6.5.1}HSGP modeling}{49}{subsubsection.6.5.1}%
+\contentsline {subsubsection}{\numberline {6.5.2}Full model}{52}{subsubsection.6.5.2}%
+\contentsline {subsection}{\numberline {6.6}Geolocated return year curves}{58}{subsection.6.6}%
+\contentsline {section}{\numberline {7}Conclusions}{60}{section.7}%
+\contentsline {section}{References}{62}{section.7}%
+\contentsline {section}{\numberline {Annex 1}}{65}{appendix.A}%
+\contentsline {section}{\numberline {Annex 2}}{68}{appendix.B}%

@@ -1,0 +1,58 @@
+This is BibTeX, Version 0.99d
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: main.aux
+Reallocating 'name_of_file' (item size: 1) to 16 items.
+The style file: elsarticle-harv.bst
+Reallocating 'name_of_file' (item size: 1) to 11 items.
+Database file #1: references.bib
+Warning--entry type for "IPCC_AR6_WGI_2021" isn't style-file defined
+--line 377 of file references.bib
+Warning--entry type for "IPCC_AR6_WGII_2022" isn't style-file defined
+--line 393 of file references.bib
+Warning--entry type for "IPCC_AR6_WGIII_2022" isn't style-file defined
+--line 409 of file references.bib
+Reallocating 'singl_function' (item size: 4) to 100 items.
+Warning--can't use both author and editor fields in ipcc_ar6
+Warning--empty journal in lopez_climate_2015
+You've used 30 entries,
+            2990 wiz_defined-function locations,
+            811 strings with 11076 characters,
+and the built_in function-call counts, 17136 in all, are:
+= -- 1261
+> -- 676
+< -- 20
++ -- 271
+- -- 231
+* -- 1756
+:= -- 2587
+add.period$ -- 95
+call.type$ -- 30
+change.case$ -- 228
+chr.to.int$ -- 28
+cite$ -- 32
+duplicate$ -- 1333
+empty$ -- 1270
+format.name$ -- 293
+if$ -- 3142
+int.to.chr$ -- 3
+int.to.str$ -- 1
+missing$ -- 249
+newline$ -- 170
+num.names$ -- 120
+pop$ -- 514
+preamble$ -- 1
+purify$ -- 194
+quote$ -- 0
+skip$ -- 410
+stack$ -- 0
+substring$ -- 561
+swap$ -- 869
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 255
+warning$ -- 2
+while$ -- 106
+width$ -- 0
+write$ -- 428
+(There were 5 warnings)
