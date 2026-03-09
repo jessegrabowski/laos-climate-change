@@ -164,7 +164,7 @@ We now zoom in to examine in more detail the specific results for Laos. Figure~\
 
 Figure~\ref{fig:decomposed_result_lao} presents the decomposition of the effects for Lao. It is important to consider that besides the effects plotted, the event probability risk is also affected by the country effect, the climate covariates and the country-level covariates, which do not vary at the geospatial level. The decomposition of the effects allows to identify that the HSGP component dominates the projected probability values. It also shows that despite having a lower weight, the distance to coastline has some positive impact, as can be seen in the lower right segment.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \caption[Decomposition of the event probability predictions for Lao]{Decomposition of the event probability predictions for Lao.\\ \small The decomposition is given in log-odds units}
     \label{fig:decomposed_result_lao}
@@ -174,7 +174,7 @@ Figure~\ref{fig:decomposed_result_lao} presents the decomposition of the effects
 The static geospatial perspective is highly valuable in itself; however, given the normalization process applied to obtain the disaster probability, the value scale will remain relatively stable over time. We are interested in understanding how exposure to climate change risks evolves and how it is affected by projected climate trends. To gain a clearer perspective of how geospatial event risk evolves through time, we multiply the geospatial probability by the probability distribution of the country’s event frequency; this provides the expected number of events for each point on the map. We then project these values to understand how risk evolves as atmospheric CO\textsubscript{2} increases. Figure~\ref{fig:results_lao_yearly} shows how local exposure increases over time for Laos.
 
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \caption[Expected number of disasters for each point of Lao through time]{Expected number of disasters for each point of Lao through time}
     \label{fig:results_lao_yearly}
@@ -188,4 +188,38 @@ One of the main contributions of this paper is to provide local-level estimates 
 
 The model makes it possible to compute these values for any point within the analyzed country. We use the local probability to scale down the national expected damage, and produce local level return year curves. These curves do not consider local characteristics of infrastructure, or physical capital, but are local projections of the national damages using the local event probability (which does capture some of these patterns via the HSGP component).
 
-These local projections allow us to quantify the climate change risk exposure at a granular level, and produce approximations of the impacts that particular communities can suffer due to climate change related disasters.
+These local projections allow us to quantify the climate change risk exposure at a granular level, and produce approximations of the impacts that particular communities can suffer due to climate change related disasters. To illustrate this, we focus on three specific locations in Lao PDR:
+\begin{itemize}
+    \item Pakse.
+    \item Savannakhet.
+    \item Thakhek.
+\end{itemize}
+
+These locations are shown in Figure~\ref{fig:locs_lao_map}.
+
+\begin{figure}[htbp]
+    \centering
+    \caption[Selected locations in Lao PDR]{Selected locations in Lao PDR.}
+    \label{fig:locs_lao_map}
+    \includegraphics[width=0.65\textwidth]{results/loc_lao_map.png}
+\end{figure}
+
+To exemplify the geolocated return year curves, we present in Figures~\ref{fig:return_years_pakse} and~\ref{fig:return_years_savannakhet} the return year curves for Pakse and Savannakhet respectively. Consistent with what has been observed in the previous results, the return year curves reveal a growing pattern in terms of damage exposures as more severe events become more frequent, and more frequent events become more severe.
+
+\begin{figure}[H]
+    \centering
+    \caption[Geolocated projected return year curves for Pakse]{Geolocated projected return year curves for Pakse.\\ \small Estimated damages are measured in millions of 2025 USD.}
+    \label{fig:return_years_pakse}
+    \includegraphics[width=\textwidth]{results/pakse_return_years.png}
+\end{figure}
+
+For Pakse (Figure~\ref{fig:return_years_pakse}), the 100-year return damages are projected to grow from approximately USD 4.9 million in 2000 to USD 12.9 million by 2045. Even moderate return periods show a marked increase: the 50-year return value rises from USD 2.5 million to USD 6.9 million, while the 10-year return value grows from USD 0.2 million to USD 0.7 million over the same period.
+
+\begin{figure}[H]
+    \centering
+    \caption[Geolocated projected return year curves for Savannakhet]{Geolocated projected return year curves for Savannakhet.\\ \small Estimated damages are measured in millions of 2025 USD.}
+    \label{fig:return_years_savannakhet}
+    \includegraphics[width=\textwidth]{results/savannakhet_return_years.png}
+\end{figure}
+
+Savannakhet (Figure~\ref{fig:return_years_savannakhet}), which presents the highest expected event frequency among the three locations, exhibits correspondingly higher projected damages. The 100-year return value reaches USD 17.2 million by 2045, compared to USD 6.4 million in 2000. The 50-year return value increases from USD 3.2 million to USD 9.1 million. These local projections underscore how the combination of high geospatial event probability and the projected increase in disaster frequency and severity translates into a substantial escalation of climate-related risk for specific communities in Lao PDR.
