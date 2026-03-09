@@ -9,7 +9,7 @@
 
 Uncertainty quantification lies at the heart of our modeling approach. Disaster damage data typically exhibits positive skew and long right tails, where a small number of extreme events drive the majority of observed impacts. Consequently, traditional mean-based metrics fail to capture the reality of catastrophic risk. Instead, it is the tails of the distribution that demand attention. To address this, we employ generative probabilistic modeling \citep{gelman1995bayesian} as a framework for causal inference. This approach allows us to move beyond passive observation and perform counterfactual interventions using Judea Pearl's do-operator \citep{pearl2009causality}. By simulating the full distribution of potential outcomes under the intervention $P(\text{Damage} \mid \text{do}(\text{Policy}))$, we can conduct rigorous scenario analysis that accounts for functional relationships, prior research, and the inherent uncertainty in the data.
 
-We implement all models using PyMC \citep{abril2023pymc}, a Bayesian generative modeling framework. In this approach, we specify probability distributions over model parameters (priors), update them with observed data via Bayes' theorem to obtain posterior distributions, and approximate these posteriors using Markov Chain Monte Carlo (MCMC) sampling---specifically the No-U Turn Sampler (NUTS) \citep{hoffman2014no}. Our central object of interest is the \textit{posterior predictive distribution}, which marginalizes over parameter uncertainty to produce a full probability distribution over possible outcomes. This allows us to quantify not just expected damages but also tail risks and extreme event probabilities, which are critical for building damage curves and their projections.
+We specify probability distributions over model parameters (priors), update them with observed data via Bayes' theorem to obtain posterior distributions, and approximate these posteriors using Markov Chain Monte Carlo (MCMC) sampling---specifically the No-U Turn Sampler (NUTS) \citep{hoffman2014no}. Our central object of interest is the \textit{posterior predictive distribution}, which marginalizes over parameter uncertainty to produce a full probability distribution over possible outcomes. This allows us to quantify not just expected damages but also tail risks and extreme event probabilities, which are critical for building damage curves and their projections.
 
 \subsection{Modeling disaster frequency}
 
@@ -72,7 +72,7 @@ The overall likelihood for the Hurdle LogNormal model is the product of the like
     \item $(1-p) \cdot \text{LogNormal}(y_i|\mu, \sigma)$ if $y_i \neq 0$
 \end{itemize}
 
-Here, the LogNormal component is completely defined by the parameters $\mu$ and $\sigma$. To model sigma, we use a Half Normal distribution, which ensures strictly positive terms. While for $\mu$, we use exactly the same linear structure we used for frequency $\mu$ on equation 10.
+Here, the LogNormal component is completely defined by the parameters $\mu$ and $\sigma$. To model sigma, we use a Half Normal distribution, which ensures strictly positive terms. While for $\mu$, we use exactly the same linear structure we used for frequency $\mu$ on equations (1) through (3).
 
 \subsection{Modeling geospatial patterns of disasters}
 
@@ -83,21 +83,6 @@ In the case of the probability of the event model, the objective is to model the
 We estimate two different model versions. The first uses only the coordinates (latitude and longitude) of the grid and disaster points to capture geographical patterns of disaster occurrence. It captures these patterns by applying a Hilbert Space Gaussian Process (HSGP).
 
 The second one incorporates, on top of the HSGP model, the distance to rivers and coastlines variables, plus a set of country-level covariates and climate-related time series.
-
-In both cases, we estimate the probability of occurrence of an event by using a logit regression estimated in a Bayesian framework with PyMC \citep{abril2023pymc}. Therefore, we model the probability of an event happening at location $g$ in country $i$ at time $t$. This way, the general specification corresponds to the general form:
-
-\begin{equation}
-P(Y=1 \mid X)_{i,g,t} = \sigma\left( \text{country\_fix\_effect}_i + \text{HSGP}_{i,g} + X_{i,g,t} \cdot \beta_{i,g,t} \right)
-\end{equation}
-
-Where:
-
-\begin{itemize}
-    \item $\sigma(Z)$ corresponds to the logistic function $\frac{1}{1+e^{-z}}$.
-    \item $\text{country\_fix\_effect}_i$ represents the country fix effect for country $i$.
-    \item $\text{HSGP}_{i,g}$ is the Hilbert Space Gaussian Process component that will be explained next.
-    \item $X_{i,t} \cdot \beta_{i,t}$ corresponds to a set of covariates and their parameters, where we include three types of covariates: geospatial, climate time series, and country-level macro variables.
-\end{itemize}
 
 \textbf{Hilbert Space Gaussian Process}
 
@@ -138,7 +123,7 @@ The full set of covariates is:
 
 \subsection{Modeling patterns of climate and development indicators}
 
-With the objective of being able to make predictions, we use a State Space modeling framework to predict trends in key inputs of the model. In particular, we use the implementation of State Space modeling via PyMC \citep{pymc-extras-statespace}. In particular we project for a specific country of analysis: real GDP, population, deviation from trend precipitation. Additionally we project the global variables: atmospheric CO\textsubscript{2} accumulation, and ocean temperature deviations from trend.
+With the objective of being able to make predictions, we use a State Space modeling framework to predict trends in key inputs of the model. In particular, we use the implementation of State Space modeling via PyMC \citep{pymc-extras-statespace}. We project for a specific country of analysis: real GDP, population, deviation from trend precipitation. Additionally we project the global variables: atmospheric CO\textsubscript{2} accumulation, and ocean temperature deviations from trend.
 
 For this, we employ a Bayesian dynamic linear model based on the PyMC state-space module, using a Bayesian Exponential Time Smoothing (ETS) \citep{ets_time_series} approach. This approach enables probabilistic inference and forecasting under a fully Bayesian framework. We model the multivariate time series using an additive trend exponential smoothing state-space model with the following configuration: local level (A), damped local trend (Ad), and no seasonal component (N). The model specification includes measurement error, a dense innovation covariance structure for the state shocks, and a stationary initialization with dampening. This setup provides flexibility to accommodate a wide range of time-varying behavior, including long-run stochastic trends, persistent shocks, and changing volatilities across the multiple indicators.
 
@@ -175,7 +160,7 @@ One advantage of this approach, and the Bayesian computations method we use, is 
 
 Now that we have the expected damages, we resort to the notion of \textbf{return years} (RY) to represent the results in a much more intuitive way. A 100-RY disaster is one the associated damage of which is expected to be equaled or exceeded once every one-hundred years. Our primary object of study is, thus, a damage curve expressed in return years. The left panel of Figure~\ref{fig:example_curve} shows an example distribution over damages for a given year. The x-axis shows possible damage values, while the height is the probability density at that damage. Based on this curve, we can create a quantile function, which maps probabilities (on the x-axis) to the damage value which is larger than that percentage of values. The 100-RY damage value is larger than 99\% of all damage values produced by this distribution, and is marked.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \caption[Example Damage Curve]{Example Damage Curve for a Single Year and Disaster Type.\\ \small The left curve shows all possible damage outputs for a category of disaster (e.g. flood, earthquake, drought, etc.). The x-axis shows the possible dollar-denominated damages, while the y-axis shows the probability density associated with that damage value (higher = more probable). The black bar shows the largest interval containing 95\% of all possible outcomes (called the 95\% HDI). The right curve shows the quantile of the distribution on the left. The 100-RY disaster, associated with the 99\% quantile, is marked.}
     \label{fig:example_curve}
