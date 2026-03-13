@@ -1,0 +1,125 @@
+\relax
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\citation{saldarriaga2026}
+\citation{emdat2024}
+\citation{laopdr_pdna2018}
+\citation{ipcc2022ar6wg2}
+\citation{lopez2015}
+\citation{vanaalst2006}
+\citation{cavallo2011}
+\citation{howard2017}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{2}{section.1}\protected@file@percent }
+\citation{ipcc2023ar6}
+\citation{nordhaus2019}
+\citation{abril2023pymc}
+\citation{saldarriaga2026}
+\citation{saldarriaga2026}
+\@writefile{toc}{\contentsline {section}{\numberline {2}Modeling Approach}{3}{section.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}The PGR Model Pipeline}{3}{subsection.2.1}\protected@file@percent }
+\citation{besag1991}
+\citation{cavallo2011}
+\citation{howard2017}
+\citation{solin2020}
+\citation{lehner2013}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Architecture of the Probabilistic Geospatial Risk (PGR) model. Seven interconnected components combine disaster frequency, damage severity, geospatial patterns, and climate projections to produce geolocalized damage curves. Adapted from \cite  {saldarriaga2026}.}}{4}{figure.caption.1}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{fig:pgr_diagram}{{1}{4}{Architecture of the Probabilistic Geospatial Risk (PGR) model. Seven interconnected components combine disaster frequency, damage severity, geospatial patterns, and climate projections to produce geolocalized damage curves. Adapted from \cite {saldarriaga2026}}{figure.caption.1}{}}
+\citation{ipcc2000sres}
+\citation{ipcc2021ar6wg1}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}CO\textsubscript  {2} Scenario Analysis}{6}{subsection.2.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces IPCC SRES CO\textsubscript  {2} emission scenarios used in the analysis.}}{6}{table.caption.2}\protected@file@percent }
+\newlabel{tab:ipcc_scenarios}{{1}{6}{IPCC SRES CO\textsubscript {2} emission scenarios used in the analysis}{table.caption.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces IPCC SRES CO\textsubscript  {2} accumulation scenarios (B1, B2, A1B, A1FI) used as inputs to the PGR model. Higher scenarios correspond to more carbon-intensive development pathways.}}{7}{figure.caption.3}\protected@file@percent }
+\newlabel{fig:co2_scenarios}{{2}{7}{IPCC SRES CO\textsubscript {2} accumulation scenarios (B1, B2, A1B, A1FI) used as inputs to the PGR model. Higher scenarios correspond to more carbon-intensive development pathways}{figure.caption.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Flood Wall Simulations}{7}{subsection.2.3}\protected@file@percent }
+\citation{emdat2024}
+\citation{worldbank_wdi_2024}
+\citation{gpcc_2022}
+\citation{noaa_co2_2024}
+\citation{zhang_noaa_2019}
+\citation{worldbank_wdi_2024}
+\citation{lehner2013}
+\citation{saldarriaga2026}
+\citation{openai2024gpt4omini}
+\citation{saldarriaga2026}
+\@writefile{toc}{\contentsline {section}{\numberline {3}Data}{8}{section.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}AI-Based Geolocation of Disaster Events}{8}{subsection.3.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Disasters with geographic coordinates before and after the AI-based geocoding query. The left panel shows the 864 disasters with pre-existing coordinates in EM-DAT. The right panel shows the expanded set of 2,876 coordinate points after processing location text through GPT-4o-mini.}}{9}{figure.caption.4}\protected@file@percent }
+\newlabel{fig:gpt_query}{{3}{9}{Disasters with geographic coordinates before and after the AI-based geocoding query. The left panel shows the 864 disasters with pre-existing coordinates in EM-DAT. The right panel shows the expanded set of 2,876 coordinate points after processing location text through GPT-4o-mini}{figure.caption.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Synthetic Non-Disaster Points for Model Training}{9}{subsection.3.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Disaster and synthetic non-disaster points for Cambodia, Thailand, Laos, and Vietnam. Yellow points correspond to geocoded disaster locations; purple points are randomly generated non-disaster locations used for model training.}}{10}{figure.caption.5}\protected@file@percent }
+\newlabel{fig:synth_points}{{4}{10}{Disaster and synthetic non-disaster points for Cambodia, Thailand, Laos, and Vietnam. Yellow points correspond to geocoded disaster locations; purple points are randomly generated non-disaster locations used for model training}{figure.caption.5}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Baseline Results}{10}{section.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Disaster Frequency}{10}{subsection.4.1}\protected@file@percent }
+\citation{ipcc2021ar6wg1}
+\citation{ipcc2022ar6wg2}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces In-sample event frequency model results for Lao PDR. Black points correspond to the observed number of disasters, the blue line to the mean prediction, and the shaded region to the 95\% HDI (lighter shading indicates lower probability).}}{11}{figure.caption.6}\protected@file@percent }
+\newlabel{fig:freq_insample}{{5}{11}{In-sample event frequency model results for Lao PDR. Black points correspond to the observed number of disasters, the blue line to the mean prediction, and the shaded region to the 95\% HDI (lighter shading indicates lower probability)}{figure.caption.6}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Projected disaster frequency for Lao PDR. The blue line shows the mean prediction, and shaded regions correspond to the 95\% HDI. The model projects a clear increase in the expected number of hydrometeorological disasters.}}{11}{figure.caption.7}\protected@file@percent }
+\newlabel{fig:freq_projections}{{6}{11}{Projected disaster frequency for Lao PDR. The blue line shows the mean prediction, and shaded regions correspond to the 95\% HDI. The model projects a clear increase in the expected number of hydrometeorological disasters}{figure.caption.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Disaster Damages}{12}{subsection.4.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Damage model results for Lao PDR. Red points correspond to observed damages, the light blue line to the 97.5\% HDI, and the wider blue line to the 90\% HDI. Damages are expressed in 2025 USD millions.}}{12}{figure.caption.8}\protected@file@percent }
+\newlabel{fig:damages_insample}{{7}{12}{Damage model results for Lao PDR. Red points correspond to observed damages, the light blue line to the 97.5\% HDI, and the wider blue line to the 90\% HDI. Damages are expressed in 2025 USD millions}{figure.caption.8}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Damage Curves and Return Years}{12}{subsection.4.3}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Damage curves for Lao PDR. Each curve shows the damage associated with each probability percentile for a given year. The upward shift indicates that extreme events become more frequent and costly over time.}}{13}{figure.caption.9}\protected@file@percent }
+\newlabel{fig:damage_curves}{{8}{13}{Damage curves for Lao PDR. Each curve shows the damage associated with each probability percentile for a given year. The upward shift indicates that extreme events become more frequent and costly over time}{figure.caption.9}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Projected return year damages for Lao PDR (USD millions, 2025 prices). Each value represents the expected damage from an event that occurs on average once every X years.}}{13}{table.caption.10}\protected@file@percent }
+\newlabel{tab:return_years_baseline}{{2}{13}{Projected return year damages for Lao PDR (USD millions, 2025 prices). Each value represents the expected damage from an event that occurs on average once every X years}{table.caption.10}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces Return year damage projections for Lao PDR. Each group of bars shows how the mean damage for a given return period evolves over time.}}{14}{figure.caption.11}\protected@file@percent }
+\newlabel{fig:damage_barplots}{{9}{14}{Return year damage projections for Lao PDR. Each group of bars shows how the mean damage for a given return period evolves over time}{figure.caption.11}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}Geospatial Risk Patterns}{14}{subsection.4.4}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces Full geospatial model event probability for Lao PDR (2018). Lighter colors indicate higher probability of disaster occurrence. Red points mark observed disaster locations. The model identifies river confluence areas and specific coastal zones as highest-risk.}}{15}{figure.caption.12}\protected@file@percent }
+\newlabel{fig:geo_full}{{10}{15}{Full geospatial model event probability for Lao PDR (2018). Lighter colors indicate higher probability of disaster occurrence. Red points mark observed disaster locations. The model identifies river confluence areas and specific coastal zones as highest-risk}{figure.caption.12}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {11}{\ignorespaces Expected number of disasters at each point in Lao PDR, projected over time. The maps show how local exposure intensifies as climate and demographic trends continue.}}{16}{figure.caption.13}\protected@file@percent }
+\newlabel{fig:geo_yearly}{{11}{16}{Expected number of disasters at each point in Lao PDR, projected over time. The maps show how local exposure intensifies as climate and demographic trends continue}{figure.caption.13}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Results: CO\textsubscript  {2} Scenario Analysis}{16}{section.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Impact on Disaster Frequency and Severity}{16}{subsection.5.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {12}{\ignorespaces Predicted yearly disaster count for Lao PDR under four IPCC SRES scenarios. Shaded regions indicate the 95\% high density interval. Higher CO\textsubscript  {2} scenarios produce higher expected disaster counts.}}{16}{figure.caption.14}\protected@file@percent }
+\newlabel{fig:freq_scenarios}{{12}{16}{Predicted yearly disaster count for Lao PDR under four IPCC SRES scenarios. Shaded regions indicate the 95\% high density interval. Higher CO\textsubscript {2} scenarios produce higher expected disaster counts}{figure.caption.14}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {13}{\ignorespaces Predicted disaster damages for Lao PDR under four IPCC scenarios. Thinner segments correspond to the 80\% probability intervals, thicker segments to the 50\% intervals. The tails of the damage distribution grow substantially under higher-emission scenarios.}}{17}{figure.caption.15}\protected@file@percent }
+\newlabel{fig:dmg_scenarios}{{13}{17}{Predicted disaster damages for Lao PDR under four IPCC scenarios. Thinner segments correspond to the 80\% probability intervals, thicker segments to the 50\% intervals. The tails of the damage distribution grow substantially under higher-emission scenarios}{figure.caption.15}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Impact on Return-Year Damages}{17}{subsection.5.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {14}{\ignorespaces Estimated 10-year return period damages (USD millions) under four IPCC scenarios for 2030, 2045, and 2055. Even for relatively frequent events, the gap between low and high emission scenarios is substantial.}}{18}{figure.caption.16}\protected@file@percent }
+\newlabel{fig:ry10}{{14}{18}{Estimated 10-year return period damages (USD millions) under four IPCC scenarios for 2030, 2045, and 2055. Even for relatively frequent events, the gap between low and high emission scenarios is substantial}{figure.caption.16}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {15}{\ignorespaces Estimated 50-year return period damages (USD millions) under four IPCC scenarios for 2030, 2045, and 2055. The gap between low and high emission scenarios widens over time.}}{18}{figure.caption.17}\protected@file@percent }
+\newlabel{fig:ry50}{{15}{18}{Estimated 50-year return period damages (USD millions) under four IPCC scenarios for 2030, 2045, and 2055. The gap between low and high emission scenarios widens over time}{figure.caption.17}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {16}{\ignorespaces Estimated 100-year return period damages (USD millions) under four IPCC scenarios for 2030, 2045, and 2055.}}{19}{figure.caption.18}\protected@file@percent }
+\newlabel{fig:ry100}{{16}{19}{Estimated 100-year return period damages (USD millions) under four IPCC scenarios for 2030, 2045, and 2055}{figure.caption.18}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Results: Flood Wall Simulations}{20}{section.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1}City Selection and Baseline Risk}{20}{subsection.6.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {17}{\ignorespaces Geospatial risk map of Lao PDR with the three cities selected for flood wall simulations. The heatmap represents the normalized probability of disaster occurrence at each grid point.}}{20}{figure.caption.19}\protected@file@percent }
+\newlabel{fig:lao_map}{{17}{20}{Geospatial risk map of Lao PDR with the three cities selected for flood wall simulations. The heatmap represents the normalized probability of disaster occurrence at each grid point}{figure.caption.19}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2}Damage Reduction Results}{20}{subsection.6.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {18}{\ignorespaces Estimated damages (USD millions) at 25, 30, 40, and 50-year return periods for Attapeu, Pakse, and Vientiane under three scenarios: no wall (baseline), intermediate wall (median river distance), and full wall (maximum river distance). Year 2030 projections.}}{21}{figure.caption.20}\protected@file@percent }
+\newlabel{fig:wall_bars}{{18}{21}{Estimated damages (USD millions) at 25, 30, 40, and 50-year return periods for Attapeu, Pakse, and Vientiane under three scenarios: no wall (baseline), intermediate wall (median river distance), and full wall (maximum river distance). Year 2030 projections}{figure.caption.20}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Damage reduction from flood wall interventions (USD millions), year 2030. Values represent the decrease in expected damages relative to the no-wall baseline.}}{21}{table.caption.21}\protected@file@percent }
+\newlabel{tab:wall_reduction}{{3}{21}{Damage reduction from flood wall interventions (USD millions), year 2030. Values represent the decrease in expected damages relative to the no-wall baseline}{table.caption.21}{}}
+\citation{saldarriaga2026}
+\@writefile{toc}{\contentsline {section}{\numberline {7}Conclusions}{23}{section.7}\protected@file@percent }
+\citation{emdat2024}
+\citation{ipcc2000sres}
+\citation{ipcc2023ar6}
+\bibcite{saldarriaga2026}{1}
+\bibcite{ipcc2000sres}{2}
+\bibcite{ipcc2023ar6}{3}
+\bibcite{ipcc2021ar6wg1}{4}
+\bibcite{ipcc2022ar6wg2}{5}
+\bibcite{lopez2015}{6}
+\bibcite{vanaalst2006}{7}
+\bibcite{nordhaus2019}{8}
+\bibcite{howard2017}{9}
+\bibcite{cavallo2011}{10}
+\bibcite{abril2023pymc}{11}
+\bibcite{solin2020}{12}
+\bibcite{besag1991}{13}
+\bibcite{emdat2024}{14}
+\bibcite{lehner2013}{15}
+\bibcite{laopdr_pdna2018}{16}
+\bibcite{openai2024gpt4omini}{17}
+\bibcite{worldbank_wdi_2024}{18}
+\bibcite{gpcc_2022}{19}
+\bibcite{noaa_co2_2024}{20}
+\bibcite{zhang_noaa_2019}{21}
+\gdef \@abspage@last{26}
