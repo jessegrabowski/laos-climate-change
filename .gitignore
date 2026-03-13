@@ -190,3 +190,20 @@ notebooks/final_paper/04_damage_curves.ipynb
 notebooks/geo_damage_model/05_geo_event_model_laos-neighbors_tight.ipynb
 notebooks/final_paper/01_assorted_graphs_and_things.ipynb
 notebooks/dsge/DSGE Model.ipynb
+
+# Policy note - only track source files (.tex, .ipynb)
+policy_note/*.aux
+policy_note/*.log
+policy_note/*.out
+policy_note/*.synctex.gz
+policy_note/*.pdf
+policy_note/*.docx
+policy_note/images/
+policy_note/notebooks/figures/
+policy_note/notebooks/data/
+policy_note/notebooks/*.idata
+policy_note/notebooks/.ipynb_checkpoints/
+
+# Ignore old policy_note locations (moved to policy_note/ at root)
+final_products/policy_note/
+notebooks/policy_note/
