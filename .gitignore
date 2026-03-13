@@ -204,6 +204,11 @@ policy_note/notebooks/data/
 policy_note/notebooks/*.idata
 policy_note/notebooks/.ipynb_checkpoints/
 
-# Ignore old policy_note locations (moved to policy_note/ at root)
+# Ignore old policy_note locations
 final_products/policy_note/
-notebooks/policy_note/
+
+# Ignore generated artifacts in notebooks/policy_note
+notebooks/policy_note/data/
+notebooks/policy_note/figures/
+notebooks/policy_note/*.idata
+notebooks/policy_note/.ipynb_checkpoints/
