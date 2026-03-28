@@ -1,82 +1,63 @@
-# Imports
 from pyprojroot import here
 import pandas as pd
-from urllib.request import urlretrieve
 import os
 from os.path import exists
 import logging
-from laos_gggi.data_functions.combine_data import load_all_data
 from laos_gggi.const_vars import (
-    IPCC_PREDICTIONS_RAW_NAME,
-    IPCC_URL,
-    IPCC_COLS,
-    IPCC_RENAME_DICT,
+    RCMIP_URL,
+    IPCC_SSP_SCENARIOS,
+    IPCC_SSP_COLUMN_NAMES,
+    IPCC_CACHED_FILENAME,
 )
 
 _log = logging.getLogger(__name__)
 
 
 def process_ipcc_scenarios(data_path=None, force_reload: bool = False):
-    # Define data path
+    """Load SSP atmospheric CO2 concentration scenarios from the RCMIP dataset.
+
+    Downloads annual-mean CO2 concentration data from the RCMIP dataset (Zenodo)
+    for the five core SSP scenarios.
+
+    Returns a DataFrame indexed by year (2015-2100) with columns for each SSP
+    scenario containing atmospheric CO2 concentration in ppm.
+    """
     if data_path is None:
         data_path = here("data")
-    if not exists(data_path) or force_reload:
-        os.makedirs(data_path)  # create it if not exists
+    if not exists(data_path):
+        os.makedirs(data_path)
 
-    path_to_raw_file = os.path.join(data_path, IPCC_PREDICTIONS_RAW_NAME)
+    cached_path = os.path.join(data_path, IPCC_CACHED_FILENAME)
 
-    # Verify if the raw data file exists
-    if not os.path.isfile(os.path.join(data_path, path_to_raw_file)):
-        _log.info("Downloading IPCC predictions raw  data")
-        urlretrieve(IPCC_URL, path_to_raw_file)
+    if os.path.isfile(cached_path) and not force_reload:
+        _log.info("Loading cached IPCC SSP CO2 concentration data")
+        return pd.read_csv(cached_path, index_col="year")
 
-    # Load raw data file:
-    ipcc_preds = pd.read_excel(path_to_raw_file, sheet_name="CO2 Emissions")[IPCC_COLS]
-    # Rename columns
-    ipcc_preds = ipcc_preds.rename(columns=IPCC_RENAME_DICT)
+    _log.info("Downloading RCMIP CO2 concentration data from Zenodo")
+    raw = pd.read_csv(RCMIP_URL)
 
-    # Load co2 observations data
-    co2_data = load_all_data()["df_time_series"][["co2"]].reset_index()
-    co2_data["year_"] = co2_data["year"].dt.year.drop(columns=["year"])
-    co2_data = co2_data.drop(columns=["year"])
-
-    ipcc_preds_proc = pd.merge(
-        ipcc_preds, co2_data, left_on="year", right_on="year_", how="left"
-    ).drop(columns=["year_"])
-
-    # Adjust col names
-    scenario_change_cols = (
-        ["year"]
-        + [x + "_change" for x in list(ipcc_preds_proc.columns)[1:-1]]
-        + ["co2"]
+    # Filter to atmospheric CO2 concentration for the target scenarios (global)
+    mask = (
+        (raw["Variable"] == "Atmospheric Concentrations|CO2")
+        & (raw["Scenario"].isin(IPCC_SSP_SCENARIOS))
+        & (raw["Region"] == "World")
     )
-    ipcc_preds_proc.columns = scenario_change_cols
+    co2 = raw.loc[mask].copy()
 
-    years = ipcc_preds_proc["year"].values
+    # Pivot: year columns are strings like "2015", "2016", ...
+    year_cols = [c for c in co2.columns if c.isdigit()]
+    co2 = co2.set_index("Scenario")[year_cols].T
+    co2.index = co2.index.astype(int)
+    co2.index.name = "year"
 
-    ipcc_preds_proc = ipcc_preds_proc.set_index("year")
-    scenario_value_cols = [x[:-7] for x in list(ipcc_preds_proc.columns)[:-1]]
+    # Rename columns from scenario codes to display names
+    co2 = co2.rename(columns=IPCC_SSP_COLUMN_NAMES)
 
-    # Compute the values
-    for col in scenario_value_cols:
-        for y in years:
-            if y == 2015:
-                ipcc_preds_proc.loc[y, col] = ipcc_preds_proc.loc[2015, "co2"]
-            elif y == 2020:
-                ipcc_preds_proc.loc[y, col] = ipcc_preds_proc.loc[2020, "co2"]
-            elif y != 2020 and y != 2101:
-                ipcc_preds_proc.loc[y, col] = (
-                    ipcc_preds_proc.loc[y, col + "_change"]
-                    + ipcc_preds_proc.loc[y - 5, col]
-                )
+    # Keep 2015-2100
+    df = co2.loc[(co2.index >= 2015) & (co2.index <= 2100)]
 
-    # Extend data to all the years
-    years_index = pd.date_range(start="2020-01-01", end="2101-01-01", freq="YE").year
-    ipcc_preds_proc_ext = ipcc_preds_proc.reindex(years_index)
+    # Cache locally
+    df.to_csv(cached_path)
+    _log.info(f"Cached IPCC SSP data to {cached_path}")
 
-    # Interpolate vaulues
-    ipcc_preds_proc_ext = ipcc_preds_proc_ext.interpolate(method="linear").drop(
-        columns=["co2"]
-    )
-
-    return ipcc_preds_proc_ext
+    return df

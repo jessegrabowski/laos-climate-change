@@ -1,0 +1,56 @@
+[workspace]
+name = "laos-climate-change"
+channels = ["conda-forge"]
+platforms = ["win-64"]
+
+[dependencies]
+python = "3.12.*"
+
+# Science
+numpy = "*"
+scipy = "*"
+
+# Data
+pandas = ">=2,<3"
+openpyxl = "*"
+xlrd = "*"
+pandas-datareader = "*"
+
+# Graphics
+matplotlib = "*"
+seaborn = "*"
+
+# Bayes
+pymc = ">=5.21.1"
+pytensor = ">=2.28.3"
+arviz = "*"
+preliz = "*"
+pymc-extras = "*"
+nutpie = ">=0.14.2"
+
+# Not Bayes
+scikit-learn = "*"
+statsmodels = "*"
+
+# Geospatial
+geopandas = "*"
+pysal = "*"
+geopy = "*"
+
+# Etc
+notebook = "<7"
+openai = "*"
+wikipedia = "*"
+pyprojroot = "*"
+
+# Testing
+pytest = "*"
+pytest-cov = "*"
+pre-commit = "*"
+jupyter = ">=1.1.1,<2"
+
+[pypi-dependencies]
+jax = "*"
+wbdata = "*"
+flowjax = "*"
+corner = "*"
