@@ -18,6 +18,7 @@
 \usepackage{array}
 \usepackage{multirow}
 \usepackage{setspace}
+\usepackage{amsmath,amssymb}
 \onehalfspacing
 
 % --- OECD colors ---
@@ -63,7 +64,7 @@
 \vspace{0.5em}
 \textbf{\color{oecdblue} Abstract}\\[6pt]
 {\small\itshape
-This policy note applies the Probabilistic Geospatial Risk (PGR) model---a fully Bayesian framework integrating disaster frequency, damage severity, geospatial patterns, and climate projections---to quantify Lao PDR's exposure to climate change-related disasters. Baseline projections show that disaster frequency is expected to double by 2055, with 10-year return period damages rising from USD~23 million in 2000 to over USD~2.1 billion by 2055. To understand how different global CO2 trends affect this exposure, we  apply a scenario analysis using four IPCC SRES CO\textsubscript{2}, which reveals that higher emissions could double extreme-event damages by 2055, with the gap between the lowest (B1) and highest (A1FI) scenarios reaching USD~2.3 billion at the 100-year return period. Flood wall simulations demonstrate that targeted infrastructure can reduce damages by up to 73\% in cities where river proximity dominates the risk profile, but yield minimal benefit where other factors drive exposure. These results underscore the need for evidence-based, location-specific adaptation investments informed by probabilistic risk decomposition.
+This policy note applies the Probabilistic Geospatial Risk (PGR) model---a fully Bayesian framework integrating disaster frequency, damage severity, geospatial patterns, and climate projections---to quantify Lao PDR's exposure to climate change-related disasters. Baseline projections show that disaster frequency is expected to double by 2055, with return period damages rising substantially. To understand how different global CO\textsubscript{2} trends affect this exposure, we apply a scenario analysis using five IPCC Shared Socioeconomic Pathways (SSP) CO\textsubscript{2} concentration trajectories (SSP1-19 through SSP5-85). Crucially, we do not vary CO\textsubscript{2} in isolation: using the innovation covariance learned by our multivariate Bayesian time series model, we propagate each CO\textsubscript{2} scenario to conditionally adjust ocean temperature and precipitation covariates. The analysis reveals that higher emissions translate into substantially greater disaster risk, with the gap between the most optimistic (SSP1-19) and most pessimistic (SSP5-85) scenarios widening dramatically over time. Flood wall simulations demonstrate that targeted infrastructure can reduce damages by up to 73\% in cities where river proximity dominates the risk profile, but yield minimal benefit where other factors drive exposure. These results underscore the need for evidence-based, location-specific adaptation investments informed by probabilistic risk decomposition.
 }
 \vspace{0.5em}
 \end{minipage}}
@@ -88,12 +89,12 @@ This note first presents the baseline results of the PGR model for Lao PDR, and 
 \begin{enumerate}[leftmargin=2em]
   \item \textbf{What are the baseline projections for Lao's climate risk?} We present the model's estimates of how disaster frequency, severity, and geospatial patterns are expected to evolve under current trends.
 
-  \item \textbf{How do different CO\textsubscript{2} emission scenarios affect Lao's exposure to climate change risk?} We feed four IPCC Special Report on Emissions Scenarios (SRES) CO\textsubscript{2} trajectories into the model to compare how alternative global emission pathways translate into different levels of disaster risk for Lao PDR.
+  \item \textbf{How do different CO\textsubscript{2} emission scenarios affect Lao's exposure to climate change risk?} We feed five IPCC Shared Socioeconomic Pathways (SSP) CO\textsubscript{2} concentration trajectories into the model---adjusting all correlated climate covariates accordingly---to compare how alternative global emission pathways translate into different levels of disaster risk for Lao PDR.
 
   \item \textbf{How can local infrastructure interventions mitigate disaster risk in specific cities?} We simulate the construction of flood walls in three Laotian cities by modifying the geospatial model's distance-to-river variable, and evaluate the resulting reduction in expected damages.
 \end{enumerate}
 
-The analysis concludes that Lao PDR faces substantially increasing risks even under baseline projections, with 100-year return period damages rising from USD~611 million in 2000 to over USD~2.1 billion by 2055. Under higher emission scenarios, damages from extreme events could potentially double by 2055. At the local level, flood wall interventions can achieve significant damage reductions in cities where proximity to rivers is the dominant risk factor.
+The analysis concludes that Lao PDR faces substantially increasing risks even under baseline projections, with return period damages rising sharply over the coming decades. Under higher emission scenarios (SSP3-70, SSP5-85), damages from extreme events could potentially double by 2055 relative to more optimistic pathways. At the local level, flood wall interventions can achieve significant damage reductions in cities where proximity to rivers is the dominant risk factor.
 
 % =============================================================================
 % 2. MODELING APPROACH
@@ -133,33 +134,51 @@ Figure~\ref{fig:pgr_diagram} presents the seven-component architecture of the PG
 
 \subsection{CO\textsubscript{2} Scenario Analysis}
 
-A central application of the PGR model is evaluating how alternative global emission pathways affect Lao PDR's disaster risk. The IPCC's Special Report on Emissions Scenarios (SRES) \cite{ipcc2000sres} provides several trajectories for future CO\textsubscript{2} accumulation based on different socioeconomic assumptions. We use four scenarios that span the range of possibilities, described in Table~\ref{tab:ipcc_scenarios}. Notably, observed global CO\textsubscript{2} accumulation over the past two decades has tracked closest to the A1FI (high-emission) pathway \cite{ipcc2021ar6wg1}, meaning that the most concerning projections in this analysis are also the most empirically relevant to current trends.
+A central application of the PGR model is evaluating how alternative global emission pathways affect Lao PDR's disaster risk. The IPCC's Sixth Assessment Report (AR6) \cite{ipcc2023ar6} uses Shared Socioeconomic Pathways (SSPs) to describe plausible futures for global CO\textsubscript{2} concentrations under different socioeconomic and policy assumptions. We use five scenarios that span the full range of possibilities, described in Table~\ref{tab:ipcc_scenarios}. The atmospheric CO\textsubscript{2} concentration data for each scenario comes from the Reduced Complexity Model Intercomparison Project (RCMIP) \cite{nicholls2021rcmip}. Notably, current global emissions trajectories are tracking between SSP2-45 and SSP3-70 under existing policies \cite{ipcc2021ar6wg1}, meaning that the moderate-to-high scenarios in this analysis are the most empirically relevant to current trends.
 
 \begin{table}[H]
   \centering
-  \caption{IPCC SRES CO\textsubscript{2} emission scenarios used in the analysis.}
+  \caption{IPCC SSP CO\textsubscript{2} concentration scenarios used in the analysis.}
   \label{tab:ipcc_scenarios}
   \small
   \begin{tabular}{llp{9cm}}
     \toprule
     \textbf{Scenario} & \textbf{Level} & \textbf{Key Assumptions} \\
     \midrule
-    B1  & Low           & Global convergence toward a service and information economy, with emphasis on sustainability, clean energy, and reduced material intensity. Represents a world prioritizing environmental and social sustainability. \\[4pt]
-    B2  & Moderate-low  & Locally oriented sustainability solutions with intermediate economic development. Technological change is less rapid but more diverse than in B1, reflecting heterogeneous regional approaches to environmental protection. \\[4pt]
-    A1B & Moderate-high & Rapid economic growth with global population peaking mid-century. Energy sources are balanced across fossil and non-fossil alternatives, with no heavy reliance on any single fuel type. \\[4pt]
-    A1FI & High         & Same rapid growth and global convergence as A1B, but with continued heavy dependence on fossil fuels. This pathway produces the highest CO\textsubscript{2} accumulation and represents the most carbon-intensive development trajectory. \\
+    SSP1-19 & Very low  & Sustainability-focused development with rapid decarbonization. Net-zero CO\textsubscript{2} emissions around 2050, net-negative thereafter. Limits warming to 1.5\textdegree C. The most ambitious pathway, requiring immediate and large-scale emission reductions. \\[4pt]
+    SSP1-26 & Low       & Strong sustainability policies with robust mitigation efforts. Limits warming to approximately 2\textdegree C by 2100. Represents a world that achieves the Paris Agreement targets. \\[4pt]
+    SSP2-45 & Moderate  & Middle-of-the-road development with moderate mitigation. Social, economic, and technological trends broadly follow historical patterns. CO\textsubscript{2} concentrations stabilize by end of century. \\[4pt]
+    SSP3-70 & High      & Regional rivalry and fragmented development with limited international cooperation on climate. High population growth in developing regions, slow technological progress, and weak environmental policies lead to high emissions. \\[4pt]
+    SSP5-85 & Very high & Fossil-fueled development with rapid economic growth driven by energy-intensive lifestyles. Represents the most carbon-intensive trajectory, with CO\textsubscript{2} concentrations exceeding 1{,}100~ppm by 2100. \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-The methodology for the scenario analysis proceeds as follows. For each IPCC scenario, the corresponding CO\textsubscript{2} trajectory---interpolated from decadal to yearly values---is substituted into the PGR model's covariate set, replacing the baseline CO\textsubscript{2} projection while keeping all other variables (GDP, population, precipitation, ocean temperature) at their baseline projected values. The pre-trained posterior distributions of all model parameters are then used to generate scenario-specific posterior predictive samples of disaster frequency, damages, and damage curves. This design isolates the effect of different global emission pathways on Lao's disaster risk: any difference between scenarios is attributable solely to the CO\textsubscript{2} input. Figure~\ref{fig:co2_scenarios} presents the four CO\textsubscript{2} trajectories used in the analysis.
+\subsubsection{Conditional covariate adjustment}
+
+A key methodological choice in the scenario analysis is how to treat covariates other than CO\textsubscript{2}. A naive approach would substitute only the CO\textsubscript{2} trajectory while holding all other variables (ocean temperature, precipitation, GDP, population) at their baseline projections. However, this ignores the fact that higher atmospheric CO\textsubscript{2} concentrations are physically linked to warmer ocean temperatures and altered precipitation patterns. Failing to adjust these covariates would understate the true divergence between scenarios.
+
+We address this using the \textbf{multivariate Gaussian conditional distribution} applied to the innovation covariance matrix estimated by our Bayesian ETS time series model (Component~4 of the PGR pipeline). This model jointly estimates all five covariates with a dense innovation covariance, capturing the empirical correlations between their unexpected changes. The conditional expectation of any variable $X_j$ given a specific CO\textsubscript{2} value is:
+%
+\begin{equation}
+  \mathbb{E}[X_j \mid \text{CO}_2 = c] = \mu_j + \frac{\text{Cov}(X_j, \text{CO}_2)}{\text{Var}(\text{CO}_2)} \cdot (c - \mu_{\text{CO}_2})
+\end{equation}
+%
+where $\mu_j$ and $\mu_{\text{CO}_2}$ are the baseline forecasts. The regression coefficient $\beta_j = \text{Cov}(X_j, \text{CO}_2) / \text{Var}(\text{CO}_2)$ is computed from the posterior mean of the innovation covariance. The strongest channel is CO\textsubscript{2}~$\to$~ocean temperature ($r = 0.47$), reflecting the physical mechanism by which greenhouse gases trap heat. The CO\textsubscript{2}~$\to$~precipitation correlation is weak ($r = -0.08$). GDP and population are kept at baseline values given their weak correlation with atmospheric CO\textsubscript{2} and the indirect causal link over our forecast horizon.
+
+\subsubsection{Scenario analysis procedure}
+
+For each SSP scenario, we construct a complete set of covariate trajectories where CO\textsubscript{2}, ocean temperature deviation, and precipitation deviation are all adjusted conditional on the scenario's CO\textsubscript{2} pathway. These scenario-specific covariates are then fed into the pre-trained PGR model to generate posterior predictive samples of disaster frequency, damages, and damage curves. This design captures both the \textit{direct} effect of CO\textsubscript{2} on disaster risk and the \textit{indirect} effects transmitted through correlated climate variables. Figure~\ref{fig:co2_scenarios} presents the five CO\textsubscript{2} concentration trajectories used in the analysis.
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.95\textwidth]{images/ipcc_scenarios_co2.png}
-  \caption{IPCC SRES CO\textsubscript{2} accumulation scenarios (B1, B2, A1B, A1FI) used as inputs to the PGR model. Higher scenarios correspond to more carbon-intensive development pathways.}
+  \caption{IPCC SSP atmospheric CO\textsubscript{2} concentration scenarios (SSP1-19 through SSP5-85) used as inputs to the PGR model. Data from the RCMIP dataset \cite{nicholls2021rcmip}. Higher scenarios correspond to more carbon-intensive development pathways.}
   \label{fig:co2_scenarios}
 \end{figure}
+
+% TODO: Add figure showing conditional covariate adjustments (ocean temp, precip by scenario)
+% once 01_conditional_covariate_scenarios.ipynb has been run and figure exported
 
 \subsection{Flood Wall Simulations}
 
@@ -329,23 +348,23 @@ These baseline results establish that Lao PDR faces a significant and growing cl
 
 \subsection{Impact on Disaster Frequency and Severity}
 
-The scenario analysis reveals that higher CO\textsubscript{2} pathways are associated with both more frequent and more severe disasters in Lao PDR. Figure~\ref{fig:freq_scenarios} presents the predicted disaster count under each scenario, showing that the highest-emission pathway (A1FI) leads to noticeably higher disaster frequencies compared to the low-emission scenario (B1), particularly after 2035.
+The scenario analysis reveals that higher CO\textsubscript{2} pathways are associated with both more frequent and more severe disasters in Lao PDR. Figure~\ref{fig:freq_scenarios} presents the predicted disaster count under each scenario, showing that the highest-emission pathway (SSP5-85) leads to noticeably higher disaster frequencies compared to the low-emission scenario (SSP1-19), particularly after 2035.
 
 \begin{figure}[H]
   \centering
   \makebox[\textwidth][c]{\includegraphics[width=1.15\textwidth]{images/frequency_projections_scenarios.png}}
-  \caption{Predicted yearly disaster count for Lao PDR under four IPCC SRES scenarios. Shaded regions indicate the 95\% high density interval. Higher CO\textsubscript{2} scenarios produce higher expected disaster counts.}
+  \caption{Predicted yearly disaster count for Lao PDR under five IPCC SSP scenarios. Shaded regions indicate the 95\% high density interval. Higher CO\textsubscript{2} scenarios produce higher expected disaster counts.}
   \label{fig:freq_scenarios}
 \end{figure}
 
-The divergence between scenarios accelerates after 2035, when cumulative CO\textsubscript{2} differences become large enough to meaningfully shift the frequency distribution. In the near term (2025--2030), all four scenarios produce similar disaster counts because the CO\textsubscript{2} trajectories have not yet diverged substantially. However, by the 2040s and 2050s, the compounding effect of higher atmospheric CO\textsubscript{2} concentrations becomes increasingly pronounced, leading to a widening gap between the low-emission (B1) and high-emission (A1FI) pathways. This non-linear acceleration underscores the urgency of early emission reductions: delaying action narrows the window in which meaningful divergence between pathways can be achieved.
+The divergence between scenarios accelerates after 2035, when cumulative CO\textsubscript{2} differences---and their propagated effects on ocean temperature---become large enough to meaningfully shift the frequency distribution. In the near term (2025--2030), all five scenarios produce similar disaster counts because the CO\textsubscript{2} trajectories have not yet diverged substantially. However, by the 2040s and 2050s, the compounding effect of higher atmospheric CO\textsubscript{2} concentrations and warmer ocean temperatures becomes increasingly pronounced, leading to a widening gap between the low-emission (SSP1-19) and high-emission (SSP5-85) pathways. This non-linear acceleration underscores the urgency of early emission reductions: delaying action narrows the window in which meaningful divergence between pathways can be achieved.
 
-The damage projections in Figure~\ref{fig:dmg_scenarios} show a similar pattern: while the median damage remains moderate across scenarios, the upper tails of the distribution---representing extreme events---diverge substantially. Under A1FI, the probability of experiencing very high-damage events grows significantly relative to B1. This is precisely where the Bayesian approach adds the most value: by estimating the full probability distribution rather than just the mean, the model reveals that the most policy-relevant differences between scenarios lie in the tails of the damage distribution---the region where traditional point-estimate approaches provide the least information.
+The damage projections in Figure~\ref{fig:dmg_scenarios} show a similar pattern: while the median damage remains moderate across scenarios, the upper tails of the distribution---representing extreme events---diverge substantially. Under SSP5-85, the probability of experiencing very high-damage events grows significantly relative to SSP1-19. This is precisely where the Bayesian approach adds the most value: by estimating the full probability distribution rather than just the mean, the model reveals that the most policy-relevant differences between scenarios lie in the tails of the damage distribution---the region where traditional point-estimate approaches provide the least information.
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{images/damage_projections_scenarios.png}
-  \caption{Predicted disaster damages for Lao PDR under four IPCC scenarios. Thinner segments correspond to the 80\% probability intervals, thicker segments to the 50\% intervals. The tails of the damage distribution grow substantially under higher-emission scenarios.}
+  \caption{Predicted disaster damages for Lao PDR under five IPCC SSP scenarios. Thinner segments correspond to the 80\% probability intervals, thicker segments to the 50\% intervals. The tails of the damage distribution grow substantially under higher-emission scenarios.}
   \label{fig:dmg_scenarios}
 \end{figure}
 
@@ -356,41 +375,39 @@ The differences between scenarios become most pronounced for extreme events---pr
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{images/return_year_comparison_scenarios_10_ry.png}
-  \caption{Estimated 10-year return period damages (USD millions) under four IPCC scenarios for 2030, 2045, and 2055. Even for relatively frequent events, the gap between low and high emission scenarios is substantial.}
+  \caption{Estimated 10-year return period damages (USD millions) under five IPCC SSP scenarios for 2030, 2045, and 2055. Even for relatively frequent events, the gap between low and high emission scenarios is substantial.}
   \label{fig:ry10}
 \end{figure}
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{images/return_year_comparison_scenarios_50_ry.png}
-  \caption{Estimated 50-year return period damages (USD millions) under four IPCC scenarios for 2030, 2045, and 2055. The gap between low and high emission scenarios widens over time.}
+  \caption{Estimated 50-year return period damages (USD millions) under five IPCC SSP scenarios for 2030, 2045, and 2055. The gap between low and high emission scenarios widens over time.}
   \label{fig:ry50}
 \end{figure}
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{images/return_year_comparison_scenarios_100_ry.png}
-  \caption{Estimated 100-year return period damages (USD millions) under four IPCC scenarios for 2030, 2045, and 2055.}
+  \caption{Estimated 100-year return period damages (USD millions) under five IPCC SSP scenarios for 2030, 2045, and 2055.}
   \label{fig:ry100}
 \end{figure}
 
 Key findings from the scenario comparison:
 
 \begin{itemize}[leftmargin=2em]
-  \item \textbf{By 2030}, the 100-year return period damage ranges from \$1,021 million (B1) to \$1,410 million (A1FI)---a 38\% increase between the lowest and highest emission scenarios.
+  \item \textbf{By 2030}, the 100-year return period damage ranges from \$956 million (SSP1-19) to \$1,222 million (SSP5-85)---a 28\% increase between the most optimistic and most pessimistic emission scenarios. At this early horizon, all five scenarios produce relatively similar results because the CO\textsubscript{2} trajectories have not yet diverged substantially.
 
-  \item \textbf{By 2055}, the gap widens dramatically. The 100-RY damage under B1 is \$2,311 million, while under A1FI it reaches \$4,593 million---a 99\% increase. For the 50-RY event, the difference is 132\% (\$1,004M vs.\ \$2,330M).
+  \item \textbf{By 2055}, the gap widens dramatically. The 100-RY damage under SSP1-19 is \$977 million, while under SSP5-85 it reaches \$4,602 million---nearly a five-fold increase. For the 50-RY event, the pattern is similar: \$456M (SSP1-19) vs.\ \$2,477M (SSP5-85).
 
-  \item \textbf{The 10-year return period}---representing events that occur roughly once per decade---shows that emission scenarios matter not only for catastrophic tail events but also for recurrent disasters. By 2055, the 10-RY damage under A1FI (\$286M) is 2.6 times higher than under B1 (\$109M). These are the events that repeatedly strain government budgets and recovery capacity, and the scenario divergence indicates that higher emissions will substantially increase the recurring fiscal burden of climate-related disasters.
+  \item \textbf{The 10-year return period}---representing events that occur roughly once per decade---shows that emission scenarios matter not only for catastrophic tail events but also for recurrent disasters. By 2055, the 10-RY damage under SSP5-85 (\$263M) is more than five times higher than under SSP1-19 (\$50M). These are the events that repeatedly strain government budgets and recovery capacity, and the scenario divergence indicates that higher emissions will substantially increase the recurring fiscal burden of climate-related disasters.
 
-  \item Even the \textbf{moderate scenarios} (B2, A1B) produce meaningfully higher damages than B1, indicating that partial emission reductions still yield measurable benefits.
+  \item Even the \textbf{moderate scenarios} (SSP1-26, SSP2-45, SSP3-70) produce meaningfully different damages, indicating that each increment of emission reduction yields measurable benefits. By 2055, the 100-RY damage under SSP2-45 (\$2,116M) is already more than double the SSP1-19 level.
 \end{itemize}
 
-To place the 2055 results in perspective, the USD~2.3 billion gap between the B1 and A1FI scenarios at the 100-year return period represents more than 10\% of Lao PDR's current GDP. This means that the choice between global emission pathways---a decision largely outside Lao's control---could determine whether a catastrophic disaster event is manageable or economically devastating. The fact that even the moderate scenarios (B2 and A1B) produce damages significantly above B1 reinforces the importance of pursuing the most ambitious feasible reductions: every increment of avoided CO\textsubscript{2} translates into measurably lower disaster risk for vulnerable countries like Lao PDR.
+To place the 2055 results in perspective, the USD~3.6 billion gap between SSP1-19 and SSP5-85 at the 100-year return period represents approximately 18\% of Lao PDR's current GDP. This means that the choice between global emission pathways---a decision largely outside Lao's control---could determine whether a catastrophic disaster event is manageable or economically devastating. The fact that even the moderate scenarios produce damages significantly above SSP1-19 reinforces the importance of pursuing the most ambitious feasible reductions: every increment of avoided CO\textsubscript{2} translates into measurably lower disaster risk for vulnerable countries like Lao PDR.
 
-These results reveal a fundamental asymmetry: Lao PDR contributes negligibly to global CO\textsubscript{2} emissions---less than 0.1\% of the global total---yet bears disproportionate consequences from higher-emission pathways chosen by major emitters. The USD~2.3 billion gap between B1 and A1FI at the 100-year return period quantifies what might be called the \textit{adaptation premium}: the additional cost that vulnerable countries must bear, or insure against, when the world follows a high-emission trajectory rather than an ambitious mitigation pathway. This asymmetry strengthens the case for international climate finance mechanisms that channel adaptation support to countries whose risk exposure is shaped by decisions largely beyond their control. While Lao PDR cannot meaningfully influence global emission trajectories, it can invest in local adaptation infrastructure to reduce the impact of the disasters that do occur. The following section evaluates one such intervention.
-
-These results demonstrate that global CO\textsubscript{2} emission pathways have direct, quantifiable consequences for Lao PDR's disaster exposure. The divergence between scenarios accelerates over time, making early emission reductions increasingly valuable.
+These results reveal a fundamental asymmetry: Lao PDR contributes negligibly to global CO\textsubscript{2} emissions---less than 0.1\% of the global total---yet bears disproportionate consequences from higher-emission pathways chosen by major emitters. The USD~3.6 billion gap between SSP1-19 and SSP5-85 quantifies what might be called the \textit{adaptation premium}: the additional cost that vulnerable countries must bear, or insure against, when the world follows a high-emission trajectory rather than an ambitious mitigation pathway. This asymmetry strengthens the case for international climate finance mechanisms that channel adaptation support to countries whose risk exposure is shaped by decisions largely beyond their control. While Lao PDR cannot meaningfully influence global emission trajectories, it can invest in local adaptation infrastructure to reduce the impact of the disasters that do occur. The following section evaluates one such intervention.
 
 % =============================================================================
 % 5. RESULTS: FLOOD WALL SIMULATIONS
@@ -473,7 +490,7 @@ This policy note demonstrates the PGR model's capacity to inform climate adaptat
 
 \textbf{Baseline projections reveal escalating risk.} Even under current trends, the model projects that disaster frequency will approximately triple by 2060, and 100-year return period damages will rise from USD~611 million in 2000 to over USD~2.1 billion by 2055. Critically, moderate-frequency events (10-year return periods) also show a five-fold increase, implying that recurring disaster costs will grow substantially alongside catastrophic tail risks. The geospatial model further identifies specific high-risk zones---particularly river confluence areas---where this escalation will be most acute.
 
-\textbf{Global emission pathways matter for local risk.} The CO\textsubscript{2} scenario analysis shows that higher emission trajectories translate directly into greater disaster risk for Lao PDR. By 2055, the difference between the lowest and highest emission scenarios represents a potential doubling of damages from extreme events (100-RY: \$2,311M under B1 vs.\ \$4,593M under A1FI). This underscores the importance of international cooperation on emission reductions as a means of protecting vulnerable countries.
+\textbf{Global emission pathways matter for local risk.} The CO\textsubscript{2} scenario analysis---using five IPCC SSP pathways with conditionally adjusted climate covariates---shows that higher emission trajectories translate directly into greater disaster risk for Lao PDR. By 2055, the 100-year return period damage under SSP5-85 (\$4,602M) is nearly five times higher than under SSP1-19 (\$977M), a gap of USD~3.6 billion representing approximately 18\% of Lao PDR's current GDP. This underscores the importance of international cooperation on emission reductions as a means of protecting vulnerable countries.
 
 \textbf{Local interventions can be highly effective---but must be targeted.} The flood wall simulations show that infrastructure investments can achieve dramatic damage reductions in cities where river proximity is the primary risk driver. In Attapeu, a full flood wall could reduce 50-year return period damages by 73\%. However, the same intervention yields minimal benefit in cities like Pakse and Vientiane, where other risk factors dominate. This highlights the importance of using geospatial risk decomposition to prioritize and design infrastructure investments.
 
