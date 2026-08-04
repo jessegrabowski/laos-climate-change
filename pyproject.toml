@@ -99,8 +99,8 @@ default = { features = ["dev"], solve-group = "default" }
 notebooks = { features = ["dev", "notebooks"], solve-group = "default" }
 
 [tool.pixi.tasks]
-test = "pytest -m 'not network'"
-test-network = "pytest -m network"
+test = "pytest"
+test-network = "pytest --run-network -m network"
 lint = "ruff check . && ruff format --check ."
 fmt = "ruff format ."
 
