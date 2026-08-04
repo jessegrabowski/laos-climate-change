@@ -140,6 +140,7 @@ ignore = [
     "D203",
     "D213",
     "D413",
+    "D417",
 ]
 
 [tool.ruff.lint.isort]
