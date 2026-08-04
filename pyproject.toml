@@ -37,7 +37,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=9.1,<10", "pytest-cov>=7.1,<8", "pre-commit>=4.6,<5", "mypy>=2.3,<3", "ruff>=0.14,<1"]
+dev = ["pytest>=9.1,<10", "pytest-cov>=7.1,<8", "pre-commit>=4.6,<5", "mypy>=2.3,<3", "ruff>=0.16,<1"]
 notebooks = ["notebook>=7.6,<8", "ipywidgets>=8.1,<9", "openai>=2.0"]
 
 [project.urls]
@@ -81,7 +81,7 @@ seaborn = ">=0.13,<1"
 tqdm = ">=4.70,<5"
 
 [tool.pixi.feature.dev.dependencies]
-ruff = ">=0.14,<1"
+ruff = ">=0.16,<1"
 pytest = ">=9.1,<10"
 pytest-cov = ">=7.1,<8"
 pre-commit = ">=4.6,<5"
