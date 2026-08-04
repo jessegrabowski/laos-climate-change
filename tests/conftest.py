@@ -2,31 +2,40 @@ import socket
 
 import pytest
 
-_ALLOWED_HOSTS = {"127.0.0.1", "::1", "localhost"}
-
-_real_connect = socket.socket.connect
-
 
 class NetworkAccessError(RuntimeError):
-    """Raised when a test that is not marked `network` opens a remote connection."""
+    """Raised when a test that is not marked `network` opens a connection."""
 
 
-def _guarded_connect(self, address):
-    """Allow loopback and AF_UNIX, refuse everything else."""
-    if self.family == socket.AF_UNIX:
-        return _real_connect(self, address)
+OUTBOUND_SOCKET_METHODS = ("connect", "connect_ex", "sendto", "sendmsg")
 
-    host = address[0] if isinstance(address, tuple) else address
-    if host in _ALLOWED_HOSTS:
-        return _real_connect(self, address)
+
+def _describe_target(args):
+    for arg in args:
+        if isinstance(arg, tuple) and arg and isinstance(arg[0], str):
+            return arg[0]
+        if isinstance(arg, str):
+            return arg
+    return "an external host"
+
+
+def _refuse_outbound(self, *args, **kwargs):
+    target = _describe_target(args)
 
     # socket.create_connection only closes on OSError, so an unclosed socket would surface as a
     # ResourceWarning and, under filterwarnings=error, mask this exception.
     self.close()
 
     raise NetworkAccessError(
-        f"network access to {host} in a test not marked `network`. Seed the cache_dir fixture instead, "
-        f"or mark the test `network` and run with --run-network."
+        f"network access to {target} in a test not marked `network`. Write the file the loader expects "
+        f"into its cache directory, or mark the test `network` and run with --run-network."
+    )
+
+
+def _refuse_lookup(*args, **kwargs):
+    raise NetworkAccessError(
+        f"DNS lookup of {_describe_target(args)} in a test not marked `network`. Write the file the "
+        f"loader expects into its cache directory, or mark the test `network` and run with --run-network."
     )
 
 
@@ -34,7 +43,12 @@ def _guarded_connect(self, address):
 def block_network(request, monkeypatch):
     if "network" in request.keywords:
         return
-    monkeypatch.setattr(socket.socket, "connect", _guarded_connect)
+
+    for method in OUTBOUND_SOCKET_METHODS:
+        monkeypatch.setattr(socket.socket, method, _refuse_outbound)
+
+    # Refusing name resolution turns an offline run's DNS timeout into an immediate error.
+    monkeypatch.setattr(socket, "getaddrinfo", _refuse_lookup)
 
 
 def pytest_addoption(parser):
