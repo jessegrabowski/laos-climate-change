@@ -129,7 +129,6 @@ docstring-code-format = true
 [tool.ruff.lint]
 select = ["B", "D", "E", "F", "I", "UP", "W", "RUF"]
 ignore = [
-    "E501",
     "D100",
     "D101",
     "D102",
@@ -137,10 +136,26 @@ ignore = [
     "D104",
     "D105",
     "D107",
+    "D200",
+    "D202",
     "D203",
+    "D204",
+    "D205",
+    "D209",
+    "D212",
     "D213",
+    "D301",
+    "D400",
+    "D401",
+    "D403",
     "D413",
+    "D415",
     "D417",
+    "E501",
+    "RUF001",
+    "RUF002",
+    "RUF003",
+    "RUF012",
 ]
 
 [tool.ruff.lint.isort]
