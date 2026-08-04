@@ -1,22 +1,20 @@
+import numpy as np
 import pandas as pd
+
+from statsmodels.tsa.seasonal import STL
+
 from laos_gggi import load_all_data
 from laos_gggi.statistics import nan_or_sum
-from statsmodels.tsa.seasonal import STL
-import numpy as np
 
 
 def create_replication_data():
     # Load data
     data = load_all_data()
     df_clim = data["df_time_series"][["co2", "Temp", "precip"]].iloc[1:-1]
-    emdat_damage_hydro = data["emdat_damage"][
-        ["Total_Damage_Adjusted_hydro", "Total_Affected_hydro"]
-    ]
+    emdat_damage_hydro = data["emdat_damage"][["Total_Damage_Adjusted_hydro", "Total_Affected_hydro"]]
     emdat_damage_clim = data["emdat_damage"]["Total_Damage_Adjusted_clim"]
     hydro_disasters = data["emdat_events"][["Flood", "Storm"]]
-    climate_disasters = data["emdat_events"][
-        ["Extreme temperature", "Wildfire", "Drought"]
-    ]
+    climate_disasters = data["emdat_events"][["Extreme temperature", "Wildfire", "Drought"]]
     disasters = data["emdat_events"]
     development_indicators = data["wb_data"]
     precipitation = data["gpcc"]
@@ -32,13 +30,8 @@ def create_replication_data():
     precip_deviation = pd.DataFrame(columns=countries)
     for x in countries:
         precip_deviation[x] = (
-            precipitation.reset_index().pivot(
-                index="year", values="precip", columns="ISO"
-            )[x]
-            - pd.DataFrame(precipitation.unstack(-2).head(30).mean())
-            .loc["precip"]
-            .loc[x]
-            .values
+            precipitation.reset_index().pivot(index="year", values="precip", columns="ISO")[x]
+            - pd.DataFrame(precipitation.unstack(-2).head(30).mean()).loc["precip"].loc[x].values
         )
 
     precip_deviation = (
@@ -58,9 +51,7 @@ def create_replication_data():
     # Obtain the natural logarithms of population density and GDP per capita
 
     development_indicators["population"] = development_indicators["Population"]
-    development_indicators["ln_population_density"] = np.log(
-        development_indicators["population_density"]
-    )
+    development_indicators["ln_population_density"] = np.log(development_indicators["population_density"])
     development_indicators["ln_population_density"]
     development_indicators["ln_gdp_pc"] = np.log(development_indicators["gdp_per_cap"])
     development_indicators["square_ln_gdp_pc"] = (
@@ -68,16 +59,12 @@ def create_replication_data():
     )
 
     # Merging everything into one df
-    df = pd.merge(
-        disasters, development_indicators, right_index=True, left_index=True, how="left"
-    )
+    df = pd.merge(disasters, development_indicators, right_index=True, left_index=True, how="left")
     df = df.reset_index().rename(columns={"Start_Year": "year"}).set_index("year")
 
     df = pd.merge(
         df,
-        pd.DataFrame(dev_from_trend_ocean_temp).rename(
-            columns={0: "dev_from_trend_ocean_temp"}
-        ),
+        pd.DataFrame(dev_from_trend_ocean_temp).rename(columns={0: "dev_from_trend_ocean_temp"}),
         right_index=True,
         left_index=True,
         how="left",
@@ -98,9 +85,7 @@ def create_replication_data():
     # )
     df = pd.merge(
         df,
-        emdat_damage_hydro.reset_index()
-        .rename(columns={"Start_Year": "year"})
-        .set_index(["ISO", "year"]),
+        emdat_damage_hydro.reset_index().rename(columns={"Start_Year": "year"}).set_index(["ISO", "year"]),
         right_index=True,
         left_index=True,
         how="left",
@@ -108,9 +93,7 @@ def create_replication_data():
 
     df = pd.merge(
         df,
-        emdat_damage_clim.reset_index()
-        .rename(columns={"Start_Year": "year"})
-        .set_index(["ISO", "year"]),
+        emdat_damage_clim.reset_index().rename(columns={"Start_Year": "year"}).set_index(["ISO", "year"]),
         right_index=True,
         left_index=True,
         how="left",
@@ -145,18 +128,12 @@ def create_replication_data():
     df["ISO"] = df["ISO"]
 
     # SUm of all damages
-    df["Total_Damage_Adjusted_all"] = (
-        df["Total_Damage_Adjusted_clim"] + df["Total_Damage_Adjusted_hydro"]
-    )
+    df["Total_Damage_Adjusted_all"] = df["Total_Damage_Adjusted_clim"] + df["Total_Damage_Adjusted_hydro"]
 
     # Hydro damage in millions
-    df["Total_Damage_Adjusted_hydro_millions"] = (
-        df["Total_Damage_Adjusted_hydro"] * 1e-6
-    )
+    df["Total_Damage_Adjusted_hydro_millions"] = df["Total_Damage_Adjusted_hydro"] * 1e-6
     df["damage_millions"] = df["Total_Damage_Adjusted_all"] * 1e-6
 
     df["ln_damage_millions"] = np.log(df["damage_millions"] + 1e-6)
-    df["ln_Total_Damage_Adjusted_hydro_millions"] = np.log(
-        df["Total_Damage_Adjusted_hydro_millions"] + 1e-6
-    )
+    df["ln_Total_Damage_Adjusted_hydro_millions"] = np.log(df["Total_Damage_Adjusted_hydro_millions"] + 1e-6)
     return df

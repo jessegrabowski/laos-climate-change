@@ -1,19 +1,19 @@
 import logging
+
 from laos_gggi.data_functions import (
-    load_emdat_data,
-    load_wb_data,
-    load_gpcc_data,
-    load_co2_data,
-    load_ocean_heat_data,
-    load_hadcrut_data,
-    load_shapefile,
     load_all_data,
+    load_co2_data,
     load_disaster_point_data,
-    load_synthetic_non_disaster_points,
+    load_emdat_data,
+    load_gpcc_data,
+    load_hadcrut_data,
+    load_ocean_heat_data,
     load_rivers_data,
+    load_shapefile,
+    load_synthetic_non_disaster_points,
+    load_wb_data,
     process_ipcc_scenarios,
 )
-
 
 _log = logging.getLogger(__name__)
 
@@ -24,16 +24,16 @@ if not logging.root.handlers:
         _log.addHandler(handler)
 
 __all__ = [
-    "load_emdat_data",
-    "load_wb_data",
-    "load_gpcc_data",
-    "load_co2_data",
-    "load_ocean_heat_data",
-    "load_hadcrut_data",
-    "load_shapefile",
     "load_all_data",
+    "load_co2_data",
     "load_disaster_point_data",
+    "load_emdat_data",
+    "load_gpcc_data",
+    "load_hadcrut_data",
+    "load_ocean_heat_data",
     "load_rivers_data",
+    "load_shapefile",
     "load_synthetic_non_disaster_points",
+    "load_wb_data",
     "process_ipcc_scenarios",
 ]

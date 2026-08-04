@@ -1,23 +1,27 @@
-from pyprojroot import here
-import os
-from os.path import exists
-from laos_gggi.const_vars import (
-    RIVERS_URL,
-    RIVERS_SHAPEFILE_FILENAME,
-    RIVERS_ZIP_FILENAME,
-    BIG_RIVERS_FILENAME,
-    MEDIUM_BIG_RIVERS_FILENAME,
-)
 import logging
+import os
 import urllib.request
+
+from os.path import exists
 from zipfile import ZipFile
 
 import geopandas as gpd
 
+from pyprojroot import here
+
+from laos_gggi.const_vars import (
+    BIG_RIVERS_FILENAME,
+    MEDIUM_BIG_RIVERS_FILENAME,
+    RIVERS_SHAPEFILE_FILENAME,
+    RIVERS_URL,
+    RIVERS_ZIP_FILENAME,
+)
+
 _log = logging.getLogger(__name__)
 
 
-def load_rivers_data(data_path=here("data/rivers"), include_medium: bool = False):
+def load_rivers_data(data_path=None, include_medium: bool = False):
+    data_path = here("data/rivers") if data_path is None else data_path
     path_to_zip_file = os.path.join(data_path, RIVERS_ZIP_FILENAME)
     path_to_shapefile = os.path.join(data_path, RIVERS_SHAPEFILE_FILENAME)
     path_to_big_rivers = os.path.join(data_path, BIG_RIVERS_FILENAME)
@@ -45,13 +49,7 @@ def load_rivers_data(data_path=here("data/rivers"), include_medium: bool = False
     if include_medium:
         if not os.path.isfile(here(path_to_medium_big_rivers)):
             _log.info("Loading and processing rivers data")
-            df = gpd.read_file(
-                here(
-                    os.path.join(
-                        "data", "rivers", "HydroRIVERS_v10_shp", "HydroRIVERS_v10.shp"
-                    )
-                )
-            )
+            df = gpd.read_file(here(os.path.join("data", "rivers", "HydroRIVERS_v10_shp", "HydroRIVERS_v10.shp")))
 
             medium_and_big_rivers = df.query("ORD_FLOW < 6")
             medium_and_big_rivers.to_file(here(path_to_medium_big_rivers))
@@ -62,13 +60,7 @@ def load_rivers_data(data_path=here("data/rivers"), include_medium: bool = False
     elif not include_medium:
         if not os.path.isfile(here(path_to_big_rivers)):
             _log.info("Loading and processing rivers data")
-            df = gpd.read_file(
-                here(
-                    os.path.join(
-                        "data", "rivers", "HydroRIVERS_v10_shp", "HydroRIVERS_v10.shp"
-                    )
-                )
-            )
+            df = gpd.read_file(here(os.path.join("data", "rivers", "HydroRIVERS_v10_shp", "HydroRIVERS_v10.shp")))
 
             big_rivers = df.query("ORD_FLOW < 5")
             big_rivers.to_file(here(path_to_big_rivers))

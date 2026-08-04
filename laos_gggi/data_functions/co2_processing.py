@@ -1,8 +1,12 @@
-from pyprojroot import here
-import pandas as pd
 import os
+
 from os.path import exists
-from laos_gggi.const_vars import CO2_URL, CO2_FILENAME
+
+import pandas as pd
+
+from pyprojroot import here
+
+from laos_gggi.const_vars import CO2_FILENAME, CO2_URL
 
 
 def load_co2_data(data_path=None):
@@ -22,8 +26,6 @@ def load_co2_data(data_path=None):
         df_co2.to_csv(os.path.join(data_path, CO2_FILENAME))
 
     else:
-        df_co2 = pd.read_csv(  # noqa
-            os.path.join(data_path, CO2_FILENAME), index_col=["Date"], parse_dates=True
-        )
+        df_co2 = pd.read_csv(os.path.join(data_path, CO2_FILENAME), index_col=["Date"], parse_dates=True)
 
     return df_co2

@@ -1,6 +1,7 @@
 from typing import Self
 
 import pandas as pd
+
 from sklearn.base import BaseEstimator, OneToOneFeatureMixin, TransformerMixin
 
 
@@ -21,11 +22,7 @@ class Standardize(OneToOneFeatureMixin, BaseEstimator, TransformerMixin):
 
         from rx_bonds.transformer import Standardize
 
-        df = pd.DataFrame({
-            "a": [1, 2, 3],
-            "b": [4, 5, 6],
-            "feature_with_suffix_idx": [1, 2, 3]
-        }).astype(float)
+        df = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6], "feature_with_suffix_idx": [1, 2, 3]}).astype(float)
         df["string_column"] = ["a", "b", "c"]
 
         transformer = Standardize()
@@ -59,13 +56,9 @@ class Standardize(OneToOneFeatureMixin, BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, df: pd.DataFrame) -> pd.DataFrame:
-        """
-        Transform method returns mutated dataframe using saved state.
-        """
+        """Transform method returns mutated dataframe using saved state."""
         if len(self._mean_std_map) == 0:
-            raise RuntimeError(
-                "Must call `.fit(df)` on training data before transforming on new data."
-            )
+            raise RuntimeError("Must call `.fit(df)` on training data before transforming on new data.")
 
         df = df.copy()
         # TODO: Here and elsewhere, should avoid adding columns one by one.

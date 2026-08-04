@@ -1,14 +1,17 @@
-from pyprojroot import here
+import logging
 import os
+
 from os.path import exists
 from urllib.request import urlretrieve
-from laos_gggi.const_vars import HADCRUT_URL
-from laos_gggi.data_functions.shapefiles_data_loader import load_shapefile
+
 import geopandas as geo
 import pandas as pd
 import xarray as xr
 
-import logging
+from pyprojroot import here
+
+from laos_gggi.const_vars import HADCRUT_URL
+from laos_gggi.data_functions.shapefiles_data_loader import load_shapefile
 
 _log = logging.getLogger(__name__)
 
@@ -16,9 +19,7 @@ _log = logging.getLogger(__name__)
 def load_hadcrut_data(output_path="data", force_reload=False, repair_ISO_codes=True):
     output_path = here(output_path)
     hadcrut_raw_path = os.path.join(output_path, "hadcrut_temperature_raw.nc")
-    hadcrut_processed_path = os.path.join(
-        output_path, "hadcrut_temperature_processed.csv"
-    )
+    hadcrut_processed_path = os.path.join(output_path, "hadcrut_temperature_processed.csv")
 
     # Check if "data" folder exists
     if not exists(output_path):
@@ -38,9 +39,7 @@ def load_hadcrut_data(output_path="data", force_reload=False, repair_ISO_codes=T
 
         # Import the world shapefile
         _log.info("Loading world shapefile as GeoDataFrame")
-        world_shapefile = load_shapefile(
-            "world", force_reload=force_reload, repair_ISO_codes=repair_ISO_codes
-        ).rename(
+        world_shapefile = load_shapefile("world", force_reload=force_reload, repair_ISO_codes=repair_ISO_codes).rename(
             columns={
                 "ISO_A3": "country_code",
                 "FORMAL_EN": "country",
@@ -48,9 +47,7 @@ def load_hadcrut_data(output_path="data", force_reload=False, repair_ISO_codes=T
                 "REGION_UN": "region",
             }
         )
-        _log.info(
-            "Merging HADCRUT data with world shapefile using Lat/Lon (EPSG:4326 coordinates)"
-        )
+        _log.info("Merging HADCRUT data with world shapefile using Lat/Lon (EPSG:4326 coordinates)")
 
         df_geo = geo.GeoDataFrame(
             df,
@@ -71,9 +68,9 @@ def load_hadcrut_data(output_path="data", force_reload=False, repair_ISO_codes=T
             "region",
         ]
 
-        result_df = df_geo.sjoin(world_shapefile, how="inner", predicate="intersects")[
-            cols_to_use
-        ].rename(columns={"tas_mean": "surface_temperature_dev"})
+        result_df = df_geo.sjoin(world_shapefile, how="inner", predicate="intersects")[cols_to_use].rename(
+            columns={"tas_mean": "surface_temperature_dev"}
+        )
 
         result_df["year"] = pd.to_datetime(result_df["time"].dt.year, format="%Y")
 

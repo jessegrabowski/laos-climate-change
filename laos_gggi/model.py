@@ -1,10 +1,11 @@
-import pymc as pm
 import pandas as pd
+import pymc as pm
 import pytensor
-from pytensor.tensor import TensorVariable
-from joblib import Parallel, delayed
-from tqdm.notebook import tqdm
 import pytensor.tensor as pt
+
+from joblib import Parallel, delayed
+from pytensor.tensor import TensorVariable
+from tqdm.notebook import tqdm
 
 
 def add_hierarchical_effect(
@@ -16,8 +17,7 @@ def add_hierarchical_effect(
     use_zerosum_offset: bool = False,
     group_dim: str | None = None,
 ) -> tuple[TensorVariable]:
-    """
-    Adds a hierarchical effect to the active PyMC model.
+    """Adds a hierarchical effect to the active PyMC model.
 
     Parameters
     ----------
@@ -35,6 +35,7 @@ def add_hierarchical_effect(
         If True, the offset is modeled as a ZeroSumNormal. Otherwise a Normal is used.
     group_dim: str
         Dimension of the group (e.g. 'ISO' for countries). Must be provided.
+
     Returns
     -------
     country_effect: TensorVariable
@@ -46,24 +47,17 @@ def add_hierarchical_effect(
     country_effect_offset: TensorVariable
         The offsets for each country from the overall group mean
     """
-
     if group_dim is None:
         raise ValueError("group_dim must be provided")
 
     with pm.modelcontext(None):
         country_effect_loc = pm.Normal(f"{name}_effect_loc", mu=loc_mu, sigma=loc_sigma)
-        country_effect_scale = pm.Gamma(
-            f"{name}_effect_scale", alpha=scale_alpha, beta=scale_beta
-        )
+        country_effect_scale = pm.Gamma(f"{name}_effect_scale", alpha=scale_alpha, beta=scale_beta)
 
         if use_zerosum_offset:
-            country_effect_offset = pm.ZeroSumNormal(
-                f"{name}_effect_offset", sigma=1, dims=group_dim
-            )
+            country_effect_offset = pm.ZeroSumNormal(f"{name}_effect_offset", sigma=1, dims=group_dim)
         else:
-            country_effect_offset = pm.Normal(
-                f"{name}_effect_offset", sigma=1, dims=group_dim
-            )
+            country_effect_offset = pm.Normal(f"{name}_effect_offset", sigma=1, dims=group_dim)
         country_effect = pm.Deterministic(
             f"{name}_effect",
             country_effect_loc + country_effect_scale * country_effect_offset,
@@ -86,8 +80,7 @@ def add_data(
     dims=None,
     dtype=None,
 ):
-    """
-    Add data to the active PyMC model.
+    """Add data to the active PyMC model.
 
     Parameters
     ----------
@@ -112,7 +105,6 @@ def add_data(
     Y: TensorVariable
         The target tensor. Only returned if target is provided.
     """
-
     X_name = "X" if name is None else f"X_{name}"
     Y_name = "Y" if name is None else f"Y_{name}"
 
@@ -173,9 +165,7 @@ def get_distance_to(gdf, points, return_columns=None, crs="EPSG:3395", n_cores=-
             delayed(get_closest)(idx, row, gdf_km, return_columns)
             for idx, row in tqdm(points_km.iterrows(), total=points.shape[0])
         )
-    return pd.DataFrame(
-        results, columns=["distance_to_closest"] + return_columns, index=points.index
-    )
+    return pd.DataFrame(results, columns=["distance_to_closest", *return_columns], index=points.index)
 
 
 def compute_center(X):

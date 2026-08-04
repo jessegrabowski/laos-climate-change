@@ -1,0 +1,163 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "laos-gggi"
+description = "Climate disaster frequency and damage modelling for climate adaptation policy"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { file = "LICENSE" }
+dynamic = ["version"]
+authors = [
+    { name = "Camilo Saldarriaga" },
+    { name = "Jesse Grabowski" },
+    { name = "Andrew Walters" },
+]
+keywords = ["climate", "bayesian", "disaster risk", "damage functions", "pymc"]
+dependencies = [
+    "numpy>=2.4,<3",
+    "scipy>=1.18,<2",
+    "pandas>=3.0,<4",
+    "xarray>=2026.7,<2027",
+    "h5netcdf>=1.6,<2",
+    "openpyxl>=3.1,<4",
+    "xlrd>=2.0,<3",
+    "kuznets>=1.0,<2",
+    "geopandas>=1.1,<2",
+    "pymc>=6.2,<7",
+    "pytensor>=3.2,<4",
+    "arviz>=1.2,<2",
+    "nutpie>=0.16,<1",
+    "scikit-learn>=1.9,<2",
+    "statsmodels>=0.14,<1",
+    "matplotlib>=3.11,<4",
+    "seaborn>=0.13,<1",
+    "tqdm>=4.70,<5",
+    "pyprojroot>=0.3,<1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=9.1,<10", "pytest-cov>=7.1,<8", "pre-commit>=4.6,<5", "mypy>=2.3,<3", "ruff>=0.14,<1"]
+notebooks = ["notebook>=7.6,<8", "ipywidgets>=8.1,<9", "openai>=2.0"]
+
+[project.urls]
+Repository = "https://github.com/jessegrabowski/laos-climate-change"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "laos_gggi/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["laos_gggi"]
+
+[tool.hatch.build.targets.sdist]
+exclude = ["/.github", "/notebooks", "/methodological_paper", "/Papers", "/data"]
+
+[tool.pixi.workspace]
+channels = ["conda-forge"]
+platforms = ["osx-arm64", "linux-64"]
+
+# geopandas needs GDAL, GEOS and PROJ built against a common ABI.
+[tool.pixi.dependencies]
+python = "3.12.*"
+numpy = ">=2.4,<3"
+scipy = ">=1.18,<2"
+pandas = ">=3.0,<4"
+xarray = ">=2026.7,<2027"
+h5netcdf = ">=1.6,<2"
+openpyxl = ">=3.1,<4"
+xlrd = ">=2.0,<3"
+geopandas = ">=1.1,<2"
+pymc = ">=6.2,<7"
+pytensor = ">=3.2,<4"
+arviz = ">=1.2,<2"
+nutpie = ">=0.16,<1"
+scikit-learn = ">=1.9,<2"
+statsmodels = ">=0.14,<1"
+matplotlib = ">=3.11,<4"
+seaborn = ">=0.13,<1"
+tqdm = ">=4.70,<5"
+pyprojroot = ">=0.3,<1"
+
+[tool.pixi.feature.dev.dependencies]
+ruff = ">=0.14,<1"
+pytest = ">=9.1,<10"
+pytest-cov = ">=7.1,<8"
+pre-commit = ">=4.6,<5"
+mypy = ">=2.3,<3"
+
+[tool.pixi.feature.notebooks.dependencies]
+notebook = ">=7.6,<8"
+ipywidgets = ">=8.1,<9"
+
+[tool.pixi.pypi-dependencies]
+laos-gggi = { path = ".", editable = true }
+
+[tool.pixi.environments]
+default = { features = ["dev"], solve-group = "default" }
+notebooks = { features = ["dev", "notebooks"], solve-group = "default" }
+
+[tool.pixi.tasks]
+test = "pytest -m 'not network'"
+test-network = "pytest -m network"
+lint = "ruff check . && ruff format --check ."
+fmt = "ruff format ."
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+xfail_strict = true
+addopts = ["-ra", "--strict-markers"]
+markers = [
+    "network: hits the real network; deselected by default, run nightly",
+    "slow: PyMC sampling or other multi-second work",
+    "requires_emdat: needs the licensed EM-DAT workbook, absent from CI",
+]
+filterwarnings = ["error"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["notebooks", "methodological_paper"]
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.ruff.lint]
+select = ["B", "D", "E", "F", "I", "UP", "W", "RUF"]
+ignore = [
+    "D100",
+    "D101",
+    "D102",
+    "D103",
+    "D104",
+    "D105",
+    "D107",
+    "D200",
+    "D202",
+    "D203",
+    "D204",
+    "D205",
+    "D209",
+    "D212",
+    "D213",
+    "D301",
+    "D400",
+    "D401",
+    "D403",
+    "D413",
+    "D415",
+    "D417",
+    "E501",
+    "RUF001",
+    "RUF002",
+    "RUF003",
+    "RUF012",
+]
+
+[tool.ruff.lint.isort]
+lines-between-types = 1
+known-first-party = ["laos_gggi"]

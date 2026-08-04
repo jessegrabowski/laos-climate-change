@@ -1,32 +1,23 @@
-# ruff: noqa: E402
-from pyprojroot import here
-import sys
+import itertools
 import logging
+import os
 
-from laos_gggi.data_functions.shapefiles_data_loader import load_shapefile
+import geopandas as gpd
+import numpy as np
+import pandas as pd
+
+from pyprojroot import here
+
 from laos_gggi.data_functions.emdat_processing import load_emdat_data
 from laos_gggi.data_functions.rivers_damage import load_rivers_data
+from laos_gggi.data_functions.shapefiles_data_loader import load_shapefile
 from laos_gggi.statistics import get_distance_to
-
-sys.path.insert(0, str(here()))
-
-import pandas as pd  # noqa
-import geopandas as gpd  # noqa
-import os  # noqa
-import numpy as np  # noqa
-
-import itertools
-
 
 _log = logging.getLogger(__name__)
 
 DATA_FOLDER = "data"
-FPATH_RAW = here(
-    os.path.join(DATA_FOLDER, "disaster_locations_gpt_repaired_w_features.csv")
-)
-FPATH_FEATURES = here(
-    os.path.join(DATA_FOLDER, "disaster_locations_gpt_repaired_w_features.csv")
-)
+FPATH_RAW = here(os.path.join(DATA_FOLDER, "disaster_locations_gpt_repaired_w_features.csv"))
+FPATH_FEATURES = here(os.path.join(DATA_FOLDER, "disaster_locations_gpt_repaired_w_features.csv"))
 
 SYNTHETIC_DATA_BASENAME = "synthetic_non_disasters.csv"
 
@@ -68,31 +59,25 @@ def load_disaster_point_data():
     if "distance_to_river" not in data.columns:
         rivers = load_rivers_data()
 
-        distances = get_distance_to(
-            rivers, points=data, return_columns=["ORD_FLOW", "HYRIV_ID"]
-        ).rename(columns={"distance_to_closest": "distance_to_river"})
-        data = data.join(distances).assign(
-            distance_to_river=lambda x: x.distance_to_river / 1000
+        distances = get_distance_to(rivers, points=data, return_columns=["ORD_FLOW", "HYRIV_ID"]).rename(
+            columns={"distance_to_closest": "distance_to_river"}
         )
+        data = data.join(distances).assign(distance_to_river=lambda x: x.distance_to_river / 1000)
         modified_data = True
 
     if "distance_to_coastline" not in data.columns:
         coastline = load_shapefile("coastline")
-        distances = get_distance_to(
-            coastline.boundary, points=data.loc[:, ["geometry"]]
-        ).rename(columns={"distance_to_closest": "distance_to_coastline"})
-        data = data.join(distances).assign(
-            distance_to_coastline=lambda x: x.distance_to_coastline / 1000
+        distances = get_distance_to(coastline.boundary, points=data.loc[:, ["geometry"]]).rename(
+            columns={"distance_to_closest": "distance_to_coastline"}
         )
+        data = data.join(distances).assign(distance_to_coastline=lambda x: x.distance_to_coastline / 1000)
         modified_data = True
 
     if "is_island" not in data.columns:
         try:
             import wikipedia as wp
-        except ImportError:
-            raise ImportError(
-                "You need to install the wikipedia package to get island data"
-            )
+        except ImportError as err:
+            raise ImportError("You need to install the wikipedia package to get island data") from err
 
         html = wp.page("List_of_island_countries").html().encode("UTF-8")
         island_table = (
@@ -111,11 +96,7 @@ def load_disaster_point_data():
         modified_data = True
 
     if modified_data:
-        (
-            data.drop(
-                columns=emdat["df_raw_filtered_adj"].columns.tolist() + ["geometry"]
-            ).to_csv(FPATH_FEATURES)
-        )
+        (data.drop(columns=[*emdat["df_raw_filtered_adj"].columns.tolist(), "geometry"]).to_csv(FPATH_FEATURES))
 
     return data
 
@@ -123,9 +104,9 @@ def load_disaster_point_data():
 def load_grid_point_data(
     region="laos",
     grid_size=400,
-    iso_list: list = None,
+    iso_list: list | None = None,
     force_reload: bool = False,
-    file_reg_name: str = None,
+    file_reg_name: str | None = None,
     altered_shape_file=None,
     include_medium_rivers: bool = True,
 ):
@@ -180,7 +161,7 @@ def load_grid_point_data(
                 "TLS",  # Timor-Leste
             ]
         elif region == "laos":
-            iso_list = ["LAO"]  #  noqa
+            iso_list = ["LAO"]
 
         if altered_shape_file is None:
             point_map = world.query("ISO_A3 in @iso_list")
@@ -201,9 +182,7 @@ def load_grid_point_data(
         grid = gpd.GeoDataFrame({"geometry": grid})
 
         points = grid.overlay(point_map, how="intersection").geometry
-        points = points.to_frame().assign(
-            lon=lambda x: x.geometry.x, lat=lambda x: x.geometry.y
-        )
+        points = points.to_frame().assign(lon=lambda x: x.geometry.x, lat=lambda x: x.geometry.y)
 
         # Obtain distance with rivers
         distances_rivers = get_distance_to(
@@ -213,29 +192,21 @@ def load_grid_point_data(
             name="rivers",
         ).rename(columns={"distance_to_closest": "distance_to_river"})
 
-        points = pd.merge(
-            points, distances_rivers, left_index=True, right_index=True, how="left"
-        )
+        points = pd.merge(points, distances_rivers, left_index=True, right_index=True, how="left")
 
         # Obtain sea distance with coastlines
         distances_coastlines = get_distance_to(
             coastline.boundary, points=points, return_columns=None, name="coastline"
         ).rename(columns={"distance_to_closest": "distance_to_coastline"})
 
-        points = pd.merge(
-            points, distances_coastlines, left_index=True, right_index=True, how="left"
-        )
+        points = pd.merge(points, distances_coastlines, left_index=True, right_index=True, how="left")
 
         # Assign is_island column
         points["is_island"] = False
 
         # Create log of distances
-        points = points.assign(
-            log_distance_to_river=lambda x: np.log(x.distance_to_river)
-        )
-        points = points.assign(
-            log_distance_to_coastline=lambda x: np.log(x.distance_to_coastline)
-        )
+        points = points.assign(log_distance_to_river=lambda x: np.log(x.distance_to_river))
+        points = points.assign(log_distance_to_coastline=lambda x: np.log(x.distance_to_coastline))
         points.rename(columns={"lon": "long"})
 
         points.to_file(fpath)
@@ -267,9 +238,7 @@ def _sample_by_region(data, world, multiplier=1, rng=None):
     )
 
     not_disasters["ISO"] = (
-        gpd.sjoin(world, not_disasters, predicate="contains")
-        .sort_values(by="index_right")
-        .ISO_A3.values
+        gpd.sjoin(world, not_disasters, predicate="contains").sort_values(by="index_right").ISO_A3.values
     )
 
     return not_disasters
@@ -286,9 +255,7 @@ def _sample_by_country(data, world, multiplier=1, rng=None):
         .loc[data.Region.unique()]
     )
 
-    world_subset = (
-        world.query("ISO_A3 in @data.ISO.unique()").set_index("ISO_A3").sort_index()
-    )
+    world_subset = world.query("ISO_A3 in @data.ISO.unique()").set_index("ISO_A3").sort_index()
     disasters_per_country = data.groupby("ISO").size().sort_index() * multiplier
 
     not_disasters = (
@@ -311,7 +278,7 @@ def _sample_by_country(data, world, multiplier=1, rng=None):
 
 def make_synthetic_data_fpath(by: str, multipler: int, list_name: str):
     name, ext = os.path.splitext(SYNTHETIC_DATA_BASENAME)
-    fname = f"{name}_{by}_times_{str(multipler)}_{list_name}_{ext}"
+    fname = f"{name}_{by}_times_{multipler!s}_{list_name}_{ext}"
 
     return here(os.path.join(DATA_FOLDER, fname))
 
@@ -335,28 +302,15 @@ def load_synthetic_non_disaster_points(
         coastline = load_shapefile("coastline")
         rivers = load_rivers_data()
 
-        data = (
-            load_disaster_point_data()
-            .dropna(subset="Region")
-            .query("ISO in @countries")
-        )
+        data = load_disaster_point_data().dropna(subset="Region").query("ISO in @countries")
 
         if by == "region":
             _log.info("Sampling non-disasters by region")
-            not_disasters = _sample_by_region(
-                data, world, multiplier=multiplier, rng=rng
-            )
+            not_disasters = _sample_by_region(data, world, multiplier=multiplier, rng=rng)
         elif by == "country":
             _log.info("Sampling non-disasters by country")
-            not_disasters = _sample_by_country(
-                data, world, multiplier=multiplier, rng=rng
-            )
-        island_dict = (
-            data[["ISO", "is_island"]]
-            .drop_duplicates()
-            .set_index("ISO")
-            .to_dict()["is_island"]
-        )
+            not_disasters = _sample_by_country(data, world, multiplier=multiplier, rng=rng)
+        island_dict = data[["ISO", "is_island"]].drop_duplicates().set_index("ISO").to_dict()["is_island"]
         not_disasters["is_island"] = not_disasters["ISO"].map(island_dict.get)
 
         distances = get_distance_to(
@@ -365,9 +319,7 @@ def load_synthetic_non_disaster_points(
             return_columns=["ORD_FLOW", "HYRIV_ID"],
             name="rivers",
         ).rename(columns={"distance_to_closest": "distance_to_river"})
-        not_disasters = not_disasters.join(distances).assign(
-            distance_to_river=lambda x: x.distance_to_river / 1000
-        )
+        not_disasters = not_disasters.join(distances).assign(distance_to_river=lambda x: x.distance_to_river / 1000)
 
         distances = get_distance_to(
             coastline.boundary,
@@ -393,9 +345,7 @@ def load_synthetic_non_disaster_points(
     else:
         _log.info(f"Loading data found at {fpath}")
         not_disasters = pd.read_csv(fpath, index_col=0)
-        not_disasters["geometry"] = gpd.points_from_xy(
-            not_disasters.long, not_disasters.lat
-        )
+        not_disasters["geometry"] = gpd.points_from_xy(not_disasters.long, not_disasters.lat)
         not_disasters["Start_Year"] = pd.to_datetime(not_disasters["Start_Year"])
 
         # EPSG:4326 is hard-coded so we don't have to load the data if this file exists! This might cause bugs :\
@@ -430,9 +380,7 @@ def load_non_disaster_grid(
 
             # Create the Cartesian product of the two arrays
             combinations = list(itertools.product(years, country_ISOs))
-            combinations_df = pd.DataFrame(
-                combinations, columns=["Start_Date", "ISO"]
-            ).sort_values("ISO")
+            combinations_df = pd.DataFrame(combinations, columns=["Start_Date", "ISO"]).sort_values("ISO")
 
             # Merge files and create not_disasters_grid
             not_disasters = pd.merge(
@@ -444,9 +392,7 @@ def load_non_disaster_grid(
             ).rename(columns={"Start_Date": "Start_Year", "lon": "long"})
 
         else:
-            not_disasters = not_disasters.rename(
-                columns={"Start_Date": "Start_Year", "lon": "long"}
-            )
+            not_disasters = not_disasters.rename(columns={"Start_Date": "Start_Year", "lon": "long"})
             not_disasters["Start_Year"] = "1984-01-01"
             not_disasters["Start_Year"] = pd.to_datetime(not_disasters["Start_Year"])
 

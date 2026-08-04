@@ -1,14 +1,18 @@
-import matplotlib.pyplot as plt
-import pandas as pd
-from matplotlib.gridspec import GridSpec
-from matplotlib.offsetbox import AnchoredText
-import seaborn as sns
-from scipy import stats
-import numpy as np
 import math
-from laos_gggi.const_vars import REGIONS
+
 import arviz as az
 import geopandas as gpd
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import xarray as xr
+
+from matplotlib.gridspec import GridSpec
+from matplotlib.offsetbox import AnchoredText
+from scipy import stats
+
+from laos_gggi.const_vars import REGIONS
 from laos_gggi.model import get_distance_to
 
 
@@ -30,11 +34,8 @@ def configure_plot_style(add_grid=False):
     plt.rcParams.update(config)
 
 
-def prepare_gridspec_figure(
-    n_cols: int, n_plots: int, figure: plt.Figure | None = None
-) -> tuple[GridSpec, list]:
-    """
-     Prepare a figure with a grid of subplots. Centers the last row of plots if the number of plots is not square.
+def prepare_gridspec_figure(n_cols: int, n_plots: int, figure: plt.Figure | None = None) -> tuple[GridSpec, list]:
+    """Prepare a figure with a grid of subplots. Centers the last row of plots if the number of plots is not square.
 
     Parameters
     ----------
@@ -52,7 +53,6 @@ def prepare_gridspec_figure(
     list of tuple(slice, slice)
          A list of tuples of slices representing the indices of the grid cells to be used for each subplot.
     """
-
     remainder = n_plots % n_cols
     has_remainder = remainder > 0
     n_rows = n_plots // n_cols + int(has_remainder)
@@ -83,8 +83,7 @@ def _plot_single_kde(
     set_title: bool = True,
     add_sum_box: bool = True,
 ):
-    """
-    Plot a single KDE plot on a given axis.
+    """Plot a single KDE plot on a given axis.
 
     Parameters
     ----------
@@ -104,7 +103,7 @@ def _plot_single_kde(
     """
     data = data.dropna()
     if axis is None:
-        fig, axis = plt.subplots()
+        _fig, axis = plt.subplots()
 
     axis.hist(data, bins=bins, density=True, facecolor="none", edgecolor="k", lw=0.5)
     axis.hist(data, bins=bins, density=True, facecolor=color, alpha=0.25)
@@ -118,8 +117,7 @@ def _plot_single_kde(
         values = [n, minmax[0], minmax[1], mean, np.sqrt(var), skew, kurt, jb.statistic]
 
         text = "\n".join(
-            f'{name:<5} = {" " if value > 0 else ""}{value:<3.3f}'
-            for name, value in zip(names, values)
+            f"{name:<5} = {' ' if value > 0 else ''}{value:<3.3f}" for name, value in zip(names, values, strict=False)
         )
         box = AnchoredText(text, loc=leg_loc, prop={"fontfamily": "monospace"})
         box.patch.set_alpha(0.5)
@@ -140,8 +138,7 @@ def plot_descriptive(
     add_sum_box: bool = True,
     **figure_kwargs,
 ):
-    """
-    Plot a grid of KDE plots for each column in a DataFrame.
+    """Plot a grid of KDE plots for each column in a DataFrame.
 
     Parameters
     ----------
@@ -168,16 +165,14 @@ def plot_descriptive(
 
     if n_plots == 1:
         fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
-        return _plot_single_kde(
-            df, axis=ax, bins=bins, color=color, add_sum_box=add_sum_box
-        )
+        return _plot_single_kde(df, axis=ax, bins=bins, color=color, add_sum_box=add_sum_box)
 
     fig = plt.figure(figsize=figsize, dpi=dpi, **figure_kwargs)
 
     n_cols = min(n_cols, n_plots)
     gs, locs = prepare_gridspec_figure(n_cols=n_cols, n_plots=n_plots)
 
-    for name, loc in zip(df.columns, locs):
+    for name, loc in zip(df.columns, locs, strict=False):
         axis = fig.add_subplot(gs[loc])
         axis.set_ylabel("Density", fontsize=labels_size)
         _plot_single_kde(
@@ -208,9 +203,7 @@ def subplots_function(
     for x in var_list:
         a = math.floor(var_list.index(x) / 2)
         b = var_list.index(x) % 2
-        axs[a, b].plot(
-            df.pivot_table(values=x, index=index, aggfunc=aggregation_funct)[x]
-        )
+        axs[a, b].plot(df.pivot_table(values=x, index=index, aggfunc=aggregation_funct)[x])
         axs[a, b].set_title(x, fontsize=subplot_title_fontsize)
 
     if (len(var_list) % 2) != 0:
@@ -238,9 +231,7 @@ def subplots_function_regions(
         b = var_list.index(x) % 2
         for y in REGIONS:
             axs[a, b].plot(
-                df.query(f'Region == "{y}"').pivot_table(
-                    values=x, index=index, aggfunc=aggregation_funct
-                ),
+                df.query(f'Region == "{y}"').pivot_table(values=x, index=index, aggfunc=aggregation_funct),
                 label=y,
             )
             axs[a, b].set_title(x, fontsize=subplot_title_fontsize)
@@ -253,11 +244,8 @@ def subplots_function_regions(
     fig.tight_layout(rect=[0, 0, 1, 0.95])
 
 
-def plot_ppc_loopit(
-    idata: az.InferenceData, target_name: str, title: str | None = None, **ppc_kwargs
-) -> list[plt.Axes]:
-    """
-    Plot the posterior predictive check (PPC) and the leave-one-out predictive interval (LOO-PIT) for a given target variable.
+def plot_ppc_loopit(idata: xr.DataTree, target_name: str, title: str | None = None, **ppc_kwargs) -> list[plt.Axes]:
+    """Plot the posterior predictive check (PPC) and the leave-one-out predictive interval (LOO-PIT) for a given target variable.
 
     Parameters
     ----------
@@ -267,12 +255,12 @@ def plot_ppc_loopit(
         The title for the plot.
     target_name : str, optional
         The name of the target variable. If None, the first variable in the posterior predictive data is used.
+
     Returns
     -------
     list
         A list of matplotlib axes objects representing the plot.
     """
-
     fig = plt.figure(figsize=(12, 9))
     gs = plt.GridSpec(2, 2, figure=fig)
     ax_ppc = fig.add_subplot(gs[0, :])
@@ -280,7 +268,7 @@ def plot_ppc_loopit(
     ax_ecdf = fig.add_subplot(gs[1, 1])
 
     az.plot_ppc(idata, ax=ax_ppc, var_names=[target_name], **ppc_kwargs)
-    for ax, ecdf in zip([ax_loo, ax_ecdf], [False, True]):
+    for ax, ecdf in zip([ax_loo, ax_ecdf], [False, True], strict=False):
         az.plot_loo_pit(idata, y=target_name, ecdf=ecdf, ax=ax)
 
     if title is None:
@@ -295,10 +283,7 @@ def generate_plot_inputs(idata, df):
     # Extract predictions
     predictions = idata.posterior_predictive["y_hat"].mean(dim=["chain", "draw"])
     predictions = (
-        predictions.to_dataframe()
-        .drop(columns=["ISO"])
-        .reset_index()
-        .rename(columns={"y_hat": "predictions"})
+        predictions.to_dataframe().drop(columns=["ISO"]).reset_index().rename(columns={"y_hat": "predictions"})
     )
 
     hdi_mean = az.hdi(idata.posterior_predictive.y_hat)
@@ -344,9 +329,9 @@ def generate_plot_inputs(idata, df):
     ).rename(columns={"y_hat": "higher_y_hat_50"})
 
     # Predictions
-    df_predictions = pd.merge(
-        df_predictions, predictions, left_on=["ISO"], right_on=["ISO"], how="left"
-    ).rename(columns={"y_hat": "predictions"})
+    df_predictions = pd.merge(df_predictions, predictions, left_on=["ISO"], right_on=["ISO"], how="left").rename(
+        columns={"y_hat": "predictions"}
+    )
 
     return df_predictions
 
@@ -358,7 +343,7 @@ def plotting_function(idata, country: str):
     # Filter country
     data = df_predictions.query("ISO == @country")
 
-    fig, ax = plt.subplots()
+    _fig, ax = plt.subplots()
     ax.plot(
         data["Start_Year"],
         data["predictions"],
@@ -404,9 +389,7 @@ def generate_plot_inputs_damages(
     df=pd.DataFrame,
 ):
     # Extract predictions
-    predictions = idata.posterior_predictive["damage_millions"].mean(
-        dim=["chain", "draw"]
-    )
+    predictions = idata.posterior_predictive["damage_millions"].mean(dim=["chain", "draw"])
     predictions = (
         predictions.to_dataframe()
         .drop(columns=["year", "ISO"])
@@ -416,41 +399,31 @@ def generate_plot_inputs_damages(
 
     hdi_mean = az.hdi(idata.posterior_predictive.damage_millions, hdi_prob=0.75)
 
-    hdi = (
-        hdi_mean["damage_millions"]
-        .to_dataframe()
-        .drop(columns=["year", "ISO"])
-        .reset_index()
-    )
+    hdi = hdi_mean["damage_millions"].to_dataframe().drop(columns=["year", "ISO"]).reset_index()
 
     hdi_mean_50 = az.hdi(idata.posterior_predictive.damage_millions, hdi_prob=0.5)
 
-    hdi_50 = (
-        hdi_mean_50["damage_millions"]
-        .to_dataframe()
-        .drop(columns=["year", "ISO"])
-        .reset_index()
-    )
+    hdi_50 = hdi_mean_50["damage_millions"].to_dataframe().drop(columns=["year", "ISO"]).reset_index()
 
     # Merge results and predictions in one df
     df_predictions = df[[target_variable, "ISO", "year"]]
 
     # Obtain mean hdis per year and countries
-    lower_hdi_75_mean = hdi.query('hdi == "lower"')[
-        ["ISO", "year", "damage_millions"]
-    ].rename(columns={"damage_millions": "lower_damage_75"})
+    lower_hdi_75_mean = hdi.query('hdi == "lower"')[["ISO", "year", "damage_millions"]].rename(
+        columns={"damage_millions": "lower_damage_75"}
+    )
 
-    higher_hdi_75_mean = hdi.query('hdi == "higher"')[
-        ["ISO", "year", "damage_millions"]
-    ].rename(columns={"damage_millions": "higher_damage_75"})
+    higher_hdi_75_mean = hdi.query('hdi == "higher"')[["ISO", "year", "damage_millions"]].rename(
+        columns={"damage_millions": "higher_damage_75"}
+    )
 
-    lower_hdi_50_mean = hdi_50.query('hdi == "lower"')[
-        ["ISO", "year", "damage_millions"]
-    ].rename(columns={"damage_millions": "lower_damage_50"})
+    lower_hdi_50_mean = hdi_50.query('hdi == "lower"')[["ISO", "year", "damage_millions"]].rename(
+        columns={"damage_millions": "lower_damage_50"}
+    )
 
-    higher_hdi_50_mean = hdi_50.query('hdi == "higher"')[
-        ["ISO", "year", "damage_millions"]
-    ].rename(columns={"damage_millions": "higher_damage_50"})
+    higher_hdi_50_mean = hdi_50.query('hdi == "higher"')[["ISO", "year", "damage_millions"]].rename(
+        columns={"damage_millions": "higher_damage_50"}
+    )
 
     predictions_mean = predictions
 
@@ -495,12 +468,8 @@ def generate_plot_inputs_damages(
     return df_predictions
 
 
-def plotting_function_damages(
-    idata, country: str, df: pd.DataFrame, target_variable: str
-):
-    df_predictions = generate_plot_inputs_damages(
-        idata=idata, df=df, target_variable=target_variable
-    )
+def plotting_function_damages(idata, country: str, df: pd.DataFrame, target_variable: str):
+    df_predictions = generate_plot_inputs_damages(idata=idata, df=df, target_variable=target_variable)
 
     # Filter country
     data = df_predictions.query("ISO == @country")
@@ -554,27 +523,21 @@ def create_grid_from_shape(shapefile, rivers, coastline, grid_size=100):
 
     point_overlay = grid.overlay(shapefile, how="intersection")
     points = point_overlay.geometry
-    points = points.to_frame().assign(
-        long=lambda x: x.geometry.x, lat=lambda x: x.geometry.y
-    )
+    points = points.to_frame().assign(long=lambda x: x.geometry.x, lat=lambda x: x.geometry.y)
 
     # Obtain distance with rivers
-    distances_to_rivers = get_distance_to(
-        rivers, points=points, return_columns=["ORD_FLOW", "HYRIV_ID"]
-    ).rename(columns={"distance_to_closest": "distance_to_river"})
-
-    points = pd.merge(
-        points, distances_to_rivers, left_index=True, right_index=True, how="left"
+    distances_to_rivers = get_distance_to(rivers, points=points, return_columns=["ORD_FLOW", "HYRIV_ID"]).rename(
+        columns={"distance_to_closest": "distance_to_river"}
     )
+
+    points = pd.merge(points, distances_to_rivers, left_index=True, right_index=True, how="left")
 
     # Obtain Laos distance with coastlines
-    distances_to_coastlines = get_distance_to(
-        coastline.boundary, points=points, return_columns=None
-    ).rename(columns={"distance_to_closest": "distance_to_coastline"})
-
-    points = pd.merge(
-        points, distances_to_coastlines, left_index=True, right_index=True, how="left"
+    distances_to_coastlines = get_distance_to(coastline.boundary, points=points, return_columns=None).rename(
+        columns={"distance_to_closest": "distance_to_coastline"}
     )
+
+    points = pd.merge(points, distances_to_coastlines, left_index=True, right_index=True, how="left")
 
     # Create log of distances
     points = points.assign(

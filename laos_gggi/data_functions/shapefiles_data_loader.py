@@ -1,23 +1,26 @@
-from pyprojroot import here
+import logging
 import os
+
 from os.path import exists
 from urllib.request import urlretrieve
 from zipfile import ZipFile
+
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 
-from laos_gggi.data_functions.rivers_data_loader import load_rivers_data
+from pyprojroot import here
+
 from laos_gggi.const_vars import (
-    WORLD_URL,
-    WORLD_FILENAME,
-    LAOS_URL,
-    LAOS_FILENAME,
     COASTLINE_FILENAME,
     COASTLINE_URL,
+    LAOS_FILENAME,
+    LAOS_URL,
+    WORLD_FILENAME,
+    WORLD_URL,
 )
+from laos_gggi.data_functions.rivers_data_loader import load_rivers_data
 from laos_gggi.statistics import get_distance_to
-import logging
 
 _log = logging.getLogger(__name__)
 
@@ -72,9 +75,7 @@ def extract_shapefiles(which: str, output_path="data/shapefiles", force_reload=F
             zObject.extractall(path=here(output_path))
 
 
-def load_shapefile(
-    which, output_path="data/shapefiles", force_reload=False, repair_ISO_codes=True
-):
+def load_shapefile(which, output_path="data/shapefiles", force_reload=False, repair_ISO_codes=True):
     if which.lower() not in VALID_CHOICES:
         raise ValueError(f"which should be one of {VALID_CHOICES}, got {which}")
     filename = shapefile_filename_dict[which.lower()]
@@ -141,16 +142,12 @@ def create_laos_point_grid():
         lon_grid = np.linspace(lon_min, lon_max, 100)
         lat_grid = np.linspace(lat_min, lat_max, 100)
 
-        laos_grid = np.column_stack(
-            [x.ravel() for x in np.meshgrid(lon_grid, lat_grid)]
-        )
+        laos_grid = np.column_stack([x.ravel() for x in np.meshgrid(lon_grid, lat_grid)])
         grid = gpd.GeoSeries(gpd.points_from_xy(*laos_grid.T), crs="EPSG:4326")
         grid = gpd.GeoDataFrame({"geometry": grid})
 
         laos_points = grid.overlay(laos, how="intersection").geometry
-        laos_points = laos_points.to_frame().assign(
-            lon=lambda x: x.geometry.x, lat=lambda x: x.geometry.y
-        )
+        laos_points = laos_points.to_frame().assign(lon=lambda x: x.geometry.x, lat=lambda x: x.geometry.y)
 
         # Obtain distance with rivers
         Laos_distances_rivers = get_distance_to(
@@ -166,9 +163,9 @@ def create_laos_point_grid():
         )
 
         # Obtain Laos distance with coastlines
-        Laos_distances_coastlines = get_distance_to(
-            coastline.boundary, points=laos_points, return_columns=None
-        ).rename(columns={"distance_to_closest": "distance_to_coastline"})
+        Laos_distances_coastlines = get_distance_to(coastline.boundary, points=laos_points, return_columns=None).rename(
+            columns={"distance_to_closest": "distance_to_coastline"}
+        )
 
         laos_points = pd.merge(
             laos_points,
@@ -182,13 +179,9 @@ def create_laos_point_grid():
         laos_points["is_island"] = False
 
         # Create log of distances
-        laos_points = laos_points.assign(
-            log_distance_to_river=lambda x: np.log(x.distance_to_river)
-        )
+        laos_points = laos_points.assign(log_distance_to_river=lambda x: np.log(x.distance_to_river))
 
-        laos_points = laos_points.assign(
-            log_distance_to_coastline=lambda x: np.log(x.distance_to_coastline)
-        )
+        laos_points = laos_points.assign(log_distance_to_coastline=lambda x: np.log(x.distance_to_coastline))
 
         laos_points.to_file(here("data/laos_points.shp"))
 
