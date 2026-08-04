@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import xarray as xr
 
 from matplotlib.gridspec import GridSpec
 from matplotlib.offsetbox import AnchoredText
@@ -243,9 +244,7 @@ def subplots_function_regions(
     fig.tight_layout(rect=[0, 0, 1, 0.95])
 
 
-def plot_ppc_loopit(
-    idata: az.InferenceData, target_name: str, title: str | None = None, **ppc_kwargs
-) -> list[plt.Axes]:
+def plot_ppc_loopit(idata: xr.DataTree, target_name: str, title: str | None = None, **ppc_kwargs) -> list[plt.Axes]:
     """Plot the posterior predictive check (PPC) and the leave-one-out predictive interval (LOO-PIT) for a given target variable.
 
     Parameters

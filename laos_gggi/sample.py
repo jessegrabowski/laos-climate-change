@@ -3,8 +3,8 @@ import pathlib
 
 from copy import deepcopy
 
-import arviz as az
 import pymc as pm
+import xarray as xr
 
 
 def drop_transformed(idata, model=None):
@@ -26,7 +26,7 @@ def sample_or_load(
     sample_kwargs: dict | None = None,
     compile_kwargs: dict | None = None,
     save_results: bool = True,
-) -> az.InferenceData:
+) -> xr.DataTree:
     """Sample the model or load the model from disk.
 
     Parameters
@@ -46,7 +46,7 @@ def sample_or_load(
 
     Returns
     -------
-    idata: az.InferenceData
+    idata: xr.DataTree
         The sampled inference data.
 
     This function performs posterior and posterior predictive sampling of a PyMC model. It either loads the model from disk or samples it using the provided model and sample_kwargs. If the file already exists and resampling is not requested, it loads the data from disk. Otherwise, it samples the model, performs posterior predictive sampling, and saves the resulting inference data to disk.
@@ -60,7 +60,7 @@ def sample_or_load(
     os.makedirs(_fp.parent, exist_ok=True)
 
     if _fp.exists() and not force_resample:
-        idata = az.from_netcdf(_fp)
+        idata = xr.open_datatree(_fp)
         idata.load()  # Force load to avoid mismatch if the memory is overwritten before idata is used
         return idata
 
@@ -78,6 +78,6 @@ def sample_or_load(
             if _fp.exists():
                 os.remove(_fp)
 
-            az.to_netcdf(idata, _fp)
+            idata.to_netcdf(_fp)
 
     return idata

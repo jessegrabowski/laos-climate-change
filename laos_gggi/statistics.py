@@ -1,8 +1,8 @@
-import arviz as az
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 import pymc as pm
+import xarray as xr
 
 from joblib import Parallel, delayed
 from sklearn.preprocessing import StandardScaler as Standardize
@@ -212,7 +212,7 @@ def load_island_table():
     return island_table
 
 
-def prediction_to_gpd_df(prediction_idata: az.InferenceData, variables: list, points: pd.DataFrame()):
+def prediction_to_gpd_df(prediction_idata: xr.DataTree, variables: list, points: pd.DataFrame):
     predictions_dict = {}
     predictions_dict_geo = {}
 
