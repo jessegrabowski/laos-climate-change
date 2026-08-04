@@ -2,7 +2,7 @@ import pymc as pm
 import pytest
 import xarray as xr
 
-from laos_gggi.sample import sample_or_load
+from climate_risk.sample import sample_or_load
 
 SAMPLE_KWARGS = {"draws": 10, "tune": 10, "chains": 1, "progressbar": False}
 

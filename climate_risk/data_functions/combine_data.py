@@ -2,11 +2,11 @@ from functools import partial, reduce
 
 import pandas as pd
 
-from laos_gggi.data_functions.co2_processing import load_co2_data
-from laos_gggi.data_functions.emdat_processing import load_emdat_data
-from laos_gggi.data_functions.GPCC_data_loader import load_gpcc_data
-from laos_gggi.data_functions.ocean_heat_processing import load_ocean_heat_data
-from laos_gggi.data_functions.world_bank_data_loader import load_wb_data
+from climate_risk.data_functions.co2_processing import load_co2_data
+from climate_risk.data_functions.emdat_processing import load_emdat_data
+from climate_risk.data_functions.GPCC_data_loader import load_gpcc_data
+from climate_risk.data_functions.ocean_heat_processing import load_ocean_heat_data
+from climate_risk.data_functions.world_bank_data_loader import load_wb_data
 
 
 def load_all_data():

@@ -1,6 +1,6 @@
 import logging
 
-from laos_gggi.data_functions import (
+from climate_risk.data_functions import (
     load_all_data,
     load_co2_data,
     load_disaster_point_data,

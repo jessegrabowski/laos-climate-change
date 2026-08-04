@@ -12382,7 +12382,7 @@ packages:
   size: 433413
   timestamp: 1764777166076
 - pypi: .
-  name: laos-gggi
+  name: climate-risk
   requires_dist:
   - arviz>=1.2,<2
   - geopandas>=1.1,<2

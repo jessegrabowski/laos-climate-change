@@ -7,7 +7,7 @@ import pandas as pd
 
 from pyprojroot import here
 
-from laos_gggi.const_vars import (  # noqa
+from climate_risk.const_vars import (  # noqa
     EM_DAT_COL_DICT,
     INTENSITY_COLS,
     PROB_COLS,

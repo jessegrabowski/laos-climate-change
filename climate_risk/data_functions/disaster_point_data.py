@@ -8,10 +8,10 @@ import pandas as pd
 
 from pyprojroot import here
 
-from laos_gggi.data_functions.emdat_processing import load_emdat_data
-from laos_gggi.data_functions.rivers_damage import load_rivers_data
-from laos_gggi.data_functions.shapefiles_data_loader import load_shapefile
-from laos_gggi.statistics import get_distance_to
+from climate_risk.data_functions.emdat_processing import load_emdat_data
+from climate_risk.data_functions.rivers_damage import load_rivers_data
+from climate_risk.data_functions.shapefiles_data_loader import load_shapefile
+from climate_risk.statistics import get_distance_to
 
 _log = logging.getLogger(__name__)
 
