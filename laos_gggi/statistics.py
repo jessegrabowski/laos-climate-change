@@ -1,12 +1,13 @@
-from statsmodels.tsa.stattools import adfuller
-from joblib import Parallel, delayed
-import pandas as pd
-from tqdm.notebook import tqdm
-import numpy as np
-import geopandas as gpd
 import arviz as az
+import geopandas as gpd
+import numpy as np
+import pandas as pd
 import pymc as pm
+
+from joblib import Parallel, delayed
 from sklearn.preprocessing import StandardScaler as Standardize
+from statsmodels.tsa.stattools import adfuller
+from tqdm.notebook import tqdm
 
 
 def nan_or_sum(x):
@@ -56,9 +57,7 @@ def make_var_names(var, n_lags, reg):
 def ADF_test_summary(df, maxlag=None, autolag="BIC", missing="error"):
     if missing == "error":
         if df.isna().any().any():
-            raise ValueError(
-                "df has missing data; handle it or pass missing='drop' to automatically drop it."
-            )
+            raise ValueError("df has missing data; handle it or pass missing='drop' to automatically drop it.")
 
     if isinstance(df, pd.Series):
         df = df.to_frame()
@@ -69,7 +68,7 @@ def ADF_test_summary(df, maxlag=None, autolag="BIC", missing="error"):
             data.dropna(inplace=True)
 
         print(series.center(110))
-        print(("=" * 110))
+        print("=" * 110)
         line = (
             "Specification"
             + " " * 15
@@ -85,15 +84,11 @@ def ADF_test_summary(df, maxlag=None, autolag="BIC", missing="error"):
         )
         line += " " * 10 + "5%" + " " * 8 + "10%"
         print(line)
-        print(("-" * 110))
-        for i, (name, reg) in enumerate(
-            zip(
-                ["Constant and Trend", "Constant Only", "No Constant"], ["ct", "c", "n"]
-            )
+        print("-" * 110)
+        for _i, (name, reg) in enumerate(
+            zip(["Constant and Trend", "Constant Only", "No Constant"], ["ct", "c", "n"], strict=False)
         ):
-            stat, p, crit, regresult = adfuller(
-                data, regression=reg, regresults=True, maxlag=maxlag, autolag=autolag
-            )
+            stat, p, crit, regresult = adfuller(data, regression=reg, regresults=True, maxlag=maxlag, autolag=autolag)
             n_lag = regresult.usedlag
             gamma = regresult.resols.params[0]
             names = make_var_names(series, n_lag, reg)
@@ -101,7 +96,7 @@ def ADF_test_summary(df, maxlag=None, autolag="BIC", missing="error"):
             reg_tstat = pd.Series(regresult.resols.tvalues, index=names)
             reg_pvals = pd.Series(regresult.resols.pvalues, index=names)
 
-            line = f'{name:<21}{gamma:13.3f}{stat:15.3f}{p:13.3f}{n_lag:11}{crit["1%"]:10.3f}{crit["5%"]:12.3f}{crit["10%"]:11.3f}'
+            line = f"{name:<21}{gamma:13.3f}{stat:15.3f}{p:13.3f}{n_lag:11}{crit['1%']:10.3f}{crit['5%']:12.3f}{crit['10%']:11.3f}"
             print(line)
 
             for coef in reg_coefs.index:
@@ -111,9 +106,7 @@ def ADF_test_summary(df, maxlag=None, autolag="BIC", missing="error"):
 
 
 def get_distance_to_rivers(rivers, points, crs="EPSG:3395"):
-    ret = pd.DataFrame(
-        index=points.index, columns=["closest_river", "ORD_FLOW", "HYRIV_ID"]
-    )
+    ret = pd.DataFrame(index=points.index, columns=["closest_river", "ORD_FLOW", "HYRIV_ID"])
     rivers_km = rivers.copy().to_crs(crs)
     points_km = points.copy().to_crs(crs)
     for idx, row in tqdm(points_km.iterrows(), total=points.shape[0]):
@@ -129,9 +122,7 @@ def get_distance_to_rivers(rivers, points, crs="EPSG:3395"):
     return ret
 
 
-def get_distance_to(
-    gdf, points, return_columns=None, crs="EPSG:3395", n_cores=-1, name=None
-):
+def get_distance_to(gdf, points, return_columns=None, crs="EPSG:3395", n_cores=-1, name=None):
     if return_columns is None:
         return_columns = []
 
@@ -158,9 +149,7 @@ def get_distance_to(
             delayed(get_closest)(idx, row, gdf_km, return_columns)
             for idx, row in tqdm(points_km.iterrows(), total=points.shape[0], desc=desc)
         )
-    return pd.DataFrame(
-        results, columns=["distance_to_closest"] + return_columns, index=points.index
-    )
+    return pd.DataFrame(results, columns=["distance_to_closest", *return_columns], index=points.index)
 
 
 def create_grid_from_shape(shapefile, rivers, coastline, grid_size=100):
@@ -174,27 +163,21 @@ def create_grid_from_shape(shapefile, rivers, coastline, grid_size=100):
 
     point_overlay = grid.overlay(shapefile, how="intersection")
     points = point_overlay.geometry
-    points = points.to_frame().assign(
-        long=lambda x: x.geometry.x, lat=lambda x: x.geometry.y
-    )
+    points = points.to_frame().assign(long=lambda x: x.geometry.x, lat=lambda x: x.geometry.y)
 
     # Obtain distance with rivers
-    distances_to_rivers = get_distance_to(
-        rivers, points=points, return_columns=["ORD_FLOW", "HYRIV_ID"]
-    ).rename(columns={"distance_to_closest": "distance_to_river"})
-
-    points = pd.merge(
-        points, distances_to_rivers, left_index=True, right_index=True, how="left"
+    distances_to_rivers = get_distance_to(rivers, points=points, return_columns=["ORD_FLOW", "HYRIV_ID"]).rename(
+        columns={"distance_to_closest": "distance_to_river"}
     )
+
+    points = pd.merge(points, distances_to_rivers, left_index=True, right_index=True, how="left")
 
     # Obtain Laos distance with coastlines
-    distances_to_coastlines = get_distance_to(
-        coastline.boundary, points=points, return_columns=None
-    ).rename(columns={"distance_to_closest": "distance_to_coastline"})
-
-    points = pd.merge(
-        points, distances_to_coastlines, left_index=True, right_index=True, how="left"
+    distances_to_coastlines = get_distance_to(coastline.boundary, points=points, return_columns=None).rename(
+        columns={"distance_to_closest": "distance_to_coastline"}
     )
+
+    points = pd.merge(points, distances_to_coastlines, left_index=True, right_index=True, how="left")
 
     # Create log of distances
     points = points.assign(
@@ -229,18 +212,14 @@ def load_island_table():
     return island_table
 
 
-def prediction_to_gpd_df(
-    prediction_idata: az.InferenceData, variables: list, points: pd.DataFrame()
-):
+def prediction_to_gpd_df(prediction_idata: az.InferenceData, variables: list, points: pd.DataFrame()):
     predictions_dict = {}
     predictions_dict_geo = {}
 
     for variable in variables:
         # Tranform predictions to DF
         predictions_dict[variable] = (
-            prediction_idata.posterior_predictive.mean(dim=("chain", "draw"))[variable]
-            .to_dataframe()
-            .reset_index()
+            prediction_idata.posterior_predictive.mean(dim=("chain", "draw"))[variable].to_dataframe().reset_index()
         )
         # Merge predictions with Laos points
         predictions_dict[variable] = pd.merge(
@@ -254,9 +233,7 @@ def prediction_to_gpd_df(
         # Transform into geo Data Frame
         predictions_dict_geo[variable] = gpd.GeoDataFrame(
             predictions_dict[variable],
-            geometry=gpd.points_from_xy(
-                predictions_dict[variable]["long"], predictions_dict[variable]["lat"]
-            ),
+            geometry=gpd.points_from_xy(predictions_dict[variable]["long"], predictions_dict[variable]["lat"]),
             crs="EPSG:4326",
         )
 
@@ -278,9 +255,7 @@ def set_plotting_data(df, features, ISO_list):
     )
 
 
-def add_data(
-    features: list[str], target: str, df: pd.DataFrame, add_time: bool = False
-):
+def add_data(features: list[str], target: str, df: pd.DataFrame, add_time: bool = False):
     with pm.modelcontext(None):
         X = pm.Data("X", df[features], dims=["obs_idx", "feature"])
         Y = pm.Data("Y", df[target], dims=["obs_idx"])
@@ -311,9 +286,7 @@ def standardize(df: pd.DataFrame, columns: list[str], transformer_fitted=None):
         transformer_fitted = Standardize().fit(df[columns])
 
     columns_stand = [x + "__standardized" for x in columns]
-    df_stand = pd.DataFrame(
-        transformer_fitted.transform(df[columns]), columns=columns_stand, index=df.index
-    )
+    df_stand = pd.DataFrame(transformer_fitted.transform(df[columns]), columns=columns_stand, index=df.index)
     df_stand = pd.concat([df, df_stand], axis=1)
 
     return transformer_fitted, df_stand
