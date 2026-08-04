@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 
@@ -7,9 +9,9 @@ from climate_risk import load_all_data
 from climate_risk.statistics import nan_or_sum
 
 
-def create_replication_data():
+def create_replication_data(cache_dir: Path) -> pd.DataFrame:
     # Load data
-    data = load_all_data()
+    data = load_all_data(cache_dir)
     df_clim = data["df_time_series"][["co2", "Temp", "precip"]].iloc[1:-1]
     emdat_damage_hydro = data["emdat_damage"][["Total_Damage_Adjusted_hydro", "Total_Affected_hydro"]]
     emdat_damage_clim = data["emdat_damage"]["Total_Damage_Adjusted_clim"]

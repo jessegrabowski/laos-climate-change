@@ -1,35 +1,27 @@
-import os
-
-from os.path import exists
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from pyprojroot import here
-
-from climate_risk.const_vars import (  # noqa
+from climate_risk.const_vars import (
     EM_DAT_COL_DICT,
     INTENSITY_COLS,
-    PROB_COLS,
+    PROB_COLS,  # noqa: F401  -- referenced as @PROB_COLS inside pandas query strings
 )
 
 
-def load_emdat_data(data_path="data", force_reload=False):
-    output_files = ["probability_data_set", "intensity_data_set"]  # noqa
-    data_path = here(data_path)
+def load_emdat_data(cache_dir: Path, *, force_reload: bool = False) -> dict[str, pd.DataFrame]:
+    cache_dir.mkdir(parents=True, exist_ok=True)
 
-    if not exists(data_path):
-        os.makedirs(data_path)
-
-    emdat_path = os.path.join(data_path, "emdat.xlsx")
-    if not exists(emdat_path):
+    emdat_path = cache_dir / "emdat.xlsx"
+    if not emdat_path.exists():
         raise NotImplementedError(
-            "No EM-DAT data was found at `/data/emdat.xlsx`. Please make an account at https://public.emdat.be/, "
-            "download the database, and place it in `/data/emdat.xlsx`"
+            f"No EM-DAT data was found at `{emdat_path}`. Please make an account at https://public.emdat.be/, "
+            f"download the database, and place it at `{emdat_path}`"
         )
 
     df_raw = (
-        pd.read_excel(os.path.join(data_path, "emdat.xlsx"), sheet_name="EM-DAT Data")
+        pd.read_excel(emdat_path, sheet_name="EM-DAT Data")
         .rename(columns=EM_DAT_COL_DICT)
         .assign(Start_Year=lambda x: pd.to_datetime(x.Start_Year, format="%Y"))
     )

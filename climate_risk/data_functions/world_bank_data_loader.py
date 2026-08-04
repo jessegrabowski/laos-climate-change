@@ -1,12 +1,10 @@
 import logging
-import os
 
-from os.path import exists
+from pathlib import Path
 
 import pandas as pd
 
 from kuznets import wb
-from pyprojroot import here
 
 from climate_risk.const_vars import (
     COUNTRIES_ISO,
@@ -18,12 +16,12 @@ from climate_risk.const_vars import (
 _log = logging.getLogger(__name__)
 
 
-def load_wb_data(folder_path="data", force_reload=False):
-    path_to_wb_data = here(os.path.join(folder_path, "world_bank.csv"))
-    if not exists(folder_path):
-        os.makedirs(folder_path)
+def load_wb_data(cache_dir: Path, *, force_reload: bool = False) -> pd.DataFrame:
+    cache_dir.mkdir(parents=True, exist_ok=True)
 
-    if not exists(path_to_wb_data) or force_reload:
+    path_to_wb_data = cache_dir / "world_bank.csv"
+
+    if not path_to_wb_data.exists() or force_reload:
         # Importing data
         wb_df = wb.download(
             indicator=WB_INDICATORS,

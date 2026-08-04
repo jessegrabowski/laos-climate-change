@@ -34,7 +34,6 @@ dependencies = [
     "matplotlib>=3.11,<4",
     "seaborn>=0.13,<1",
     "tqdm>=4.70,<5",
-    "pyprojroot>=0.3,<1",
 ]
 
 [project.optional-dependencies]
@@ -80,7 +79,6 @@ statsmodels = ">=0.14,<1"
 matplotlib = ">=3.11,<4"
 seaborn = ">=0.13,<1"
 tqdm = ">=4.70,<5"
-pyprojroot = ">=0.3,<1"
 
 [tool.pixi.feature.dev.dependencies]
 ruff = ">=0.14,<1"
