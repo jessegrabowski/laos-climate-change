@@ -11,7 +11,7 @@ import pandas as pd
 
 from pyprojroot import here
 
-from laos_gggi.const_vars import (
+from climate_risk.const_vars import (
     COASTLINE_FILENAME,
     COASTLINE_URL,
     LAOS_FILENAME,
@@ -19,8 +19,8 @@ from laos_gggi.const_vars import (
     WORLD_FILENAME,
     WORLD_URL,
 )
-from laos_gggi.data_functions.rivers_data_loader import load_rivers_data
-from laos_gggi.statistics import get_distance_to
+from climate_risk.data_functions.rivers_data_loader import load_rivers_data
+from climate_risk.statistics import get_distance_to
 
 _log = logging.getLogger(__name__)
 

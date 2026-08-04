@@ -3,7 +3,7 @@ requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [project]
-name = "laos-gggi"
+name = "climate-risk"
 description = "Climate disaster frequency and damage modelling for climate adaptation policy"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -48,10 +48,10 @@ Repository = "https://github.com/jessegrabowski/laos-climate-change"
 source = "vcs"
 
 [tool.hatch.build.hooks.vcs]
-version-file = "laos_gggi/_version.py"
+version-file = "climate_risk/_version.py"
 
 [tool.hatch.build.targets.wheel]
-packages = ["laos_gggi"]
+packages = ["climate_risk"]
 
 [tool.hatch.build.targets.sdist]
 exclude = ["/.github", "/notebooks", "/methodological_paper", "/Papers", "/data"]
@@ -94,7 +94,7 @@ notebook = ">=7.6,<8"
 ipywidgets = ">=8.1,<9"
 
 [tool.pixi.pypi-dependencies]
-laos-gggi = { path = ".", editable = true }
+climate-risk = { path = ".", editable = true }
 
 [tool.pixi.environments]
 default = { features = ["dev"], solve-group = "default" }
@@ -160,4 +160,4 @@ ignore = [
 
 [tool.ruff.lint.isort]
 lines-between-types = 1
-known-first-party = ["laos_gggi"]
+known-first-party = ["climate_risk"]

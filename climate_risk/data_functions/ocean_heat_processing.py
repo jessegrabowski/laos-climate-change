@@ -6,7 +6,7 @@ import pandas as pd
 
 from pyprojroot import here
 
-from laos_gggi.const_vars import OCEAN_HEAT_FILENAME, OCEAN_HEAT_URL
+from climate_risk.const_vars import OCEAN_HEAT_FILENAME, OCEAN_HEAT_URL
 
 
 def load_ocean_heat_data(data_path=None, force_reload: bool = False):

@@ -8,7 +8,7 @@ import pandas as pd
 from kuznets import wb
 from pyprojroot import here
 
-from laos_gggi.const_vars import (
+from climate_risk.const_vars import (
     COUNTRIES_ISO,
     ISO_DICTIONARY,
     WB_INDICATORS,

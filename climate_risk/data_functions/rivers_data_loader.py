@@ -9,7 +9,7 @@ import geopandas as gpd
 
 from pyprojroot import here
 
-from laos_gggi.const_vars import (
+from climate_risk.const_vars import (
     BIG_RIVERS_FILENAME,
     MEDIUM_BIG_RIVERS_FILENAME,
     RIVERS_SHAPEFILE_FILENAME,

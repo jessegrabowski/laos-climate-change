@@ -9,13 +9,13 @@ import pandas as pd
 
 from pyprojroot import here
 
-from laos_gggi.const_vars import (
+from climate_risk.const_vars import (
     IPCC_COLS,
     IPCC_PREDICTIONS_RAW_NAME,
     IPCC_RENAME_DICT,
     IPCC_URL,
 )
-from laos_gggi.data_functions.combine_data import load_all_data
+from climate_risk.data_functions.combine_data import load_all_data
 
 _log = logging.getLogger(__name__)
 

@@ -6,7 +6,7 @@ import pandas as pd
 
 from pyprojroot import here
 
-from laos_gggi.const_vars import CO2_FILENAME, CO2_URL
+from climate_risk.const_vars import CO2_FILENAME, CO2_URL
 
 
 def load_co2_data(data_path=None):

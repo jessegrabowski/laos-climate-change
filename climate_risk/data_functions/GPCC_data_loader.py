@@ -12,8 +12,8 @@ import xarray as xr
 
 from pyprojroot import here
 
-from laos_gggi.const_vars import GPCC_YEARS, MAKE_GPCC_URL
-from laos_gggi.data_functions.shapefiles_data_loader import load_shapefile
+from climate_risk.const_vars import GPCC_YEARS, MAKE_GPCC_URL
+from climate_risk.data_functions.shapefiles_data_loader import load_shapefile
 
 _log = logging.getLogger(__name__)
 

@@ -3,8 +3,8 @@ import pandas as pd
 
 from statsmodels.tsa.seasonal import STL
 
-from laos_gggi import load_all_data
-from laos_gggi.statistics import nan_or_sum
+from climate_risk import load_all_data
+from climate_risk.statistics import nan_or_sum
 
 
 def create_replication_data():
