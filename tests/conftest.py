@@ -5,8 +5,9 @@ import geopandas as gpd
 import pandas as pd
 import pytest
 
-from shapely.geometry import box
+from shapely.geometry import LineString, box
 
+from climate_risk.const_vars import BIG_RIVERS_FILENAME, MEDIUM_BIG_RIVERS_FILENAME
 from climate_risk.data_functions.shapefiles_data_loader import shapefile_filename_dict, shapefile_name_dict
 
 # One event that clears every downstream filter: deaths above 100, affected above 1000, and a start
@@ -56,6 +57,22 @@ def toy_world():
     )
 
 
+def toy_rivers():
+    """ORD_FLOW spans the thresholds both loaders filter on: < 5 is big, < 6 adds medium."""
+    return gpd.GeoDataFrame(
+        {
+            "ORD_FLOW": [4, 5, 6],
+            "HYRIV_ID": [1, 2, 3],
+            "geometry": [
+                LineString([(0, 0), (0, 1)]),
+                LineString([(2, 0), (2, 1)]),
+                LineString([(4, 0), (4, 1)]),
+            ],
+        },
+        crs="EPSG:4326",
+    )
+
+
 @pytest.fixture
 def write_shapefile_cache(tmp_path):
     """Return a callable laying out a shapefile the way a completed download would have."""
@@ -72,6 +89,20 @@ def write_shapefile_cache(tmp_path):
             for part in extracted.iterdir():
                 bundle.write(part, f"{stem}/{part.name}")
 
+        return tmp_path
+
+    return write
+
+
+@pytest.fixture
+def write_rivers_cache(tmp_path):
+    """Return a callable writing the processed river shapefiles a warm cache would hold."""
+
+    def write(gdf, include_medium=False):
+        rivers_dir = tmp_path / "rivers"
+        rivers_dir.mkdir(parents=True, exist_ok=True)
+        filename = MEDIUM_BIG_RIVERS_FILENAME if include_medium else BIG_RIVERS_FILENAME
+        gdf.to_file(rivers_dir / filename)
         return tmp_path
 
     return write
