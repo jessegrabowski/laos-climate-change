@@ -5,7 +5,7 @@ from os.path import exists
 
 import pandas as pd
 
-from pandas_datareader import wb
+from kuznets import wb
 from pyprojroot import here
 
 from laos_gggi.const_vars import (
