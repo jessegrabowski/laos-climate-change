@@ -1,5 +1,6 @@
 import os
 import pathlib
+
 from copy import deepcopy
 
 import arviz as az
@@ -12,9 +13,7 @@ def drop_transformed(idata, model=None):
     value_var_names = [x.name for x in model.value_vars if x.name.endswith("__")]
     value_var_dims = [x for x in idata.posterior.indexes.keys() if "__dim" in x]
 
-    idata.posterior = idata.posterior.drop_vars(value_var_names).drop_dims(
-        value_var_dims
-    )
+    idata.posterior = idata.posterior.drop_vars(value_var_names).drop_dims(value_var_dims)
 
     return idata
 
@@ -28,8 +27,7 @@ def sample_or_load(
     compile_kwargs: dict | None = None,
     save_results: bool = True,
 ) -> az.InferenceData:
-    """
-    Sample the model or load the model from disk.
+    """Sample the model or load the model from disk.
 
     Parameters
     ----------
@@ -45,6 +43,7 @@ def sample_or_load(
         Pytensor.function kwargs, passed to `sample_posterior_predictive` and `compute_log_likelihood`.
     save_results: bool, optional
         Whether to save the results to disk. Defaults to True.
+
     Returns
     -------
     idata: az.InferenceData
@@ -76,9 +75,7 @@ def sample_or_load(
         idata = pm.sample_posterior_predictive(
             idata, extend_inferencedata=True, compile_kwargs=deepcopy(compile_kwargs)
         )
-        idata = pm.compute_log_likelihood(
-            idata, extend_inferencedata=True, compile_kwargs=deepcopy(compile_kwargs)
-        )
+        idata = pm.compute_log_likelihood(idata, extend_inferencedata=True, compile_kwargs=deepcopy(compile_kwargs))
 
         if save_results:
             if _fp.exists():
