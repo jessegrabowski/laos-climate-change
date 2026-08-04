@@ -1,5 +1,10 @@
+import itertools
 import logging
-import sys
+import os
+
+import geopandas as gpd
+import numpy as np
+import pandas as pd
 
 from pyprojroot import here
 
@@ -7,16 +12,6 @@ from laos_gggi.data_functions.emdat_processing import load_emdat_data
 from laos_gggi.data_functions.rivers_damage import load_rivers_data
 from laos_gggi.data_functions.shapefiles_data_loader import load_shapefile
 from laos_gggi.statistics import get_distance_to
-
-sys.path.insert(0, str(here()))
-
-import pandas as pd  # noqa
-import geopandas as gpd
-import os
-import numpy as np
-
-import itertools
-
 
 _log = logging.getLogger(__name__)
 
