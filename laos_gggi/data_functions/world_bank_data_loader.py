@@ -1,16 +1,19 @@
-from pyprojroot import here
+import logging
 import os
+
 from os.path import exists
-from pandas_datareader import wb
+
 import pandas as pd
+
+from pandas_datareader import wb
+from pyprojroot import here
+
 from laos_gggi.const_vars import (
     COUNTRIES_ISO,
     ISO_DICTIONARY,
     WB_INDICATORS,
     WB_RENAME_DICT,
 )
-import logging
-
 
 _log = logging.getLogger(__name__)
 
@@ -32,7 +35,7 @@ def load_wb_data(folder_path="data", force_reload=False):
         # Adding country code
         wb_df["country_code"] = wb_df["country"].apply(ISO_DICTIONARY.get)
         # Formatting data
-        wb_df = wb_df[["country_code", "year"] + WB_INDICATORS]
+        wb_df = wb_df[["country_code", "year", *WB_INDICATORS]]
         wb_df.rename(
             columns=WB_RENAME_DICT,
             inplace=True,
