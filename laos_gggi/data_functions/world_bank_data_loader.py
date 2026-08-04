@@ -43,4 +43,7 @@ def load_wb_data(folder_path="data", force_reload=False):
     else:
         wb_df = pd.read_csv(path_to_wb_data, index_col=["country_code", "year"])
 
+    wb_df.reset_index().dropna(subset="country_code").set_index(
+        ["country_code", "year"]
+    )
     return wb_df
