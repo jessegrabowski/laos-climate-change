@@ -3,15 +3,14 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from climate_risk.const_vars import (  # noqa
+from climate_risk.const_vars import (
     EM_DAT_COL_DICT,
     INTENSITY_COLS,
-    PROB_COLS,
+    PROB_COLS,  # noqa: F401  -- referenced as @PROB_COLS inside pandas query strings
 )
 
 
 def load_emdat_data(cache_dir: Path, *, force_reload: bool = False) -> dict[str, pd.DataFrame]:
-    output_files = ["probability_data_set", "intensity_data_set"]  # noqa
     cache_dir.mkdir(parents=True, exist_ok=True)
 
     emdat_path = cache_dir / "emdat.xlsx"
