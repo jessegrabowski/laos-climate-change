@@ -156,19 +156,20 @@ dmypy.json
 cython_debug/
 
 # PyCharm
-#  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
-#  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
-#  and can be added to the global gitignore or merged into this file.  For a more nuclear
-#  option (not recommended) you can uncomment the following to ignore the entire idea folder.
-#.idea/
+.idea/
 
+# Ruff
+.ruff_cache/
+
+# hatch-vcs generated version file
+_version.py
 
 # Latex stuff
 latex_typst/latex/main.synctex.gz
 
 # Specific documents and data: we add the set of data that we want to ignore.
 **/emdat.xlsx
-**/emdat_processed .csv
+**/emdat_processed.csv
 .DS_Store
 data/*
 notebooks/geo_damage_model/data
@@ -183,10 +184,3 @@ notebooks/final_paper/data/
 # Ignore archive
 notebooks/geo_damage_model/archive
 notebooks/final_paper/archive
-
-# Ignore specific notebooks
-notebooks/final_paper/03_damage_modeling_2025_usd.ipynb
-notebooks/final_paper/04_damage_curves.ipynb
-notebooks/geo_damage_model/05_geo_event_model_laos-neighbors_tight.ipynb
-notebooks/final_paper/01_assorted_graphs_and_things.ipynb
-notebooks/dsge/DSGE Model.ipynb
