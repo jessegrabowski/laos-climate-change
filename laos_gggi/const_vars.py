@@ -1,4 +1,4 @@
-PROB_COLS = [  # noqa
+PROB_COLS = [
     "Country",
     "ISO",
     "Start_Year",
@@ -13,7 +13,7 @@ PROB_COLS = [  # noqa
     "Subregion",
 ]
 
-DISASTERS_FOUND = [  # noqa
+DISASTERS_FOUND = [
     "Drought",
     "Extreme temperature",
     "Flood",
@@ -21,7 +21,7 @@ DISASTERS_FOUND = [  # noqa
     "Wildfire",
 ]
 
-INTENSITY_COLS = [  # noqa
+INTENSITY_COLS = [
     "Country",
     "ISO",
     "Start_Year",
@@ -36,7 +36,7 @@ INTENSITY_COLS = [  # noqa
     "Disaster Type",
 ]
 
-EM_DAT_COL_DICT = {  # noqa
+EM_DAT_COL_DICT = {
     "Start Year": "Start_Year",
     "Total Deaths": "Deaths",
     "No. Injured": "Injured",
@@ -52,10 +52,10 @@ EM_DAT_COL_DICT = {  # noqa
 }
 
 
-WORLD_URL = "https://datacatalog.worldbank.org/search/dataset/0038272/World-Bank-Official-Boundaries"  # noqa
-WORLD_FILENAME = "World Bank Official Boundaries - Admin 0_all_layers.zip"  # noqa
-LAOS_URL = "https://data.humdata.org/dataset/9eb6aff1-9e3f-43d3-99a6-f415fe4b4dff/resource/1d6edf99-5303-4b31-8909-dd70cda78443/download/lao_adm_ngd_20191112_shp.zip"  # noqa
-LAOS_FILENAME = "lao_adm_ngd_20191112_shp.zip"  # noqa
+WORLD_URL = "https://datacatalog.worldbank.org/search/dataset/0038272/World-Bank-Official-Boundaries"
+WORLD_FILENAME = "World Bank Official Boundaries - Admin 0_all_layers.zip"
+LAOS_URL = "https://data.humdata.org/dataset/9eb6aff1-9e3f-43d3-99a6-f415fe4b4dff/resource/1d6edf99-5303-4b31-8909-dd70cda78443/download/lao_adm_ngd_20191112_shp.zip"
+LAOS_FILENAME = "lao_adm_ngd_20191112_shp.zip"
 
 CO2_URL = "https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_annmean_mlo.csv"
 CO2_FILENAME = "noaa_co2.csv"
@@ -80,12 +80,8 @@ LAOS_LOCATION_DICTIONARY = {
 }
 
 
-POPULATION_DENSITY_URL = (
-    "https://api.worldbank.org/v2/en/indicator/EN.POP.DNST?downloadformat=csv"
-)
-GDP_PER_CAPITA_CONSTANT_URL = (
-    "https://api.worldbank.org/v2/en/indicator/NY.GDP.PCAP.KD?downloadformat=csv"
-)
+POPULATION_DENSITY_URL = "https://api.worldbank.org/v2/en/indicator/EN.POP.DNST?downloadformat=csv"
+GDP_PER_CAPITA_CONSTANT_URL = "https://api.worldbank.org/v2/en/indicator/NY.GDP.PCAP.KD?downloadformat=csv"
 
 VARIABLES_DICTIONARY = {
     "gdp_per_cap_real": "GDP per capita (constant 2015 US$)",
@@ -631,12 +627,12 @@ REGIONS = ["Asia", "Europe", "Africa", "Oceania", "Americas"]
 HADCRUT_URL = "https://crudata.uea.ac.uk/cru/data/temperature/HadCRUT.5.0.2.0.analysis.anomalies.ensemble_mean.nc"
 
 COASTLINE_FILENAME = "gshhg-shp-2.3.7.zip"
-COASTLINE_URL = (
-    "https://www.ngdc.noaa.gov/mgg/shorelines/data/gshhg/latest/gshhg-shp-2.3.7.zip"
-)
+COASTLINE_URL = "https://www.ngdc.noaa.gov/mgg/shorelines/data/gshhg/latest/gshhg-shp-2.3.7.zip"
 
 IPCC_PREDICTIONS_RAW_NAME = "AR6-SYR-LR-CSB2-F1-Panel(a).xlsx"
-IPCC_URL = "https://sedac.ciesin.columbia.edu/ddc/ar6-syr-lr-cross-section-box2-fig1a/data/AR6-SYR-LR-CSB2-F1-Panel(a).xlsx"
+IPCC_URL = (
+    "https://sedac.ciesin.columbia.edu/ddc/ar6-syr-lr-cross-section-box2-fig1a/data/AR6-SYR-LR-CSB2-F1-Panel(a).xlsx"
+)
 IPCC_PROCESSED_FILENAME = "ipcc_predictions.csv"
 IPCC_COLS = [
     "Panel emissions - SSP1-19 - x (year)",

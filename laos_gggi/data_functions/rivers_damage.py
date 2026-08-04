@@ -1,17 +1,19 @@
-import pandas as pd
-from pyprojroot import here
 import os
-import numpy as np
-import geopandas as gpd
 
-from laos_gggi.data_functions.rivers_data_loader import load_rivers_data
-from laos_gggi.data_functions.emdat_processing import load_emdat_data
-from laos_gggi.data_functions.shapefiles_data_loader import load_shapefile
+import geopandas as gpd
+import numpy as np
+import pandas as pd
+
+from pyprojroot import here
+
 from laos_gggi.const_vars import (
-    RIVERS_HYDRO_DAMAGE_FILENAME,
-    RIVERS_FLOODS_DAMAGE_FILENAME,
     LAOS_LOCATION_DICTIONARY,
+    RIVERS_FLOODS_DAMAGE_FILENAME,
+    RIVERS_HYDRO_DAMAGE_FILENAME,
 )
+from laos_gggi.data_functions.emdat_processing import load_emdat_data
+from laos_gggi.data_functions.rivers_data_loader import load_rivers_data
+from laos_gggi.data_functions.shapefiles_data_loader import load_shapefile
 from laos_gggi.statistics import get_distance_to_rivers
 
 
@@ -64,13 +66,9 @@ def create_hydro_rivers_damage():
             inplace=True,
         )
 
-        damage_df = damage_df.assign(
-            log_damage_hydro=lambda x: np.log(x.Total_Damage_Hydro)
-        )
+        damage_df = damage_df.assign(log_damage_hydro=lambda x: np.log(x.Total_Damage_Hydro))
 
-        damage_df = damage_df.assign(
-            log_affected_hydro=lambda x: np.log(x.Total_Affected_Hydro)
-        )
+        damage_df = damage_df.assign(log_affected_hydro=lambda x: np.log(x.Total_Affected_Hydro))
 
         damage_df.to_file(os.path.join(data_path, RIVERS_HYDRO_DAMAGE_FILENAME))
 
@@ -104,12 +102,8 @@ def create_floods_rivers_damage():
 
         for x in LAOS_LOCATION_DICTIONARY.keys():
             index = floods_damages[floods_damages["DisNo."] == x].index
-            floods_damages.loc[index, "Latitude"] = LAOS_LOCATION_DICTIONARY[x][
-                "Latitude"
-            ]
-            floods_damages.loc[index, "Longitude"] = LAOS_LOCATION_DICTIONARY[x][
-                "Longitude"
-            ]
+            floods_damages.loc[index, "Latitude"] = LAOS_LOCATION_DICTIONARY[x]["Latitude"]
+            floods_damages.loc[index, "Longitude"] = LAOS_LOCATION_DICTIONARY[x]["Longitude"]
 
         damage_df_f = gpd.GeoDataFrame(
             (
@@ -152,20 +146,14 @@ def create_floods_rivers_damage():
             inplace=True,
         )
 
-        damage_df_f = damage_df_f.assign(
-            log_damage_floods=lambda x: np.log(x.Total_Damage_Flood)
-        )
+        damage_df_f = damage_df_f.assign(log_damage_floods=lambda x: np.log(x.Total_Damage_Flood))
 
-        damage_df_f = damage_df_f.assign(
-            log_affected_floods=lambda x: np.log(x.Total_Affected_Flood)
-        )
+        damage_df_f = damage_df_f.assign(log_affected_floods=lambda x: np.log(x.Total_Affected_Flood))
 
         damage_df_f.to_file(os.path.join(data_path, RIVERS_FLOODS_DAMAGE_FILENAME))
 
     else:
-        damage_df_f = gpd.read_file(
-            os.path.join(data_path, RIVERS_FLOODS_DAMAGE_FILENAME)
-        )
+        damage_df_f = gpd.read_file(os.path.join(data_path, RIVERS_FLOODS_DAMAGE_FILENAME))
         damage_df_f = damage_df_f.rename(
             columns={
                 "River Basi": "River Basin",

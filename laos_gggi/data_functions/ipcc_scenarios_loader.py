@@ -1,17 +1,21 @@
 # Imports
-from pyprojroot import here
-import pandas as pd
-from urllib.request import urlretrieve
-import os
-from os.path import exists
 import logging
-from laos_gggi.data_functions.combine_data import load_all_data
+import os
+
+from os.path import exists
+from urllib.request import urlretrieve
+
+import pandas as pd
+
+from pyprojroot import here
+
 from laos_gggi.const_vars import (
-    IPCC_PREDICTIONS_RAW_NAME,
-    IPCC_URL,
     IPCC_COLS,
+    IPCC_PREDICTIONS_RAW_NAME,
     IPCC_RENAME_DICT,
+    IPCC_URL,
 )
+from laos_gggi.data_functions.combine_data import load_all_data
 
 _log = logging.getLogger(__name__)
 
@@ -40,16 +44,12 @@ def process_ipcc_scenarios(data_path=None, force_reload: bool = False):
     co2_data["year_"] = co2_data["year"].dt.year.drop(columns=["year"])
     co2_data = co2_data.drop(columns=["year"])
 
-    ipcc_preds_proc = pd.merge(
-        ipcc_preds, co2_data, left_on="year", right_on="year_", how="left"
-    ).drop(columns=["year_"])
+    ipcc_preds_proc = pd.merge(ipcc_preds, co2_data, left_on="year", right_on="year_", how="left").drop(
+        columns=["year_"]
+    )
 
     # Adjust col names
-    scenario_change_cols = (
-        ["year"]
-        + [x + "_change" for x in list(ipcc_preds_proc.columns)[1:-1]]
-        + ["co2"]
-    )
+    scenario_change_cols = ["year"] + [x + "_change" for x in list(ipcc_preds_proc.columns)[1:-1]] + ["co2"]
     ipcc_preds_proc.columns = scenario_change_cols
 
     years = ipcc_preds_proc["year"].values
@@ -65,18 +65,13 @@ def process_ipcc_scenarios(data_path=None, force_reload: bool = False):
             elif y == 2020:
                 ipcc_preds_proc.loc[y, col] = ipcc_preds_proc.loc[2020, "co2"]
             elif y != 2020 and y != 2101:
-                ipcc_preds_proc.loc[y, col] = (
-                    ipcc_preds_proc.loc[y, col + "_change"]
-                    + ipcc_preds_proc.loc[y - 5, col]
-                )
+                ipcc_preds_proc.loc[y, col] = ipcc_preds_proc.loc[y, col + "_change"] + ipcc_preds_proc.loc[y - 5, col]
 
     # Extend data to all the years
     years_index = pd.date_range(start="2020-01-01", end="2101-01-01", freq="YE").year
     ipcc_preds_proc_ext = ipcc_preds_proc.reindex(years_index)
 
     # Interpolate vaulues
-    ipcc_preds_proc_ext = ipcc_preds_proc_ext.interpolate(method="linear").drop(
-        columns=["co2"]
-    )
+    ipcc_preds_proc_ext = ipcc_preds_proc_ext.interpolate(method="linear").drop(columns=["co2"])
 
     return ipcc_preds_proc_ext

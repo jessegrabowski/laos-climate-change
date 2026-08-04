@@ -1,7 +1,11 @@
-from pyprojroot import here
-import pandas as pd
 import os
+
 from os.path import exists
+
+import pandas as pd
+
+from pyprojroot import here
+
 from laos_gggi.const_vars import OCEAN_HEAT_FILENAME, OCEAN_HEAT_URL
 
 
@@ -11,9 +15,7 @@ def load_ocean_heat_data(data_path=None, force_reload: bool = False):
     if not exists(data_path):
         os.makedirs(data_path)
 
-    if (
-        not os.path.isfile(os.path.join(data_path, OCEAN_HEAT_FILENAME))
-    ) or force_reload:
+    if (not os.path.isfile(os.path.join(data_path, OCEAN_HEAT_FILENAME))) or force_reload:
         df_ocean = pd.read_csv(OCEAN_HEAT_URL, header=0, names=["Date", "Temp"])
         df_ocean.Date = pd.to_datetime(df_ocean.Date, format="%Y-%m")
         df_ocean.set_index("Date", inplace=True)
@@ -25,7 +27,7 @@ def load_ocean_heat_data(data_path=None, force_reload: bool = False):
         df_ocean.to_csv(os.path.join(data_path, OCEAN_HEAT_FILENAME))
 
     else:
-        df_ocean = pd.read_csv(  # noqa
+        df_ocean = pd.read_csv(
             os.path.join(data_path, OCEAN_HEAT_FILENAME),
             index_col=["Date"],
             parse_dates=True,

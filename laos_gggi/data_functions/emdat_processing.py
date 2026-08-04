@@ -1,12 +1,15 @@
-from pyprojroot import here
-import numpy as np
-import pandas as pd
 import os
+
 from os.path import exists
 
+import numpy as np
+import pandas as pd
+
+from pyprojroot import here
+
 from laos_gggi.const_vars import (  # noqa
-    INTENSITY_COLS,
     EM_DAT_COL_DICT,
+    INTENSITY_COLS,
     PROB_COLS,
 )
 
@@ -48,27 +51,16 @@ def load_emdat_data(data_path="data", force_reload=False):
     ] = "Climatological"
 
     # Useful constants
-    region_dict = (
-        df_raw[["ISO", "Region"]].drop_duplicates().set_index("ISO").to_dict()["Region"]
-    )  #  noqa
-    subregion_dict = (
-        df_raw[["ISO", "Subregion"]]
-        .drop_duplicates()
-        .set_index("ISO")
-        .to_dict()["Subregion"]
-    )  #  noqa
+    region_dict = df_raw[["ISO", "Region"]].drop_duplicates().set_index("ISO").to_dict()["Region"]
+    subregion_dict = df_raw[["ISO", "Subregion"]].drop_duplicates().set_index("ISO").to_dict()["Subregion"]
     years = pd.date_range(start="1969-01-01", end="2024-01-01", freq="YS-JAN")
     ISO_codes = df_raw["ISO"].unique()
 
     # Define the complete combination of years and ISO codes
-    complete_index = pd.MultiIndex.from_product(
-        [ISO_codes, years], names=["ISO", "Start_Year"]
-    ).sort_values()
+    complete_index = pd.MultiIndex.from_product([ISO_codes, years], names=["ISO", "Start_Year"]).sort_values()
 
     # Raw versions
-    df_raw_filtered = df_raw.query(
-        "Total_Affected >1000 &  Deaths >100 & Start_Year > 1970"
-    )
+    df_raw_filtered = df_raw.query("Total_Affected >1000 &  Deaths >100 & Start_Year > 1970")
     df_raw_filtered_adj = df_raw.query("Total_Affected >1000 & Start_Year > 1980")
 
     def process_prob_df(df):
@@ -90,12 +82,8 @@ def load_emdat_data(data_path="data", force_reload=False):
         )
 
         assert result.shape[0] == len(complete_index)
-        assert np.all(
-            result.index.get_level_values(0) == complete_index.get_level_values(0)
-        )
-        assert np.all(
-            result.index.get_level_values(1) == complete_index.get_level_values(1)
-        )
+        assert np.all(result.index.get_level_values(0) == complete_index.get_level_values(0))
+        assert np.all(result.index.get_level_values(1) == complete_index.get_level_values(1))
         return result
 
     df_prob_unfiltered = process_prob_df(df_raw)
@@ -127,12 +115,8 @@ def load_emdat_data(data_path="data", force_reload=False):
         )
 
         assert result.shape[0] == len(complete_index)
-        assert np.all(
-            result.index.get_level_values(0) == complete_index.get_level_values(0)
-        )
-        assert np.all(
-            result.index.get_level_values(1) == complete_index.get_level_values(1)
-        )
+        assert np.all(result.index.get_level_values(0) == complete_index.get_level_values(0))
+        assert np.all(result.index.get_level_values(1) == complete_index.get_level_values(1))
 
         return result
 
@@ -142,9 +126,7 @@ def load_emdat_data(data_path="data", force_reload=False):
     df_inten_filtered_adjusted_hydro = process_damage_df(
         df_raw_filtered_adj.query('disaster_class == "Hydrometereological"')
     )
-    df_inten_filtered_adjusted_clim = process_damage_df(
-        df_raw_filtered_adj.query('disaster_class == "Climatological"')
-    )
+    df_inten_filtered_adjusted_clim = process_damage_df(df_raw_filtered_adj.query('disaster_class == "Climatological"'))
 
     result = {
         "df_raw": df_raw,
