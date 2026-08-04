@@ -1,28 +1,31 @@
 import itertools
 import logging
-import os
+
+from pathlib import Path
 
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 
-from pyprojroot import here
-
 from climate_risk.data_functions.emdat_processing import load_emdat_data
 from climate_risk.data_functions.rivers_damage import load_rivers_data
-from climate_risk.data_functions.shapefiles_data_loader import load_shapefile
+from climate_risk.data_functions.shapefiles_data_loader import load_shapefile, shapefile_dir
 from climate_risk.statistics import get_distance_to
 
 _log = logging.getLogger(__name__)
 
-DATA_FOLDER = "data"
-FPATH_RAW = here(os.path.join(DATA_FOLDER, "disaster_locations_gpt_repaired_w_features.csv"))
-FPATH_FEATURES = here(os.path.join(DATA_FOLDER, "disaster_locations_gpt_repaired_w_features.csv"))
-
 SYNTHETIC_DATA_BASENAME = "synthetic_non_disasters.csv"
 
 
-def load_data(fpath):
+def raw_points_path(cache_dir: Path) -> Path:
+    return cache_dir / "disaster_locations_gpt_repaired_w_features.csv"
+
+
+def features_points_path(cache_dir: Path) -> Path:
+    return cache_dir / "disaster_locations_gpt_repaired_w_features.csv"
+
+
+def load_data(fpath: Path) -> gpd.GeoDataFrame:
     data = pd.read_csv(fpath)
     data["geometry"] = gpd.points_from_xy(data.long, data.lat)
     data = gpd.GeoDataFrame(data, crs="EPSG:4326")
@@ -30,23 +33,23 @@ def load_data(fpath):
     return data
 
 
-def _load_disaster_point_data():
-    if os.path.exists(FPATH_FEATURES):
-        data = load_data(FPATH_FEATURES)
-    elif os.path.exists(FPATH_RAW):
-        data = load_data(FPATH_RAW)
+def _load_disaster_point_data(cache_dir: Path):
+    if features_points_path(cache_dir).exists():
+        data = load_data(features_points_path(cache_dir))
+    elif raw_points_path(cache_dir).exists():
+        data = load_data(raw_points_path(cache_dir))
     else:
         raise ValueError("Go run the GPT notebook first!")
 
     return data
 
 
-def load_disaster_point_data():
+def load_disaster_point_data(cache_dir: Path):
     modified_data = False
 
     # Load Laos shapefile
-    emdat = load_emdat_data()
-    data = _load_disaster_point_data()
+    emdat = load_emdat_data(cache_dir)
+    data = _load_disaster_point_data(cache_dir)
 
     data = (
         data.set_index(["emdat_index"])
@@ -57,7 +60,7 @@ def load_disaster_point_data():
     )
 
     if "distance_to_river" not in data.columns:
-        rivers = load_rivers_data()
+        rivers = load_rivers_data(cache_dir)
 
         distances = get_distance_to(rivers, points=data, return_columns=["ORD_FLOW", "HYRIV_ID"]).rename(
             columns={"distance_to_closest": "distance_to_river"}
@@ -66,7 +69,7 @@ def load_disaster_point_data():
         modified_data = True
 
     if "distance_to_coastline" not in data.columns:
-        coastline = load_shapefile("coastline")
+        coastline = load_shapefile("coastline", cache_dir)
         distances = get_distance_to(coastline.boundary, points=data.loc[:, ["geometry"]]).rename(
             columns={"distance_to_closest": "distance_to_coastline"}
         )
@@ -96,12 +99,18 @@ def load_disaster_point_data():
         modified_data = True
 
     if modified_data:
-        (data.drop(columns=[*emdat["df_raw_filtered_adj"].columns.tolist(), "geometry"]).to_csv(FPATH_FEATURES))
+        (
+            data.drop(columns=[*emdat["df_raw_filtered_adj"].columns.tolist(), "geometry"]).to_csv(
+                features_points_path(cache_dir)
+            )
+        )
 
     return data
 
 
 def load_grid_point_data(
+    cache_dir: Path,
+    *,
     region="laos",
     grid_size=400,
     iso_list: list | None = None,
@@ -123,14 +132,14 @@ def load_grid_point_data(
         file_reg_name = region
 
     fname = f"{file_reg_name}_points_{grid_size}.shp"
-    folder_path = here(os.path.join(DATA_FOLDER, "shapefiles", fname))
+    folder_path = shapefile_dir(cache_dir) / fname
 
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
+    if not folder_path.exists():
+        folder_path.mkdir(parents=True)
 
-    fpath = os.path.join(folder_path, f"{fname}.shp")
+    fpath = folder_path / f"{fname}.shp"
 
-    if os.path.exists(fpath) and not force_reload:
+    if fpath.exists() and not force_reload:
         _log.info(f"Loading data found at {fpath}")
         points = gpd.read_file(fpath)
         points = points.rename(
@@ -142,9 +151,9 @@ def load_grid_point_data(
             }
         )
 
-    elif not os.path.exists(fpath) or force_reload:
+    elif not fpath.exists() or force_reload:
         _log.info("Loading shapefiles and rivers data")
-        world = load_shapefile("world")
+        world = load_shapefile("world", cache_dir)
 
         if region == "sea":
             iso_list = [
@@ -169,8 +178,8 @@ def load_grid_point_data(
         else:
             point_map = altered_shape_file
 
-        rivers = load_rivers_data(include_medium=include_medium_rivers)
-        coastline = load_shapefile("coastline")
+        rivers = load_rivers_data(cache_dir, include_medium=include_medium_rivers)
+        coastline = load_shapefile("coastline", cache_dir)
 
         _log.info("Computing point grid and features")
         lon_min, lat_min, lon_max, lat_max = point_map.dissolve().bounds.values.ravel()
@@ -276,16 +285,18 @@ def _sample_by_country(data, world, multiplier=1, rng=None):
     return not_disasters.rename(columns={"CONTINENT": "Region"})
 
 
-def make_synthetic_data_fpath(by: str, multipler: int, list_name: str):
-    name, ext = os.path.splitext(SYNTHETIC_DATA_BASENAME)
-    fname = f"{name}_{by}_times_{multipler!s}_{list_name}_{ext}"
+def make_synthetic_data_fpath(cache_dir: Path, by: str, multipler: int, list_name: str) -> Path:
+    basename = Path(SYNTHETIC_DATA_BASENAME)
+    fname = f"{basename.stem}_{by}_times_{multipler!s}_{list_name}_{basename.suffix}"
 
-    return here(os.path.join(DATA_FOLDER, fname))
+    return cache_dir / fname
 
 
 def load_synthetic_non_disaster_points(
+    cache_dir: Path,
     countries,
     list_name: str,
+    *,
     rng=None,
     force_generate=False,
     by="region",
@@ -295,14 +306,14 @@ def load_synthetic_non_disaster_points(
         seed = sum(map(ord, "Laos GGGI Climate Adaptation"))
         rng = np.random.default_rng(seed)
 
-    fpath = make_synthetic_data_fpath(by, multiplier, list_name)
+    fpath = make_synthetic_data_fpath(cache_dir, by, multiplier, list_name)
 
-    if not os.path.exists(fpath) or force_generate:
-        world = load_shapefile("world")
-        coastline = load_shapefile("coastline")
-        rivers = load_rivers_data()
+    if not fpath.exists() or force_generate:
+        world = load_shapefile("world", cache_dir)
+        coastline = load_shapefile("coastline", cache_dir)
+        rivers = load_rivers_data(cache_dir)
 
-        data = load_disaster_point_data().dropna(subset="Region").query("ISO in @countries")
+        data = load_disaster_point_data(cache_dir).dropna(subset="Region").query("ISO in @countries")
 
         if by == "region":
             _log.info("Sampling non-disasters by region")
@@ -355,15 +366,17 @@ def load_synthetic_non_disaster_points(
 
 
 def load_non_disaster_grid(
+    cache_dir: Path,
     grid: gpd.GeoDataFrame,
     grid_name: str,
+    *,
     force_generate: bool = False,
     three_dimensioal_grid: bool = False,
 ):
-    fpath = here(os.path.join(DATA_FOLDER, grid_name))
+    fpath = cache_dir / grid_name
 
-    if not os.path.exists(fpath) or force_generate:
-        world = load_shapefile("world")
+    if not fpath.exists() or force_generate:
+        world = load_shapefile("world", cache_dir)
 
         # We merge the grid with the world shapefile to get the ISO
         not_disasters = gpd.sjoin(
@@ -375,7 +388,7 @@ def load_non_disaster_grid(
 
         if three_dimensioal_grid:
             # Obtain years and ISOs
-            years = load_disaster_point_data()["Start_Year"].unique()
+            years = load_disaster_point_data(cache_dir)["Start_Year"].unique()
             country_ISOs = not_disasters["ISO"].unique()
 
             # Create the Cartesian product of the two arrays
@@ -399,7 +412,7 @@ def load_non_disaster_grid(
         # Save file
         not_disasters.to_csv(fpath)
 
-    if os.path.exists(fpath):
+    if fpath.exists():
         not_disasters = pd.read_csv(fpath, index_col=0)
 
     return not_disasters

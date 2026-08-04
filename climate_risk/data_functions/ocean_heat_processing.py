@@ -1,21 +1,16 @@
-import os
-
-from os.path import exists
+from pathlib import Path
 
 import pandas as pd
-
-from pyprojroot import here
 
 from climate_risk.const_vars import OCEAN_HEAT_FILENAME, OCEAN_HEAT_URL
 
 
-def load_ocean_heat_data(data_path=None, force_reload: bool = False):
-    if data_path is None:
-        data_path = here("data")
-    if not exists(data_path):
-        os.makedirs(data_path)
+def load_ocean_heat_data(cache_dir: Path, *, force_reload: bool = False) -> pd.DataFrame:
+    cache_dir.mkdir(parents=True, exist_ok=True)
 
-    if (not os.path.isfile(os.path.join(data_path, OCEAN_HEAT_FILENAME))) or force_reload:
+    ocean_heat_path = cache_dir / OCEAN_HEAT_FILENAME
+
+    if not ocean_heat_path.is_file() or force_reload:
         df_ocean = pd.read_csv(OCEAN_HEAT_URL, header=0, names=["Date", "Temp"])
         df_ocean.Date = pd.to_datetime(df_ocean.Date, format="%Y-%m")
         df_ocean.set_index("Date", inplace=True)
@@ -24,13 +19,9 @@ def load_ocean_heat_data(data_path=None, force_reload: bool = False):
         df_ocean["Date"] = df_ocean["Date"] - pd.offsets.YearBegin()
         df_ocean.set_index("Date", inplace=True)
         df_ocean = df_ocean + 152
-        df_ocean.to_csv(os.path.join(data_path, OCEAN_HEAT_FILENAME))
+        df_ocean.to_csv(ocean_heat_path)
 
     else:
-        df_ocean = pd.read_csv(
-            os.path.join(data_path, OCEAN_HEAT_FILENAME),
-            index_col=["Date"],
-            parse_dates=True,
-        )
+        df_ocean = pd.read_csv(ocean_heat_path, index_col=["Date"], parse_dates=True)
 
     return df_ocean

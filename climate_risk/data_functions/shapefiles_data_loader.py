@@ -1,15 +1,12 @@
 import logging
-import os
 
-from os.path import exists
+from pathlib import Path
 from urllib.request import urlretrieve
 from zipfile import ZipFile
 
 import geopandas as gpd
 import numpy as np
 import pandas as pd
-
-from pyprojroot import here
 
 from climate_risk.const_vars import (
     COASTLINE_FILENAME,
@@ -43,48 +40,54 @@ shapefile_filename_dict = {
 VALID_CHOICES = list(shapefile_name_dict.keys())
 
 
-def download_shapefile(which, output_path="data/shapefiles", force_reload=False):
+def shapefile_dir(cache_dir: Path) -> Path:
+    return cache_dir / "shapefiles"
+
+
+def download_shapefile(which: str, cache_dir: Path, *, force_reload: bool = False) -> None:
     if which.lower() not in VALID_CHOICES:
         raise ValueError(f"which should be one of {VALID_CHOICES}, got {which}")
     url = shapefile_url_dict[which.lower()]
     filename = shapefile_name_dict[which.lower()] + ".zip"
 
-    output_path = here(output_path)
-    path_to_file = os.path.join(output_path, filename)
+    output_path = shapefile_dir(cache_dir)
+    path_to_file = output_path / filename
 
-    if not exists(output_path):
-        os.makedirs(output_path)
+    output_path.mkdir(parents=True, exist_ok=True)
 
-    if not exists(path_to_file) or force_reload:
+    if not path_to_file.exists() or force_reload:
         _log.info(f"Downloading {which} shapefiles to {output_path}")
         urlretrieve(url, path_to_file)
 
 
-def extract_shapefiles(which: str, output_path="data/shapefiles", force_reload=False):
+def extract_shapefiles(which: str, cache_dir: Path, *, force_reload: bool = False) -> None:
     if which.lower() not in VALID_CHOICES:
         raise ValueError(f"which should be one of {VALID_CHOICES}, got {which}")
     zip_filename = shapefile_name_dict[which.lower()]
     filename = shapefile_filename_dict[which.lower()]
-    shapefile_path = str(here(os.path.join(output_path, filename)))
 
-    if not os.path.isdir(shapefile_path) or force_reload:
+    output_path = shapefile_dir(cache_dir)
+    shapefile_path = output_path / filename
+
+    if not shapefile_path.is_dir() or force_reload:
         _log.info(f"Extracting {shapefile_path}")
-        fname = zip_filename + ".zip"
 
-        with ZipFile(here(os.path.join(output_path, fname)), "r") as zObject:
-            zObject.extractall(path=here(output_path))
+        with ZipFile(output_path / (zip_filename + ".zip"), "r") as zObject:
+            zObject.extractall(path=output_path)
 
 
-def load_shapefile(which, output_path="data/shapefiles", force_reload=False, repair_ISO_codes=True):
+def load_shapefile(
+    which: str, cache_dir: Path, *, force_reload: bool = False, repair_ISO_codes: bool = True
+) -> gpd.GeoDataFrame:
     if which.lower() not in VALID_CHOICES:
         raise ValueError(f"which should be one of {VALID_CHOICES}, got {which}")
     filename = shapefile_filename_dict[which.lower()]
 
-    shapefile_path = str(here(os.path.join(output_path, filename)))
-    download_shapefile(which, output_path, force_reload=force_reload)
-    extract_shapefiles(which, output_path, force_reload=force_reload)
+    shapefile_path = shapefile_dir(cache_dir) / filename
+    download_shapefile(which, cache_dir, force_reload=force_reload)
+    extract_shapefiles(which, cache_dir, force_reload=force_reload)
 
-    df = gpd.read_file(shapefile_path.replace(".zip", ""), layer=0)
+    df = gpd.read_file(shapefile_path, layer=0)
 
     if which == "world" and repair_ISO_codes:
         # The ISO codes are not 1:1 with geometries. This code cleans things up, mostly
@@ -119,9 +122,11 @@ def load_shapefile(which, output_path="data/shapefiles", force_reload=False, rep
     return df
 
 
-def create_laos_point_grid():
-    if exists(here("data/laos_points.shp")):
-        laos_points = gpd.read_file(here("data/laos_points.shp"))
+def create_laos_point_grid(cache_dir: Path) -> gpd.GeoDataFrame:
+    laos_points_path = cache_dir / "laos_points.shp"
+
+    if laos_points_path.exists():
+        laos_points = gpd.read_file(laos_points_path)
         laos_points = laos_points.rename(
             columns={
                 "distance_t": "distance_to_river",
@@ -133,9 +138,9 @@ def create_laos_point_grid():
         return laos_points
 
     else:
-        laos = load_shapefile("laos")
-        coastline = load_shapefile("coastline")
-        rivers = load_rivers_data()
+        laos = load_shapefile("laos", cache_dir)
+        coastline = load_shapefile("coastline", cache_dir)
+        rivers = load_rivers_data(cache_dir)
 
         # Creating Laos grid
         lon_min, lat_min, lon_max, lat_max = laos.dissolve().bounds.values.ravel()
@@ -183,6 +188,6 @@ def create_laos_point_grid():
 
         laos_points = laos_points.assign(log_distance_to_coastline=lambda x: np.log(x.distance_to_coastline))
 
-        laos_points.to_file(here("data/laos_points.shp"))
+        laos_points.to_file(laos_points_path)
 
         return laos_points

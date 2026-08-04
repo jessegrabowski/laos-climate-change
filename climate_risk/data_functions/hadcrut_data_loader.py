@@ -1,14 +1,11 @@
 import logging
-import os
 
-from os.path import exists
+from pathlib import Path
 from urllib.request import urlretrieve
 
 import geopandas as geo
 import pandas as pd
 import xarray as xr
-
-from pyprojroot import here
 
 from climate_risk.const_vars import HADCRUT_URL
 from climate_risk.data_functions.shapefiles_data_loader import load_shapefile
@@ -16,22 +13,19 @@ from climate_risk.data_functions.shapefiles_data_loader import load_shapefile
 _log = logging.getLogger(__name__)
 
 
-def load_hadcrut_data(output_path="data", force_reload=False, repair_ISO_codes=True):
-    output_path = here(output_path)
-    hadcrut_raw_path = os.path.join(output_path, "hadcrut_temperature_raw.nc")
-    hadcrut_processed_path = os.path.join(output_path, "hadcrut_temperature_processed.csv")
+def load_hadcrut_data(cache_dir: Path, *, force_reload: bool = False, repair_ISO_codes: bool = True) -> pd.DataFrame:
+    hadcrut_raw_path = cache_dir / "hadcrut_temperature_raw.nc"
+    hadcrut_processed_path = cache_dir / "hadcrut_temperature_processed.csv"
 
-    # Check if "data" folder exists
-    if not exists(output_path):
-        os.makedirs(output_path)
+    cache_dir.mkdir(parents=True, exist_ok=True)
 
     # Check if the hadcrut raw data exists
-    if not exists(hadcrut_raw_path):
+    if not hadcrut_raw_path.exists():
         _log.info("Downloading HADCRUT data")
         urlretrieve(HADCRUT_URL, hadcrut_raw_path)
 
     # Verify if the hadcrut processed file exists
-    if not exists(hadcrut_processed_path) or force_reload:
+    if not hadcrut_processed_path.exists() or force_reload:
         # Import hadcrut processed file
         _log.info("Loading  HADCRUT raw data")
         data = xr.open_dataset(hadcrut_raw_path)
@@ -39,7 +33,9 @@ def load_hadcrut_data(output_path="data", force_reload=False, repair_ISO_codes=T
 
         # Import the world shapefile
         _log.info("Loading world shapefile as GeoDataFrame")
-        world_shapefile = load_shapefile("world", force_reload=force_reload, repair_ISO_codes=repair_ISO_codes).rename(
+        world_shapefile = load_shapefile(
+            "world", cache_dir, force_reload=force_reload, repair_ISO_codes=repair_ISO_codes
+        ).rename(
             columns={
                 "ISO_A3": "country_code",
                 "FORMAL_EN": "country",

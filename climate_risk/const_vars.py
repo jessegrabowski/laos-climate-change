@@ -651,5 +651,3 @@ IPCC_RENAME_DICT = {
     "Panel emissions - SSP3-70 - y": "SSP3-70",
     "Panel emissions - SSP5-85 - y": "SSP5-85",
 }
-
-EDA_PLOTS_PATH = "notebooks/final_paper/figures_and_plots/eda"

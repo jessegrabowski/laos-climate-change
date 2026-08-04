@@ -1,13 +1,10 @@
 # Imports
 import logging
-import os
 
-from os.path import exists
+from pathlib import Path
 from urllib.request import urlretrieve
 
 import pandas as pd
-
-from pyprojroot import here
 
 from climate_risk.const_vars import (
     IPCC_COLS,
@@ -20,17 +17,14 @@ from climate_risk.data_functions.combine_data import load_all_data
 _log = logging.getLogger(__name__)
 
 
-def process_ipcc_scenarios(data_path=None, force_reload: bool = False):
-    # Define data path
-    if data_path is None:
-        data_path = here("data")
-    if not exists(data_path) or force_reload:
-        os.makedirs(data_path)  # create it if not exists
+def process_ipcc_scenarios(cache_dir: Path, *, force_reload: bool = False) -> pd.DataFrame:
+    if not cache_dir.exists() or force_reload:
+        cache_dir.mkdir(parents=True)  # create it if not exists
 
-    path_to_raw_file = os.path.join(data_path, IPCC_PREDICTIONS_RAW_NAME)
+    path_to_raw_file = cache_dir / IPCC_PREDICTIONS_RAW_NAME
 
     # Verify if the raw data file exists
-    if not os.path.isfile(os.path.join(data_path, path_to_raw_file)):
+    if not path_to_raw_file.is_file():
         _log.info("Downloading IPCC predictions raw  data")
         urlretrieve(IPCC_URL, path_to_raw_file)
 
@@ -40,7 +34,7 @@ def process_ipcc_scenarios(data_path=None, force_reload: bool = False):
     ipcc_preds = ipcc_preds.rename(columns=IPCC_RENAME_DICT)
 
     # Load co2 observations data
-    co2_data = load_all_data()["df_time_series"][["co2"]].reset_index()
+    co2_data = load_all_data(cache_dir)["df_time_series"][["co2"]].reset_index()
     co2_data["year_"] = co2_data["year"].dt.year.drop(columns=["year"])
     co2_data = co2_data.drop(columns=["year"])
 

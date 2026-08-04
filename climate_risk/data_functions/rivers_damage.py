@@ -1,10 +1,8 @@
-import os
+from pathlib import Path
 
 import geopandas as gpd
 import numpy as np
 import pandas as pd
-
-from pyprojroot import here
 
 from climate_risk.const_vars import (
     LAOS_LOCATION_DICTIONARY,
@@ -17,13 +15,14 @@ from climate_risk.data_functions.shapefiles_data_loader import load_shapefile
 from climate_risk.statistics import get_distance_to_rivers
 
 
-def create_hydro_rivers_damage():
-    data_path = here("data")
-    if not os.path.isfile(os.path.join(data_path, RIVERS_HYDRO_DAMAGE_FILENAME)):
-        big_rivers = load_rivers_data()
-        emdat = load_emdat_data()
+def create_hydro_rivers_damage(cache_dir: Path) -> gpd.GeoDataFrame:
+    hydro_damage_path = cache_dir / RIVERS_HYDRO_DAMAGE_FILENAME
 
-        world = load_shapefile("world", repair_ISO_codes=True)
+    if not hydro_damage_path.is_file():
+        big_rivers = load_rivers_data(cache_dir)
+        emdat = load_emdat_data(cache_dir)
+
+        world = load_shapefile("world", cache_dir, repair_ISO_codes=True)
 
         damage_df = gpd.GeoDataFrame(
             (
@@ -70,10 +69,10 @@ def create_hydro_rivers_damage():
 
         damage_df = damage_df.assign(log_affected_hydro=lambda x: np.log(x.Total_Affected_Hydro))
 
-        damage_df.to_file(os.path.join(data_path, RIVERS_HYDRO_DAMAGE_FILENAME))
+        damage_df.to_file(hydro_damage_path)
 
     else:
-        damage_df = gpd.read_file(os.path.join(data_path, RIVERS_HYDRO_DAMAGE_FILENAME))
+        damage_df = gpd.read_file(hydro_damage_path)
         damage_df = damage_df.rename(
             columns={
                 "River Basi": "River Basin",
@@ -87,12 +86,13 @@ def create_hydro_rivers_damage():
     return damage_df
 
 
-def create_floods_rivers_damage():
-    data_path = here("data")
-    if not os.path.isfile(os.path.join(data_path, RIVERS_FLOODS_DAMAGE_FILENAME)):
-        big_rivers = load_rivers_data()
-        emdat = load_emdat_data()
-        world = load_shapefile("world", repair_ISO_codes=True)
+def create_floods_rivers_damage(cache_dir: Path) -> gpd.GeoDataFrame:
+    floods_damage_path = cache_dir / RIVERS_FLOODS_DAMAGE_FILENAME
+
+    if not floods_damage_path.is_file():
+        big_rivers = load_rivers_data(cache_dir)
+        emdat = load_emdat_data(cache_dir)
+        world = load_shapefile("world", cache_dir, repair_ISO_codes=True)
 
         floods_damages = (
             emdat["df_raw_filtered_adj"]
@@ -150,10 +150,10 @@ def create_floods_rivers_damage():
 
         damage_df_f = damage_df_f.assign(log_affected_floods=lambda x: np.log(x.Total_Affected_Flood))
 
-        damage_df_f.to_file(os.path.join(data_path, RIVERS_FLOODS_DAMAGE_FILENAME))
+        damage_df_f.to_file(floods_damage_path)
 
     else:
-        damage_df_f = gpd.read_file(os.path.join(data_path, RIVERS_FLOODS_DAMAGE_FILENAME))
+        damage_df_f = gpd.read_file(floods_damage_path)
         damage_df_f = damage_df_f.rename(
             columns={
                 "River Basi": "River Basin",
