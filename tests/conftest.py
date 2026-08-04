@@ -1,7 +1,13 @@
 import socket
+import zipfile
 
+import geopandas as gpd
 import pandas as pd
 import pytest
+
+from shapely.geometry import box
+
+from climate_risk.data_functions.shapefiles_data_loader import shapefile_filename_dict, shapefile_name_dict
 
 # One event that clears every downstream filter: deaths above 100, affected above 1000, and a start
 # year inside both the 1970 and 1980 cutoffs. Tests override only the field under examination.
@@ -34,6 +40,41 @@ EMDAT_EVENT_DEFAULTS = {
 
 def emdat_event(overrides=None):
     return EMDAT_EVENT_DEFAULTS | (overrides or {})
+
+
+def toy_world():
+    """Three square countries: two in Asia, one in Africa, with synthetic ISO codes."""
+    return gpd.GeoDataFrame(
+        {
+            "ISO_A3": ["AAA", "BBB", "CCC"],
+            "FORMAL_EN": ["Aland", "Beeland", "Ceeland"],
+            "CONTINENT": ["Asia", "Asia", "Africa"],
+            "REGION_UN": ["Asia", "Asia", "Africa"],
+            "geometry": [box(0, 0, 1, 1), box(2, 0, 3, 1), box(4, 0, 5, 1)],
+        },
+        crs="EPSG:4326",
+    )
+
+
+@pytest.fixture
+def write_shapefile_cache(tmp_path):
+    """Return a callable laying out a shapefile the way a completed download would have."""
+
+    def write(which, gdf):
+        stem = shapefile_filename_dict[which]
+        # The layout is stated literally, not derived from the loader, so a wrong cache path fails.
+        extracted = tmp_path / "shapefiles" / stem
+        extracted.mkdir(parents=True, exist_ok=True)
+        gdf.to_file(extracted / f"{stem}.shp")
+
+        archive = tmp_path / "shapefiles" / f"{shapefile_name_dict[which]}.zip"
+        with zipfile.ZipFile(archive, "w") as bundle:
+            for part in extracted.iterdir():
+                bundle.write(part, f"{stem}/{part.name}")
+
+        return tmp_path
+
+    return write
 
 
 class NetworkAccessError(RuntimeError):
