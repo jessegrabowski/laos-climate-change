@@ -122,10 +122,6 @@ def load_all_data(cache_dir: Path) -> dict[str, pd.DataFrame]:
 
     # Drop codes not in both
     common_codes2 = set(merged_dict_iso).intersection(set(gpcc_iso))
-    merged_dict["emdat_damage"] = (
-        merged_dict["emdat_damage"].loc[lambda x: x.index.get_level_values(0).isin(common_codes)].copy()
-    )
-
     merged_dict["gpcc"] = merged_dict["gpcc"].loc[lambda x: x.index.get_level_values(0).isin(common_codes2)].copy()
     # ISO reconciliation: hadcrut
     # merged_dict_iso = merged_dict["wb_data"].index.get_level_values(0).unique()
