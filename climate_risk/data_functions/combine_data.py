@@ -87,10 +87,6 @@ def load_all_data(cache_dir: Path) -> dict[str, pd.DataFrame]:
     # ISO reconciliation: emdat and world
     emdat_iso = merged_dict["emdat_damage"].index.get_level_values(0).unique()
     world_iso = merged_dict["wb_data"].index.get_level_values(0).unique()
-    # Codes in EMDAT but not in world
-    ", ".join(list(set(emdat_iso) - set(world_iso)))
-    # Codes in shapefile but not in EMDAT
-    ", ".join(list(set(world_iso) - set(emdat_iso)))
     # Drop codes not in both
     common_codes = set(world_iso).intersection(set(emdat_iso))
     merged_dict["emdat_damage"] = (
