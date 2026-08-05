@@ -116,6 +116,24 @@ def write_gpcc_archives(tmp_path):
 
 
 @pytest.fixture
+def rivers_clear_of_the_grid():
+    """Offset from the countries: a point lying exactly on a river gives log(0) downstream."""
+    return gpd.GeoDataFrame(
+        {
+            "ORD_FLOW": [4, 5],
+            "HYRIV_ID": [1, 2],
+            "geometry": [LineString([(-2, -1), (-2, 2)]), LineString([(8, -1), (8, 2)])],
+        },
+        crs="EPSG:4326",
+    )
+
+
+@pytest.fixture
+def coastline():
+    return gpd.GeoDataFrame({"geometry": [LineString([(6, -1), (6, 2)])]}, crs="EPSG:4326")
+
+
+@pytest.fixture
 def grid_points():
     return gpd.GeoDataFrame({"geometry": [Point(0.5, 0.5), Point(2.5, 0.5)]}, crs="EPSG:4326")
 

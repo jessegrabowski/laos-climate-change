@@ -1,14 +1,17 @@
+import geopandas as gpd
 import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
 
 from climate_risk.plotting import (
+    create_grid_from_shape,
     generate_plot_inputs,
     generate_plot_inputs_damages,
     plotting_function,
     plotting_function_damages,
 )
+from tests.conftest import toy_world
 
 OBSERVATIONS = 4
 ISO_CODES = ["AAA", "AAA", "BBB", "BBB"]
@@ -87,3 +90,19 @@ def test_plotting_damages_draws_only_one_country(damages_idata, damages):
 
     observed_points = fig.axes[0].collections[0]
     assert len(observed_points.get_offsets()) == 2
+
+
+def test_grid_takes_its_iso_from_the_shapefile(rivers_clear_of_the_grid, coastline):
+    """The fallback is a hardcoded LAO, so a shapefile carrying ISO_A3 must win."""
+    grid = create_grid_from_shape(toy_world(), rivers_clear_of_the_grid, coastline, grid_size=4)
+
+    assert set(grid["ISO"]) <= {"AAA", "BBB", "CCC"}
+
+
+def test_grid_points_fall_inside_the_shapefile(rivers_clear_of_the_grid, coastline):
+    world = toy_world()
+
+    grid = create_grid_from_shape(world, rivers_clear_of_the_grid, coastline, grid_size=4)
+
+    assert len(grid) > 0
+    assert gpd.GeoSeries(grid.geometry, crs="EPSG:4326").covered_by(world.union_all()).all()

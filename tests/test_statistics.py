@@ -5,7 +5,14 @@ import pytest
 
 from shapely.geometry import LineString
 
-from climate_risk.statistics import ADF_test_summary, get_distance_to, make_var_names, nan_or_sum
+from climate_risk.statistics import (
+    ADF_test_summary,
+    create_grid_from_shape,
+    get_distance_to,
+    make_var_names,
+    nan_or_sum,
+)
+from tests.conftest import toy_world
 
 
 def test_all_missing_stays_missing():
@@ -62,3 +69,19 @@ def test_requested_columns_come_from_the_nearest_feature(grid_points):
 
     assert nearest["HYRIV_ID"].tolist() == [1, 1]
     assert nearest["ORD_FLOW"].tolist() == [4, 4]
+
+
+def test_grid_takes_its_iso_from_the_shapefile(rivers_clear_of_the_grid, coastline):
+    """The fallback is a hardcoded LAO, so a shapefile carrying ISO_A3 must win."""
+    grid = create_grid_from_shape(toy_world(), rivers_clear_of_the_grid, coastline, grid_size=4)
+
+    assert set(grid["ISO"]) <= {"AAA", "BBB", "CCC"}
+
+
+def test_grid_points_fall_inside_the_shapefile(rivers_clear_of_the_grid, coastline):
+    world = toy_world()
+
+    grid = create_grid_from_shape(world, rivers_clear_of_the_grid, coastline, grid_size=4)
+
+    assert len(grid) > 0
+    assert gpd.GeoSeries(grid.geometry, crs="EPSG:4326").covered_by(world.union_all()).all()
