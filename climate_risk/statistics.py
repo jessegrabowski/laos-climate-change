@@ -7,7 +7,7 @@ import xarray as xr
 from joblib import Parallel, delayed
 from sklearn.preprocessing import StandardScaler as Standardize
 from statsmodels.tsa.stattools import adfuller
-from tqdm.notebook import tqdm
+from tqdm.auto import tqdm
 
 
 def nan_or_sum(x):

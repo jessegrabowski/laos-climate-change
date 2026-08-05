@@ -5,7 +5,7 @@ import pytensor.tensor as pt
 
 from joblib import Parallel, delayed
 from pytensor.tensor import TensorVariable
-from tqdm.notebook import tqdm
+from tqdm.auto import tqdm
 
 
 def add_hierarchical_effect(
