@@ -11,6 +11,7 @@ from climate_risk.data_functions.emdat_processing import load_emdat_data
 from climate_risk.data_functions.rivers_damage import load_rivers_data
 from climate_risk.data_functions.shapefiles_data_loader import load_shapefile, shapefile_dir
 from climate_risk.geo.distance import get_distance_to
+from climate_risk.geo.island_countries import ISLAND_COUNTRY_ISO3
 
 _log = logging.getLogger(__name__)
 
@@ -79,25 +80,7 @@ def load_disaster_point_data(cache_dir: Path):
         modified_data = True
 
     if "is_island" not in data.columns:
-        try:
-            import wikipedia as wp
-        except ImportError as err:
-            raise ImportError("You need to install the wikipedia package to get island data") from err
-
-        html = wp.page("List_of_island_countries").html().encode("UTF-8")
-        island_table = (
-            pd.read_html(html, skiprows=0)[0]
-            .droplevel(axis=1, level=0)
-            .dropna(how="all")
-            .iloc[1:]
-            .reset_index(drop=True)
-            .droplevel(axis=1, level=1)
-            .assign(
-                ISO_2=lambda x: x["ISO code"].str.split().str[0],
-                ISO_3=lambda x: x["ISO code"].str.split().str[1].replace({"or": "GBR"}),
-            )
-        )
-        data["is_island"] = data.ISO.isin(island_table.ISO_3)
+        data["is_island"] = data.ISO.isin(ISLAND_COUNTRY_ISO3)
         modified_data = True
 
     if modified_data:

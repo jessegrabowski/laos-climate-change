@@ -103,25 +103,6 @@ def ADF_test_summary(df, maxlag=None, autolag="BIC", missing="error"):
                     print(line)
 
 
-def load_island_table():
-    import wikipedia as wp
-
-    html = wp.page("List_of_island_countries").html().encode("UTF-8")
-    island_table = (
-        pd.read_html(html, skiprows=0)[0]
-        .droplevel(axis=1, level=0)
-        .dropna(how="all")
-        .iloc[1:]
-        .reset_index(drop=True)
-        .assign(
-            ISO_2=lambda x: x["ISO code"].str.split().str[0],
-            ISO_3=lambda x: x["ISO code"].str.split().str[1].replace({"or": "GBR"}),
-        )
-    )
-
-    return island_table
-
-
 def prediction_to_gpd_df(prediction_idata: xr.DataTree, variables: list, points: pd.DataFrame):
     predictions_dict = {}
     predictions_dict_geo = {}
