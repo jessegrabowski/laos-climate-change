@@ -11,7 +11,7 @@ from climate_risk.data_functions.emdat_processing import load_emdat_data
 from climate_risk.data_functions.rivers_damage import load_rivers_data
 from climate_risk.data_functions.shapefiles_data_loader import load_shapefile, shapefile_dir
 from climate_risk.geo.crs import GEOGRAPHIC_CRS, to_km
-from climate_risk.geo.distance import get_distance_to
+from climate_risk.geo.distance import MIN_DISTANCE_METRES, get_distance_to
 from climate_risk.geo.island_countries import ISLAND_COUNTRY_ISO3
 
 _log = logging.getLogger(__name__)
@@ -92,10 +92,6 @@ def load_disaster_point_data(cache_dir: Path):
         )
 
     return data
-
-
-# get_distance_to reprojects to PROJECTED_CRS, so distances are in metres.
-MIN_DISTANCE_METRES = 1.0
 
 
 def load_grid_point_data(

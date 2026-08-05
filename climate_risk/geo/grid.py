@@ -3,10 +3,7 @@ import numpy as np
 import pandas as pd
 
 from climate_risk.geo.crs import GEOGRAPHIC_CRS
-from climate_risk.geo.distance import get_distance_to
-
-# get_distance_to reprojects to PROJECTED_CRS, so distances are in metres.
-MIN_DISTANCE_METRES = 1.0
+from climate_risk.geo.distance import MIN_DISTANCE_METRES, get_distance_to
 
 
 def create_grid_from_shape(

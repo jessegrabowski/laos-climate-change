@@ -6,8 +6,13 @@ from tqdm.auto import tqdm
 
 from climate_risk.geo.crs import PROJECTED_CRS
 
+# Distances come back in metres, and a point sitting on a feature measures zero, which has no log.
+MIN_DISTANCE_METRES = 1.0
 
-def get_distance_to_rivers(rivers: gpd.GeoDataFrame, points: gpd.GeoDataFrame, crs: str = PROJECTED_CRS):
+
+def get_distance_to_rivers(
+    rivers: gpd.GeoDataFrame, points: gpd.GeoDataFrame, crs: str = PROJECTED_CRS
+) -> pd.DataFrame:
     ret = pd.DataFrame(index=points.index, columns=["closest_river", "ORD_FLOW", "HYRIV_ID"])
     rivers_km = rivers.copy().to_crs(crs)
     points_km = points.copy().to_crs(crs)

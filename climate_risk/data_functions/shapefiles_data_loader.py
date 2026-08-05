@@ -19,7 +19,7 @@ from climate_risk.const_vars import (
 from climate_risk.data_functions.rivers_data_loader import load_rivers_data
 from climate_risk.exceptions import DataValidationError, ISOCodeValidationError
 from climate_risk.geo.crs import GEOGRAPHIC_CRS
-from climate_risk.geo.distance import get_distance_to
+from climate_risk.geo.distance import MIN_DISTANCE_METRES, get_distance_to
 
 _log = logging.getLogger(__name__)
 
@@ -171,10 +171,6 @@ def load_shapefile(
         df = repair_iso_codes(df)
 
     return df
-
-
-# get_distance_to reprojects to PROJECTED_CRS, so distances are in metres.
-MIN_DISTANCE_METRES = 1.0
 
 
 def create_laos_point_grid(cache_dir: Path) -> gpd.GeoDataFrame:
