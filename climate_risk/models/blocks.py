@@ -17,35 +17,42 @@ def add_hierarchical_effect(
     use_zerosum_offset: bool = False,
     group_dim: str | None = None,
 ) -> tuple[TensorVariable, TensorVariable, TensorVariable, TensorVariable]:
-    """Adds a hierarchical effect to the active PyMC model.
+    """
+    Add a hierarchical effect to the active PyMC model.
 
     Parameters
     ----------
-    name: str
-        The name of the effect
-    loc_mu: float
-        The mean of the (Normal) location parameter
-    loc_sigma: float
-        The standard deviation of the (Normal) location parameter
-    scale_alpha: float
-        The alpha (rate) parameter of the (Gamma) scale parameter
-    scale_beta: float
-        The beta (shape) parameter of the (Gamma) scale parameter
-    use_zerosum_offset: bool, default False
-        If True, the offset is modeled as a ZeroSumNormal. Otherwise a Normal is used.
-    group_dim: str
-        Dimension of the group (e.g. 'ISO' for countries). Must be provided.
+    name : str, optional
+        Name of the effect, prefixing every variable created. Default 'country'.
+    loc_mu : float, optional
+        Mean of the Normal location parameter. Default 0.0.
+    loc_sigma : float, optional
+        Standard deviation of the Normal location parameter. Default 1.0.
+    scale_alpha : float, optional
+        Alpha parameter of the Gamma scale parameter. Default 2.0.
+    scale_beta : float, optional
+        Beta parameter of the Gamma scale parameter. Default 1.0.
+    use_zerosum_offset : bool, optional
+        Model the offset as a ZeroSumNormal, which identifies it against the location. Default
+        False, which uses a Normal.
+    group_dim : str
+        Dimension the effect varies over, such as 'ISO' for countries.
 
     Returns
     -------
-    country_effect: TensorVariable
-        The country effect
-    country_effect_loc: TensorVariable
-        The location parameter of the distribution over effects
-    country_effect_scale: TensorVariable
-        The scale parameter of the distribution over effects
-    country_effect_offset: TensorVariable
-        The offsets for each country from the overall group mean
+    effect : TensorVariable
+        The effect itself, the location plus the scaled offset.
+    effect_loc : TensorVariable
+        Location of the distribution over effects.
+    effect_scale : TensorVariable
+        Scale of the distribution over effects.
+    effect_offset : TensorVariable
+        Offset of each group from the location.
+
+    Raises
+    ------
+    ValueError
+        If ``group_dim`` is not given.
     """
     if group_dim is None:
         raise ValueError("group_dim must be provided")
@@ -77,30 +84,31 @@ def add_data(
     df: pd.DataFrame,
     target: str | None = None,
     name: str | None = None,
-    dims: Sequence[str] | str | None = None,
+    dims: Sequence[str] | None = None,
 ) -> TensorVariable | tuple[TensorVariable, TensorVariable]:
     """Add data to the active PyMC model.
 
     Parameters
     ----------
-    features: list of str
-        The features to include in the model. Each entry must be a column in the provided dataframe.
-    df: pd.DataFrame
-        The dataframe containing the data
-    target: str, optional
-        Column name to use for the targets. If not provided, no target data will be returned.
-    name: str, optional
-        If provided, the name will be appended to the name (e.g. X_name, Y_name)
-    dims: Sequence of str, or str; optional
-        Named dimensions to include on the data. If targets are requested, only the first dimension will be used for the
-        targets (it is assumed to be the batch dimension)
+    features : list of str
+        Features to include in the model. Each entry must be a column of ``df``.
+    df : DataFrame
+        Data to add.
+    target : str, optional
+        Column to use for the targets. Default None, which returns no target data.
+    name : str, optional
+        Suffix for the variable names, giving ``X_name`` and ``Y_name``. Default None, which names
+        them ``X`` and ``Y``.
+    dims : sequence of str, optional
+        Named dimensions to include on the data. If targets are requested, only the first dimension is used for the
+        targets, which is assumed to be the batch dimension.
 
     Returns
     -------
-    X: TensorVariable
-        The data tensor
-    Y: TensorVariable
-        The target tensor. Only returned if target is provided.
+    X : TensorVariable
+        The data tensor.
+    Y : TensorVariable
+        The target tensor, returned only when ``target`` is given.
     """
     X_name = "X" if name is None else f"X_{name}"
     Y_name = "Y" if name is None else f"Y_{name}"
