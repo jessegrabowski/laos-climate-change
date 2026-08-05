@@ -3,7 +3,7 @@ import pandas as pd
 import pymc as pm
 import pytest
 
-from climate_risk.model import add_data, add_hierarchical_effect, compute_center
+from climate_risk.models.blocks import add_data, add_hierarchical_effect, compute_center
 
 COORDS = {"ISO": ["AAA", "BBB", "CCC"], "obs_idx": [0, 1, 2, 3], "feature": ["precip", "temp"]}
 

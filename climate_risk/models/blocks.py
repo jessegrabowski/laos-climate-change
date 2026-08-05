@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import pymc as pm
 import pytensor
@@ -125,3 +126,18 @@ def add_data(
 
 def compute_center(X):
     return (pt.max(X, axis=0) + pt.min(X, axis=0)).eval() / 2
+
+
+def set_plotting_data(df, features, ISO_list):
+    iso_idx = df["ISO"].apply(lambda x: ISO_list.index(x))
+
+    pm.set_data(
+        {
+            "X_gp": df[["lat", "long"]],
+            "Y": np.full(df.shape[0], 0),
+            "ISO_idx": iso_idx,
+            "X": df[features],
+            "is_island": df["is_island"],
+        },
+        coords={"obs_idx": df.index.values},
+    )
