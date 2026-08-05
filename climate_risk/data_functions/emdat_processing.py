@@ -6,11 +6,15 @@ import pandas as pd
 from climate_risk.const_vars import (
     EM_DAT_COL_DICT,
     INTENSITY_COLS,
-    PROB_COLS,  # noqa: F401  -- referenced as @PROB_COLS inside pandas query strings
+    PROB_COLS,
 )
 
 # The study window opens in 1969 and closes on the newest event in the workbook.
 EMDAT_WINDOW_START = "1969-01-01"
+
+# The types the panel counts. Unstacking only produces a column per type the data contains, so a
+# country with no wildfires would otherwise have no Wildfire column for downstream code to read.
+DISASTER_TYPES = tuple(c for c in PROB_COLS if c not in {"Country", "ISO", "Start_Year", "Region", "Subregion"})
 
 # Columns read before any rename. Nothing detects upstream schema drift, so this check is the
 # earliest point a changed export becomes a named error rather than a missing attribute.
@@ -101,6 +105,8 @@ def load_emdat_data(
             )
             .sort_index()
         )
+        missing_types = [t for t in DISASTER_TYPES if t not in result.columns]
+        result = result.reindex(columns=[*result.columns, *missing_types])
 
         assert result.shape[0] == len(complete_index)
         assert np.all(result.index.get_level_values(0) == complete_index.get_level_values(0))
