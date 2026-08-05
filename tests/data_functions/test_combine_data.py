@@ -52,3 +52,18 @@ def test_every_disaster_type_gets_a_column_even_when_unobserved(write_emdat_cach
 
     assert {"Drought", "Flood", "Storm", "Wildfire", "Extreme temperature"} <= set(events.columns)
     assert events["Wildfire"].isna().all()
+
+
+def test_damage_columns_survive_a_class_with_no_events(write_emdat_cache, write_full_cache):
+    """An empty pivot emits no columns at all, so a country with only floods loses the clim split."""
+    cache_dir = write_full_cache()
+    write_emdat_cache(
+        emdat_event({"ISO": iso, "DisNo.": f"{iso}-{year}", "Start Year": year, "Disaster Type": "Flood"})
+        for iso in ("AAA", "BBB")
+        for year in (1990, 1991)
+    )
+
+    damage = load_all_data(cache_dir)["emdat_damage"]
+
+    assert "Total_Damage_Adjusted_clim" in damage.columns
+    assert damage["Total_Damage_Adjusted_clim"].isna().all()

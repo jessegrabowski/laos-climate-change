@@ -128,11 +128,17 @@ def load_emdat_data(
     ]
 
     def process_damage_df(df):
-        result = (
+        # pivot_table emits no columns at all for an empty selection, and a country with no
+        # disasters of a given class would then lose those columns from the panel.
+        totals = (
             df.copy()
             .query("`Disaster Type` in @PROB_COLS")[INTENSITY_COLS]
             .pivot_table(index=["ISO", "Start_Year"], values=damage_vars, aggfunc="sum")
-            .sort_index()
+            .reindex(columns=damage_vars)
+        )
+
+        result = (
+            totals.sort_index()
             .reindex(complete_index)
             .assign(
                 Region=lambda x: x.index.get_level_values(0).map(region_dict.get),
