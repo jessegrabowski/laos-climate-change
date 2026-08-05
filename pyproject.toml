@@ -37,7 +37,18 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=9.1,<10", "pytest-cov>=7.1,<8", "pre-commit>=4.6,<5", "mypy>=2.3,<3", "ruff>=0.16,<1"]
+dev = [
+    "pytest>=9.1,<10",
+    "pytest-cov>=7.1,<8",
+    "pre-commit>=4.6,<5",
+    "mypy>=2.3,<3",
+    "ruff>=0.16,<1",
+    "pandas-stubs>=3.0.5,<4",
+    "types-geopandas>=1.1.4,<2",
+    "types-shapely>=2.1,<3",
+    "types-tqdm>=4.70,<5",
+    "joblib-stubs>=1.5.3.1,<2",
+]
 notebooks = ["notebook>=7.6,<8", "ipywidgets>=8.1,<9", "openai>=2.0"]
 
 [project.urls]
@@ -86,6 +97,14 @@ pytest = ">=9.1,<10"
 pytest-cov = ">=7.1,<8"
 pre-commit = ">=4.6,<5"
 mypy = ">=2.3,<3"
+pandas-stubs = ">=3.0.5.260730,<4"
+types-tqdm = ">=4.70.0.20260731,<5"
+types-geopandas = ">=1.1.4.20260728,<2"
+types-shapely = ">=2.1,<3"
+
+# joblib-stubs is not on conda-forge.
+[tool.pixi.feature.dev.pypi-dependencies]
+joblib-stubs = ">=1.5.3.1,<2"
 
 [tool.pixi.feature.notebooks.dependencies]
 notebook = ">=7.6,<8"
@@ -102,6 +121,7 @@ notebooks = { features = ["dev", "notebooks"], solve-group = "default" }
 test = "pytest"
 test-network = "pytest --run-network -m network"
 lint = "ruff check . && ruff format --check ."
+typecheck = "mypy"
 fmt = "ruff format ."
 
 [tool.pytest.ini_options]
@@ -121,6 +141,25 @@ filterwarnings = [
     "ignore:Column names longer than 10 characters:UserWarning",
     "ignore:Normalized/laundered field name:RuntimeWarning",
 ]
+
+[tool.mypy]
+# An include list that only grows. A package joins it when it is typed, and never leaves.
+files = ["climate_risk/geo", "climate_risk/stats", "climate_risk/models"]
+python_version = "3.12"
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_configs = true
+warn_return_any = true
+warn_unreachable = true
+warn_unused_ignores = true
+strict_equality = true
+
+# None of these four ships stubs, and none exists on the index.
+[[tool.mypy.overrides]]
+module = ["pymc.*", "pytensor.*", "sklearn.*", "statsmodels.*"]
+ignore_missing_imports = true
 
 [tool.ruff]
 line-length = 120

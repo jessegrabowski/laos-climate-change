@@ -114,10 +114,10 @@ def add_data(
     Y_name = "Y" if name is None else f"Y_{name}"
 
     with pm.modelcontext(None):
-        X = pm.Data(X_name, df[features], dims=dims)
+        X: TensorVariable = pm.Data(X_name, df[features], dims=dims)
 
         if target is not None:
-            Y = pm.Data(
+            Y: TensorVariable = pm.Data(
                 Y_name,
                 df[target],
                 dims=dims[0] if dims is not None else dims,
@@ -128,7 +128,9 @@ def add_data(
 
 
 def compute_center(X: TensorVariable | np.ndarray) -> np.ndarray:
-    return (pt.max(X, axis=0) + pt.min(X, axis=0)).eval() / 2
+    center: np.ndarray = (pt.max(X, axis=0) + pt.min(X, axis=0)).eval() / 2
+
+    return center
 
 
 def set_plotting_data(df: pd.DataFrame, features: list[str], ISO_list: list[str]) -> None:
