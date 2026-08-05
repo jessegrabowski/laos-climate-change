@@ -54,7 +54,6 @@ def create_replication_data(cache_dir: Path) -> pd.DataFrame:
 
     development_indicators["population"] = development_indicators["Population"]
     development_indicators["ln_population_density"] = np.log(development_indicators["population_density"])
-    development_indicators["ln_population_density"]
     development_indicators["ln_gdp_pc"] = np.log(development_indicators["gdp_per_cap"])
     development_indicators["square_ln_gdp_pc"] = (
         (development_indicators["ln_gdp_pc"]) * (development_indicators["ln_gdp_pc"])
@@ -125,9 +124,6 @@ def create_replication_data(cache_dir: Path) -> pd.DataFrame:
 
     # Creating the time trend
     df["time_period"] = (df["year"].dt.year - 1980) / 100
-
-    # Adjust data types
-    df["ISO"] = df["ISO"]
 
     # SUm of all damages
     df["Total_Damage_Adjusted_all"] = df["Total_Damage_Adjusted_clim"] + df["Total_Damage_Adjusted_hydro"]

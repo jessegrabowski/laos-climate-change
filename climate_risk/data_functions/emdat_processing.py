@@ -63,11 +63,6 @@ def load_emdat_data(
 
     df_raw["disaster_class"] = df_raw["Disaster Type"].map(disaster_class_dict.get)
 
-    df_raw.loc[
-        df_raw["Disaster Type"].isin(["Wildfire", "Extreme temperature", "Drought"]),
-        "disaster_class",
-    ] = "Climatological"
-
     # Useful constants
     region_dict = df_raw[["ISO", "Region"]].drop_duplicates().set_index("ISO").to_dict()["Region"]
     subregion_dict = df_raw[["ISO", "Subregion"]].drop_duplicates().set_index("ISO").to_dict()["Subregion"]

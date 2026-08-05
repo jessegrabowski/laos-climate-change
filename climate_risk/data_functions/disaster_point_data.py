@@ -110,6 +110,10 @@ def load_disaster_point_data(cache_dir: Path):
     return data
 
 
+# get_distance_to reprojects to EPSG:3395, so distances are in metres.
+MIN_DISTANCE_METRES = 1.0
+
+
 def load_grid_point_data(
     cache_dir: Path,
     *,
@@ -216,8 +220,10 @@ def load_grid_point_data(
         points["is_island"] = False
 
         # Create log of distances
-        points = points.assign(log_distance_to_river=lambda x: np.log(x.distance_to_river))
-        points = points.assign(log_distance_to_coastline=lambda x: np.log(x.distance_to_coastline))
+        points = points.assign(
+            log_distance_to_river=lambda x: np.log(x.distance_to_river.clip(lower=MIN_DISTANCE_METRES)),
+            log_distance_to_coastline=lambda x: np.log(x.distance_to_coastline.clip(lower=MIN_DISTANCE_METRES)),
+        )
 
         points.to_file(fpath)
 

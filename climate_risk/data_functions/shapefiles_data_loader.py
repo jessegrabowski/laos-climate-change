@@ -172,6 +172,10 @@ def load_shapefile(
     return df
 
 
+# get_distance_to reprojects to EPSG:3395, so distances are in metres.
+MIN_DISTANCE_METRES = 1.0
+
+
 def create_laos_point_grid(cache_dir: Path) -> gpd.GeoDataFrame:
     laos_points_path = cache_dir / "laos_points.shp"
 
@@ -234,9 +238,10 @@ def create_laos_point_grid(cache_dir: Path) -> gpd.GeoDataFrame:
         laos_points["is_island"] = False
 
         # Create log of distances
-        laos_points = laos_points.assign(log_distance_to_river=lambda x: np.log(x.distance_to_river))
-
-        laos_points = laos_points.assign(log_distance_to_coastline=lambda x: np.log(x.distance_to_coastline))
+        laos_points = laos_points.assign(
+            log_distance_to_river=lambda x: np.log(x.distance_to_river.clip(lower=MIN_DISTANCE_METRES)),
+            log_distance_to_coastline=lambda x: np.log(x.distance_to_coastline.clip(lower=MIN_DISTANCE_METRES)),
+        )
 
         laos_points.to_file(laos_points_path)
 

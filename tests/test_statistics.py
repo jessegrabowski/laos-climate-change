@@ -85,3 +85,20 @@ def test_grid_points_fall_inside_the_shapefile(rivers_clear_of_the_grid, coastli
 
     assert len(grid) > 0
     assert gpd.GeoSeries(grid.geometry, crs="EPSG:4326").covered_by(world.union_all()).all()
+
+
+def test_zero_distances_do_not_become_infinite_logs(rivers_through_the_grid, coastline_through_the_grid):
+    """A grid point on a river measures zero, and log(0) poisons the regressor with -inf."""
+    grid = create_grid_from_shape(toy_world(), rivers_through_the_grid, coastline_through_the_grid, grid_size=4)
+
+    on_a_river = grid[grid["distance_to_river"] == 0]
+
+    assert len(on_a_river) > 0
+    assert (grid["distance_to_coastline"] == 0).any()
+    assert np.isfinite(grid[["log_distance_to_river", "log_distance_to_coastline"]]).all().all()
+    assert on_a_river["log_distance_to_river"].eq(0.0).all()
+
+    clear_of_a_river = grid[grid["distance_to_river"] > 0]
+
+    assert len(clear_of_a_river) > 0
+    assert clear_of_a_river["log_distance_to_river"].eq(np.log(clear_of_a_river["distance_to_river"])).all()
