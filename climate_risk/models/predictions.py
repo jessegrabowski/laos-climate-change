@@ -5,7 +5,9 @@ import xarray as xr
 from climate_risk.geo.crs import GEOGRAPHIC_CRS
 
 
-def prediction_to_gpd_df(prediction_idata: xr.DataTree, variables: list, points: pd.DataFrame):
+def prediction_to_gpd_df(
+    prediction_idata: xr.DataTree, variables: list[str], points: pd.DataFrame
+) -> dict[str, gpd.GeoDataFrame]:
     predictions_dict = {}
     predictions_dict_geo = {}
 

@@ -1,4 +1,7 @@
+from collections.abc import Sequence
+
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import pymc as pm
 import pytensor
@@ -8,7 +11,7 @@ from pytensor.tensor import TensorVariable
 
 
 def add_hierarchical_effect(
-    name="country",
+    name: str = "country",
     loc_mu: float = 0.0,
     loc_sigma: float = 1.0,
     scale_alpha: float = 2.0,
@@ -75,10 +78,10 @@ def add_data(
     features: list[str],
     df: pd.DataFrame,
     target: str | None = None,
-    name=None,
-    dims=None,
-    dtype=None,
-):
+    name: str | None = None,
+    dims: Sequence[str] | str | None = None,
+    dtype: npt.DTypeLike | None = None,
+) -> TensorVariable | tuple[TensorVariable, TensorVariable]:
     """Add data to the active PyMC model.
 
     Parameters
@@ -109,6 +112,7 @@ def add_data(
 
     if dtype is None:
         dtype = pytensor.config.floatX
+    dtype = np.dtype(dtype)
 
     with pm.modelcontext(None):
         X = pm.Data(X_name, df[features].astype(dtype), dims=dims)
@@ -124,11 +128,11 @@ def add_data(
     return X
 
 
-def compute_center(X):
+def compute_center(X: TensorVariable | np.ndarray) -> np.ndarray:
     return (pt.max(X, axis=0) + pt.min(X, axis=0)).eval() / 2
 
 
-def set_plotting_data(df, features, ISO_list):
+def set_plotting_data(df: pd.DataFrame, features: list[str], ISO_list: list[str]) -> None:
     iso_idx = df["ISO"].apply(lambda x: ISO_list.index(x))
 
     pm.set_data(

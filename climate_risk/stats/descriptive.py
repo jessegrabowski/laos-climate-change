@@ -2,33 +2,21 @@ import numpy as np
 import pandas as pd
 
 
-def nan_or_sum(x):
+def nan_or_sum(x: np.ndarray | pd.Series) -> float:
     if np.isnan(x).all():
         return np.nan
     return np.nansum(x)
 
 
-# Descriptive stats function
-def descriptive_stats_function(df, varlist):
-    # Sum stats
-    sum_stats = df[varlist].describe()
-    # Kurtosis
-    kurtosis = pd.Series()
-    for x in varlist:
-        kurtosis[str(x)] = df[str(x)].kurt()
-    kurtosis = kurtosis.to_frame().rename(columns={0: "kurtosis"}).transpose()
+def descriptive_stats_function(df: pd.DataFrame, varlist: list[str]) -> pd.DataFrame:
+    summary = df[varlist].describe()
+    kurtosis = pd.Series({column: df[column].kurt() for column in varlist})
+    skewness = pd.Series({column: df[column].skew() for column in varlist})
 
-    # Skewness
-    skewness = pd.Series()
-    for x in varlist:
-        skewness[str(x)] = df[str(x)].skew()
-    skewness = skewness.to_frame().rename(columns={0: "skewness"}).transpose()
-    # Concat
-    sum_stats = pd.concat([sum_stats, kurtosis, skewness])
-
-    return sum_stats
-
-
-# Augmented Dickey Fuller function
-
-# First define make_var_names function to obtain the complete results of the ADF test
+    return pd.concat(
+        [
+            summary,
+            kurtosis.to_frame().rename(columns={0: "kurtosis"}).transpose(),
+            skewness.to_frame().rename(columns={0: "skewness"}).transpose(),
+        ]
+    )

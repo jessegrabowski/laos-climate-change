@@ -1,3 +1,5 @@
+from typing import Any
+
 import geopandas as gpd
 import pandas as pd
 
@@ -71,11 +73,13 @@ def get_distance_to(
     gdf_km = gdf.copy().to_crs(crs)
     points_km = points.copy().to_crs(crs)
 
-    def get_closest(idx, row, gdf_km, return_columns):
+    def get_closest(
+        idx: object, row: pd.Series, gdf_km: gpd.GeoDataFrame | gpd.GeoSeries, return_columns: list[str]
+    ) -> tuple[Any, ...]:
         series = gdf_km.distance(row.geometry)
         index = series[series == series.min()].index[0]
 
-        ret_vals = (series.min(),)
+        ret_vals: tuple[Any, ...] = (series.min(),)
         for col in return_columns:
             ret_vals += (gdf_km.loc[index][col],)
 

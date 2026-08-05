@@ -3,7 +3,7 @@ import pandas as pd
 from statsmodels.tsa.stattools import adfuller
 
 
-def make_var_names(var, n_lags, reg):
+def make_var_names(var: str, n_lags: int, reg: str) -> list[str]:
     names = [f"L1.{var}"]
     for lag in range(1, n_lags + 1):
         names.append(f"D{lag}L1.{var}")
@@ -15,7 +15,12 @@ def make_var_names(var, n_lags, reg):
     return names
 
 
-def ADF_test_summary(df, maxlag=None, autolag="BIC", missing="error"):
+def ADF_test_summary(
+    df: pd.DataFrame | pd.Series,
+    maxlag: int | None = None,
+    autolag: str = "BIC",
+    missing: str = "error",
+) -> None:
     if missing == "error":
         if df.isna().any().any():
             raise ValueError("df has missing data; handle it or pass missing='drop' to automatically drop it.")
