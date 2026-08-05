@@ -58,12 +58,32 @@ def test_zero_sum_offsets_sum_to_zero():
     np.testing.assert_allclose(totals, 0.0, atol=1e-10)
 
 
-def test_unconstrained_offsets_do_not_sum_to_zero():
+def test_offsets_are_unconstrained_by_default():
+    """The zero-sum constraint changes the prior, so it must stay opt-in."""
     prior, _ = prior_draws(lambda: add_hierarchical_effect(name="country", group_dim="ISO"))
 
     totals = prior["country_effect_offset"].sum(dim="ISO").values
 
     assert np.abs(totals).max() > 1e-6
+
+
+def test_the_prior_parameters_reach_their_distributions():
+    """Nothing else pins these five, so a swapped Gamma alpha and beta would go unnoticed."""
+    prior, _ = prior_draws(
+        lambda: add_hierarchical_effect(
+            name="country",
+            group_dim="ISO",
+            loc_mu=100.0,
+            loc_sigma=0.1,
+            scale_alpha=200.0,
+            scale_beta=100.0,
+        ),
+        draws=2000,
+    )
+
+    assert prior["country_effect_loc"].mean() == pytest.approx(100.0, abs=0.05)
+    assert prior["country_effect_loc"].std() == pytest.approx(0.1, rel=0.1)
+    assert prior["country_effect_scale"].mean() == pytest.approx(2.0, rel=0.05)
 
 
 def test_the_effect_name_prefixes_every_variable_it_creates():
@@ -76,10 +96,11 @@ def test_the_effect_name_prefixes_every_variable_it_creates():
 
 
 def test_data_without_a_target_returns_only_the_features(observations):
-    with pm.Model(coords=COORDS):
+    with pm.Model(coords=COORDS) as model:
         result = add_data(["precip", "temp"], observations, dims=["obs_idx", "feature"])
 
     assert not isinstance(result, tuple)
+    assert "Y" not in model.named_vars
 
 
 def test_the_target_takes_only_the_batch_dimension(observations):
