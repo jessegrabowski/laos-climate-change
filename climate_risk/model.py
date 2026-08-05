@@ -16,7 +16,7 @@ def add_hierarchical_effect(
     scale_beta: float = 1.0,
     use_zerosum_offset: bool = False,
     group_dim: str | None = None,
-) -> tuple[TensorVariable]:
+) -> tuple[TensorVariable, TensorVariable, TensorVariable, TensorVariable]:
     """Adds a hierarchical effect to the active PyMC model.
 
     Parameters

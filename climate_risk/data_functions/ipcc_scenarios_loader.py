@@ -18,8 +18,7 @@ _log = logging.getLogger(__name__)
 
 
 def process_ipcc_scenarios(cache_dir: Path, *, force_reload: bool = False) -> pd.DataFrame:
-    if not cache_dir.exists() or force_reload:
-        cache_dir.mkdir(parents=True)  # create it if not exists
+    cache_dir.mkdir(parents=True, exist_ok=True)
 
     path_to_raw_file = cache_dir / IPCC_PREDICTIONS_RAW_NAME
 
