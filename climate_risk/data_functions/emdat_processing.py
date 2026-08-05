@@ -9,8 +9,16 @@ from climate_risk.const_vars import (
     PROB_COLS,  # noqa: F401  -- referenced as @PROB_COLS inside pandas query strings
 )
 
+# The study window opens in 1969 and closes on the newest event in the workbook.
+EMDAT_WINDOW_START = "1969-01-01"
 
-def load_emdat_data(cache_dir: Path, *, force_reload: bool = False) -> dict[str, pd.DataFrame]:
+
+def load_emdat_data(
+    cache_dir: Path,
+    *,
+    force_reload: bool = False,
+    window_start: str | pd.Timestamp = EMDAT_WINDOW_START,
+) -> dict[str, pd.DataFrame]:
     cache_dir.mkdir(parents=True, exist_ok=True)
 
     emdat_path = cache_dir / "emdat.xlsx"
@@ -45,8 +53,15 @@ def load_emdat_data(cache_dir: Path, *, force_reload: bool = False) -> dict[str,
     # Useful constants
     region_dict = df_raw[["ISO", "Region"]].drop_duplicates().set_index("ISO").to_dict()["Region"]
     subregion_dict = df_raw[["ISO", "Subregion"]].drop_duplicates().set_index("ISO").to_dict()["Subregion"]
-    years = pd.date_range(start="1969-01-01", end="2024-01-01", freq="YS-JAN")
     ISO_codes = df_raw["ISO"].unique()
+
+    newest_event = df_raw["Start_Year"].max()
+    years = pd.date_range(start=window_start, end=newest_event, freq="YS-JAN")
+    if years.empty:
+        raise ValueError(
+            f"window_start={pd.Timestamp(window_start).date()} is after the newest event in the workbook "
+            f"({newest_event.date()}), so every output frame would be empty."
+        )
 
     # Define the complete combination of years and ISO codes
     complete_index = pd.MultiIndex.from_product([ISO_codes, years], names=["ISO", "Start_Year"]).sort_values()
