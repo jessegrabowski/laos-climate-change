@@ -10,6 +10,7 @@ import pandas as pd
 from climate_risk.data_functions.emdat_processing import load_emdat_data
 from climate_risk.data_functions.rivers_damage import load_rivers_data
 from climate_risk.data_functions.shapefiles_data_loader import load_shapefile, shapefile_dir
+from climate_risk.geo.crs import GEOGRAPHIC_CRS, to_km
 from climate_risk.geo.distance import get_distance_to
 from climate_risk.geo.island_countries import ISLAND_COUNTRY_ISO3
 
@@ -31,7 +32,7 @@ def features_points_path(cache_dir: Path) -> Path:
 def load_data(fpath: Path) -> gpd.GeoDataFrame:
     data = pd.read_csv(fpath)
     data["geometry"] = gpd.points_from_xy(data.long, data.lat)
-    data = gpd.GeoDataFrame(data, crs="EPSG:4326")
+    data = gpd.GeoDataFrame(data, crs=GEOGRAPHIC_CRS)
 
     return data
 
@@ -68,7 +69,7 @@ def load_disaster_point_data(cache_dir: Path):
         distances = get_distance_to(rivers, points=data, return_columns=["ORD_FLOW", "HYRIV_ID"]).rename(
             columns={"distance_to_closest": "distance_to_river"}
         )
-        data = data.join(distances).assign(distance_to_river=lambda x: x.distance_to_river / 1000)
+        data = data.join(distances).assign(distance_to_river=lambda x: to_km(x.distance_to_river))
         modified_data = True
 
     if "distance_to_coastline" not in data.columns:
@@ -76,7 +77,7 @@ def load_disaster_point_data(cache_dir: Path):
         distances = get_distance_to(coastline.boundary, points=data.loc[:, ["geometry"]]).rename(
             columns={"distance_to_closest": "distance_to_coastline"}
         )
-        data = data.join(distances).assign(distance_to_coastline=lambda x: x.distance_to_coastline / 1000)
+        data = data.join(distances).assign(distance_to_coastline=lambda x: to_km(x.distance_to_coastline))
         modified_data = True
 
     if "is_island" not in data.columns:
@@ -93,7 +94,7 @@ def load_disaster_point_data(cache_dir: Path):
     return data
 
 
-# get_distance_to reprojects to EPSG:3395, so distances are in metres.
+# get_distance_to reprojects to PROJECTED_CRS, so distances are in metres.
 MIN_DISTANCE_METRES = 1.0
 
 
@@ -176,7 +177,7 @@ def load_grid_point_data(
         lat_grid = np.linspace(lat_min, lat_max, grid_size)
 
         grid = np.column_stack([x.ravel() for x in np.meshgrid(lon_grid, lat_grid)])
-        grid = gpd.GeoSeries(gpd.points_from_xy(*grid.T), crs="EPSG:4326")
+        grid = gpd.GeoSeries(gpd.points_from_xy(*grid.T), crs=GEOGRAPHIC_CRS)
         grid = gpd.GeoDataFrame({"geometry": grid})
 
         points = grid.overlay(point_map, how="intersection").geometry
@@ -323,7 +324,7 @@ def load_synthetic_non_disaster_points(
             return_columns=["ORD_FLOW", "HYRIV_ID"],
             name="rivers",
         ).rename(columns={"distance_to_closest": "distance_to_river"})
-        not_disasters = not_disasters.join(distances).assign(distance_to_river=lambda x: x.distance_to_river / 1000)
+        not_disasters = not_disasters.join(distances).assign(distance_to_river=lambda x: to_km(x.distance_to_river))
 
         distances = get_distance_to(
             coastline.boundary,
@@ -332,7 +333,7 @@ def load_synthetic_non_disaster_points(
             name="coastline",
         ).rename(columns={"distance_to_closest": "distance_to_coastline"})
         not_disasters = not_disasters.join(distances).assign(
-            distance_to_coastline=lambda x: x.distance_to_coastline / 1000
+            distance_to_coastline=lambda x: to_km(x.distance_to_coastline)
         )
 
         not_disasters["long"] = not_disasters.geometry.apply(lambda x: x.x)
@@ -352,8 +353,8 @@ def load_synthetic_non_disaster_points(
         not_disasters["geometry"] = gpd.points_from_xy(not_disasters.long, not_disasters.lat)
         not_disasters["Start_Year"] = pd.to_datetime(not_disasters["Start_Year"])
 
-        # EPSG:4326 is hard-coded so we don't have to load the data if this file exists! This might cause bugs :\
-        not_disasters = gpd.GeoDataFrame(not_disasters, crs="EPSG:4326")
+        # The cache stores bare lat/lon columns, so the CRS is asserted rather than read back.
+        not_disasters = gpd.GeoDataFrame(not_disasters, crs=GEOGRAPHIC_CRS)
 
     return not_disasters
 

@@ -18,6 +18,7 @@ from climate_risk.const_vars import (
 )
 from climate_risk.data_functions.rivers_data_loader import load_rivers_data
 from climate_risk.exceptions import DataValidationError, ISOCodeValidationError
+from climate_risk.geo.crs import GEOGRAPHIC_CRS
 from climate_risk.geo.distance import get_distance_to
 
 _log = logging.getLogger(__name__)
@@ -172,7 +173,7 @@ def load_shapefile(
     return df
 
 
-# get_distance_to reprojects to EPSG:3395, so distances are in metres.
+# get_distance_to reprojects to PROJECTED_CRS, so distances are in metres.
 MIN_DISTANCE_METRES = 1.0
 
 
@@ -202,7 +203,7 @@ def create_laos_point_grid(cache_dir: Path) -> gpd.GeoDataFrame:
         lat_grid = np.linspace(lat_min, lat_max, 100)
 
         laos_grid = np.column_stack([x.ravel() for x in np.meshgrid(lon_grid, lat_grid)])
-        grid = gpd.GeoSeries(gpd.points_from_xy(*laos_grid.T), crs="EPSG:4326")
+        grid = gpd.GeoSeries(gpd.points_from_xy(*laos_grid.T), crs=GEOGRAPHIC_CRS)
         grid = gpd.GeoDataFrame({"geometry": grid})
 
         laos_points = grid.overlay(laos, how="intersection").geometry

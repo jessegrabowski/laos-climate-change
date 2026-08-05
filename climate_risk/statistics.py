@@ -7,6 +7,8 @@ import xarray as xr
 from sklearn.preprocessing import StandardScaler as Standardize
 from statsmodels.tsa.stattools import adfuller
 
+from climate_risk.geo.crs import GEOGRAPHIC_CRS
+
 
 def nan_or_sum(x):
     if np.isnan(x).all():
@@ -125,7 +127,7 @@ def prediction_to_gpd_df(prediction_idata: xr.DataTree, variables: list, points:
         predictions_dict_geo[variable] = gpd.GeoDataFrame(
             predictions_dict[variable],
             geometry=gpd.points_from_xy(predictions_dict[variable]["long"], predictions_dict[variable]["lat"]),
-            crs="EPSG:4326",
+            crs=GEOGRAPHIC_CRS,
         )
 
     return predictions_dict_geo

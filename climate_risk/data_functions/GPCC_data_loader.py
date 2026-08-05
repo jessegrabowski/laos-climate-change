@@ -11,6 +11,7 @@ import xarray as xr
 
 from climate_risk.const_vars import GPCC_YEARS, MAKE_GPCC_URL
 from climate_risk.data_functions.shapefiles_data_loader import load_shapefile
+from climate_risk.geo.crs import GEOGRAPHIC_CRS
 
 _log = logging.getLogger(__name__)
 
@@ -64,8 +65,10 @@ def load_gpcc_data(cache_dir: Path, *, force_reload: bool = False, repair_ISO_co
 
             data = xr.open_dataset(path_to_GPCC(year_range, extracted=True))
             df = data["precip"].to_dataframe().reset_index()
-            _log.info(f"Merging {str_range} GPCC data with world shapefile using Lat/Lon (EPSG:4326 coordinates)")
-            df_geo = geo.GeoDataFrame(df, geometry=geo.points_from_xy(df["lon"], df["lat"]), crs="EPSG:4326")
+            _log.info(
+                f"Merging {str_range} GPCC data with world shapefile using Lat/Lon ({GEOGRAPHIC_CRS} coordinates)"
+            )
+            df_geo = geo.GeoDataFrame(df, geometry=geo.points_from_xy(df["lon"], df["lat"]), crs=GEOGRAPHIC_CRS)
             df_geo_wshape = df_geo.sjoin(world_shapefile, how="inner", predicate="intersects")[
                 [
                     "time",

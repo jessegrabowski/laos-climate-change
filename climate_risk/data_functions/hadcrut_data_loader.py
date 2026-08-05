@@ -9,6 +9,7 @@ import xarray as xr
 
 from climate_risk.const_vars import HADCRUT_URL
 from climate_risk.data_functions.shapefiles_data_loader import load_shapefile
+from climate_risk.geo.crs import GEOGRAPHIC_CRS
 
 _log = logging.getLogger(__name__)
 
@@ -42,12 +43,12 @@ def load_hadcrut_data(cache_dir: Path, *, force_reload: bool = False, repair_ISO
                 "REGION_UN": "region",
             }
         )
-        _log.info("Merging HADCRUT data with world shapefile using Lat/Lon (EPSG:4326 coordinates)")
+        _log.info(f"Merging HADCRUT data with world shapefile using Lat/Lon ({GEOGRAPHIC_CRS} coordinates)")
 
         df_geo = geo.GeoDataFrame(
             df,
             geometry=geo.points_from_xy(df["longitude"], df["latitude"]),
-            crs="EPSG:4326",
+            crs=GEOGRAPHIC_CRS,
         )
 
         cols_to_use = [
