@@ -281,6 +281,17 @@ def plot_ppc_loopit(idata: xr.DataTree, target_name: str, title: str | None = No
 SAMPLE_DIMS = ("chain", "draw")
 
 
+def _aligned_prediction_mean(draws, df):
+    """Return the posterior-predictive mean, checked against the frame it will be attached to."""
+    predictions = draws.mean(dim=SAMPLE_DIMS)
+    if predictions.size != len(df):
+        raise ValueError(
+            f"posterior_predictive holds {predictions.size} observations but df has {len(df)} rows; "
+            f"they must be the observations the model saw, in the same order."
+        )
+    return predictions.values
+
+
 def generate_plot_inputs(idata, df):
     """Attach posterior-predictive means and HDI bounds to the observed frame.
 
@@ -297,14 +308,7 @@ def generate_plot_inputs(idata, df):
         ``df`` with ``predictions`` and the 95% and 50% HDI bounds appended.
     """
     y_hat = idata.posterior_predictive["y_hat"]
-
-    predictions = y_hat.mean(dim=SAMPLE_DIMS)
-    if predictions.size != len(df):
-        raise ValueError(
-            f"posterior_predictive holds {predictions.size} observations but df has {len(df)} rows; "
-            f"they must be the observations the model saw, in the same order."
-        )
-    predictions = predictions.values
+    predictions = _aligned_prediction_mean(y_hat, df)
 
     hdi_95 = az.hdi(y_hat, prob=0.95)
     hdi_50 = az.hdi(y_hat, prob=0.5)
@@ -358,94 +362,38 @@ def plotting_function(idata, df, country: str) -> plt.Figure:
 
 
 ############################################ Functions for the damage model  #############################################
-def generate_plot_inputs_damages(
-    target_variable: str,
-    idata,
-    disaster_type: str = "hydrological_disasters",
-    df=pd.DataFrame,
-):
-    # Extract predictions
-    predictions = idata.posterior_predictive["damage_millions"].mean(dim=["chain", "draw"])
-    predictions = (
-        predictions.to_dataframe()
-        .drop(columns=["year", "ISO"])
-        .reset_index()
-        .rename(columns={target_variable: "predictions"})
+def generate_plot_inputs_damages(idata, df):
+    """Attach posterior-predictive damage means and HDI bounds to the observed frame.
+
+    Parameters
+    ----------
+    idata : DataTree
+        Inference data carrying a ``posterior_predictive`` group with a ``damage_millions`` variable.
+    df : DataFrame
+        The observed frame, in the order the model saw it.
+
+    Returns
+    -------
+    DataFrame
+        ``df`` with ``predictions`` and the 75% and 50% HDI bounds appended.
+    """
+    damages = idata.posterior_predictive["damage_millions"]
+    predictions = _aligned_prediction_mean(damages, df)
+
+    hdi_75 = az.hdi(damages, prob=0.75)
+    hdi_50 = az.hdi(damages, prob=0.5)
+
+    return df.assign(
+        predictions=predictions,
+        lower_damage_75=hdi_75.sel(ci_bound="lower").values,
+        higher_damage_75=hdi_75.sel(ci_bound="upper").values,
+        lower_damage_50=hdi_50.sel(ci_bound="lower").values,
+        higher_damage_50=hdi_50.sel(ci_bound="upper").values,
     )
 
-    hdi_mean = az.hdi(idata.posterior_predictive.damage_millions, hdi_prob=0.75)
 
-    hdi = hdi_mean["damage_millions"].to_dataframe().drop(columns=["year", "ISO"]).reset_index()
-
-    hdi_mean_50 = az.hdi(idata.posterior_predictive.damage_millions, hdi_prob=0.5)
-
-    hdi_50 = hdi_mean_50["damage_millions"].to_dataframe().drop(columns=["year", "ISO"]).reset_index()
-
-    # Merge results and predictions in one df
-    df_predictions = df[[target_variable, "ISO", "year"]]
-
-    # Obtain mean hdis per year and countries
-    lower_hdi_75_mean = hdi.query('hdi == "lower"')[["ISO", "year", "damage_millions"]].rename(
-        columns={"damage_millions": "lower_damage_75"}
-    )
-
-    higher_hdi_75_mean = hdi.query('hdi == "higher"')[["ISO", "year", "damage_millions"]].rename(
-        columns={"damage_millions": "higher_damage_75"}
-    )
-
-    lower_hdi_50_mean = hdi_50.query('hdi == "lower"')[["ISO", "year", "damage_millions"]].rename(
-        columns={"damage_millions": "lower_damage_50"}
-    )
-
-    higher_hdi_50_mean = hdi_50.query('hdi == "higher"')[["ISO", "year", "damage_millions"]].rename(
-        columns={"damage_millions": "higher_damage_50"}
-    )
-
-    predictions_mean = predictions
-
-    # 75% HDI
-    df_predictions = pd.merge(
-        df_predictions,
-        lower_hdi_75_mean,
-        left_on=["ISO", "year"],
-        right_on=["ISO", "year"],
-        how="left",
-    )
-    df_predictions = pd.merge(
-        df_predictions,
-        higher_hdi_75_mean,
-        left_on=["ISO", "year"],
-        right_on=["ISO", "year"],
-        how="left",
-    )
-    # 50% HDI
-    df_predictions = pd.merge(
-        df_predictions,
-        lower_hdi_50_mean,
-        left_on=["ISO", "year"],
-        right_on=["ISO", "year"],
-        how="left",
-    )
-    df_predictions = pd.merge(
-        df_predictions,
-        higher_hdi_50_mean,
-        left_on=["ISO", "year"],
-        right_on=["ISO", "year"],
-        how="left",
-    )
-    # Predictions
-    df_predictions = pd.merge(
-        df_predictions,
-        predictions_mean,
-        left_on=["ISO", "year"],
-        right_on=["ISO", "year"],
-        how="left",
-    )
-    return df_predictions
-
-
-def plotting_function_damages(idata, country: str, df: pd.DataFrame, target_variable: str):
-    df_predictions = generate_plot_inputs_damages(idata=idata, df=df, target_variable=target_variable)
+def plotting_function_damages(idata, df: pd.DataFrame, country: str, target_variable: str) -> plt.Figure:
+    df_predictions = generate_plot_inputs_damages(idata=idata, df=df)
 
     # Filter country
     data = df_predictions.query("ISO == @country")
@@ -474,16 +422,9 @@ def plotting_function_damages(idata, country: str, df: pd.DataFrame, target_vari
         label="50% HDI",
     )
     ax.legend(loc="upper left", fontsize=14)
-    ax.set_xlabel("Value", fontsize=14)  # X-axis label
-    ax.set_ylabel("Frequency", fontsize=14)  # Y-axis label
+    ax.set_xlabel("year", fontsize=14)
+    ax.set_ylabel("Disaster damages in 2000 USD millions", fontsize=14)
     ax.tick_params(axis="both", which="major", labelsize=12)
-
-    # plt.title(f"{country} disaster count and predictions")
-
-    plt.xlabel("year")
-    plt.ylabel("Disaster damages in 2000 USD millions")
-
-    plt.show()
 
     return fig
 

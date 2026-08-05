@@ -3,7 +3,12 @@ import pandas as pd
 import pytest
 import xarray as xr
 
-from climate_risk.plotting import generate_plot_inputs, plotting_function
+from climate_risk.plotting import (
+    generate_plot_inputs,
+    generate_plot_inputs_damages,
+    plotting_function,
+    plotting_function_damages,
+)
 
 OBSERVATIONS = 4
 ISO_CODES = ["AAA", "AAA", "BBB", "BBB"]
@@ -13,6 +18,11 @@ YEARS = pd.to_datetime(["1990", "1991", "1990", "1991"])
 @pytest.fixture
 def counts():
     return pd.DataFrame({"ISO": ISO_CODES, "Start_Year": YEARS, "is_disaster": [1, 0, 1, 1]})
+
+
+@pytest.fixture
+def damages():
+    return pd.DataFrame({"ISO": ISO_CODES, "year": YEARS, "damage_millions": [1.0, 2.0, 3.0, 4.0]})
 
 
 def _posterior_predictive(name):
@@ -26,6 +36,11 @@ def _posterior_predictive(name):
 @pytest.fixture
 def idata():
     return _posterior_predictive("y_hat")
+
+
+@pytest.fixture
+def damages_idata():
+    return _posterior_predictive("damage_millions")
 
 
 def test_predictions_are_attached_in_row_order(idata, counts):
@@ -56,3 +71,19 @@ def test_plotting_one_country_draws_only_its_observations(idata, counts):
 
     predicted_line = fig.axes[0].lines[0]
     assert len(predicted_line.get_xdata()) == 2
+
+
+def test_damage_bounds_bracket_the_prediction(damages_idata, damages):
+    inputs = generate_plot_inputs_damages(damages_idata, damages)
+
+    assert (inputs["lower_damage_75"] < inputs["predictions"]).all()
+    assert (inputs["higher_damage_75"] > inputs["predictions"]).all()
+    assert (inputs["lower_damage_50"] >= inputs["lower_damage_75"]).all()
+    assert (inputs["higher_damage_50"] <= inputs["higher_damage_75"]).all()
+
+
+def test_plotting_damages_draws_only_one_country(damages_idata, damages):
+    fig = plotting_function_damages(damages_idata, damages, "AAA", "damage_millions")
+
+    observed_points = fig.axes[0].collections[0]
+    assert len(observed_points.get_offsets()) == 2
