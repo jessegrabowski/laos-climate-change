@@ -1,20 +1,21 @@
+import pandas as pd
 import pytest
 
 from climate_risk import load_hadcrut_data
-from tests.conftest import NetworkAccessError
 
 
-@pytest.fixture
-def processed_only(tmp_path):
+@pytest.fixture(params=["1960", "1960-01-01"], ids=["bare-year", "iso-date"])
+def processed_only(request, tmp_path):
+    """Caches written by different versions hold the year both ways; both must reload."""
     (tmp_path / "hadcrut_temperature_processed.csv").write_text(
-        "ISO,year,surface_temperature_dev\nLAO,1960-01-01,0.5\n"
+        f"ISO,year,surface_temperature_dev\nLAO,{request.param},0.5\n"
     )
     return tmp_path
 
 
-@pytest.mark.xfail(
-    reason="the raw-download check runs before the processed-cache check, so a warm cache still downloads",
-    raises=NetworkAccessError,
-)
-def test_processed_cache_alone_does_not_download(processed_only):
-    load_hadcrut_data(processed_only)
+def test_warm_cache_indexes_by_iso_and_parsed_year(processed_only):
+    """Downstream joins on a datetime year; a string index silently fails to match."""
+    df = load_hadcrut_data(processed_only)
+
+    assert df.index.names == ["ISO", "year"]
+    assert isinstance(df.index.get_level_values("year"), pd.DatetimeIndex)
