@@ -4,7 +4,7 @@ from pathlib import Path
 import pandas as pd
 
 from climate_risk.data_functions.co2_processing import load_co2_data
-from climate_risk.data_functions.emdat_processing import load_emdat_data
+from climate_risk.data_functions.emdat_processing import DISASTER_TYPES, load_emdat_data
 from climate_risk.data_functions.GPCC_data_loader import load_gpcc_data
 from climate_risk.data_functions.ocean_heat_processing import load_ocean_heat_data
 from climate_risk.data_functions.world_bank_data_loader import load_wb_data
@@ -140,24 +140,11 @@ def load_all_data(cache_dir: Path) -> dict[str, pd.DataFrame]:
     #     .copy()
     # )
 
-    # 5 Country constants
-    merged_dict["country_constants"] = (
-        emdat["df_prob_filtered_adjusted"]
-        .reset_index()
-        .drop(
-            [
-                "Start_Year",
-                "Drought",
-                "Flood",
-                "Storm",
-                "Wildfire",
-                "Extreme temperature",
-            ],
-            axis=1,
-        )
-        .drop_duplicates()
-        .set_index("ISO")
-    )
+    # 5 Country constants: everything that does not vary within a country.
+    events = emdat["df_prob_filtered_adjusted"].reset_index()
+    varies_by_year = {*DISASTER_TYPES, "Start_Year"}
+    constant_columns = [c for c in events.columns if c not in varies_by_year]
+    merged_dict["country_constants"] = events[constant_columns].drop_duplicates().set_index("ISO")
 
     # Merging panel data sets
     merge_func = partial(pd.merge, left_index=True, right_index=True, how="outer")

@@ -8,9 +8,15 @@ import pandas as pd
 import pytest
 import xarray as xr
 
-from shapely.geometry import LineString, box
+from shapely.geometry import LineString, Point, box
 
-from climate_risk.const_vars import BIG_RIVERS_FILENAME, GPCC_YEARS, MEDIUM_BIG_RIVERS_FILENAME
+from climate_risk.const_vars import (
+    BIG_RIVERS_FILENAME,
+    CO2_FILENAME,
+    GPCC_YEARS,
+    MEDIUM_BIG_RIVERS_FILENAME,
+    OCEAN_HEAT_FILENAME,
+)
 
 # One event that clears every downstream filter: deaths above 100, affected above 1000, and a start
 # year inside both the 1970 and 1980 cutoffs. Tests override only the field under examination.
@@ -113,6 +119,92 @@ def write_gpcc_archives(tmp_path):
         return tmp_path
 
     return write
+
+
+@pytest.fixture
+def write_full_cache(tmp_path, write_emdat_cache):
+    """Seed every cache `load_all_data` reads, so the whole merge runs offline.
+
+    AAA and BBB appear in every source. CCC is EM-DAT only and DDD World Bank only, so the first
+    reconciliation has something to drop from each side. EEE has both but no precipitation, so it
+    survives that pass and is dropped only from the GPCC frame. FFF has precipitation and
+    nothing else, so the GPCC pass has something of its own to drop.
+    """
+
+    def write():
+        events = [
+            emdat_event({"ISO": iso, "DisNo.": f"{iso}-{year}", "Start Year": year, "End Year": year})
+            for iso in ("AAA", "BBB", "CCC", "EEE")
+            for year in (1990, 1991)
+        ]
+        # A climatological event, so the hydro/clim damage split has something on both sides.
+        events.append(
+            emdat_event(
+                {
+                    "ISO": "AAA",
+                    "DisNo.": "AAA-drought",
+                    "Start Year": 1990,
+                    "End Year": 1990,
+                    "Disaster Type": "Drought",
+                }
+            )
+        )
+        # One country has a disaster type in a single year, so a per-year column mistaken for a
+        # country constant shows up as a duplicated country.
+        events.append(
+            emdat_event(
+                {
+                    "ISO": "AAA",
+                    "DisNo.": "AAA-landslide",
+                    "Start Year": 1991,
+                    "End Year": 1991,
+                    "Disaster Type": "Mass movement (wet)",
+                }
+            )
+        )
+        write_emdat_cache(events)
+        (tmp_path / "world_bank.csv").write_text(
+            "country_code,year,gdp_per_cap,population_density,Population\n"
+            "AAA,1990,1000.0,10.0,1000000\nAAA,1991,1100.0,11.0,1010000\n"
+            "BBB,1990,2000.0,20.0,2000000\nBBB,1991,2200.0,22.0,2020000\n"
+            "DDD,1990,3000.0,30.0,3000000\nDDD,1991,3300.0,33.0,3030000\n"
+            "EEE,1990,4000.0,40.0,4000000\nEEE,1991,4400.0,44.0,4040000\n"
+        )
+        (tmp_path / CO2_FILENAME).write_text("Date,co2\n1990-01-01,354.0\n1991-01-01,355.0\n")
+        (tmp_path / OCEAN_HEAT_FILENAME).write_text("Date,Temp\n1990-01-01,1.0\n1991-01-01,2.0\n")
+        gpcc_dir = tmp_path / "gpcc"
+        gpcc_dir.mkdir(parents=True, exist_ok=True)
+        (gpcc_dir / "gpcc_precipitations.csv").write_text(
+            "country_code,time,precip\nAAA,1990-01-01,100.0\nAAA,1991-01-01,110.0\n"
+            "BBB,1990-01-01,200.0\nBBB,1991-01-01,220.0\n"
+            "FFF,1990-01-01,300.0\nFFF,1991-01-01,330.0\n"
+        )
+        return tmp_path
+
+    return write
+
+
+@pytest.fixture
+def rivers_clear_of_the_grid():
+    """Offset from the countries: a point lying exactly on a river gives log(0) downstream."""
+    return gpd.GeoDataFrame(
+        {
+            "ORD_FLOW": [4, 5],
+            "HYRIV_ID": [1, 2],
+            "geometry": [LineString([(-2, -1), (-2, 2)]), LineString([(8, -1), (8, 2)])],
+        },
+        crs="EPSG:4326",
+    )
+
+
+@pytest.fixture
+def coastline():
+    return gpd.GeoDataFrame({"geometry": [LineString([(6, -1), (6, 2)])]}, crs="EPSG:4326")
+
+
+@pytest.fixture
+def grid_points():
+    return gpd.GeoDataFrame({"geometry": [Point(0.5, 0.5), Point(2.5, 0.5)]}, crs="EPSG:4326")
 
 
 @pytest.fixture
