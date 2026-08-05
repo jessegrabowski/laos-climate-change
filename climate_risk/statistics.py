@@ -152,6 +152,10 @@ def get_distance_to(gdf, points, return_columns=None, crs="EPSG:3395", n_cores=-
     return pd.DataFrame(results, columns=["distance_to_closest", *return_columns], index=points.index)
 
 
+# get_distance_to reprojects to EPSG:3395, so distances are in metres.
+MIN_DISTANCE_METRES = 1.0
+
+
 def create_grid_from_shape(shapefile, rivers, coastline, grid_size=100):
     long_min, lat_min, long_max, lat_max = shapefile.dissolve().bounds.values.ravel()
     long_grid = np.linspace(long_min, long_max, grid_size)
@@ -181,8 +185,8 @@ def create_grid_from_shape(shapefile, rivers, coastline, grid_size=100):
 
     # Create log of distances
     points = points.assign(
-        log_distance_to_river=lambda x: np.log(x.distance_to_river),
-        log_distance_to_coastline=lambda x: np.log(x.distance_to_coastline),
+        log_distance_to_river=lambda x: np.log(x.distance_to_river.clip(lower=MIN_DISTANCE_METRES)),
+        log_distance_to_coastline=lambda x: np.log(x.distance_to_coastline.clip(lower=MIN_DISTANCE_METRES)),
     )
 
     if "ISO_A3" in point_overlay.columns:

@@ -223,7 +223,7 @@ def write_full_cache(tmp_path, write_emdat_cache):
 
 @pytest.fixture
 def rivers_clear_of_the_grid():
-    """Offset from the countries: a point lying exactly on a river gives log(0) downstream."""
+    """Offset from the countries, so every grid point sits a strictly positive distance away."""
     return gpd.GeoDataFrame(
         {
             "ORD_FLOW": [4, 5],
@@ -232,6 +232,25 @@ def rivers_clear_of_the_grid():
         },
         crs="EPSG:4326",
     )
+
+
+@pytest.fixture
+def rivers_through_the_grid():
+    """Runs up the western edge of the toy world, so the grid points along it measure zero."""
+    return gpd.GeoDataFrame(
+        {
+            "ORD_FLOW": [4, 5],
+            "HYRIV_ID": [1, 2],
+            "geometry": [LineString([(0, -1), (0, 2)]), LineString([(8, -1), (8, 2)])],
+        },
+        crs="EPSG:4326",
+    )
+
+
+@pytest.fixture
+def coastline_through_the_grid():
+    """Ends on a grid point; `create_grid_from_shape` measures to the boundary, which is that endpoint."""
+    return gpd.GeoDataFrame({"geometry": [LineString([(5, 0), (5, 2)])]}, crs="EPSG:4326")
 
 
 @pytest.fixture
@@ -269,11 +288,13 @@ def write_shapefile_cache(tmp_path):
 def write_point_grid_cache(write_shapefile_cache, write_rivers_cache, rivers_clear_of_the_grid):
     """Seed the world, coastline and river caches `load_grid_point_data` reads."""
 
-    def write():
+    def write(rivers=None):
+        if rivers is None:
+            rivers = rivers_clear_of_the_grid
         write_shapefile_cache("world", toy_world_needing_repair())
         write_shapefile_cache("coastline", toy_coastline())
-        write_rivers_cache(rivers_clear_of_the_grid.query("ORD_FLOW < 5"))
-        return write_rivers_cache(rivers_clear_of_the_grid, include_medium=True)
+        write_rivers_cache(rivers.query("ORD_FLOW < 5"))
+        return write_rivers_cache(rivers, include_medium=True)
 
     return write
 

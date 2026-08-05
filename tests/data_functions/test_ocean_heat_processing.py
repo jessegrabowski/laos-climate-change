@@ -3,7 +3,7 @@ import pytest
 
 from climate_risk import load_ocean_heat_data
 from climate_risk.const_vars import OCEAN_HEAT_FILENAME
-from climate_risk.data_functions.ocean_heat_processing import OCEAN_HEAT_BASELINE_OFFSET, process_ocean_heat
+from climate_risk.data_functions.ocean_heat_processing import process_ocean_heat
 from tests.conftest import NetworkAccessError
 
 
@@ -28,13 +28,16 @@ def test_force_reload_bypasses_a_warm_cache(warm_cache):
         load_ocean_heat_data(warm_cache, force_reload=True)
 
 
+def test_the_warm_cache_is_read_with_parsed_dates(warm_cache):
+    """Downstream reaches for `.dt.year`, which a string index cannot answer."""
+    assert isinstance(load_ocean_heat_data(warm_cache).index, pd.DatetimeIndex)
+
+
 def test_annual_means_are_shifted_onto_the_baseline(monthly):
-    """The published results are estimated against the offset series, not the raw NCEI anomalies."""
+    """The offset is stated literally: the published results move if it is ever retuned."""
     annual = process_ocean_heat(monthly)
 
-    assert annual["Temp"].tolist() == pytest.approx(
-        [OCEAN_HEAT_BASELINE_OFFSET + 1.0, OCEAN_HEAT_BASELINE_OFFSET + 15.0]
-    )
+    assert annual["Temp"].tolist() == pytest.approx([153.0, 167.0])
 
 
 def test_years_are_stamped_at_their_start(monthly):
