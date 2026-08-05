@@ -16,6 +16,8 @@ _log = logging.getLogger(__name__)
 
 SYNTHETIC_DATA_BASENAME = "synthetic_non_disasters.csv"
 
+SAMPLING_STRATEGIES = ("region", "country")
+
 
 def raw_points_path(cache_dir: Path) -> Path:
     return cache_dir / "disaster_locations_gpt_repaired_w_features.csv"
@@ -302,6 +304,9 @@ def load_synthetic_non_disaster_points(
     by="region",
     multiplier=1,
 ):
+    if by not in SAMPLING_STRATEGIES:
+        raise ValueError(f"by should be one of {sorted(SAMPLING_STRATEGIES)}, got {by}")
+
     if rng is None:
         seed = sum(map(ord, "Laos GGGI Climate Adaptation"))
         rng = np.random.default_rng(seed)
