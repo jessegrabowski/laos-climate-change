@@ -7,8 +7,6 @@ import xarray as xr
 from sklearn.preprocessing import StandardScaler as Standardize
 from statsmodels.tsa.stattools import adfuller
 
-from climate_risk.geo.distance import get_distance_to
-
 
 def nan_or_sum(x):
     if np.isnan(x).all():
@@ -103,51 +101,6 @@ def ADF_test_summary(df, maxlag=None, autolag="BIC", missing="error"):
                 if coef in name:
                     line = f"\t{coef:<13}{reg_coefs[coef]:13.3f}{reg_tstat[coef]:15.3f}{reg_pvals[coef]:13.3f}"
                     print(line)
-
-
-# get_distance_to reprojects to EPSG:3395, so distances are in metres.
-MIN_DISTANCE_METRES = 1.0
-
-
-def create_grid_from_shape(shapefile, rivers, coastline, grid_size=100):
-    long_min, lat_min, long_max, lat_max = shapefile.dissolve().bounds.values.ravel()
-    long_grid = np.linspace(long_min, long_max, grid_size)
-    lat_grid = np.linspace(lat_min, lat_max, grid_size)
-
-    grid = np.column_stack([x.ravel() for x in np.meshgrid(long_grid, lat_grid)])
-    grid = gpd.GeoSeries(gpd.points_from_xy(*grid.T), crs="EPSG:4326")
-    grid = gpd.GeoDataFrame({"geometry": grid})
-
-    point_overlay = grid.overlay(shapefile, how="intersection")
-    points = point_overlay.geometry
-    points = points.to_frame().assign(long=lambda x: x.geometry.x, lat=lambda x: x.geometry.y)
-
-    # Obtain distance with rivers
-    distances_to_rivers = get_distance_to(rivers, points=points, return_columns=["ORD_FLOW", "HYRIV_ID"]).rename(
-        columns={"distance_to_closest": "distance_to_river"}
-    )
-
-    points = pd.merge(points, distances_to_rivers, left_index=True, right_index=True, how="left")
-
-    # Obtain Laos distance with coastlines
-    distances_to_coastlines = get_distance_to(coastline.boundary, points=points, return_columns=None).rename(
-        columns={"distance_to_closest": "distance_to_coastline"}
-    )
-
-    points = pd.merge(points, distances_to_coastlines, left_index=True, right_index=True, how="left")
-
-    # Create log of distances
-    points = points.assign(
-        log_distance_to_river=lambda x: np.log(x.distance_to_river.clip(lower=MIN_DISTANCE_METRES)),
-        log_distance_to_coastline=lambda x: np.log(x.distance_to_coastline.clip(lower=MIN_DISTANCE_METRES)),
-    )
-
-    if "ISO_A3" in point_overlay.columns:
-        points["ISO"] = point_overlay.ISO_A3
-    else:
-        points["ISO"] = "LAO"
-
-    return points
 
 
 def load_island_table():
