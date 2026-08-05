@@ -114,7 +114,13 @@ markers = [
     "slow: PyMC sampling or other multi-second work",
     "requires_emdat: needs the licensed EM-DAT workbook, absent from CI",
 ]
-filterwarnings = ["error"]
+filterwarnings = [
+    "error",
+    # ESRI Shapefile truncates column names to 10 characters, and load_grid_point_data renames them
+    # back when it reads the file. TODO(step-06): stop round-tripping point grids through shapefiles.
+    "ignore:Column names longer than 10 characters:UserWarning",
+    "ignore:Normalized/laundered field name:RuntimeWarning",
+]
 
 [tool.ruff]
 line-length = 120
