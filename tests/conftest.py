@@ -1,13 +1,16 @@
+import gzip
 import socket
 import zipfile
 
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 import pytest
+import xarray as xr
 
 from shapely.geometry import LineString, box
 
-from climate_risk.const_vars import BIG_RIVERS_FILENAME, MEDIUM_BIG_RIVERS_FILENAME
+from climate_risk.const_vars import BIG_RIVERS_FILENAME, GPCC_YEARS, MEDIUM_BIG_RIVERS_FILENAME
 from climate_risk.data_functions.shapefiles_data_loader import shapefile_filename_dict, shapefile_name_dict
 
 # One event that clears every downstream filter: deaths above 100, affected above 1000, and a start
@@ -71,6 +74,36 @@ def toy_rivers():
         },
         crs="EPSG:4326",
     )
+
+
+def toy_precipitation(year_range):
+    """A GPCC grid with one point inside each country of `toy_world`."""
+    start = int(year_range.split("_")[0])
+    return xr.Dataset(
+        {"precip": (("time", "lat", "lon"), np.arange(3.0).reshape(1, 1, 3))},
+        coords={
+            "time": np.array([f"{start}-01-01"], dtype="datetime64[ns]"),
+            "lat": [0.5],
+            "lon": [0.5, 2.5, 4.5],
+        },
+    )
+
+
+@pytest.fixture
+def write_gpcc_archives(tmp_path):
+    """Return a callable writing one gzipped archive per year range, some already extracted."""
+
+    def write(extracted=()):
+        gpcc_dir = tmp_path / "gpcc"
+        gpcc_dir.mkdir(parents=True, exist_ok=True)
+        for year_range in GPCC_YEARS:
+            raw = bytes(toy_precipitation(year_range).to_netcdf())
+            (gpcc_dir / f"gpcc_raw_{year_range}.nc.gz").write_bytes(gzip.compress(raw))
+            if year_range in extracted:
+                (gpcc_dir / f"gpcc_raw_{year_range}.nc").write_bytes(raw)
+        return tmp_path
+
+    return write
 
 
 @pytest.fixture
