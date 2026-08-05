@@ -184,3 +184,4 @@ notebooks/final_paper/data/
 # Ignore archive
 notebooks/geo_damage_model/archive
 notebooks/final_paper/archive
+scratch_*.py
