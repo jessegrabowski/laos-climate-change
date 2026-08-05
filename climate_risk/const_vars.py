@@ -7,8 +7,8 @@ PROB_COLS = [
     "Flood",
     "Storm",
     "Wildfire",
-    "Mass Movement (Dry)",
-    "Mass Movement (Wet)",
+    "Mass movement (dry)",
+    "Mass movement (wet)",
     "Region",
     "Subregion",
 ]

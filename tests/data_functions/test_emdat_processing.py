@@ -91,6 +91,7 @@ def test_region_metadata_survives_reindexing(write_emdat_cache):
         ("Drought", "Climatological"),
         ("Wildfire", "Climatological"),
         ("Extreme temperature", "Climatological"),
+        ("Mass movement (wet)", "Hydrometereological"),
     ],
 )
 def test_disaster_types_map_to_their_class(write_emdat_cache, disaster_type, expected_class):
@@ -139,10 +140,6 @@ def test_the_window_extends_to_the_newest_event(write_emdat_cache):
     assert years.min() == WINDOW_START
 
 
-@pytest.mark.xfail(
-    reason="disaster_class_dict says 'Mass movement (wet)' but PROB_COLS says 'Mass Movement (Wet)'",
-    raises=KeyError,
-)
 def test_mass_movement_events_reach_the_count_frames(write_emdat_cache):
     cache_dir = write_emdat_cache([emdat_event({"Disaster Type": "Mass movement (wet)"})])
 
