@@ -17,7 +17,7 @@ from climate_risk.const_vars import (
     WORLD_URL,
 )
 from climate_risk.data_functions.rivers_data_loader import load_rivers_data
-from climate_risk.exceptions import DataValidationError
+from climate_risk.exceptions import DataValidationError, ISOCodeValidationError
 from climate_risk.statistics import get_distance_to
 
 _log = logging.getLogger(__name__)
@@ -94,6 +94,8 @@ def repair_iso_codes(world: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     ------
     DataValidationError
         If a repair matches no row, which means the boundary file has changed under it.
+    ISOCodeValidationError
+        If any ISO code labels more than one geometry after the repairs.
     """
     missing_columns = {"WB_NAME", "ISO_A3"} - set(world.columns)
     if missing_columns:
@@ -111,7 +113,10 @@ def repair_iso_codes(world: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     repaired["ISO_A3"] = repaired["WB_NAME"].map(ISO_CODE_REPAIRS).fillna(repaired["ISO_A3"])
     repaired = repaired.reset_index(drop=True)
 
-    assert (repaired["ISO_A3"].value_counts() == 1).all()
+    geometries_per_code = repaired["ISO_A3"].value_counts()
+    duplicated = geometries_per_code[geometries_per_code > 1]
+    if not duplicated.empty:
+        raise ISOCodeValidationError(f"These ISO codes label more than one geometry: {dict(duplicated)}")
 
     return repaired
 

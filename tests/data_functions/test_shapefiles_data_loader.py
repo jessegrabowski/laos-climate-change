@@ -1,8 +1,9 @@
+import pandas as pd
 import pytest
 
 from climate_risk import load_shapefile
 from climate_risk.data_functions.shapefiles_data_loader import repair_iso_codes
-from climate_risk.exceptions import DataValidationError
+from climate_risk.exceptions import DataValidationError, ISOCodeValidationError
 from tests.conftest import toy_world, toy_world_needing_repair
 
 
@@ -71,3 +72,13 @@ def test_a_repair_matching_nothing_is_an_error(column, renamed, expected):
 
     with pytest.raises(DataValidationError, match=expected):
         repair_iso_codes(world)
+
+
+def test_duplicate_iso_codes_are_an_error():
+    """One code per geometry is what every downstream join assumes."""
+    world = toy_world_needing_repair()
+    second_netherlands = world[world["WB_NAME"] == "Netherlands"].assign(WB_NAME="Netherlands (again)")
+    doubled = pd.concat([world, second_netherlands], ignore_index=True)
+
+    with pytest.raises(ISOCodeValidationError, match="NLD"):
+        repair_iso_codes(doubled)
