@@ -77,10 +77,11 @@ def toy_rivers():
 
 # Archive and directory names as they appear upstream, stated independently of the loader so a
 # change to either constant fails a test rather than silently agreeing with itself.
-# Archive and directory names as they appear upstream, stated independently of the loader so a
-# change to either constant fails a test rather than silently agreeing with itself.
+# Archive name and the path each one unpacks to. The world archive holds a directory; the Laos
+# archive is flat, one file per admin level.
 UPSTREAM_SHAPEFILE_LAYOUT = {
     "world": ("wb_countries_admin0_10m.zip", "WB_countries_Admin0_10m/WB_countries_Admin0_10m.shp"),
+    "laos": ("lao_admin_boundaries.shp.zip", "lao_admin2.shp"),
 }
 
 

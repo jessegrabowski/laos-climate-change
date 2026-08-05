@@ -52,10 +52,18 @@ EM_DAT_COL_DICT = {
 }
 
 
-WORLD_URL = "https://datacatalog.worldbank.org/search/dataset/0038272/World-Bank-Official-Boundaries"
+# The World Bank data catalog serves downloads through a rate-limited API with no stable direct
+# link, so this points at a humanitarian CKAN node mirroring the same archive.
+WORLD_URL = (
+    "https://ckan.rdas.live/dataset/36f4b9e3-13d4-4865-98b9-1e299a9c6458"
+    "/resource/fd848e6b-bf73-470f-9c51-25ce4ff76f20/download/wb_countries_admin0_10m.zip"
+)
 WORLD_FILENAME = "wb_countries_admin0_10m.zip"
-LAOS_URL = "https://data.humdata.org/dataset/9eb6aff1-9e3f-43d3-99a6-f415fe4b4dff/resource/1d6edf99-5303-4b31-8909-dd70cda78443/download/lao_adm_ngd_20191112_shp.zip"
-LAOS_FILENAME = "lao_adm_ngd_20191112_shp.zip"
+LAOS_URL = (
+    "https://data.humdata.org/dataset/9eb6aff1-9e3f-43d3-99a6-f415fe4b4dff"
+    "/resource/907a1b50-0d14-40ec-8b8a-f2d027d895aa/download/lao_admin_boundaries.shp.zip"
+)
+LAOS_FILENAME = "lao_admin_boundaries.shp.zip"
 
 CO2_URL = "https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_annmean_mlo.csv"
 CO2_FILENAME = "noaa_co2.csv"
@@ -627,7 +635,7 @@ REGIONS = ["Asia", "Europe", "Africa", "Oceania", "Americas"]
 HADCRUT_URL = "https://crudata.uea.ac.uk/cru/data/temperature/HadCRUT.5.0.2.0.analysis.anomalies.ensemble_mean.nc"
 
 COASTLINE_FILENAME = "gshhg-shp-2.3.7.zip"
-COASTLINE_URL = "https://www.ngdc.noaa.gov/mgg/shorelines/data/gshhg/latest/gshhg-shp-2.3.7.zip"
+COASTLINE_URL = "https://www.soest.hawaii.edu/pwessel/gshhg/gshhg-shp-2.3.7.zip"
 
 IPCC_PREDICTIONS_RAW_NAME = "AR6-SYR-LR-CSB2-F1-Panel(a).xlsx"
 IPCC_URL = (

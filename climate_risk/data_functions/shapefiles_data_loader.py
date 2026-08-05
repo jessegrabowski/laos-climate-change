@@ -34,7 +34,9 @@ shapefile_url_dict = {"world": WORLD_URL, "laos": LAOS_URL, "coastline": COASTLI
 # here that fails on Linux.
 shapefile_filename_dict = {
     "world": "WB_countries_Admin0_10m",
-    "laos": "lao_adm_ngd_20191112_SHP",
+    # The Laos archive unpacks flat, one file per admin level. Level 2 is the district layer the
+    # point grid is built from.
+    "laos": "lao_admin2.shp",
     "coastline": "GSHHS_shp/f",
 }
 
@@ -71,7 +73,7 @@ def extract_shapefiles(which: str, cache_dir: Path, *, force_reload: bool = Fals
     output_path = shapefile_dir(cache_dir)
     shapefile_path = output_path / filename
 
-    if not shapefile_path.is_dir() or force_reload:
+    if not shapefile_path.exists() or force_reload:
         _log.info(f"Extracting {zip_filename}.zip")
 
         with ZipFile(output_path / (zip_filename + ".zip"), "r") as zObject:
