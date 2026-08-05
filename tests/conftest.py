@@ -8,7 +8,7 @@ import pandas as pd
 import pytest
 import xarray as xr
 
-from shapely.geometry import LineString, box
+from shapely.geometry import LineString, Point, box
 
 from climate_risk.const_vars import BIG_RIVERS_FILENAME, GPCC_YEARS, MEDIUM_BIG_RIVERS_FILENAME
 
@@ -113,6 +113,11 @@ def write_gpcc_archives(tmp_path):
         return tmp_path
 
     return write
+
+
+@pytest.fixture
+def grid_points():
+    return gpd.GeoDataFrame({"geometry": [Point(0.5, 0.5), Point(2.5, 0.5)]}, crs="EPSG:4326")
 
 
 @pytest.fixture
