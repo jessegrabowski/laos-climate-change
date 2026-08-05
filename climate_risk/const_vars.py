@@ -53,7 +53,7 @@ EM_DAT_COL_DICT = {
 
 
 WORLD_URL = "https://datacatalog.worldbank.org/search/dataset/0038272/World-Bank-Official-Boundaries"
-WORLD_FILENAME = "World Bank Official Boundaries - Admin 0_all_layers.zip"
+WORLD_FILENAME = "wb_countries_admin0_10m.zip"
 LAOS_URL = "https://data.humdata.org/dataset/9eb6aff1-9e3f-43d3-99a6-f415fe4b4dff/resource/1d6edf99-5303-4b31-8909-dd70cda78443/download/lao_adm_ngd_20191112_shp.zip"
 LAOS_FILENAME = "lao_adm_ngd_20191112_shp.zip"
 

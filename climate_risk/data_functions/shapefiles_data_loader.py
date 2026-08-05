@@ -30,9 +30,11 @@ shapefile_name_dict = {
 
 shapefile_url_dict = {"world": WORLD_URL, "laos": LAOS_URL, "coastline": COASTLINE_URL}
 
+# Paths inside each archive, case included -- a case-insensitive filesystem hides a mismatch
+# here that fails on Linux.
 shapefile_filename_dict = {
-    "world": "wb_countries_admin0_10m",
-    "laos": "lao_adm_ngd_20191112_shp",
+    "world": "WB_countries_Admin0_10m",
+    "laos": "lao_adm_ngd_20191112_SHP",
     "coastline": "GSHHS_shp/f",
 }
 
@@ -70,7 +72,7 @@ def extract_shapefiles(which: str, cache_dir: Path, *, force_reload: bool = Fals
     shapefile_path = output_path / filename
 
     if not shapefile_path.is_dir() or force_reload:
-        _log.info(f"Extracting {shapefile_path}")
+        _log.info(f"Extracting {zip_filename}.zip")
 
         with ZipFile(output_path / (zip_filename + ".zip"), "r") as zObject:
             zObject.extractall(path=output_path)

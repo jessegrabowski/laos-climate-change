@@ -11,7 +11,6 @@ import xarray as xr
 from shapely.geometry import LineString, box
 
 from climate_risk.const_vars import BIG_RIVERS_FILENAME, GPCC_YEARS, MEDIUM_BIG_RIVERS_FILENAME
-from climate_risk.data_functions.shapefiles_data_loader import shapefile_filename_dict, shapefile_name_dict
 
 # One event that clears every downstream filter: deaths above 100, affected above 1000, and a start
 # year inside both the 1970 and 1980 cutoffs. Tests override only the field under examination.
@@ -76,6 +75,15 @@ def toy_rivers():
     )
 
 
+# Archive and directory names as they appear upstream, stated independently of the loader so a
+# change to either constant fails a test rather than silently agreeing with itself.
+# Archive and directory names as they appear upstream, stated independently of the loader so a
+# change to either constant fails a test rather than silently agreeing with itself.
+UPSTREAM_SHAPEFILE_LAYOUT = {
+    "world": ("wb_countries_admin0_10m.zip", "WB_countries_Admin0_10m/WB_countries_Admin0_10m.shp"),
+}
+
+
 def toy_precipitation(year_range):
     """A GPCC grid with one point inside each country of `toy_world`."""
     start = int(year_range.split("_")[0])
@@ -111,16 +119,16 @@ def write_shapefile_cache(tmp_path):
     """Return a callable laying out a shapefile the way a completed download would have."""
 
     def write(which, gdf):
-        stem = shapefile_filename_dict[which]
+        archive_name, member = UPSTREAM_SHAPEFILE_LAYOUT[which]
         # The layout is stated literally, not derived from the loader, so a wrong cache path fails.
-        extracted = tmp_path / "shapefiles" / stem
-        extracted.mkdir(parents=True, exist_ok=True)
-        gdf.to_file(extracted / f"{stem}.shp")
+        shapefile = tmp_path / "shapefiles" / member
+        shapefile.parent.mkdir(parents=True, exist_ok=True)
+        gdf.to_file(shapefile)
 
-        archive = tmp_path / "shapefiles" / f"{shapefile_name_dict[which]}.zip"
+        archive = tmp_path / "shapefiles" / archive_name
         with zipfile.ZipFile(archive, "w") as bundle:
-            for part in extracted.iterdir():
-                bundle.write(part, f"{stem}/{part.name}")
+            for part in shapefile.parent.iterdir():
+                bundle.write(part, str(part.relative_to(tmp_path / "shapefiles")))
 
         return tmp_path
 
