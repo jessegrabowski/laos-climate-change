@@ -287,7 +287,7 @@ def _sample_by_country(data, world, multiplier=1, rng=None):
 
 def make_synthetic_data_fpath(cache_dir: Path, by: str, multipler: int, list_name: str) -> Path:
     basename = Path(SYNTHETIC_DATA_BASENAME)
-    fname = f"{basename.stem}_{by}_times_{multipler!s}_{list_name}_{basename.suffix}"
+    fname = f"{basename.stem}_{by}_times_{multipler}_{list_name}{basename.suffix}"
 
     return cache_dir / fname
 

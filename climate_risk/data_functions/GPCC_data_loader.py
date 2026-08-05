@@ -23,26 +23,27 @@ def load_gpcc_data(cache_dir: Path, *, force_reload: bool = False, repair_ISO_co
         fname += ".gz" if not extracted else ""
         return gpcc_path / fname
 
-    path_to_GPCC_unzipped = gpcc_path / "gpcc_raw_1981_1990.nc"
     gpcc_processed_path = gpcc_path / "gpcc_precipitations.csv"
 
     gpcc_path.mkdir(parents=True, exist_ok=True)
 
-    # Check if the GPCC raw data exists
-    for year_range in GPCC_YEARS:
-        if not path_to_GPCC(year_range).exists():
-            _log.info(f"Downloading GPCC data for {' - '.join(year_range.split('_'))}")
-            urlretrieve(MAKE_GPCC_URL(year_range), path_to_GPCC(year_range, extracted=False))
-
-    # Verify if the gpcc files are extracted (Note:gzip.open does not support loops)
-    if not path_to_GPCC_unzipped.exists():
-        for year_range in GPCC_YEARS:
-            with gzip.open(path_to_GPCC(year_range, extracted=False), "rb") as f_in:
-                with open(path_to_GPCC(year_range, extracted=True), "wb") as f_out:
-                    _log.info(f"Extracting GPCC data for {' - '.join(year_range.split('_'))}")
-                    shutil.copyfileobj(f_in, f_out)
-
     if not gpcc_processed_path.exists() or force_reload:
+        # The raw archives are only needed to build the processed file.
+        for year_range in GPCC_YEARS:
+            if not path_to_GPCC(year_range).exists():
+                _log.info(f"Downloading GPCC data for {' - '.join(year_range.split('_'))}")
+                urlretrieve(MAKE_GPCC_URL(year_range), path_to_GPCC(year_range, extracted=False))
+
+        for year_range in GPCC_YEARS:
+            if path_to_GPCC(year_range, extracted=True).exists():
+                continue
+            with (
+                gzip.open(path_to_GPCC(year_range, extracted=False), "rb") as f_in,
+                open(path_to_GPCC(year_range, extracted=True), "wb") as f_out,
+            ):
+                _log.info(f"Extracting GPCC data for {' - '.join(year_range.split('_'))}")
+                shutil.copyfileobj(f_in, f_out)
+
         # Import the world shapefile
         _log.info("Loading world shapefile as GeoDataFrame")
         world_shapefile = load_shapefile(

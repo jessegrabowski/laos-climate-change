@@ -18,6 +18,15 @@ def test_warm_cache_reads_without_downloading(write_shapefile_cache):
     assert len(world) == 3
 
 
+def test_laos_reads_the_district_layer_from_a_flat_archive(write_shapefile_cache):
+    """The archive holds one file per admin level; the loader must pin the one it claims."""
+    cache_dir = write_shapefile_cache("laos", toy_world())
+
+    laos = load_shapefile("laos", cache_dir, repair_ISO_codes=False)
+
+    assert len(laos) == 3
+
+
 @pytest.mark.xfail(
     reason="the repair drops rows by hardcoded position, so it only accepts the upstream row ordering",
     raises=KeyError,

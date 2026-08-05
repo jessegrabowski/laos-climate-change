@@ -19,14 +19,13 @@ def load_hadcrut_data(cache_dir: Path, *, force_reload: bool = False, repair_ISO
 
     cache_dir.mkdir(parents=True, exist_ok=True)
 
-    # Check if the hadcrut raw data exists
-    if not hadcrut_raw_path.exists():
-        _log.info("Downloading HADCRUT data")
-        urlretrieve(HADCRUT_URL, hadcrut_raw_path)
-
     # Verify if the hadcrut processed file exists
     if not hadcrut_processed_path.exists() or force_reload:
-        # Import hadcrut processed file
+        # The raw archive is only needed to build the processed file.
+        if not hadcrut_raw_path.exists():
+            _log.info("Downloading HADCRUT data")
+            urlretrieve(HADCRUT_URL, hadcrut_raw_path)
+
         _log.info("Loading  HADCRUT raw data")
         data = xr.open_dataset(hadcrut_raw_path)
         df = data["tas_mean"].to_dataframe().reset_index()
@@ -85,9 +84,10 @@ def load_hadcrut_data(cache_dir: Path, *, force_reload: bool = False, repair_ISO
         _log.info(f"Saving processed GPCC data to {hadcrut_processed_path}")
         result_df.to_csv(hadcrut_processed_path)
     else:
+        # Caches exist with the year written both bare and as an ISO date, so no format is given.
         result_df = (
             pd.read_csv(hadcrut_processed_path)
-            .assign(year=lambda x: pd.to_datetime(x, format="%Y-%m-%d"))
+            .assign(year=lambda x: pd.to_datetime(x["year"]))
             .set_index(["ISO", "year"])
         )
 

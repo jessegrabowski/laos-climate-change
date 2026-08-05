@@ -9,8 +9,20 @@ from climate_risk.const_vars import (
     PROB_COLS,  # noqa: F401  -- referenced as @PROB_COLS inside pandas query strings
 )
 
+# The study window opens in 1969 and closes on the newest event in the workbook.
+EMDAT_WINDOW_START = "1969-01-01"
 
-def load_emdat_data(cache_dir: Path, *, force_reload: bool = False) -> dict[str, pd.DataFrame]:
+# Columns read before any rename. Nothing detects upstream schema drift, so this check is the
+# earliest point a changed export becomes a named error rather than a missing attribute.
+REQUIRED_EMDAT_COLUMNS = {"ISO", "Region", "Subregion", "Disaster Type"} | set(EM_DAT_COL_DICT)
+
+
+def load_emdat_data(
+    cache_dir: Path,
+    *,
+    force_reload: bool = False,
+    window_start: str | pd.Timestamp = EMDAT_WINDOW_START,
+) -> dict[str, pd.DataFrame]:
     cache_dir.mkdir(parents=True, exist_ok=True)
 
     emdat_path = cache_dir / "emdat.xlsx"
@@ -20,10 +32,20 @@ def load_emdat_data(cache_dir: Path, *, force_reload: bool = False) -> dict[str,
             f"download the database, and place it at `{emdat_path}`"
         )
 
-    df_raw = (
-        pd.read_excel(emdat_path, sheet_name="EM-DAT Data")
-        .rename(columns=EM_DAT_COL_DICT)
-        .assign(Start_Year=lambda x: pd.to_datetime(x.Start_Year, format="%Y"))
+    workbook = pd.read_excel(emdat_path, sheet_name="EM-DAT Data")
+
+    if workbook.empty:
+        raise ValueError(f"The `EM-DAT Data` sheet in `{emdat_path}` has no rows.")
+
+    missing_columns = REQUIRED_EMDAT_COLUMNS - set(workbook.columns)
+    if missing_columns:
+        raise ValueError(
+            f"The `EM-DAT Data` sheet in `{emdat_path}` is missing {sorted(missing_columns)}. "
+            f"Re-download the database, or update EM_DAT_COL_DICT if the export has changed."
+        )
+
+    df_raw = workbook.rename(columns=EM_DAT_COL_DICT).assign(
+        Start_Year=lambda x: pd.to_datetime(x.Start_Year, format="%Y")
     )
 
     disaster_class_dict = {
@@ -45,8 +67,15 @@ def load_emdat_data(cache_dir: Path, *, force_reload: bool = False) -> dict[str,
     # Useful constants
     region_dict = df_raw[["ISO", "Region"]].drop_duplicates().set_index("ISO").to_dict()["Region"]
     subregion_dict = df_raw[["ISO", "Subregion"]].drop_duplicates().set_index("ISO").to_dict()["Subregion"]
-    years = pd.date_range(start="1969-01-01", end="2024-01-01", freq="YS-JAN")
     ISO_codes = df_raw["ISO"].unique()
+
+    newest_event = df_raw["Start_Year"].max()
+    years = pd.date_range(start=window_start, end=newest_event, freq="YS-JAN")
+    if years.empty:
+        raise ValueError(
+            f"window_start={pd.Timestamp(window_start).date()} is after the newest event in the workbook "
+            f"({newest_event.date()}), so every output frame would be empty."
+        )
 
     # Define the complete combination of years and ISO codes
     complete_index = pd.MultiIndex.from_product([ISO_codes, years], names=["ISO", "Start_Year"]).sort_values()

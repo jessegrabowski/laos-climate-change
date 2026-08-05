@@ -1,14 +1,16 @@
+import gzip
 import socket
 import zipfile
 
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 import pytest
+import xarray as xr
 
 from shapely.geometry import LineString, box
 
-from climate_risk.const_vars import BIG_RIVERS_FILENAME, MEDIUM_BIG_RIVERS_FILENAME
-from climate_risk.data_functions.shapefiles_data_loader import shapefile_filename_dict, shapefile_name_dict
+from climate_risk.const_vars import BIG_RIVERS_FILENAME, GPCC_YEARS, MEDIUM_BIG_RIVERS_FILENAME
 
 # One event that clears every downstream filter: deaths above 100, affected above 1000, and a start
 # year inside both the 1970 and 1980 cutoffs. Tests override only the field under examination.
@@ -73,21 +75,61 @@ def toy_rivers():
     )
 
 
+# Archive and directory names as they appear upstream, stated independently of the loader so a
+# change to either constant fails a test rather than silently agreeing with itself.
+# Archive name and the path each one unpacks to. The world archive holds a directory; the Laos
+# archive is flat, one file per admin level.
+UPSTREAM_SHAPEFILE_LAYOUT = {
+    "world": ("wb_countries_admin0_10m.zip", "WB_countries_Admin0_10m/WB_countries_Admin0_10m.shp"),
+    "laos": ("lao_admin_boundaries.shp.zip", "lao_admin2.shp"),
+}
+
+
+def toy_precipitation(year_range):
+    """A GPCC grid with one point inside each country of `toy_world`."""
+    start = int(year_range.split("_")[0])
+    return xr.Dataset(
+        {"precip": (("time", "lat", "lon"), np.arange(3.0).reshape(1, 1, 3))},
+        coords={
+            "time": np.array([f"{start}-01-01"], dtype="datetime64[ns]"),
+            "lat": [0.5],
+            "lon": [0.5, 2.5, 4.5],
+        },
+    )
+
+
+@pytest.fixture
+def write_gpcc_archives(tmp_path):
+    """Return a callable writing one gzipped archive per year range, some already extracted."""
+
+    def write(extracted=()):
+        gpcc_dir = tmp_path / "gpcc"
+        gpcc_dir.mkdir(parents=True, exist_ok=True)
+        for year_range in GPCC_YEARS:
+            raw = bytes(toy_precipitation(year_range).to_netcdf())
+            (gpcc_dir / f"gpcc_raw_{year_range}.nc.gz").write_bytes(gzip.compress(raw))
+            if year_range in extracted:
+                (gpcc_dir / f"gpcc_raw_{year_range}.nc").write_bytes(raw)
+        return tmp_path
+
+    return write
+
+
 @pytest.fixture
 def write_shapefile_cache(tmp_path):
     """Return a callable laying out a shapefile the way a completed download would have."""
 
     def write(which, gdf):
-        stem = shapefile_filename_dict[which]
+        archive_name, member = UPSTREAM_SHAPEFILE_LAYOUT[which]
         # The layout is stated literally, not derived from the loader, so a wrong cache path fails.
-        extracted = tmp_path / "shapefiles" / stem
-        extracted.mkdir(parents=True, exist_ok=True)
-        gdf.to_file(extracted / f"{stem}.shp")
+        shapefile = tmp_path / "shapefiles" / member
+        shapefile.parent.mkdir(parents=True, exist_ok=True)
+        gdf.to_file(shapefile)
 
-        archive = tmp_path / "shapefiles" / f"{shapefile_name_dict[which]}.zip"
+        archive = tmp_path / "shapefiles" / archive_name
         with zipfile.ZipFile(archive, "w") as bundle:
-            for part in extracted.iterdir():
-                bundle.write(part, f"{stem}/{part.name}")
+            for part in shapefile.parent.iterdir():
+                bundle.write(part, str(part.relative_to(tmp_path / "shapefiles")))
 
         return tmp_path
 
