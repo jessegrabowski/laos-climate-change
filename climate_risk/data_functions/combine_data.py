@@ -84,14 +84,6 @@ def load_all_data(cache_dir: Path) -> dict[str, pd.DataFrame]:
     ocean_heat.index = pd.to_datetime(ocean_heat.index, format="%Y")
     merged_dict["ocean_temperature"] = ocean_heat
 
-    # 4.4 HACRUT: surface temperature
-    # surface_temp = load_hadcrut_data()
-
-    # merged_dict["surface_temp"] = surface_temp
-    # merged_dict["surface_temp_agg"] = surface_temp.reset_index().pivot_table(
-    #     values="surface_temperature_dev", index=["year"], aggfunc="mean"
-    # )
-
     # ISO reconciliation: emdat and world
     emdat_iso = merged_dict["emdat_damage"].index.get_level_values(0).unique()
     world_iso = merged_dict["wb_data"].index.get_level_values(0).unique()
@@ -123,18 +115,6 @@ def load_all_data(cache_dir: Path) -> dict[str, pd.DataFrame]:
     # Drop codes not in both
     common_codes2 = set(merged_dict_iso).intersection(set(gpcc_iso))
     merged_dict["gpcc"] = merged_dict["gpcc"].loc[lambda x: x.index.get_level_values(0).isin(common_codes2)].copy()
-    # ISO reconciliation: hadcrut
-    # merged_dict_iso = merged_dict["wb_data"].index.get_level_values(0).unique()
-    # # hadcrut_iso = merged_dict["surface_temp"].index.get_level_values(0).unique()
-    #
-    # # Drop codes not in both
-    # common_codes2 = set(merged_dict_iso).intersection(set(hadcrut_iso))
-    #
-    # merged_dict["surface_temp"] = (
-    #     merged_dict["surface_temp"]
-    #     .loc[lambda x: x.index.get_level_values(0).isin(common_codes2)]
-    #     .copy()
-    # )
 
     # 5 Country constants: everything that does not vary within a country.
     events = emdat["df_prob_filtered_adjusted"].reset_index()
@@ -151,12 +131,6 @@ def load_all_data(cache_dir: Path) -> dict[str, pd.DataFrame]:
             merged_dict["emdat_damage"],
             merged_dict["wb_data"],
             (merged_dict["gpcc"].reset_index().rename(columns={"year": "Start_Year"}).set_index(["ISO", "Start_Year"])),
-            # (
-            #     merged_dict["surface_temp"]
-            #     .reset_index()
-            #     .rename(columns={"year": "Start_Year"})
-            #     .set_index(["ISO", "Start_Year"])
-            # ),
         ],
     )
 
@@ -167,7 +141,6 @@ def load_all_data(cache_dir: Path) -> dict[str, pd.DataFrame]:
             merged_dict["co2"],
             merged_dict["ocean_temperature"],
             merged_dict["gpcc_agg"],
-            # merged_dict["surface_temp_agg"],
         ],
     )
 
