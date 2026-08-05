@@ -123,23 +123,5 @@ def add_data(
     return X
 
 
-def add_country_effect():
-    with pm.modelcontext(None):
-        country_effect_mu = pm.Normal("country_effect_mu", mu=0, sigma=1)
-        country_effect_scale = pm.Gamma("country_effect_scale", alpha=2, beta=1)
-        country_effect_offset = pm.Normal("country_effect_offset", sigma=1, dims="ISO")
-        country_effect = pm.Deterministic(
-            "country_effect",
-            country_effect_mu + country_effect_scale * country_effect_offset,
-            dims="ISO",
-        )
-    return (
-        country_effect,
-        country_effect_mu,
-        country_effect_scale,
-        country_effect_offset,
-    )
-
-
 def compute_center(X):
     return (pt.max(X, axis=0) + pt.min(X, axis=0)).eval() / 2

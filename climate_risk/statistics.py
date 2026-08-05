@@ -155,25 +155,6 @@ def add_data(features: list[str], target: str, df: pd.DataFrame, add_time: bool 
     return X, Y
 
 
-def add_country_effect():
-    with pm.modelcontext(None):
-        country_effect_mu = pm.Normal("country_effect_mu", mu=0, sigma=1)
-        country_effect_scale = pm.Gamma("country_effect_scale", alpha=2, beta=1)
-        country_effect_offset = pm.Normal("country_effect_offset", sigma=1, dims="ISO")
-        country_effect = pm.Deterministic(
-            "country_effect",
-            country_effect_mu + country_effect_scale * country_effect_offset,
-            dims="ISO",
-        )
-
-    return (
-        country_effect,
-        country_effect_mu,
-        country_effect_scale,
-        country_effect_offset,
-    )
-
-
 def standardize(df: pd.DataFrame, columns: list[str], transformer_fitted=None):
     if transformer_fitted is None:
         transformer_fitted = Standardize().fit(df[columns])
