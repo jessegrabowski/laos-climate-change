@@ -278,72 +278,53 @@ def plot_ppc_loopit(idata: xr.DataTree, target_name: str, title: str | None = No
     return fig.axes
 
 
-# Function to create plot inputs
+SAMPLE_DIMS = ("chain", "draw")
+
+
 def generate_plot_inputs(idata, df):
-    # Extract predictions
-    predictions = idata.posterior_predictive["y_hat"].mean(dim=["chain", "draw"])
-    predictions = (
-        predictions.to_dataframe().drop(columns=["ISO"]).reset_index().rename(columns={"y_hat": "predictions"})
+    """Attach posterior-predictive means and HDI bounds to the observed frame.
+
+    Parameters
+    ----------
+    idata : DataTree
+        Inference data carrying a ``posterior_predictive`` group with a ``y_hat`` variable.
+    df : DataFrame
+        The observed frame, in the order the model saw it.
+
+    Returns
+    -------
+    DataFrame
+        ``df`` with ``predictions`` and the 95% and 50% HDI bounds appended.
+    """
+    y_hat = idata.posterior_predictive["y_hat"]
+
+    predictions = y_hat.mean(dim=SAMPLE_DIMS)
+    if predictions.size != len(df):
+        raise ValueError(
+            f"posterior_predictive holds {predictions.size} observations but df has {len(df)} rows; "
+            f"they must be the observations the model saw, in the same order."
+        )
+    predictions = predictions.values
+
+    hdi_95 = az.hdi(y_hat, prob=0.95)
+    hdi_50 = az.hdi(y_hat, prob=0.5)
+
+    return df.assign(
+        predictions=predictions,
+        lower_y_hat_95=hdi_95.sel(ci_bound="lower").values,
+        higher_y_hat_95=hdi_95.sel(ci_bound="upper").values,
+        lower_y_hat_50=hdi_50.sel(ci_bound="lower").values,
+        higher_y_hat_50=hdi_50.sel(ci_bound="upper").values,
     )
 
-    hdi_mean = az.hdi(idata.posterior_predictive.y_hat)
 
-    hdi = hdi_mean["y_hat"].to_dataframe().drop(columns=["ISO"]).reset_index()
-
-    hdi_mean_50 = az.hdi(idata.posterior_predictive.y_hat, hdi_prob=0.5)
-
-    hdi_50 = hdi_mean_50["y_hat"].to_dataframe().drop(columns=["ISO"]).reset_index()
-
-    # Merge results and predictions in one df
-    df_predictions = df[["ISO"]]
-
-    # 95% HDI
-    df_predictions = pd.merge(
-        df_predictions,
-        hdi.query('hdi == "lower"')[["ISO", "y_hat"]],
-        left_on=["ISO"],
-        right_on=["ISO"],
-        how="left",
-    ).rename(columns={"y_hat": "lower_y_hat_95"})
-    df_predictions = pd.merge(
-        df_predictions,
-        hdi.query('hdi == "higher"')[["ISO", "y_hat"]],
-        left_on=["ISO"],
-        right_on=["ISO"],
-        how="left",
-    ).rename(columns={"y_hat": "higher_y_hat_95"})
-    # 50% HDI
-    df_predictions = pd.merge(
-        df_predictions,
-        hdi_50.query('hdi == "lower"')[["ISO", "y_hat"]],
-        left_on=["ISO"],
-        right_on=["ISO"],
-        how="left",
-    ).rename(columns={"y_hat": "lower_y_hat_50"})
-    df_predictions = pd.merge(
-        df_predictions,
-        hdi_50.query('hdi == "higher"')[["ISO", "y_hat"]],
-        left_on=["ISO"],
-        right_on=["ISO"],
-        how="left",
-    ).rename(columns={"y_hat": "higher_y_hat_50"})
-
-    # Predictions
-    df_predictions = pd.merge(df_predictions, predictions, left_on=["ISO"], right_on=["ISO"], how="left").rename(
-        columns={"y_hat": "predictions"}
-    )
-
-    return df_predictions
-
-
-# Plotting function
-def plotting_function(idata, country: str):
-    df_predictions = generate_plot_inputs(idata=idata)
+def plotting_function(idata, df, country: str) -> plt.Figure:
+    df_predictions = generate_plot_inputs(idata=idata, df=df)
 
     # Filter country
     data = df_predictions.query("ISO == @country")
 
-    _fig, ax = plt.subplots()
+    fig, ax = plt.subplots()
     ax.plot(
         data["Start_Year"],
         data["predictions"],
@@ -370,18 +351,13 @@ def plotting_function(idata, country: str):
     )
     ax.legend(loc="upper left")
 
-    # plt.title(f"{country} disaster count and predictions")
+    ax.set_xlabel("Start_Year")
+    ax.set_ylabel("Disaster Count")
 
-    plt.xlabel("Start_Year")
-    plt.ylabel("Disaster Count")
-
-    plt.show()
+    return fig
 
 
 ############################################ Functions for the damage model  #############################################
-# Function to create plot inputs
-
-
 def generate_plot_inputs_damages(
     target_variable: str,
     idata,
