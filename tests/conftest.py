@@ -65,6 +65,38 @@ def toy_world():
     )
 
 
+def toy_world_needing_repair():
+    """A world file shaped like the real one: unlabelled sovereigns and territories to drop.
+
+    Carries one row per entry in DROPPED_TERRITORIES, DROPPED_ISO_CODES and ISO_CODE_REPAIRS; adding
+    to any of those tables without adding a row here fails every repair test on the missing entry.
+    """
+    rows = [
+        ("France", "-99"),
+        ("Norway", "-99"),
+        ("Kosovo", "-99"),
+        ("Tokelau (NZ)", "NZL"),
+        ("Guantanamo Bay (US)", "-99"),
+        ("Clipperton Island (Fr.)", "-99"),
+        ("Cocos (Keeling) Islands (Aus.)", "-99"),
+        ("Christmas Island (Aus.)", "-99"),
+        ("Bonaire (Neth.)", "NLD"),
+        ("Sint Eustatius (Neth.)", "NLD"),
+        ("Saba (Neth.)", "NLD"),
+        ("Johnston Atoll (US)", "UMI"),
+        ("Netherlands", "NLD"),
+        ("New Zealand", "NZL"),
+    ]
+    return gpd.GeoDataFrame(
+        {
+            "WB_NAME": [name for name, _ in rows],
+            "ISO_A3": [iso for _, iso in rows],
+            "geometry": [box(i, 0, i + 0.5, 1) for i in range(len(rows))],
+        },
+        crs="EPSG:4326",
+    )
+
+
 def toy_rivers():
     """ORD_FLOW spans the thresholds both loaders filter on: < 5 is big, < 6 adds medium."""
     return gpd.GeoDataFrame(

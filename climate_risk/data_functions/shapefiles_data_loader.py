@@ -17,6 +17,7 @@ from climate_risk.const_vars import (
     WORLD_URL,
 )
 from climate_risk.data_functions.rivers_data_loader import load_rivers_data
+from climate_risk.exceptions import DataValidationError
 from climate_risk.statistics import get_distance_to
 
 _log = logging.getLogger(__name__)
@@ -46,6 +47,72 @@ VALID_CHOICES = list(shapefile_name_dict.keys())
 
 def shapefile_dir(cache_dir: Path) -> Path:
     return cache_dir / "shapefiles"
+
+
+# The boundary file lists these separately but tags them with their owner's ISO code, or with no
+# code at all, so counting them would double-count the owner or introduce a country that is not one.
+DROPPED_TERRITORIES = (
+    # Leased or far-flung dependencies carrying no code of their own.
+    "Guantanamo Bay (US)",
+    "Clipperton Island (Fr.)",
+    "Cocos (Keeling) Islands (Aus.)",
+    "Christmas Island (Aus.)",
+    # Caribbean municipalities labelled as the Netherlands.
+    "Bonaire (Neth.)",
+    "Sint Eustatius (Neth.)",
+    "Saba (Neth.)",
+    # Labelled as New Zealand.
+    "Tokelau (NZ)",
+)
+
+# The US minor outlying islands share one code, so they are matched by it rather than by name.
+DROPPED_ISO_CODES = ("UMI",)
+
+# Sovereign countries the boundary file leaves at -99.
+ISO_CODE_REPAIRS = {
+    "France": "FRA",
+    "Norway": "NOR",
+    "Kosovo": "UNK",
+}
+
+
+def repair_iso_codes(world: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """Drop territories that would double-count their owner and supply the missing ISO codes.
+
+    Parameters
+    ----------
+    world : GeoDataFrame
+        The world boundary file, carrying ``WB_NAME`` and ``ISO_A3`` columns.
+
+    Returns
+    -------
+    GeoDataFrame
+        The repaired frame, reindexed from zero.
+
+    Raises
+    ------
+    DataValidationError
+        If a repair matches no row, which means the boundary file has changed under it.
+    """
+    missing_columns = {"WB_NAME", "ISO_A3"} - set(world.columns)
+    if missing_columns:
+        raise DataValidationError(f"The boundary file is missing {sorted(missing_columns)}, so it cannot be repaired.")
+
+    unmatched = sorted({*DROPPED_TERRITORIES, *ISO_CODE_REPAIRS} - set(world["WB_NAME"]))
+    unmatched += sorted(set(DROPPED_ISO_CODES) - set(world["ISO_A3"]))
+    if unmatched:
+        raise DataValidationError(
+            f"No row matches {unmatched}. The boundary file has changed, and applying the remaining "
+            f"repairs would drop or relabel the wrong countries."
+        )
+
+    repaired = world[~world["WB_NAME"].isin(DROPPED_TERRITORIES) & ~world["ISO_A3"].isin(DROPPED_ISO_CODES)].copy()
+    repaired["ISO_A3"] = repaired["WB_NAME"].map(ISO_CODE_REPAIRS).fillna(repaired["ISO_A3"])
+    repaired = repaired.reset_index(drop=True)
+
+    assert (repaired["ISO_A3"].value_counts() == 1).all()
+
+    return repaired
 
 
 def download_shapefile(which: str, cache_dir: Path, *, force_reload: bool = False) -> None:
@@ -94,34 +161,7 @@ def load_shapefile(
     df = gpd.read_file(shapefile_path, layer=0)
 
     if which == "world" and repair_ISO_codes:
-        # The ISO codes are not 1:1 with geometries. This code cleans things up, mostly
-        # by dropping small island colonies.
-
-        # Drop UMI (United State Maritime Islands)
-        df = df.loc[lambda x: x.ISO_A3 != "UMI"].copy()
-
-        # Drop Gitmo, Clipperton Island, and Australian Indian Ocean territories
-        # These are associated with their owner's ISO code, but are far-flung
-        df.drop(labels=[129, 232, 238, 239], inplace=True)
-
-        # Drop the Netherland's overseas holdings (Bonaire, Saint Eustatius, Saba)
-        # Ditto -- they are labeled as the Netherlands
-        df.drop(labels=[234, 235, 236], inplace=True)
-
-        # Drop Tokelau (NZ)
-        df.drop(labels=[249], inplace=True)
-
-        # Give France, Norway, and Kosovo the correct ISO3 codes
-        # These are the biggest problems. France doesn't have the correct ISO code at all, nor does Norway
-        # (both are given -99)
-        df.loc[20, "ISO_A3"] = "FRA"
-        df.loc[50, "ISO_A3"] = "NOR"
-        df.loc[62, "ISO_A3"] = "UNK"  # Kosovo doesn't have a code :(
-
-        df.reset_index(drop=True, inplace=True)
-
-        # Check that ISO codes are unique for each geometry
-        assert (df["ISO_A3"].value_counts() == 1).all()
+        df = repair_iso_codes(df)
 
     return df
 

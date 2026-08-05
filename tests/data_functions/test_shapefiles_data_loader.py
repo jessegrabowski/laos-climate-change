@@ -1,7 +1,9 @@
 import pytest
 
 from climate_risk import load_shapefile
-from tests.conftest import toy_world
+from climate_risk.data_functions.shapefiles_data_loader import repair_iso_codes
+from climate_risk.exceptions import DataValidationError
+from tests.conftest import toy_world, toy_world_needing_repair
 
 
 def test_unknown_shapefile_is_rejected(tmp_path):
@@ -19,19 +21,53 @@ def test_warm_cache_reads_without_downloading(write_shapefile_cache):
 
 
 def test_laos_reads_the_district_layer_from_a_flat_archive(write_shapefile_cache):
-    """The archive holds one file per admin level; the loader must pin the one it claims."""
+    """The archive unpacks flat, so reading the wrong admin level means reading a different file."""
     cache_dir = write_shapefile_cache("laos", toy_world())
+    (cache_dir / "shapefiles" / "lao_admin0.shp").write_text("not a shapefile")
 
     laos = load_shapefile("laos", cache_dir, repair_ISO_codes=False)
 
-    assert len(laos) == 3
+    assert sorted(laos["ISO_A3"]) == ["AAA", "BBB", "CCC"]
 
 
-@pytest.mark.xfail(
-    reason="the repair drops rows by hardcoded position, so it only accepts the upstream row ordering",
-    raises=KeyError,
+def test_repair_supplies_the_missing_sovereign_codes():
+    repaired = repair_iso_codes(toy_world_needing_repair())
+
+    codes = dict(zip(repaired["WB_NAME"], repaired["ISO_A3"], strict=True))
+    assert codes["France"] == "FRA"
+    assert codes["Norway"] == "NOR"
+    assert codes["Kosovo"] == "UNK"
+
+
+def test_repair_drops_territories_that_would_double_count_their_owner():
+    """Bonaire is labelled NLD; keeping it would give the Netherlands two geometries."""
+    repaired = repair_iso_codes(toy_world_needing_repair())
+
+    assert "Bonaire (Neth.)" not in set(repaired["WB_NAME"])
+    assert "Johnston Atoll (US)" not in set(repaired["WB_NAME"])
+    assert sorted(repaired["ISO_A3"]) == ["FRA", "NLD", "NOR", "NZL", "UNK"]
+
+
+def test_repair_reindexes_from_zero():
+    repaired = repair_iso_codes(toy_world_needing_repair())
+
+    assert repaired.index.tolist() == list(range(len(repaired)))
+
+
+def test_a_frame_without_the_naming_columns_is_an_error():
+    """An upstream schema change should name the missing column, not fail on a bare KeyError."""
+    with pytest.raises(DataValidationError, match="WB_NAME"):
+        repair_iso_codes(toy_world())
+
+
+@pytest.mark.parametrize(
+    ("column", "renamed", "expected"),
+    [("WB_NAME", {"Kosovo": "Republic of Kosovo"}, "Kosovo"), ("ISO_A3", {"UMI": "USA"}, "UMI")],
+    ids=["by-name", "by-code"],
 )
-def test_repair_works_on_any_valid_world_shapefile(write_shapefile_cache):
-    cache_dir = write_shapefile_cache("world", toy_world())
+def test_a_repair_matching_nothing_is_an_error(column, renamed, expected):
+    """Upstream renaming anything a repair targets must fail loudly, not silently skip it."""
+    world = toy_world_needing_repair().replace({column: renamed})
 
-    load_shapefile("world", cache_dir, repair_ISO_codes=True)
+    with pytest.raises(DataValidationError, match=expected):
+        repair_iso_codes(world)
