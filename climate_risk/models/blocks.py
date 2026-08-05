@@ -1,10 +1,8 @@
 from collections.abc import Sequence
 
 import numpy as np
-import numpy.typing as npt
 import pandas as pd
 import pymc as pm
-import pytensor
 import pytensor.tensor as pt
 
 from pytensor.tensor import TensorVariable
@@ -80,7 +78,6 @@ def add_data(
     target: str | None = None,
     name: str | None = None,
     dims: Sequence[str] | str | None = None,
-    dtype: npt.DTypeLike | None = None,
 ) -> TensorVariable | tuple[TensorVariable, TensorVariable]:
     """Add data to the active PyMC model.
 
@@ -97,8 +94,6 @@ def add_data(
     dims: Sequence of str, or str; optional
         Named dimensions to include on the data. If targets are requested, only the first dimension will be used for the
         targets (it is assumed to be the batch dimension)
-    dtype: str, optional
-        Data type to cast the data to. If not provided, the default data type defined by pytensor will be used.
 
     Returns
     -------
@@ -110,17 +105,13 @@ def add_data(
     X_name = "X" if name is None else f"X_{name}"
     Y_name = "Y" if name is None else f"Y_{name}"
 
-    if dtype is None:
-        dtype = pytensor.config.floatX
-    dtype = np.dtype(dtype)
-
     with pm.modelcontext(None):
-        X = pm.Data(X_name, df[features].astype(dtype), dims=dims)
+        X = pm.Data(X_name, df[features], dims=dims)
 
         if target is not None:
             Y = pm.Data(
                 Y_name,
-                df[target].astype(dtype),
+                df[target],
                 dims=dims[0] if dims is not None else dims,
             )
             return X, Y
