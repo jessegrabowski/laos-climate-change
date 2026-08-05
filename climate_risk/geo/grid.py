@@ -37,29 +37,32 @@ def create_grid_from_shape(
     long_grid = np.linspace(long_min, long_max, grid_size)
     lat_grid = np.linspace(lat_min, lat_max, grid_size)
 
-    grid = np.column_stack([x.ravel() for x in np.meshgrid(long_grid, lat_grid)])
-    grid = gpd.GeoSeries(gpd.points_from_xy(*grid.T), crs=GEOGRAPHIC_CRS)
-    grid = gpd.GeoDataFrame({"geometry": grid})
+    mesh = np.column_stack([axis.ravel() for axis in np.meshgrid(long_grid, lat_grid)])
+    grid = gpd.GeoDataFrame(geometry=gpd.points_from_xy(*mesh.T), crs=GEOGRAPHIC_CRS)
 
     point_overlay = grid.overlay(shapefile, how="intersection")
-    points = point_overlay.geometry
-    points = points.to_frame().assign(long=lambda x: x.geometry.x, lat=lambda x: x.geometry.y)
+    points = gpd.GeoDataFrame(
+        point_overlay.geometry.to_frame().assign(long=lambda x: x.geometry.x, lat=lambda x: x.geometry.y),
+        crs=GEOGRAPHIC_CRS,
+    )
 
     distances_to_rivers = get_distance_to(rivers, points=points, return_columns=["ORD_FLOW", "HYRIV_ID"]).rename(
         columns={"distance_to_closest": "distance_to_river"}
     )
 
-    points = pd.merge(points, distances_to_rivers, left_index=True, right_index=True, how="left")
+    points = gpd.GeoDataFrame(pd.merge(points, distances_to_rivers, left_index=True, right_index=True, how="left"))
 
     distances_to_coastlines = get_distance_to(coastline.boundary, points=points, return_columns=None).rename(
         columns={"distance_to_closest": "distance_to_coastline"}
     )
 
-    points = pd.merge(points, distances_to_coastlines, left_index=True, right_index=True, how="left")
+    points = gpd.GeoDataFrame(pd.merge(points, distances_to_coastlines, left_index=True, right_index=True, how="left"))
 
-    points = points.assign(
-        log_distance_to_river=lambda x: np.log(x.distance_to_river.clip(lower=MIN_DISTANCE_METRES)),
-        log_distance_to_coastline=lambda x: np.log(x.distance_to_coastline.clip(lower=MIN_DISTANCE_METRES)),
+    points = gpd.GeoDataFrame(
+        points.assign(
+            log_distance_to_river=lambda x: np.log(x.distance_to_river.clip(lower=MIN_DISTANCE_METRES)),
+            log_distance_to_coastline=lambda x: np.log(x.distance_to_coastline.clip(lower=MIN_DISTANCE_METRES)),
+        )
     )
 
     if "ISO_A3" in point_overlay.columns:
