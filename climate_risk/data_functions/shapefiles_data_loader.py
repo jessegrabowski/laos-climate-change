@@ -18,7 +18,7 @@ from climate_risk.const_vars import (
 )
 from climate_risk.data_functions.rivers_data_loader import load_rivers_data
 from climate_risk.exceptions import DataValidationError, ISOCodeValidationError
-from climate_risk.statistics import get_distance_to
+from climate_risk.geo.distance import get_distance_to
 
 _log = logging.getLogger(__name__)
 

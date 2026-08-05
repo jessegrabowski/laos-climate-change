@@ -12,7 +12,7 @@ from climate_risk.const_vars import (
 from climate_risk.data_functions.emdat_processing import load_emdat_data
 from climate_risk.data_functions.rivers_data_loader import load_rivers_data
 from climate_risk.data_functions.shapefiles_data_loader import load_shapefile
-from climate_risk.statistics import get_distance_to_rivers
+from climate_risk.geo.distance import get_distance_to_rivers
 
 
 def create_hydro_rivers_damage(cache_dir: Path) -> gpd.GeoDataFrame:

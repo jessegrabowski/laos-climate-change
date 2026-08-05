@@ -2,7 +2,7 @@ import geopandas as gpd
 
 from shapely.geometry import LineString
 
-from climate_risk.model import get_distance_to
+from climate_risk.geo.distance import get_distance_to
 
 
 def test_distance_is_measured_in_metres_of_the_projected_crs(grid_points):

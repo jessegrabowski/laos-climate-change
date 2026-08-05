@@ -10,7 +10,7 @@ import pandas as pd
 from climate_risk.data_functions.emdat_processing import load_emdat_data
 from climate_risk.data_functions.rivers_damage import load_rivers_data
 from climate_risk.data_functions.shapefiles_data_loader import load_shapefile, shapefile_dir
-from climate_risk.statistics import get_distance_to
+from climate_risk.geo.distance import get_distance_to
 
 _log = logging.getLogger(__name__)
 

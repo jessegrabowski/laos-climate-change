@@ -13,7 +13,7 @@ from matplotlib.offsetbox import AnchoredText
 from scipy import stats
 
 from climate_risk.const_vars import REGIONS
-from climate_risk.model import get_distance_to
+from climate_risk.geo.distance import get_distance_to
 
 
 def configure_plot_style(add_grid=False):
