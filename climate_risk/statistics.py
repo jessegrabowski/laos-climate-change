@@ -148,13 +148,6 @@ def set_plotting_data(df, features, ISO_list):
     )
 
 
-def add_data(features: list[str], target: str, df: pd.DataFrame, add_time: bool = False):
-    with pm.modelcontext(None):
-        X = pm.Data("X", df[features], dims=["obs_idx", "feature"])
-        Y = pm.Data("Y", df[target], dims=["obs_idx"])
-    return X, Y
-
-
 def standardize(df: pd.DataFrame, columns: list[str], transformer_fitted=None):
     if transformer_fitted is None:
         transformer_fitted = Standardize().fit(df[columns])
