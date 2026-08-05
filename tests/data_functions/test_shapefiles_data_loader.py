@@ -36,7 +36,7 @@ def test_repair_supplies_the_missing_sovereign_codes():
     codes = dict(zip(repaired["WB_NAME"], repaired["ISO_A3"], strict=True))
     assert codes["France"] == "FRA"
     assert codes["Norway"] == "NOR"
-    assert codes["Kosovo"] == "UNK"
+    assert codes["Kosovo"] == "XKX"
 
 
 def test_repair_drops_territories_that_would_double_count_their_owner():
@@ -45,7 +45,7 @@ def test_repair_drops_territories_that_would_double_count_their_owner():
 
     assert "Bonaire (Neth.)" not in set(repaired["WB_NAME"])
     assert "Johnston Atoll (US)" not in set(repaired["WB_NAME"])
-    assert sorted(repaired["ISO_A3"]) == ["FRA", "NLD", "NOR", "NZL", "UNK"]
+    assert sorted(repaired["ISO_A3"]) == ["FRA", "NLD", "NOR", "NZL", "XKX"]
 
 
 def test_repair_reindexes_from_zero():

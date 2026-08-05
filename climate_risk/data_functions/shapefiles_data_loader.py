@@ -68,11 +68,12 @@ DROPPED_TERRITORIES = (
 # The US minor outlying islands share one code, so they are matched by it rather than by name.
 DROPPED_ISO_CODES = ("UMI",)
 
-# Sovereign countries the boundary file leaves at -99.
+# Sovereign countries the boundary file leaves at -99. XKX is the World Bank's own code for Kosovo,
+# which has none under ISO 3166-1, and is what COUNTRIES_ISO and ISO_DICTIONARY use.
 ISO_CODE_REPAIRS = {
     "France": "FRA",
     "Norway": "NOR",
-    "Kosovo": "UNK",
+    "Kosovo": "XKX",
 }
 
 
