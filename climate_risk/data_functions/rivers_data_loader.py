@@ -1,7 +1,8 @@
 import logging
-import urllib.request
+import shutil
 
 from pathlib import Path
+from urllib.request import Request, urlopen
 from zipfile import ZipFile
 
 import geopandas as gpd
@@ -13,6 +14,9 @@ from climate_risk.const_vars import (
     RIVERS_URL,
     RIVERS_ZIP_FILENAME,
 )
+
+# HydroSHEDS rejects urllib's default agent with a 403.
+RIVERS_USER_AGENT = "climate-risk (+https://github.com/jessegrabowski/laos-climate-change)"
 
 _log = logging.getLogger(__name__)
 
@@ -30,14 +34,9 @@ def load_rivers_data(cache_dir: Path, *, include_medium: bool = False) -> gpd.Ge
     if not path_to_zip_file.is_file():
         _log.info("Downloading rivers ")
 
-        opener = urllib.request.URLopener()
-        opener.addheader(
-            "User-Agent",
-            "Mozilla/5.0 (Linux i554 x86_64; en-US) AppleWebKit/534.34 (KHTML, like Gecko) "
-            "Chrome/55.0.2447.185 Safari/601",
-        )
-
-        opener.retrieve(RIVERS_URL, path_to_zip_file)
+        request = Request(RIVERS_URL, headers={"User-Agent": RIVERS_USER_AGENT})
+        with urlopen(request) as response, path_to_zip_file.open("wb") as archive:
+            shutil.copyfileobj(response, archive)
 
     if not path_to_shapefile.is_file():
         with ZipFile(path_to_zip_file, "r") as zObject:
