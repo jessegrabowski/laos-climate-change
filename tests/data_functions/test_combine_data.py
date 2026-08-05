@@ -1,3 +1,4 @@
+import pandas as pd
 import pytest
 
 from climate_risk import load_all_data
@@ -39,6 +40,15 @@ def test_the_time_series_carries_no_country(merged):
     assert {"co2", "Temp", "precip"} <= set(merged["df_time_series"].columns)
 
 
+def test_country_constants_hold_one_row_per_country(merged):
+    """Built before reconciliation, so it keeps CCC, which every reconciled frame drops."""
+    constants = merged["country_constants"]
+
+    assert sorted(constants.index) == ["AAA", "BBB", "CCC", "EEE"]
+    assert constants.index.is_unique
+    assert "Start_Year" not in constants.columns
+
+
 def test_every_disaster_type_gets_a_column_even_when_unobserved(write_emdat_cache, write_full_cache):
     """Unstacking yields a column per observed type, so downstream code naming all of them breaks."""
     cache_dir = write_full_cache()
@@ -67,3 +77,16 @@ def test_damage_columns_survive_a_class_with_no_events(write_emdat_cache, write_
 
     assert "Total_Damage_Adjusted_clim" in damage.columns
     assert damage["Total_Damage_Adjusted_clim"].isna().all()
+
+
+def test_hydro_and_clim_damage_columns_are_suffixed(merged):
+    """Both splits carry the same variable names, so they collide unless suffixed apart."""
+    damage = merged["emdat_damage"]
+
+    assert "Total_Damage_Adjusted_hydro" in damage.columns
+    assert "Total_Damage_Adjusted_clim" in damage.columns
+
+
+def test_world_bank_years_become_timestamps(merged):
+    """The panel joins on Start_Year, which EM-DAT supplies as a timestamp."""
+    assert isinstance(merged["wb_data"].index.get_level_values("Start_Year"), pd.DatetimeIndex)
