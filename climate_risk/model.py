@@ -3,9 +3,7 @@ import pymc as pm
 import pytensor
 import pytensor.tensor as pt
 
-from joblib import Parallel, delayed
 from pytensor.tensor import TensorVariable
-from tqdm.auto import tqdm
 
 
 def add_hierarchical_effect(
@@ -141,31 +139,6 @@ def add_country_effect():
         country_effect_scale,
         country_effect_offset,
     )
-
-
-def get_distance_to(gdf, points, return_columns=None, crs="EPSG:3395", n_cores=-1):
-    if return_columns is None:
-        return_columns = []
-
-    gdf_km = gdf.copy().to_crs(crs)
-    points_km = points.copy().to_crs(crs)
-
-    def get_closest(idx, row, gdf_km, return_columns):
-        series = gdf_km.distance(row.geometry)
-        index = series[series == series.min()].index[0]
-
-        ret_vals = (series.min(),)
-        for col in return_columns:
-            ret_vals += (gdf_km.loc[index][col],)
-
-        return ret_vals
-
-    with Parallel(n_cores, require="sharedmem") as pool:
-        results = pool(
-            delayed(get_closest)(idx, row, gdf_km, return_columns)
-            for idx, row in tqdm(points_km.iterrows(), total=points.shape[0])
-        )
-    return pd.DataFrame(results, columns=["distance_to_closest", *return_columns], index=points.index)
 
 
 def compute_center(X):

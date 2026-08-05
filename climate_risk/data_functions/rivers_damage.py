@@ -12,7 +12,8 @@ from climate_risk.const_vars import (
 from climate_risk.data_functions.emdat_processing import load_emdat_data
 from climate_risk.data_functions.rivers_data_loader import load_rivers_data
 from climate_risk.data_functions.shapefiles_data_loader import load_shapefile
-from climate_risk.statistics import get_distance_to_rivers
+from climate_risk.geo.crs import to_km
+from climate_risk.geo.distance import get_distance_to_rivers
 
 
 def create_hydro_rivers_damage(cache_dir: Path) -> gpd.GeoDataFrame:
@@ -51,11 +52,9 @@ def create_hydro_rivers_damage(cache_dir: Path) -> gpd.GeoDataFrame:
         )
 
         closest_river = get_distance_to_rivers(big_rivers, damage_df)
-        closest_river["closest_river"] = closest_river["closest_river"] / 1000
+        closest_river["closest_river"] = to_km(closest_river["closest_river"])
 
-        damage_df = damage_df.join(
-            closest_river
-        )  # Note: we are dividing by 1000 to convert meters to km (because EPSG:3395 is in meters)
+        damage_df = damage_df.join(closest_river)
 
         damage_df.rename(
             columns={
@@ -132,11 +131,9 @@ def create_floods_rivers_damage(cache_dir: Path) -> gpd.GeoDataFrame:
         )
 
         closest_river_f = get_distance_to_rivers(big_rivers, damage_df_f)
-        closest_river_f["closest_river"] = closest_river_f["closest_river"] / 1000
+        closest_river_f["closest_river"] = to_km(closest_river_f["closest_river"])
 
-        damage_df_f = damage_df_f.join(
-            closest_river_f
-        )  # Note: we are dividing by 1000 to convert meters to km (because EPSG:3395 is in meters)
+        damage_df_f = damage_df_f.join(closest_river_f)
 
         damage_df_f.rename(
             columns={
