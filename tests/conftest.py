@@ -65,6 +65,42 @@ def toy_world():
     )
 
 
+def toy_world_needing_repair():
+    """A world file shaped like the real one: unlabelled sovereigns and territories to drop.
+
+    Carries one row per entry in DROPPED_TERRITORIES, DROPPED_ISO_CODES and ISO_CODE_REPAIRS; adding
+    to any of those tables without adding a row here fails every repair test on the missing entry.
+    """
+    rows = [
+        ("France", "-99"),
+        ("Norway", "-99"),
+        ("Kosovo", "-99"),
+        ("Tokelau (NZ)", "NZL"),
+        ("Guantanamo Bay (US)", "-99"),
+        ("Clipperton Island (Fr.)", "-99"),
+        ("Cocos (Keeling) Islands (Aus.)", "-99"),
+        ("Christmas Island (Aus.)", "-99"),
+        ("Bonaire (Neth.)", "NLD"),
+        ("Sint Eustatius (Neth.)", "NLD"),
+        ("Saba (Neth.)", "NLD"),
+        ("Johnston Atoll (US)", "UMI"),
+        ("Netherlands", "NLD"),
+        ("New Zealand", "NZL"),
+    ]
+    return gpd.GeoDataFrame(
+        {
+            "WB_NAME": [name for name, _ in rows],
+            "ISO_A3": [iso for _, iso in rows],
+            "geometry": [box(i, 0, i + 0.5, 1) for i in range(len(rows))],
+        },
+        crs="EPSG:4326",
+    )
+
+
+def toy_coastline():
+    return gpd.GeoDataFrame({"geometry": [LineString([(30, -1), (30, 2)])]}, crs="EPSG:4326")
+
+
 def toy_rivers():
     """ORD_FLOW spans the thresholds both loaders filter on: < 5 is big, < 6 adds medium."""
     return gpd.GeoDataFrame(
@@ -88,6 +124,7 @@ def toy_rivers():
 UPSTREAM_SHAPEFILE_LAYOUT = {
     "world": ("wb_countries_admin0_10m.zip", "WB_countries_Admin0_10m/WB_countries_Admin0_10m.shp"),
     "laos": ("lao_admin_boundaries.shp.zip", "lao_admin2.shp"),
+    "coastline": ("gshhg-shp-2.3.7.zip", "GSHHS_shp/f/GSHHS_f_L1.shp"),
 }
 
 
@@ -224,6 +261,19 @@ def write_shapefile_cache(tmp_path):
                 bundle.write(part, str(part.relative_to(tmp_path / "shapefiles")))
 
         return tmp_path
+
+    return write
+
+
+@pytest.fixture
+def write_point_grid_cache(write_shapefile_cache, write_rivers_cache, rivers_clear_of_the_grid):
+    """Seed the world, coastline and river caches `load_grid_point_data` reads."""
+
+    def write():
+        write_shapefile_cache("world", toy_world_needing_repair())
+        write_shapefile_cache("coastline", toy_coastline())
+        write_rivers_cache(rivers_clear_of_the_grid.query("ORD_FLOW < 5"))
+        return write_rivers_cache(rivers_clear_of_the_grid, include_medium=True)
 
     return write
 

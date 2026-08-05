@@ -218,7 +218,6 @@ def load_grid_point_data(
         # Create log of distances
         points = points.assign(log_distance_to_river=lambda x: np.log(x.distance_to_river))
         points = points.assign(log_distance_to_coastline=lambda x: np.log(x.distance_to_coastline))
-        points.rename(columns={"lon": "long"})
 
         points.to_file(fpath)
 
