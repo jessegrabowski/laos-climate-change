@@ -13,6 +13,20 @@ def test_missing_workbook_names_the_path_it_wants(tmp_path):
         load_emdat_data(tmp_path)
 
 
+def test_empty_workbook_is_rejected(write_emdat_cache):
+    with pytest.raises(ValueError, match="has no rows"):
+        load_emdat_data(write_emdat_cache([]))
+
+
+def test_workbook_missing_a_column_names_it(write_emdat_cache):
+    """Nothing else detects upstream schema drift, so the loader has to."""
+    event = emdat_event()
+    del event["Total Affected"]
+
+    with pytest.raises(ValueError, match=r"missing \['Total Affected'\]"):
+        load_emdat_data(write_emdat_cache([event]))
+
+
 def test_every_country_year_appears_even_without_events(write_emdat_cache):
     """Count models need zero-event country-years present as rows, not absent."""
     cache_dir = write_emdat_cache([emdat_event({"ISO": "AAA"}), emdat_event({"ISO": "BBB", "DisNo.": "1990-0002-BBB"})])

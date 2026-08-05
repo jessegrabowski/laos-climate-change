@@ -12,6 +12,10 @@ from climate_risk.const_vars import (
 # The study window opens in 1969 and closes on the newest event in the workbook.
 EMDAT_WINDOW_START = "1969-01-01"
 
+# Columns read before any rename. Nothing detects upstream schema drift, so this check is the
+# earliest point a changed export becomes a named error rather than a missing attribute.
+REQUIRED_EMDAT_COLUMNS = {"ISO", "Region", "Subregion", "Disaster Type"} | set(EM_DAT_COL_DICT)
+
 
 def load_emdat_data(
     cache_dir: Path,
@@ -28,10 +32,20 @@ def load_emdat_data(
             f"download the database, and place it at `{emdat_path}`"
         )
 
-    df_raw = (
-        pd.read_excel(emdat_path, sheet_name="EM-DAT Data")
-        .rename(columns=EM_DAT_COL_DICT)
-        .assign(Start_Year=lambda x: pd.to_datetime(x.Start_Year, format="%Y"))
+    workbook = pd.read_excel(emdat_path, sheet_name="EM-DAT Data")
+
+    if workbook.empty:
+        raise ValueError(f"The `EM-DAT Data` sheet in `{emdat_path}` has no rows.")
+
+    missing_columns = REQUIRED_EMDAT_COLUMNS - set(workbook.columns)
+    if missing_columns:
+        raise ValueError(
+            f"The `EM-DAT Data` sheet in `{emdat_path}` is missing {sorted(missing_columns)}. "
+            f"Re-download the database, or update EM_DAT_COL_DICT if the export has changed."
+        )
+
+    df_raw = workbook.rename(columns=EM_DAT_COL_DICT).assign(
+        Start_Year=lambda x: pd.to_datetime(x.Start_Year, format="%Y")
     )
 
     disaster_class_dict = {
