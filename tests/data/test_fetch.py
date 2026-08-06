@@ -65,10 +65,11 @@ def test_the_file_lands_in_the_cache(tmp_path, downloads):
 
 
 def test_a_present_file_is_not_downloaded_again(tmp_path, downloads):
-    fetch(make_source(), tmp_path)
-    fetch(make_source(), tmp_path)
+    """Assert on what the caller gets, so this survives any change to how downloading works."""
+    source = make_source()
+    source.path(tmp_path).write_bytes(b"already here")
 
-    assert len(downloads) == 1
+    assert fetch(source, tmp_path).read_bytes() == b"already here"
 
 
 def test_force_downloads_over_a_present_file(tmp_path, downloads):
@@ -111,6 +112,8 @@ def test_a_mismatched_digest_raises_and_leaves_nothing_in_place(tmp_path, downlo
         fetch(source, tmp_path)
 
     assert not source.path(tmp_path).exists()
+    # The error tells the reader where the bad bytes are, so they have to still be there.
+    assert (tmp_path / "noaa_co2.csv.part").read_bytes() == PAYLOAD
 
 
 def test_an_http_error_propagates(tmp_path, monkeypatch):
@@ -129,3 +132,10 @@ def test_the_digest_is_of_the_file_contents(tmp_path):
     path.write_bytes(PAYLOAD)
 
     assert sha256_of(path) == PAYLOAD_SHA256
+
+
+def test_a_cache_directory_that_does_not_exist_yet_is_created(tmp_path, downloads):
+    """Loaders point at subdirectories of the cache, which nothing has made on a fresh clone."""
+    nested = tmp_path / "gpcc" / "raw"
+
+    assert fetch(make_source(), nested).read_bytes() == PAYLOAD
