@@ -1,3 +1,5 @@
+import re
+
 import pytest
 
 from climate_risk.data.source import DataSource
@@ -8,6 +10,7 @@ FIELDS = {
     "licence": "public domain",
     "citation": "NOAA GML",
     "retrieved": "2026-08-03",
+    "sha256": None,
 }
 
 
@@ -44,8 +47,21 @@ def test_a_well_formed_digest_is_accepted():
 
 
 def test_an_unparseable_retrieved_date_is_rejected():
-    with pytest.raises(ValueError):
+    """Sources are import-time literals, so the error must name the one that failed."""
+    with pytest.raises(ValueError, match=re.escape("noaa_co2.csv: retrieved must be an ISO date")):
         source(retrieved="03-08-2026")
+
+
+def test_omitting_the_digest_is_a_decision_not_an_oversight():
+    """Every other field is required; the one that disables a check must be written out too."""
+    with pytest.raises(TypeError, match="sha256"):
+        DataSource(
+            url="https://example.org/f.csv",
+            filename="f.csv",
+            licence="public domain",
+            citation="Someone",
+            retrieved="2026-08-03",
+        )
 
 
 def test_a_source_cannot_be_mutated():

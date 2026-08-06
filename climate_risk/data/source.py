@@ -22,14 +22,13 @@ class DataSource:
     filename : str
         Name to store the download under, inside the cache directory. A bare name, never a path.
     licence : str
-        Terms the data is published under. EM-DAT is licensed and HydroRIVERS requires attribution,
-        so this is load-bearing rather than decorative.
+        Terms the data is published under. EM-DAT is licensed and HydroRIVERS requires attribution.
     citation : str
         How to credit the publisher.
     retrieved : str
         ISO date the ``sha256`` was recorded.
-    sha256 : str, optional
-        Lower-case hex digest of the downloaded bytes. Default None, which skips verification.
+    sha256 : str or None
+        Lower-case hex digest of the downloaded bytes, or None to skip verification.
     """
 
     url: str
@@ -37,20 +36,23 @@ class DataSource:
     licence: str
     citation: str
     retrieved: str
-    sha256: str | None = None
+    sha256: str | None
 
     def __post_init__(self) -> None:
         if not self.url.startswith(("http://", "https://")):
             raise ValueError(f"{self.filename}: url must be http(s), got {self.url!r}")
 
         # A filename carrying a directory would let a source write outside the cache.
-        if Path(self.filename).name != self.filename or not self.filename:
+        if not self.filename or Path(self.filename).name != self.filename:
             raise ValueError(f"url {self.url}: filename must be a bare name, got {self.filename!r}")
 
         if self.sha256 is not None and not SHA256_PATTERN.fullmatch(self.sha256):
             raise ValueError(f"{self.filename}: sha256 must be 64 lower-case hex characters")
 
-        date.fromisoformat(self.retrieved)
+        try:
+            date.fromisoformat(self.retrieved)
+        except ValueError as err:
+            raise ValueError(f"{self.filename}: retrieved must be an ISO date, got {self.retrieved!r}") from err
 
     def path(self, cache_dir: Path) -> Path:
         """Return where this source is stored inside ``cache_dir``."""
