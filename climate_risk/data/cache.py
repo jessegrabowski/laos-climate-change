@@ -1,4 +1,5 @@
 import logging
+import os
 
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
@@ -10,18 +11,36 @@ import pandas as pd
 
 _log = logging.getLogger(__name__)
 
-# A key becomes a filename, so a value carrying a separator would write outside the cache, and one
-# carrying the pair separators would make two different parameter sets collide on one entry.
-FORBIDDEN_IN_KEY = ("/", "\\", "__", "-")
+PARAMETER_SEPARATOR = "__"
+VALUE_SEPARATOR = "="
+
+# A key becomes a filename, so a value carrying a path separator would write outside the cache, and
+# one carrying a key separator would make two different parameter sets collide on a single entry.
+FORBIDDEN_IN_KEY = ("/", "\\", PARAMETER_SEPARATOR, VALUE_SEPARATOR)
 
 
 @dataclass(frozen=True, slots=True)
 class CacheFormat[T]:
-    """A matched reader and writer. Declaring them together is what stops the two drifting apart."""
+    """
+    A matched reader and writer. Declaring them together is what stops the two drifting apart.
+
+    Parameters
+    ----------
+    suffix : str
+        File extension the artefact is stored under.
+    read : callable
+        Reads the artefact back from a path.
+    write : callable
+        Writes the artefact to a path.
+    atomic : bool
+        Whether ``write`` can be sent to a temporary path and moved into place. False for formats
+        carrying sidecar files, which a single move would leave behind.
+    """
 
     suffix: str
     read: Callable[[Path], T]
     write: Callable[[T, Path], None]
+    atomic: bool
 
 
 def pandas_csv(**read_kwargs: Any) -> CacheFormat[pd.DataFrame]:
@@ -30,14 +49,17 @@ def pandas_csv(**read_kwargs: Any) -> CacheFormat[pd.DataFrame]:
         suffix=".csv",
         read=lambda path: pd.read_csv(path, **read_kwargs),
         write=lambda frame, path: frame.to_csv(path),
+        atomic=True,
     )
 
 
 def geo_shapefile() -> CacheFormat[gpd.GeoDataFrame]:
+    """A shapefile round-trip. Not atomic: `.shp` carries `.shx`, `.dbf`, `.prj` and `.cpg` beside it."""
     return CacheFormat(
         suffix=".shp",
         read=gpd.read_file,
         write=lambda frame, path: frame.to_file(path),
+        atomic=False,
     )
 
 
@@ -58,7 +80,7 @@ def cache_key(name: str, params: Mapping[str, object] | None = None) -> str:
     Returns
     -------
     str
-        A filename stem, such as ``points__grid_size-400__region-laos``.
+        A filename stem, such as ``points__grid_size=400__region=laos``.
 
     Raises
     ------
@@ -67,13 +89,13 @@ def cache_key(name: str, params: Mapping[str, object] | None = None) -> str:
     """
     parts = [_key_part(name, "name")]
     for key, value in sorted((params or {}).items()):
-        parts.append(f"{_key_part(key, 'parameter')}-{_key_part(value, f'value of {key}')}")
+        parts.append(f"{_key_part(key, 'parameter')}{VALUE_SEPARATOR}{_key_part(value, f'value of {key}')}")
 
-    return "__".join(parts)
+    return PARAMETER_SEPARATOR.join(parts)
 
 
 def _key_part(value: object, described_as: str) -> str:
-    if not isinstance(value, str | int | bool):
+    if not isinstance(value, str | int):
         raise ValueError(f"{described_as} must be a string, integer or boolean, got {value!r}")
 
     text = str(value)
@@ -119,7 +141,13 @@ def cached[T](
 
     Returns
     -------
-    The artefact, either read from the cache or freshly built.
+    T
+        The artefact, read from the cache or freshly built.
+
+    Raises
+    ------
+    ValueError
+        If ``name`` or a value in ``params`` would not survive being put in a filename.
     """
     path = (cache_dir / cache_key(name, params)).with_suffix(fmt.suffix)
 
@@ -127,10 +155,16 @@ def cached[T](
         _log.info(f"Loading cached {name} from {path}")
         return fmt.read(path)
 
+    cache_dir.mkdir(parents=True, exist_ok=True)
+
     _log.info(f"Building {name}")
     artefact = builder()
 
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    fmt.write(artefact, path)
+    if fmt.atomic:
+        partial = path.with_suffix(path.suffix + ".part")
+        fmt.write(artefact, partial)
+        os.replace(partial, path)
+    else:
+        fmt.write(artefact, path)
 
     return artefact

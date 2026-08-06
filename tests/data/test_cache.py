@@ -1,3 +1,5 @@
+from dataclasses import replace
+
 import geopandas as gpd
 import pandas as pd
 import pytest
@@ -77,7 +79,7 @@ def test_parameters_are_ordered_so_the_key_is_stable():
 
 
 def test_the_key_is_readable():
-    assert cache_key("points", {"region": "laos", "grid_size": 400}) == "points__grid_size-400__region-laos"
+    assert cache_key("points", {"region": "laos", "grid_size": 400}) == "points__grid_size=400__region=laos"
 
 
 def test_a_bare_name_needs_no_parameters():
@@ -86,8 +88,8 @@ def test_a_bare_name_needs_no_parameters():
 
 @pytest.mark.parametrize(
     "params",
-    [{"region": "la/os"}, {"region": "la__os"}, {"region": "la-os"}, {"gr/id": 4}],
-    ids=["slash", "pair-separator", "field-separator", "in-the-name"],
+    [{"region": "la/os"}, {"region": "la__os"}, {"region": "la=os"}, {"gr/id": 4}],
+    ids=["slash", "parameter-separator", "value-separator", "in-the-name"],
 )
 def test_a_value_that_would_corrupt_the_filename_is_rejected(params):
     """A separator in a value makes two different parameter sets collide on one cache entry."""
@@ -100,6 +102,27 @@ def test_a_value_that_does_not_format_stably_is_rejected(value):
     """`str()` of a float or an object is not a stable identity to key a cache on."""
     with pytest.raises(ValueError, match="string, integer or boolean"):
         cache_key("points", {"size": value})
+
+
+def test_a_hyphenated_value_is_allowed():
+    """Region and indicator names carry hyphens; only the separators are off limits."""
+    assert cache_key("points", {"region": "south-east-asia"}) == "points__region=south-east-asia"
+
+
+def test_a_write_killed_partway_does_not_poison_the_cache(tmp_path, frame):
+    """A truncated file left at the destination would read back as a hit forever after."""
+
+    def write_half_then_die(artefact, path):
+        path.write_text("Date,co2\n1990-01-01,354.4")
+        raise OSError("no space left on device")
+
+    dying = replace(pandas_csv(index_col="Date"), write=write_half_then_die)
+
+    with pytest.raises(OSError, match="no space left"):
+        cached(tmp_path, "co2", lambda: frame, dying)
+
+    assert not (tmp_path / "co2.csv").exists()
+    assert len(cached(tmp_path, "co2", lambda: frame, pandas_csv(index_col="Date"))) == 2
 
 
 def test_an_empty_name_is_rejected():
