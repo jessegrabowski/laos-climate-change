@@ -27,6 +27,7 @@ def get_distance_to_rivers(
         ret.loc[idx, "HYRIV_ID"] = rivers_km.loc[index]["HYRIV_ID"]
 
     ret["ORD_FLOW"] = ret["ORD_FLOW"].astype("int")
+    ret["HYRIV_ID"] = ret["HYRIV_ID"].astype("int")
     ret["closest_river"] = ret["closest_river"].astype("float")
     return ret
 
