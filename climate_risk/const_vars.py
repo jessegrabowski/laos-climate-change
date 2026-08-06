@@ -65,8 +65,6 @@ LAOS_URL = (
 )
 LAOS_FILENAME = "lao_admin_boundaries.shp.zip"
 
-OCEAN_HEAT_URL = "https://www.ncei.noaa.gov/data/oceans/woa/DATA_ANALYSIS/3M_HEAT_CONTENT/DATA/basin/3month/ohc_levitus_climdash_seasonal.csv"
-OCEAN_HEAT_FILENAME = "ncei_global_ocean_heat.csv"
 MODEL_DF_FILENAME = "model_df.csv"
 DAMAGE_DF_FILENAME = "damage_df.csv"
 RIVERS_URL = "https://data.hydrosheds.org/file/HydroRIVERS/HydroRIVERS_v10_shp.zip"

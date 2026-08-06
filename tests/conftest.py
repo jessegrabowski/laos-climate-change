@@ -14,7 +14,6 @@ from climate_risk.const_vars import (
     BIG_RIVERS_FILENAME,
     GPCC_YEARS,
     MEDIUM_BIG_RIVERS_FILENAME,
-    OCEAN_HEAT_FILENAME,
 )
 
 # One event that clears every downstream filter: deaths above 100, affected above 1000, and a start
@@ -208,7 +207,7 @@ def write_full_cache(tmp_path, write_emdat_cache):
         )
         # The cache key is stated literally, so a wrong one fails rather than agreeing with itself.
         (tmp_path / "co2.csv").write_text("Date,co2\n1990-01-01,354.0\n1991-01-01,355.0\n")
-        (tmp_path / OCEAN_HEAT_FILENAME).write_text("Date,Temp\n1990-01-01,1.0\n1991-01-01,2.0\n")
+        (tmp_path / "ocean_heat.csv").write_text("Date,Temp\n1990-01-01,1.0\n1991-01-01,2.0\n")
         gpcc_dir = tmp_path / "gpcc"
         gpcc_dir.mkdir(parents=True, exist_ok=True)
         (gpcc_dir / "gpcc_precipitations.csv").write_text(
