@@ -21,6 +21,9 @@ DAMAGE_COLUMNS = ("ISO", "End Year", "Latitude", "Longitude", "River Basin", "To
 # ESRI Shapefile truncates field names to ten characters, so the warm path restores them.
 SHAPEFILE_FIELD_LIMIT = 10
 
+# What pd.to_datetime produces on the cold path, which the warm path has to match.
+YEAR_RESOLUTION = "datetime64[us]"
+
 
 def _create_rivers_damage(
     cache_dir: Path,
@@ -66,8 +69,9 @@ def _create_rivers_damage(
         full_names = [*totals.values(), *log_columns, "closest_river", "River Basin"]
         restored = cached.rename(columns={name[:SHAPEFILE_FIELD_LIMIT]: name for name in full_names})
 
-        # The shapefile stores the year as text, and the cold path hands back a timestamp.
-        return restored.assign(year=lambda x: pd.to_datetime(x["year"]))
+        # A shapefile Date field holds whole days, so the year comes back as text or as a
+        # coarser timestamp depending on the writer. The cold path hands back YEAR_RESOLUTION.
+        return restored.assign(year=lambda x: pd.to_datetime(x["year"]).astype(YEAR_RESOLUTION))
 
     big_rivers = load_rivers_data(cache_dir)
     emdat = load_emdat_data(cache_dir)
