@@ -94,12 +94,6 @@ VARIABLES_DICTIONARY = {
 }
 
 
-def make_gpcc_url(years: str):
-    return f"https://opendata.dwd.de/climate_environment/GPCC/full_data_monthly_v2022/10/full_data_monthly_v2022_{years}_10.nc.gz"
-
-
-GPCC_YEARS = ["1981_1990", "1991_2000", "2001_2010", "2011_2020"]
-
 COUNTRIES_ISO = [
     "ABW",
     "AFG",

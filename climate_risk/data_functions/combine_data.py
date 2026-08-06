@@ -4,9 +4,9 @@ from pathlib import Path
 import pandas as pd
 
 from climate_risk.data.co2 import load_co2_data
+from climate_risk.data.gpcc import load_gpcc_data
 from climate_risk.data.ocean_heat import load_ocean_heat_data
 from climate_risk.data_functions.emdat_processing import DISASTER_TYPES, load_emdat_data
-from climate_risk.data_functions.gpcc import load_gpcc_data
 from climate_risk.data_functions.world_bank_data_loader import load_wb_data
 
 
