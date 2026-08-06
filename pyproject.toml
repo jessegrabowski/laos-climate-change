@@ -146,7 +146,7 @@ filterwarnings = [
 
 [tool.mypy]
 # An include list that only grows. A package joins it when it is typed, and never leaves.
-files = ["climate_risk/geo", "climate_risk/stats", "climate_risk/models"]
+files = ["climate_risk/data", "climate_risk/geo", "climate_risk/stats", "climate_risk/models"]
 python_version = "3.12"
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
