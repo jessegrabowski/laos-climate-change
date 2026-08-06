@@ -138,7 +138,7 @@ def set_plotting_data(df: pd.DataFrame, features: list[str], ISO_list: list[str]
 
     pm.set_data(
         {
-            "X_gp": df[["lat", "long"]],
+            "X_gp": df[["lat", "lon"]],
             "Y": np.full(df.shape[0], 0),
             "ISO_idx": iso_idx,
             "X": df[features],
