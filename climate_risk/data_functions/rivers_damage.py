@@ -64,7 +64,10 @@ def _create_rivers_damage(
     if damage_path.is_file():
         cached = gpd.read_file(damage_path)
         full_names = [*totals.values(), *log_columns, "closest_river", "River Basin"]
-        return cached.rename(columns={name[:SHAPEFILE_FIELD_LIMIT]: name for name in full_names})
+        restored = cached.rename(columns={name[:SHAPEFILE_FIELD_LIMIT]: name for name in full_names})
+
+        # The shapefile stores the year as text, and the cold path hands back a timestamp.
+        return restored.assign(year=lambda x: pd.to_datetime(x["year"]))
 
     big_rivers = load_rivers_data(cache_dir)
     emdat = load_emdat_data(cache_dir)
