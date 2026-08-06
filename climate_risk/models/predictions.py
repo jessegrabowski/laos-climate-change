@@ -28,7 +28,7 @@ def prediction_to_gpd_df(
         # Transform into geo Data Frame
         predictions_dict_geo[variable] = gpd.GeoDataFrame(
             predictions_dict[variable],
-            geometry=gpd.points_from_xy(predictions_dict[variable]["long"], predictions_dict[variable]["lat"]),
+            geometry=gpd.points_from_xy(predictions_dict[variable]["lon"], predictions_dict[variable]["lat"]),
             crs=GEOGRAPHIC_CRS,
         )
 

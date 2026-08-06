@@ -30,7 +30,7 @@ def create_grid_from_shape(
     Returns
     -------
     GeoDataFrame
-        One row per surviving point, with ``long``, ``lat``, distances to the nearest river and
+        One row per surviving point, with ``lon``, ``lat``, distances to the nearest river and
         coastline, their logs, and ``ISO``.
     """
     long_min, lat_min, long_max, lat_max = shapefile.dissolve().bounds.values.ravel()
@@ -42,7 +42,7 @@ def create_grid_from_shape(
 
     point_overlay = grid.overlay(shapefile, how="intersection")
     points = gpd.GeoDataFrame(
-        point_overlay.geometry.to_frame().assign(long=lambda x: x.geometry.x, lat=lambda x: x.geometry.y),
+        point_overlay.geometry.to_frame().assign(lon=lambda x: x.geometry.x, lat=lambda x: x.geometry.y),
         crs=GEOGRAPHIC_CRS,
     )
 

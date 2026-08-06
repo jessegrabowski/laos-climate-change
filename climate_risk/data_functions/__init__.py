@@ -5,7 +5,7 @@ from climate_risk.data_functions.disaster_point_data import (
     load_synthetic_non_disaster_points,
 )
 from climate_risk.data_functions.emdat_processing import load_emdat_data
-from climate_risk.data_functions.GPCC_data_loader import load_gpcc_data
+from climate_risk.data_functions.gpcc import load_gpcc_data
 from climate_risk.data_functions.hadcrut_data_loader import load_hadcrut_data
 from climate_risk.data_functions.ipcc_scenarios_loader import process_ipcc_scenarios
 from climate_risk.data_functions.ocean_heat_processing import load_ocean_heat_data

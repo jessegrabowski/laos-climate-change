@@ -137,9 +137,11 @@ markers = [
 filterwarnings = [
     "error",
     # ESRI Shapefile truncates column names to 10 characters, and load_grid_point_data renames them
-    # back when it reads the file. TODO(step-06): stop round-tripping point grids through shapefiles.
+    # back when it reads the file.
     "ignore:Column names longer than 10 characters:UserWarning",
     "ignore:Normalized/laundered field name:RuntimeWarning",
+    # A shapefile Date field holds whole days, so a timestamp column is written as text.
+    "ignore:Field .* created as String field:RuntimeWarning",
 ]
 
 [tool.mypy]

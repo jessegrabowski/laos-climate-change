@@ -29,9 +29,17 @@ def features_points_path(cache_dir: Path) -> Path:
     return cache_dir / "disaster_locations_gpt_repaired_w_features.csv"
 
 
+def read_cached_points(fpath: Path, index_col: int | None = None) -> pd.DataFrame:
+    """Read a cached point CSV, normalising a `long` column to `lon`."""
+    # Remove once no cache on disk spells it long.
+    frame = pd.read_csv(fpath, index_col=index_col)
+
+    return frame if "lon" in frame.columns else frame.rename(columns={"long": "lon"})
+
+
 def load_data(fpath: Path) -> gpd.GeoDataFrame:
-    data = pd.read_csv(fpath)
-    data["geometry"] = gpd.points_from_xy(data.long, data.lat)
+    data = read_cached_points(fpath)
+    data["geometry"] = gpd.points_from_xy(data.lon, data.lat)
     data = gpd.GeoDataFrame(data, crs=GEOGRAPHIC_CRS)
 
     return data
@@ -332,7 +340,7 @@ def load_synthetic_non_disaster_points(
             distance_to_coastline=lambda x: to_km(x.distance_to_coastline)
         )
 
-        not_disasters["long"] = not_disasters.geometry.apply(lambda x: x.x)
+        not_disasters["lon"] = not_disasters.geometry.apply(lambda x: x.x)
         not_disasters["lat"] = not_disasters.geometry.apply(lambda x: x.y)
 
         not_disasters.sort_values(by=["ISO"], inplace=True)
@@ -345,8 +353,8 @@ def load_synthetic_non_disaster_points(
 
     else:
         _log.info(f"Loading data found at {fpath}")
-        not_disasters = pd.read_csv(fpath, index_col=0)
-        not_disasters["geometry"] = gpd.points_from_xy(not_disasters.long, not_disasters.lat)
+        not_disasters = read_cached_points(fpath, index_col=0)
+        not_disasters["geometry"] = gpd.points_from_xy(not_disasters.lon, not_disasters.lat)
         not_disasters["Start_Year"] = pd.to_datetime(not_disasters["Start_Year"])
 
         # The cache stores bare lat/lon columns, so the CRS is asserted rather than read back.
@@ -392,10 +400,10 @@ def load_non_disaster_grid(
                 left_on="ISO",
                 right_on="ISO",
                 how="left",
-            ).rename(columns={"Start_Date": "Start_Year", "lon": "long"})
+            ).rename(columns={"Start_Date": "Start_Year"})
 
         else:
-            not_disasters = not_disasters.rename(columns={"Start_Date": "Start_Year", "lon": "long"})
+            not_disasters = not_disasters.rename(columns={"Start_Date": "Start_Year"})
             not_disasters["Start_Year"] = "1984-01-01"
             not_disasters["Start_Year"] = pd.to_datetime(not_disasters["Start_Year"])
 
@@ -403,6 +411,6 @@ def load_non_disaster_grid(
         not_disasters.to_csv(fpath)
 
     if fpath.exists():
-        not_disasters = pd.read_csv(fpath, index_col=0)
+        not_disasters = read_cached_points(fpath, index_col=0)
 
     return not_disasters

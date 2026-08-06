@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from pathlib import Path
 
 import geopandas as gpd
@@ -15,151 +16,122 @@ from climate_risk.data_functions.shapefiles_data_loader import load_shapefile
 from climate_risk.geo.crs import to_km
 from climate_risk.geo.distance import get_distance_to_rivers
 
+DAMAGE_COLUMNS = ("ISO", "End Year", "Latitude", "Longitude", "River Basin", "Total_Damage", "Total_Affected", "Deaths")
 
-def create_hydro_rivers_damage(cache_dir: Path) -> gpd.GeoDataFrame:
-    hydro_damage_path = cache_dir / RIVERS_HYDRO_DAMAGE_FILENAME
+# ESRI Shapefile truncates field names to ten characters, so the warm path restores them.
+SHAPEFILE_FIELD_LIMIT = 10
 
-    if not hydro_damage_path.is_file():
-        big_rivers = load_rivers_data(cache_dir)
-        emdat = load_emdat_data(cache_dir)
+# What pd.to_datetime produces on the cold path, which the warm path has to match.
+YEAR_RESOLUTION = "datetime64[us]"
 
-        world = load_shapefile("world", cache_dir, repair_ISO_codes=True)
 
-        damage_df = gpd.GeoDataFrame(
-            (
-                emdat["df_raw_filtered_adj"]
-                .query('disaster_class == "Hydrometereological"')[
-                    [
-                        "ISO",
-                        "End Year",
-                        "Latitude",
-                        "Longitude",
-                        "River Basin",
-                        "Total_Damage",
-                        "Total_Affected",
-                        "Deaths",
-                    ]
-                ]
-                .dropna(how="all", subset=["Latitude", "Longitude"])
-                .assign(
-                    geometry=lambda x: gpd.points_from_xy(x.Longitude, x.Latitude),
-                    year=lambda x: pd.to_datetime(x["End Year"], format="%Y"),
-                )
-                .drop(columns=["End Year"])
-                .replace({0.0: np.nan})
-            ),
-            crs=world.crs,
-        )
+def _create_rivers_damage(
+    cache_dir: Path,
+    filename: str,
+    query: str,
+    total_suffix: str,
+    log_suffix: str,
+    extra_columns: Sequence[str] = (),
+    locations: dict[str, dict[str, float]] | None = None,
+) -> gpd.GeoDataFrame:
+    """
+    Join EM-DAT damages to the nearest major river, caching the result as a shapefile.
 
-        closest_river = get_distance_to_rivers(big_rivers, damage_df)
-        closest_river["closest_river"] = to_km(closest_river["closest_river"])
+    Parameters
+    ----------
+    cache_dir : Path
+        Directory holding the EM-DAT workbook, the shapefiles and the cached output.
+    filename : str
+        Name of the cached shapefile inside ``cache_dir``.
+    query : str
+        Pandas query selecting the events, applied to the adjusted EM-DAT frame.
+    total_suffix : str
+        Suffix for the damage and affected totals, giving ``Total_Damage_{total_suffix}``.
+    log_suffix : str
+        Suffix for their logarithms, giving ``log_damage_{log_suffix}``.
+    extra_columns : sequence of str, optional
+        Columns to carry through beyond ``DAMAGE_COLUMNS``. Default empty.
+    locations : dict mapping str to dict, optional
+        Latitude and longitude to force onto specific ``DisNo.`` events. Default None, which forces
+        nothing.
 
-        damage_df = damage_df.join(closest_river)
+    Returns
+    -------
+    GeoDataFrame
+        One row per event, with its distance in kilometres to the nearest major river.
+    """
+    damage_path = cache_dir / filename
+    totals = {"Total_Damage": f"Total_Damage_{total_suffix}", "Total_Affected": f"Total_Affected_{total_suffix}"}
+    log_columns = [f"log_damage_{log_suffix}", f"log_affected_{log_suffix}"]
 
-        damage_df.rename(
-            columns={
-                "Total_Damage": "Total_Damage_Hydro",
-                "Total_Affected": "Total_Affected_Hydro",
-            },
-            inplace=True,
-        )
+    if damage_path.is_file():
+        cached = gpd.read_file(damage_path)
+        full_names = [*totals.values(), *log_columns, "closest_river", "River Basin"]
+        restored = cached.rename(columns={name[:SHAPEFILE_FIELD_LIMIT]: name for name in full_names})
 
-        damage_df = damage_df.assign(log_damage_hydro=lambda x: np.log(x.Total_Damage_Hydro))
+        # A shapefile Date field holds whole days, so the year comes back as text or as a
+        # coarser timestamp depending on the writer. The cold path hands back YEAR_RESOLUTION.
+        return restored.assign(year=lambda x: pd.to_datetime(x["year"]).astype(YEAR_RESOLUTION))
 
-        damage_df = damage_df.assign(log_affected_hydro=lambda x: np.log(x.Total_Affected_Hydro))
+    big_rivers = load_rivers_data(cache_dir)
+    emdat = load_emdat_data(cache_dir)
+    world = load_shapefile("world", cache_dir, repair_ISO_codes=True)
 
-        damage_df.to_file(hydro_damage_path)
+    events = emdat["df_raw_filtered_adj"].query(query)
 
-    else:
-        damage_df = gpd.read_file(hydro_damage_path)
-        damage_df = damage_df.rename(
-            columns={
-                "River Basi": "River Basin",
-                "Total_Dama": "Total_Damage_Hydro",
-                "Total_Affe": "Total_Affected",
-                "closest_ri": "closest_river",
-                "log_damage": "log_damage_hydro",
-            }
-        )
+    if locations is not None:
+        for disaster_number, coordinates in locations.items():
+            matching = events[events["DisNo."] == disaster_number].index
+            events.loc[matching, "Latitude"] = coordinates["Latitude"]
+            events.loc[matching, "Longitude"] = coordinates["Longitude"]
+
+    damage_df = gpd.GeoDataFrame(
+        (
+            events[[*DAMAGE_COLUMNS, *extra_columns]]
+            .dropna(how="any", subset=["Latitude", "Longitude"])
+            .assign(
+                geometry=lambda x: gpd.points_from_xy(x.Longitude, x.Latitude),
+                year=lambda x: pd.to_datetime(x["End Year"], format="%Y"),
+            )
+            .drop(columns=["End Year"])
+            .replace({0.0: np.nan})
+        ),
+        crs=world.crs,
+    )
+
+    closest_river = get_distance_to_rivers(big_rivers, damage_df)
+    closest_river["closest_river"] = to_km(closest_river["closest_river"])
+
+    damage_df = damage_df.join(closest_river).rename(columns=totals)
+    damage_df = damage_df.assign(
+        **{
+            f"log_damage_{log_suffix}": np.log(damage_df[totals["Total_Damage"]]),
+            f"log_affected_{log_suffix}": np.log(damage_df[totals["Total_Affected"]]),
+        }
+    )
+
+    damage_df.to_file(damage_path)
 
     return damage_df
 
 
+def create_hydro_rivers_damage(cache_dir: Path) -> gpd.GeoDataFrame:
+    return _create_rivers_damage(
+        cache_dir,
+        filename=RIVERS_HYDRO_DAMAGE_FILENAME,
+        query='disaster_class == "Hydrometereological"',
+        total_suffix="Hydro",
+        log_suffix="hydro",
+    )
+
+
 def create_floods_rivers_damage(cache_dir: Path) -> gpd.GeoDataFrame:
-    floods_damage_path = cache_dir / RIVERS_FLOODS_DAMAGE_FILENAME
-
-    if not floods_damage_path.is_file():
-        big_rivers = load_rivers_data(cache_dir)
-        emdat = load_emdat_data(cache_dir)
-        world = load_shapefile("world", cache_dir, repair_ISO_codes=True)
-
-        floods_damages = (
-            emdat["df_raw_filtered_adj"]
-            .rename(columns={"Disaster Type": "disaster_type"})
-            .query('disaster_type == "Flood"')
-        )
-
-        for x in LAOS_LOCATION_DICTIONARY.keys():
-            index = floods_damages[floods_damages["DisNo."] == x].index
-            floods_damages.loc[index, "Latitude"] = LAOS_LOCATION_DICTIONARY[x]["Latitude"]
-            floods_damages.loc[index, "Longitude"] = LAOS_LOCATION_DICTIONARY[x]["Longitude"]
-
-        damage_df_f = gpd.GeoDataFrame(
-            (
-                floods_damages[
-                    [
-                        "ISO",
-                        "End Year",
-                        "Latitude",
-                        "Longitude",
-                        "River Basin",
-                        "Total_Damage",
-                        "Total_Affected",
-                        "Deaths",
-                        "Location",
-                    ]
-                ]
-                .dropna(how="all", subset=["Latitude", "Longitude"])
-                .assign(
-                    geometry=lambda x: gpd.points_from_xy(x.Longitude, x.Latitude),
-                    year=lambda x: pd.to_datetime(x["End Year"], format="%Y"),
-                )
-                .drop(columns=["End Year"])
-                .replace({0.0: np.nan})
-            ),
-            crs=world.crs,
-        )
-
-        closest_river_f = get_distance_to_rivers(big_rivers, damage_df_f)
-        closest_river_f["closest_river"] = to_km(closest_river_f["closest_river"])
-
-        damage_df_f = damage_df_f.join(closest_river_f)
-
-        damage_df_f.rename(
-            columns={
-                "Total_Damage": "Total_Damage_Flood",
-                "Total_Affected": "Total_Affected_Flood",
-            },
-            inplace=True,
-        )
-
-        damage_df_f = damage_df_f.assign(log_damage_floods=lambda x: np.log(x.Total_Damage_Flood))
-
-        damage_df_f = damage_df_f.assign(log_affected_floods=lambda x: np.log(x.Total_Affected_Flood))
-
-        damage_df_f.to_file(floods_damage_path)
-
-    else:
-        damage_df_f = gpd.read_file(floods_damage_path)
-        damage_df_f = damage_df_f.rename(
-            columns={
-                "River Basi": "River Basin",
-                "Total_Dama": "Total_Damage_floods",
-                "Total_Affe": "Total_Affected_floods",
-                "closest_ri": "closest_river",
-                "log_damage": "log_damage_floods",
-                "log_affect": "log_affected_floods",
-            }
-        )
-
-    return damage_df_f
+    return _create_rivers_damage(
+        cache_dir,
+        filename=RIVERS_FLOODS_DAMAGE_FILENAME,
+        query='`Disaster Type` == "Flood"',
+        total_suffix="Flood",
+        log_suffix="floods",
+        extra_columns=["Location"],
+        locations=LAOS_LOCATION_DICTIONARY,
+    )

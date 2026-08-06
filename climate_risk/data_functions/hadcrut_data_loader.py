@@ -3,7 +3,7 @@ import logging
 from pathlib import Path
 from urllib.request import urlretrieve
 
-import geopandas as geo
+import geopandas as gpd
 import pandas as pd
 import xarray as xr
 
@@ -45,9 +45,9 @@ def load_hadcrut_data(cache_dir: Path, *, force_reload: bool = False, repair_ISO
         )
         _log.info(f"Merging HADCRUT data with world shapefile using Lat/Lon ({GEOGRAPHIC_CRS} coordinates)")
 
-        df_geo = geo.GeoDataFrame(
+        df_geo = gpd.GeoDataFrame(
             df,
-            geometry=geo.points_from_xy(df["longitude"], df["latitude"]),
+            geometry=gpd.points_from_xy(df["longitude"], df["latitude"]),
             crs=GEOGRAPHIC_CRS,
         )
 
