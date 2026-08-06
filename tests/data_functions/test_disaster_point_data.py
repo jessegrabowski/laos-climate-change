@@ -78,3 +78,14 @@ def test_a_cache_written_before_the_rename_still_reads(tmp_path):
     assert "lon" in data.columns
     assert "long" not in data.columns
     assert data.geometry.x.tolist() == [102.5]
+
+
+def test_a_cache_holding_both_spellings_keeps_one_lon(tmp_path):
+    """Renaming unconditionally would give two columns named lon, and lat/lon lookup a frame."""
+    half_migrated = tmp_path / "points.csv"
+    half_migrated.write_text("emdat_index,location_id,long,lon,lat\n0,0,9.9,102.5,18.5\n")
+
+    data = load_data(half_migrated)
+
+    assert list(data.columns).count("lon") == 1
+    assert data.geometry.x.tolist() == [102.5]

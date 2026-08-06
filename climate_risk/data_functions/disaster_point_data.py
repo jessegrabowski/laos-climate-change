@@ -29,10 +29,12 @@ def features_points_path(cache_dir: Path) -> Path:
     return cache_dir / "disaster_locations_gpt_repaired_w_features.csv"
 
 
-def read_cached_points(fpath: Path, **kwargs) -> pd.DataFrame:
-    """Read a cached point CSV, accepting the `long` spelling written before the rename."""
-    # TODO(step-12): drop the rename once no cache predates it.
-    return pd.read_csv(fpath, **kwargs).rename(columns={"long": "lon"})
+def read_cached_points(fpath: Path, index_col: int | None = None) -> pd.DataFrame:
+    """Read a cached point CSV, normalising a `long` column to `lon`."""
+    # Remove once no cache on disk spells it long.
+    frame = pd.read_csv(fpath, index_col=index_col)
+
+    return frame if "lon" in frame.columns else frame.rename(columns={"long": "lon"})
 
 
 def load_data(fpath: Path) -> gpd.GeoDataFrame:
