@@ -16,7 +16,7 @@ from climate_risk.data_functions.shapefiles_data_loader import load_shapefile
 from climate_risk.geo.crs import to_km
 from climate_risk.geo.distance import get_distance_to_rivers
 
-DAMAGE_COLUMNS = ["ISO", "End Year", "Latitude", "Longitude", "River Basin", "Total_Damage", "Total_Affected", "Deaths"]
+DAMAGE_COLUMNS = ("ISO", "End Year", "Latitude", "Longitude", "River Basin", "Total_Damage", "Total_Affected", "Deaths")
 
 # ESRI Shapefile truncates field names to ten characters, so the warm path restores them.
 SHAPEFILE_FIELD_LIMIT = 10
@@ -49,8 +49,8 @@ def _create_rivers_damage(
     extra_columns : sequence of str, optional
         Columns to carry through beyond ``DAMAGE_COLUMNS``. Default empty.
     locations : dict mapping str to dict, optional
-        Latitude and longitude to force onto specific ``DisNo.`` events, whose coordinates EM-DAT
-        records against the wrong place. Default None, which forces nothing.
+        Latitude and longitude to force onto specific ``DisNo.`` events. Default None, which forces
+        nothing.
 
     Returns
     -------
@@ -59,12 +59,12 @@ def _create_rivers_damage(
     """
     damage_path = cache_dir / filename
     totals = {"Total_Damage": f"Total_Damage_{total_suffix}", "Total_Affected": f"Total_Affected_{total_suffix}"}
-    logs = {f"log_damage_{log_suffix}": totals["Total_Damage"], f"log_affected_{log_suffix}": totals["Total_Affected"]}
+    log_columns = [f"log_damage_{log_suffix}", f"log_affected_{log_suffix}"]
 
     if damage_path.is_file():
         cached = gpd.read_file(damage_path)
-        truncated = {name[:SHAPEFILE_FIELD_LIMIT]: name for name in [*totals.values(), *logs, "closest_river"]}
-        return cached.rename(columns={"River Basi": "River Basin", **truncated})
+        full_names = [*totals.values(), *log_columns, "closest_river", "River Basin"]
+        return cached.rename(columns={name[:SHAPEFILE_FIELD_LIMIT]: name for name in full_names})
 
     big_rivers = load_rivers_data(cache_dir)
     emdat = load_emdat_data(cache_dir)
@@ -96,7 +96,12 @@ def _create_rivers_damage(
     closest_river["closest_river"] = to_km(closest_river["closest_river"])
 
     damage_df = damage_df.join(closest_river).rename(columns=totals)
-    damage_df = damage_df.assign(**{log: (lambda x, source=total: np.log(x[source])) for log, total in logs.items()})
+    damage_df = damage_df.assign(
+        **{
+            f"log_damage_{log_suffix}": np.log(damage_df[totals["Total_Damage"]]),
+            f"log_affected_{log_suffix}": np.log(damage_df[totals["Total_Affected"]]),
+        }
+    )
 
     damage_df.to_file(damage_path)
 
