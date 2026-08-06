@@ -5,7 +5,7 @@ import shutil
 from pathlib import Path
 from urllib.request import urlretrieve
 
-import geopandas as geo
+import geopandas as gpd
 import pandas as pd
 import xarray as xr
 
@@ -68,7 +68,7 @@ def load_gpcc_data(cache_dir: Path, *, force_reload: bool = False, repair_ISO_co
             _log.info(
                 f"Merging {str_range} GPCC data with world shapefile using Lat/Lon ({GEOGRAPHIC_CRS} coordinates)"
             )
-            df_geo = geo.GeoDataFrame(df, geometry=geo.points_from_xy(df["lon"], df["lat"]), crs=GEOGRAPHIC_CRS)
+            df_geo = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df["lon"], df["lat"]), crs=GEOGRAPHIC_CRS)
             df_geo_wshape = df_geo.sjoin(world_shapefile, how="inner", predicate="intersects")[
                 [
                     "time",
