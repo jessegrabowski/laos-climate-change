@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from climate_risk.stats.timeseries import ADF_test_summary, make_var_names
+from climate_risk.stats.timeseries import adf_test_summary, make_var_names
 
 
 @pytest.mark.parametrize(
@@ -22,4 +22,4 @@ def test_var_names_follow_the_regression_terms(n_lags, regression, expected):
 def test_missing_data_is_refused_by_default():
     """statsmodels would otherwise return a silent nan for the whole test."""
     with pytest.raises(ValueError, match="missing data"):
-        ADF_test_summary(pd.DataFrame({"x": [1.0, np.nan, 3.0]}))
+        adf_test_summary(pd.DataFrame({"x": [1.0, np.nan, 3.0]}))

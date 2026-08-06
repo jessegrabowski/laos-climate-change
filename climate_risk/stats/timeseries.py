@@ -15,7 +15,7 @@ def make_var_names(var: str, n_lags: int, reg: str) -> list[str]:
     return names
 
 
-def ADF_test_summary(
+def adf_test_summary(
     df: pd.DataFrame | pd.Series,
     maxlag: int | None = None,
     autolag: str = "BIC",
