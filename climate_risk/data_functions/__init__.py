@@ -1,4 +1,4 @@
-from climate_risk.data_functions.co2_processing import load_co2_data
+from climate_risk.data.co2 import load_co2_data
 from climate_risk.data_functions.combine_data import load_all_data
 from climate_risk.data_functions.disaster_point_data import (
     load_disaster_point_data,

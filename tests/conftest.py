@@ -12,7 +12,6 @@ from shapely.geometry import LineString, Point, box
 
 from climate_risk.const_vars import (
     BIG_RIVERS_FILENAME,
-    CO2_FILENAME,
     GPCC_YEARS,
     MEDIUM_BIG_RIVERS_FILENAME,
     OCEAN_HEAT_FILENAME,
@@ -207,7 +206,8 @@ def write_full_cache(tmp_path, write_emdat_cache):
             "DDD,1990,3000.0,30.0,3000000\nDDD,1991,3300.0,33.0,3030000\n"
             "EEE,1990,4000.0,40.0,4000000\nEEE,1991,4400.0,44.0,4040000\n"
         )
-        (tmp_path / CO2_FILENAME).write_text("Date,co2\n1990-01-01,354.0\n1991-01-01,355.0\n")
+        # The cache key is stated literally, so a wrong one fails rather than agreeing with itself.
+        (tmp_path / "co2.csv").write_text("Date,co2\n1990-01-01,354.0\n1991-01-01,355.0\n")
         (tmp_path / OCEAN_HEAT_FILENAME).write_text("Date,Temp\n1990-01-01,1.0\n1991-01-01,2.0\n")
         gpcc_dir = tmp_path / "gpcc"
         gpcc_dir.mkdir(parents=True, exist_ok=True)
