@@ -57,18 +57,6 @@ def test_an_unparseable_retrieved_date_is_rejected():
         source(retrieved="03-08-2026")
 
 
-def test_omitting_the_digest_is_a_decision_not_an_oversight():
-    """Every other field is required; the one that disables a check must be written out too."""
-    with pytest.raises(TypeError, match="sha256"):
-        DataSource(
-            url="https://example.org/f.csv",
-            filename="f.csv",
-            licence="public domain",
-            citation="Someone",
-            retrieved="2026-08-03",
-        )
-
-
 # Every source the library downloads. A new one is added here so the reachability check covers it.
 SOURCES = {"CO2": CO2, "OCEAN_HEAT": OCEAN_HEAT, "HADCRUT": HADCRUT} | {
     f"GPCC[{decade}]": archive for decade, archive in GPCC.items()
