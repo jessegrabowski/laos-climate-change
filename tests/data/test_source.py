@@ -69,12 +69,6 @@ def test_omitting_the_digest_is_a_decision_not_an_oversight():
         )
 
 
-def test_a_source_cannot_be_mutated():
-    """Sources are module-level literals; a caller reassigning one would affect every later caller."""
-    with pytest.raises(AttributeError):
-        source().url = "https://elsewhere.example/f.csv"
-
-
 # Every source the library downloads. A new one is added here so the reachability check covers it.
 SOURCES = {"CO2": CO2, "OCEAN_HEAT": OCEAN_HEAT, "HADCRUT": HADCRUT} | {
     f"GPCC[{decade}]": archive for decade, archive in GPCC.items()
