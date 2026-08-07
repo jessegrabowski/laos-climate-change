@@ -21,25 +21,30 @@ def _as_pandas(frame: pl.DataFrame) -> pd.DataFrame:
     return frame.to_pandas()
 
 
+def _panel_indexed(frame: pl.DataFrame) -> pd.DataFrame:
+    """Convert an EM-DAT frame and key it the way the merge chain expects."""
+    return frame.to_pandas().set_index(PANEL_INDEX)
+
+
 def _suffixed_damage(damage: pd.DataFrame, suffix: str) -> pd.DataFrame:
     """Tag one disaster class's damage columns so both classes can sit in one frame."""
     return damage.drop(columns=["Region", "Subregion"]).rename(columns=lambda name: f"{name}_{suffix}")
 
 
-def _combine_emdat(emdat: dict[str, pd.DataFrame]) -> dict[str, pd.DataFrame]:
+def _combine_emdat(emdat: dict[str, pl.DataFrame]) -> dict[str, pd.DataFrame]:
     """Split EM-DAT into events and damages, with the hydrological and climatological classes joined on."""
-    hydro = _suffixed_damage(emdat["df_inten_filtered_adjusted_hydro"], "hydro")
-    clim = _suffixed_damage(emdat["df_inten_filtered_adjusted_clim"], "clim")
+    hydro = _suffixed_damage(_panel_indexed(emdat["df_inten_filtered_adjusted_hydro"]), "hydro")
+    clim = _suffixed_damage(_panel_indexed(emdat["df_inten_filtered_adjusted_clim"]), "clim")
 
-    damage = emdat["df_inten_filtered_adjusted"]
+    damage = _panel_indexed(emdat["df_inten_filtered_adjusted"])
     for tagged in (hydro, clim):
         damage = pd.merge(damage, tagged, left_index=True, right_index=True, how="left")
 
     return {
-        "emdat_events": emdat["df_prob_filtered_adjusted"].drop(columns=["Subregion"]),
+        "emdat_events": _panel_indexed(emdat["df_prob_filtered_adjusted"]).drop(columns=["Subregion"]),
         "emdat_damage": damage,
-        "emdat_damage_hydro": emdat["df_inten_filtered_adjusted_hydro"],
-        "emdat_damage_clim": emdat["df_inten_filtered_adjusted_clim"],
+        "emdat_damage_hydro": _panel_indexed(emdat["df_inten_filtered_adjusted_hydro"]),
+        "emdat_damage_clim": _panel_indexed(emdat["df_inten_filtered_adjusted_clim"]),
         "df_inten_filtered_adjusted_hydro": hydro,
         "df_inten_filtered_adjusted_clim": clim,
     }
@@ -127,7 +132,7 @@ def load_all_data(cache_dir: Path) -> dict[str, pd.DataFrame]:
     with_precipitation = _countries_in_common(merged_dict["wb_data"], merged_dict["gpcc"])
     merged_dict["gpcc"] = _only_countries(merged_dict["gpcc"], with_precipitation)
 
-    merged_dict["country_constants"] = _country_constants(emdat["df_prob_filtered_adjusted"])
+    merged_dict["country_constants"] = _country_constants(_panel_indexed(emdat["df_prob_filtered_adjusted"]))
 
     merged_dict["df_panel"] = reduce(
         _merge_on_index,

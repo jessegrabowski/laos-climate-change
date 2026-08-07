@@ -1,7 +1,8 @@
+import datetime as dt
+
 from pathlib import Path
 
-import numpy as np
-import pandas as pd
+import polars as pl
 
 from climate_risk.const_vars import (
     EM_DAT_COL_DICT,
@@ -10,35 +11,46 @@ from climate_risk.const_vars import (
 )
 
 # The study window opens in 1969 and closes on the newest event in the workbook.
-EMDAT_WINDOW_START = "1969-01-01"
+EMDAT_WINDOW_START = dt.date(1969, 1, 1)
 
-# The types the panel counts. Unstacking only produces a column per type the data contains, so a
-# country with no wildfires would otherwise have no Wildfire column for downstream code to read.
+# The types the panel counts. A country with no wildfires still needs a Wildfire column, so these
+# are the columns the count frames carry whether or not the data contains them.
 DISASTER_TYPES = tuple(c for c in PROB_COLS if c not in {"Country", "ISO", "Start_Year", "Region", "Subregion"})
 
 # Columns read before any rename. Nothing detects upstream schema drift, so this check is the
 # earliest point a changed export becomes a named error rather than a missing attribute.
 REQUIRED_EMDAT_COLUMNS = {"ISO", "Region", "Subregion", "Disaster Type"} | set(EM_DAT_COL_DICT)
 
+# "Hydrometereological" is the wire value written by this processing and queried downstream.
+DISASTER_CLASSES = {
+    "Storm": "Hydrometereological",
+    "Flood": "Hydrometereological",
+    "Mass movement (wet)": "Hydrometereological",
+    "Wildfire": "Climatological",
+    "Extreme temperature": "Climatological",
+    "Drought": "Climatological",
+}
 
-def load_emdat_data(
-    cache_dir: Path,
-    *,
-    force_reload: bool = False,
-    window_start: str | pd.Timestamp = EMDAT_WINDOW_START,
-) -> dict[str, pd.DataFrame]:
-    cache_dir.mkdir(parents=True, exist_ok=True)
+DAMAGE_VARS = [
+    "Deaths",
+    "Injured",
+    "Numb_Affected",
+    "Homeless",
+    "Total_Affected",
+    "Total_Damage",
+    "Total_Damage_Adjusted",
+]
 
-    emdat_path = cache_dir / "emdat.xlsx"
-    if not emdat_path.exists():
-        raise NotImplementedError(
-            f"No EM-DAT data was found at `{emdat_path}`. Please make an account at https://public.emdat.be/, "
-            f"download the database, and place it at `{emdat_path}`"
-        )
+# A country-year with no events reads as missing rather than zero, which is what `nan_or_sum`
+# downstream relies on. Floats keep that true whether the frame is read as polars or as pandas.
+COUNT_DTYPE = pl.Float64
 
-    workbook = pd.read_excel(emdat_path, sheet_name="EM-DAT Data")
 
-    if workbook.empty:
+def _read_workbook(emdat_path: Path) -> pl.DataFrame:
+    """Read the EM-DAT sheet, raising a named error rather than letting a changed export surface later."""
+    workbook = pl.read_excel(emdat_path, sheet_name="EM-DAT Data", raise_if_empty=False)
+
+    if workbook.is_empty():
         raise ValueError(f"The `EM-DAT Data` sheet in `{emdat_path}` has no rows.")
 
     missing_columns = REQUIRED_EMDAT_COLUMNS - set(workbook.columns)
@@ -48,126 +60,123 @@ def load_emdat_data(
             f"Re-download the database, or update EM_DAT_COL_DICT if the export has changed."
         )
 
-    df_raw = workbook.rename(columns=EM_DAT_COL_DICT).assign(
-        Start_Year=lambda x: pd.to_datetime(x.Start_Year, format="%Y")
+    # disaster_point_data stores this row number in its own cache, so it is a key the workbook's
+    # row order defines and must survive filtering.
+    return (
+        workbook.with_row_index("emdat_index")
+        .rename(EM_DAT_COL_DICT)
+        .with_columns(
+            pl.date(pl.col("Start_Year"), 1, 1).alias("Start_Year"),
+            pl.col("Disaster Type").replace_strict(DISASTER_CLASSES, default=None).alias("disaster_class"),
+        )
     )
 
-    disaster_class_dict = {
-        "Storm": "Hydrometereological",
-        "Flood": "Hydrometereological",
-        "Mass movement (wet)": "Hydrometereological",
-        "Wildfire": "Climatological",
-        "Extreme temperature": "Climatological",
-        "Drought": "Climatological",
-    }
 
-    df_raw["disaster_class"] = df_raw["Disaster Type"].map(disaster_class_dict.get)
+def _country_years(events: pl.DataFrame, window_start: dt.date) -> pl.DataFrame:
+    """Every country crossed with every year in the window, which is the grid all panels are laid on."""
+    newest_event = events["Start_Year"].max()
+    if not isinstance(newest_event, dt.date):
+        raise ValueError("Every Start_Year in the workbook is missing, so the window has no end.")
 
-    # Useful constants
-    region_dict = df_raw[["ISO", "Region"]].drop_duplicates().set_index("ISO").to_dict()["Region"]
-    subregion_dict = df_raw[["ISO", "Subregion"]].drop_duplicates().set_index("ISO").to_dict()["Subregion"]
-    ISO_codes = df_raw["ISO"].unique()
-
-    newest_event = df_raw["Start_Year"].max()
-    years = pd.date_range(start=window_start, end=newest_event, freq="YS-JAN")
-    if years.empty:
+    if window_start > newest_event:
         raise ValueError(
-            f"window_start={pd.Timestamp(window_start).date()} is after the newest event in the workbook "
-            f"({newest_event.date()}), so every output frame would be empty."
+            f"window_start={window_start} is after the newest event in the workbook "
+            f"({newest_event}), so every output frame would be empty."
         )
 
-    # Define the complete combination of years and ISO codes
-    complete_index = pd.MultiIndex.from_product([ISO_codes, years], names=["ISO", "Start_Year"]).sort_values()
+    years: pl.Series = pl.date_range(window_start, newest_event, interval="1y", eager=True)
 
-    # Raw versions
-    df_raw_filtered = df_raw.query("Total_Affected >1000 &  Deaths >100 & Start_Year > 1970")
-    df_raw_filtered_adj = df_raw.query("Total_Affected >1000 & Start_Year > 1980")
-
-    def process_prob_df(df):
-        result = (
-            df.copy()
-            .query("`Disaster Type` in @PROB_COLS")
-            .groupby(["Disaster Type", "ISO", "Start_Year", "Region", "Subregion"])
-            .size()
-            .unstack("Disaster Type")
-            .reset_index()
-            .set_index(["ISO", "Start_Year"])
-            .sort_index()
-            .reindex(complete_index)
-            .assign(
-                Region=lambda x: x.index.get_level_values(0).map(region_dict.get),
-                Subregion=lambda x: x.index.get_level_values(0).map(subregion_dict.get),
-            )
-            .sort_index()
-        )
-        missing_types = [t for t in DISASTER_TYPES if t not in result.columns]
-        result = result.reindex(columns=[*result.columns, *missing_types])
-
-        assert result.shape[0] == len(complete_index)
-        assert np.all(result.index.get_level_values(0) == complete_index.get_level_values(0))
-        assert np.all(result.index.get_level_values(1) == complete_index.get_level_values(1))
-        return result
-
-    df_prob_unfiltered = process_prob_df(df_raw)
-    df_prob_filtered = process_prob_df(df_raw_filtered)
-    df_prob_filtered_adjusted = process_prob_df(df_raw_filtered_adj)
-
-    damage_vars = [
-        "Deaths",
-        "Injured",
-        "Numb_Affected",
-        "Homeless",
-        "Total_Affected",
-        "Total_Damage",
-        "Total_Damage_Adjusted",
-    ]
-
-    def process_damage_df(df):
-        # pivot_table emits no columns at all for an empty selection, and a country with no
-        # disasters of a given class would then lose those columns from the panel.
-        totals = (
-            df.copy()
-            .query("`Disaster Type` in @PROB_COLS")[INTENSITY_COLS]
-            .pivot_table(index=["ISO", "Start_Year"], values=damage_vars, aggfunc="sum")
-            .reindex(columns=damage_vars)
-        )
-
-        result = (
-            totals.sort_index()
-            .reindex(complete_index)
-            .assign(
-                Region=lambda x: x.index.get_level_values(0).map(region_dict.get),
-                Subregion=lambda x: x.index.get_level_values(0).map(subregion_dict.get),
-            )
-            .sort_index()
-        )
-
-        assert result.shape[0] == len(complete_index)
-        assert np.all(result.index.get_level_values(0) == complete_index.get_level_values(0))
-        assert np.all(result.index.get_level_values(1) == complete_index.get_level_values(1))
-
-        return result
-
-    df_inten_unfiltered = process_damage_df(df_raw)
-    df_inten_filtered = process_damage_df(df_raw_filtered)
-    df_inten_filtered_adjusted = process_damage_df(df_raw_filtered_adj)
-    df_inten_filtered_adjusted_hydro = process_damage_df(
-        df_raw_filtered_adj.query('disaster_class == "Hydrometereological"')
+    return (
+        events.select(pl.col("ISO").unique())
+        .join(years.alias("Start_Year").to_frame(), how="cross")
+        .sort("ISO", "Start_Year")
     )
-    df_inten_filtered_adjusted_clim = process_damage_df(df_raw_filtered_adj.query('disaster_class == "Climatological"'))
 
-    result = {
+
+def _regions(events: pl.DataFrame) -> pl.DataFrame:
+    """One row per country carrying its region and subregion."""
+    return events.select("ISO", "Region", "Subregion").unique(subset="ISO", keep="first")
+
+
+def _count_by_type(events: pl.DataFrame, grid: pl.DataFrame, regions: pl.DataFrame) -> pl.DataFrame:
+    """Count events per country, year and disaster type, over the full grid."""
+    counted = (
+        events.filter(pl.col("Disaster Type").is_in(DISASTER_TYPES))
+        .group_by("ISO", "Start_Year", "Disaster Type")
+        .len()
+        .with_columns(pl.col("len").cast(COUNT_DTYPE))
+        .pivot(on="Disaster Type", index=["ISO", "Start_Year"], values="len")
+    )
+    absent = [pl.lit(None, dtype=COUNT_DTYPE).alias(name) for name in DISASTER_TYPES if name not in counted.columns]
+
+    return (
+        grid.join(counted.with_columns(absent), on=["ISO", "Start_Year"], how="left")
+        .join(regions, on="ISO", how="left")
+        .select("ISO", "Start_Year", "Region", "Subregion", *DISASTER_TYPES)
+        .sort("ISO", "Start_Year")
+    )
+
+
+def _damage_totals(events: pl.DataFrame, grid: pl.DataFrame, regions: pl.DataFrame) -> pl.DataFrame:
+    """Total each damage measure per country and year, over the full grid."""
+    totals = (
+        events.filter(pl.col("Disaster Type").is_in(DISASTER_TYPES))
+        .select(INTENSITY_COLS)
+        .group_by("ISO", "Start_Year")
+        .agg(pl.col(name).sum().cast(COUNT_DTYPE) for name in DAMAGE_VARS)
+    )
+
+    return (
+        grid.join(totals, on=["ISO", "Start_Year"], how="left")
+        .join(regions, on="ISO", how="left")
+        .select("ISO", "Start_Year", *DAMAGE_VARS, "Region", "Subregion")
+        .sort("ISO", "Start_Year")
+    )
+
+
+def load_emdat_data(
+    cache_dir: Path,
+    *,
+    force_reload: bool = False,
+    window_start: dt.date = EMDAT_WINDOW_START,
+) -> dict[str, pl.DataFrame]:
+    cache_dir.mkdir(parents=True, exist_ok=True)
+
+    emdat_path = cache_dir / "emdat.xlsx"
+    if not emdat_path.exists():
+        raise NotImplementedError(
+            f"No EM-DAT data was found at `{emdat_path}`. Please make an account at https://public.emdat.be/, "
+            f"download the database, and place it at `{emdat_path}`"
+        )
+
+    df_raw = _read_workbook(emdat_path)
+
+    # The two filtered views are what the published panel is built from; the unfiltered one is
+    # kept because the severity thresholds are a modelling choice, not a data-quality one.
+    df_raw_filtered = df_raw.filter(
+        (pl.col("Total_Affected") > 1000) & (pl.col("Deaths") > 100) & (pl.col("Start_Year") > dt.date(1970, 1, 1))
+    )
+    df_raw_filtered_adj = df_raw.filter(
+        (pl.col("Total_Affected") > 1000) & (pl.col("Start_Year") > dt.date(1980, 1, 1))
+    )
+
+    grid = _country_years(df_raw, window_start)
+    regions = _regions(df_raw)
+
+    return {
         "df_raw": df_raw,
         "df_raw_filtered": df_raw_filtered,
         "df_raw_filtered_adj": df_raw_filtered_adj,
-        "df_prob_unfiltered": df_prob_unfiltered,
-        "df_prob_filtered": df_prob_filtered,
-        "df_prob_filtered_adjusted": df_prob_filtered_adjusted,
-        "df_inten_unfiltered": df_inten_unfiltered,
-        "df_inten_filtered": df_inten_filtered,
-        "df_inten_filtered_adjusted": df_inten_filtered_adjusted,
-        "df_inten_filtered_adjusted_hydro": df_inten_filtered_adjusted_hydro,
-        "df_inten_filtered_adjusted_clim": df_inten_filtered_adjusted_clim,
+        "df_prob_unfiltered": _count_by_type(df_raw, grid, regions),
+        "df_prob_filtered": _count_by_type(df_raw_filtered, grid, regions),
+        "df_prob_filtered_adjusted": _count_by_type(df_raw_filtered_adj, grid, regions),
+        "df_inten_unfiltered": _damage_totals(df_raw, grid, regions),
+        "df_inten_filtered": _damage_totals(df_raw_filtered, grid, regions),
+        "df_inten_filtered_adjusted": _damage_totals(df_raw_filtered_adj, grid, regions),
+        "df_inten_filtered_adjusted_hydro": _damage_totals(
+            df_raw_filtered_adj.filter(pl.col("disaster_class") == "Hydrometereological"), grid, regions
+        ),
+        "df_inten_filtered_adjusted_clim": _damage_totals(
+            df_raw_filtered_adj.filter(pl.col("disaster_class") == "Climatological"), grid, regions
+        ),
     }
-
-    return result

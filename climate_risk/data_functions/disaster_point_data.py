@@ -60,12 +60,12 @@ def load_disaster_point_data(cache_dir: Path):
     modified_data = False
 
     # Load Laos shapefile
-    emdat = load_emdat_data(cache_dir)
+    events = load_emdat_data(cache_dir)["df_raw_filtered_adj"].to_pandas().set_index("emdat_index")
     data = _load_disaster_point_data(cache_dir)
 
     data = (
         data.set_index(["emdat_index"])
-        .join(emdat["df_raw_filtered_adj"])
+        .join(events)
         .reset_index(drop=False)
         .rename(columns={"index": "emdat_index"})
         .set_index(["emdat_index", "location_id"])
@@ -93,11 +93,7 @@ def load_disaster_point_data(cache_dir: Path):
         modified_data = True
 
     if modified_data:
-        (
-            data.drop(columns=[*emdat["df_raw_filtered_adj"].columns.tolist(), "geometry"]).to_csv(
-                features_points_path(cache_dir)
-            )
-        )
+        (data.drop(columns=[*events.columns.tolist(), "geometry"]).to_csv(features_points_path(cache_dir)))
 
     return data
 

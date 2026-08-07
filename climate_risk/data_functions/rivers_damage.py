@@ -74,10 +74,10 @@ def _create_rivers_damage(
         return restored.assign(year=lambda x: pd.to_datetime(x["year"]).astype(YEAR_RESOLUTION))
 
     big_rivers = load_rivers_data(cache_dir)
-    emdat = load_emdat_data(cache_dir)
+    emdat = load_emdat_data(cache_dir)["df_raw_filtered_adj"].to_pandas()
     world = load_shapefile("world", cache_dir, repair_ISO_codes=True)
 
-    events = emdat["df_raw_filtered_adj"].query(query)
+    events = emdat.query(query)
 
     if locations is not None:
         for disaster_number, coordinates in locations.items():
