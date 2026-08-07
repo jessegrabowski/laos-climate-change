@@ -1,0 +1,146 @@
+import pandas as pd
+import pytest
+
+from climate_risk.data import world_bank
+from climate_risk.data.world_bank import WB_INDICATORS, load_wb_data, transform_world_bank
+
+# The cache key is stated literally, so a wrong one fails rather than agreeing with itself.
+CACHE_FILE = "world_bank.csv"
+
+
+def downloaded(rows) -> pd.DataFrame:
+    """Indicators shaped as kuznets returns them: a (country, year) index and raw indicator codes."""
+    frame = pd.DataFrame(rows, columns=["country", "year", *WB_INDICATORS])
+
+    return frame.set_index(["country", "year"])
+
+
+@pytest.fixture
+def serves(monkeypatch):
+    """Answer wb.download from a frame instead of the network, recording the arguments used."""
+
+    def serve(frame):
+        calls = []
+
+        def fake_download(**kwargs):
+            calls.append(kwargs)
+            return frame
+
+        monkeypatch.setattr(world_bank.wb, "download", fake_download)
+        return calls
+
+    return serve
+
+
+def test_indicators_are_keyed_by_iso_code_and_year():
+    raw = downloaded([("Aruba", "1990", 10.0, 1000.0, 100000, 5.0, 180.0)])
+
+    frame = transform_world_bank(raw)
+
+    assert frame.index.names == ["country_code", "year"]
+    assert frame.index.tolist() == [("ABW", 1990)]
+
+
+def test_the_year_is_an_integer_whichever_way_it_arrives():
+    """Upstream serves it as a string and the cache as an integer; the two paths must agree."""
+    raw = downloaded([("Aruba", "1990", 10.0, 1000.0, 100000, 5.0, 180.0)])
+
+    frame = transform_world_bank(raw)
+
+    assert frame.index.get_level_values("year").dtype.kind == "i"
+
+
+def test_indicator_codes_become_readable_names():
+    raw = downloaded([("Aruba", "1990", 10.0, 1000.0, 100000, 5.0, 180.0)])
+
+    frame = transform_world_bank(raw)
+
+    assert set(frame.columns) == {
+        "population_density",
+        "gdp_per_cap",
+        "Population",
+        "real_gdp",
+        "surface_area_km2",
+    }
+    assert frame.loc[("ABW", 1990), "gdp_per_cap"] == 1000.0
+
+
+def test_a_country_with_no_iso_code_is_dropped():
+    """An unmatched name would otherwise key a row on a null and survive into the panel."""
+    raw = downloaded(
+        [
+            ("Aruba", "1990", 10.0, 1000.0, 100000, 5.0, 180.0),
+            ("Not A Country", "1990", 1.0, 2.0, 3, 4.0, 5.0),
+        ]
+    )
+
+    frame = transform_world_bank(raw)
+
+    assert frame.index.get_level_values("country_code").tolist() == ["ABW"]
+
+
+def test_the_result_is_sorted_by_country_and_year():
+    raw = downloaded(
+        [
+            ("Zimbabwe", "1991", 1.0, 1.0, 1, 1.0, 1.0),
+            ("Aruba", "1991", 2.0, 2.0, 2, 2.0, 2.0),
+            ("Aruba", "1990", 3.0, 3.0, 3, 3.0, 3.0),
+        ]
+    )
+
+    frame = transform_world_bank(raw)
+
+    assert frame.index.tolist() == [("ABW", 1990), ("ABW", 1991), ("ZWE", 1991)]
+
+
+def test_a_warm_cache_does_not_download(tmp_path, serves):
+    """The download is hundreds of requests; a present cache must not trigger it."""
+    calls = serves(downloaded([("Aruba", "1990", 10.0, 1000.0, 100000, 5.0, 180.0)]))
+    (tmp_path / CACHE_FILE).write_text(
+        "country_code,year,population_density,gdp_per_cap,Population,real_gdp,surface_area_km2\n"
+        "ABW,1990,10.0,1000.0,100000,5.0,180.0\n"
+    )
+
+    frame = load_wb_data(tmp_path)
+
+    assert calls == []
+    assert frame.index.tolist() == [("ABW", 1990)]
+
+
+def test_the_cold_run_writes_the_cache_it_will_read(tmp_path, serves):
+    """A key spelled one way on write and another on read is the bug this replaces."""
+    serves(downloaded([("Aruba", "1990", 10.0, 1000.0, 100000, 5.0, 180.0)]))
+
+    load_wb_data(tmp_path)
+
+    assert (tmp_path / CACHE_FILE).exists()
+
+
+def test_the_cold_and_warm_frames_agree(tmp_path, serves):
+    """The hand-rolled cache this replaces returned a string year cold and an integer year warm."""
+    serves(downloaded([("Aruba", "1990", 10.0, 1000.0, 100000, 5.0, 180.0)]))
+
+    cold = load_wb_data(tmp_path)
+    warm = load_wb_data(tmp_path)
+
+    pd.testing.assert_frame_equal(cold, warm)
+
+
+def test_forcing_a_reload_downloads_again(tmp_path, serves):
+    calls = serves(downloaded([("Aruba", "1990", 10.0, 1000.0, 100000, 5.0, 180.0)]))
+
+    load_wb_data(tmp_path)
+    load_wb_data(tmp_path, force_reload=True)
+
+    assert len(calls) == 2
+
+
+def test_the_download_covers_the_whole_record_and_tolerates_our_codes(tmp_path, serves):
+    """XKX postdates kuznets' code list, and its warning would otherwise fail the run."""
+    calls = serves(downloaded([("Aruba", "1990", 10.0, 1000.0, 100000, 5.0, 180.0)]))
+
+    load_wb_data(tmp_path)
+
+    assert calls[0]["start"] == 1900
+    assert calls[0]["errors"] == "ignore"
+    assert "XKX" in calls[0]["country"]
