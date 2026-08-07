@@ -66,14 +66,14 @@ def transform_world_bank(raw: pd.DataFrame) -> pd.DataFrame:
         One row per country and year, indexed by ``country_code`` and an integer ``year``.
     """
     coded = raw.reset_index().assign(country_code=lambda x: x["country"].map(ISO_DICTIONARY))
-    known = coded.dropna(subset=["country_code"])
+    matched = coded["country_code"].notna()
 
-    unmatched = sorted(set(coded.loc[coded["country_code"].isna(), "country"]))
+    unmatched = sorted(set(coded.loc[~matched, "country"]))
     if unmatched:
         _log.warning(f"Dropping {len(unmatched)} countries with no ISO code: {', '.join(unmatched)}")
 
     return (
-        known[["country_code", "year", *WB_INDICATORS]]
+        coded[matched][["country_code", "year", *WB_INDICATORS]]
         .rename(columns=WB_RENAME_DICT)
         # Upstream serves the year as a string; the cache reads it back as an integer.
         .astype({"year": int})
