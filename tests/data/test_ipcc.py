@@ -89,3 +89,11 @@ def test_the_vendored_workbook_carries_what_the_loader_reads():
 
     assert set(SCENARIO_COLUMNS) <= set(published.columns)
     assert published["Panel emissions - SSP1-19 - x (year)"].tolist() == list(range(2015, 2101, STEP_YEARS))
+
+
+def test_the_vendored_workbook_keeps_its_attribution():
+    """It is redistributed under CC BY, which is only satisfied while the credit ships beside it."""
+    attribution = (IPCC_FILE.parent / "ATTRIBUTION.md").read_text()
+
+    assert IPCC_FILE.name in attribution
+    assert "CC BY 4.0" in attribution
