@@ -229,14 +229,12 @@ def write_full_cache(tmp_path, write_emdat_cache):
         pl.DataFrame({"Date": [date(1990, 1, 1), date(1991, 1, 1)], "Temp": [1.0, 2.0]}).write_parquet(
             tmp_path / "ocean_heat.parquet"
         )
+        # GPCC publishes monthly, so two months a year keeps a total distinguishable from an average.
         pd.DataFrame(
             [
-                ("AAA", pd.Timestamp("1990-01-01"), 100.0),
-                ("AAA", pd.Timestamp("1991-01-01"), 110.0),
-                ("BBB", pd.Timestamp("1990-01-01"), 200.0),
-                ("BBB", pd.Timestamp("1991-01-01"), 220.0),
-                ("FFF", pd.Timestamp("1990-01-01"), 300.0),
-                ("FFF", pd.Timestamp("1991-01-01"), 330.0),
+                (iso, pd.Timestamp(f"{year}-{month:02d}-01"), base + 10.0 * offset)
+                for iso, base in (("AAA", 100.0), ("BBB", 200.0), ("FFF", 300.0))
+                for offset, (year, month) in enumerate([(1990, 1), (1990, 7), (1991, 1), (1991, 7)])
             ],
             columns=["country_code", "time", "precip"],
         ).set_index(["country_code", "time"]).to_parquet(tmp_path / "gpcc__repaired_iso=True.parquet")

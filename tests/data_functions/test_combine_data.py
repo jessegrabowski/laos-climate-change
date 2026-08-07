@@ -1,3 +1,5 @@
+from datetime import date
+
 import polars as pl
 import pytest
 
@@ -30,6 +32,20 @@ def test_the_panel_spans_the_full_country_year_grid(merged):
 
     assert len(panel) == countries * years
     assert not panel.select("ISO", "Start_Year").is_duplicated().any()
+
+
+def test_precipitation_is_totalled_over_the_year_not_averaged(merged):
+    """GPCC publishes monthly; the panel wants the year's total rainfall, not a monthly mean."""
+    annual = merged["gpcc"].filter((pl.col("ISO") == "AAA") & (pl.col("year") == date(1990, 1, 1)))
+
+    assert annual["precip"].to_list() == [pytest.approx(210.0)]
+
+
+def test_the_worldwide_series_totals_every_country(merged):
+    """It feeds a country-invariant regressor, so it sums across countries rather than averaging."""
+    nineteen_ninety = merged["gpcc_agg"].filter(pl.col("year") == date(1990, 1, 1))
+
+    assert nineteen_ninety["precip"].to_list() == [pytest.approx(210.0 + 410.0 + 610.0)]
 
 
 def test_the_time_series_carries_no_country(merged):
