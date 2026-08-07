@@ -23,6 +23,7 @@ dependencies = [
     "h5netcdf>=1.6,<2",
     "openpyxl>=3.1,<4",
     "xlrd>=2.0,<3",
+    "fastexcel>=0.20,<1",
     "kuznets[polars]>=1.0,<2",
     "geopandas>=1.1,<2",
     "pymc>=6.2,<7",
@@ -95,6 +96,7 @@ tqdm = ">=4.70,<5"
 requests = ">=2.34.2,<3"
 polars = ">=1.43,<2"
 pyarrow = ">=25.0,<26"
+fastexcel = ">=0.20,<1"
 
 [tool.pixi.feature.dev.dependencies]
 ruff = ">=0.16,<1"
