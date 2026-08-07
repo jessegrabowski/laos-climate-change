@@ -27,7 +27,7 @@ SCENARIO_COLUMNS = {
 # The published series is five-yearly, and each row is a change from the one before it.
 SCENARIO_STEP_YEARS = 5
 ANCHOR_YEARS = (2015, 2020)
-PROJECTION_END_YEAR = 2101
+LAST_PROJECTED_YEAR = 2100
 
 
 def transform_ipcc(scenarios: pd.DataFrame, co2_observations: pd.DataFrame) -> pd.DataFrame:
@@ -44,7 +44,7 @@ def transform_ipcc(scenarios: pd.DataFrame, co2_observations: pd.DataFrame) -> p
     Returns
     -------
     DataFrame
-        One row per year from 2020 to the end of the projection, one column per scenario.
+        One row per year from the anchor to ``LAST_PROJECTED_YEAR``, one column per scenario.
     """
     observed = co2_observations.reset_index().assign(year=lambda x: x["year"].dt.year)
     levels = scenarios.merge(observed, on="year", how="left").set_index("year")
@@ -56,11 +56,11 @@ def transform_ipcc(scenarios: pd.DataFrame, co2_observations: pd.DataFrame) -> p
         for year in levels.index:
             if year in ANCHOR_YEARS:
                 levels.loc[year, name] = levels.loc[year, "co2"]
-            elif year != PROJECTION_END_YEAR:
+            else:
                 previous = levels.loc[year - SCENARIO_STEP_YEARS, name]
                 levels.loc[year, name] = levels.loc[year, f"{name}_change"] + previous
 
-    annual = levels.reindex(range(ANCHOR_YEARS[1], PROJECTION_END_YEAR))
+    annual = levels.reindex(range(ANCHOR_YEARS[1], LAST_PROJECTED_YEAR + 1))
 
     return annual.interpolate(method="linear").drop(columns=["co2"])
 
