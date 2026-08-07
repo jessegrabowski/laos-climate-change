@@ -6,8 +6,7 @@ from climate_risk.data.cache import cached, pandas_csv
 from climate_risk.data.fetch import fetch
 from climate_risk.data.source import DataSource
 
-# Raw downloads are named for the file upstream serves; the processed cache is keyed on a logical
-# name. Reusing one name for both would make an old processed cache look like a fresh download.
+# Raw downloads are named for the file upstream serves; the processed cache is keyed on a logical name.
 CO2 = DataSource(
     url="https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_annmean_mlo.csv",
     filename="co2_annmean_mlo.csv",
