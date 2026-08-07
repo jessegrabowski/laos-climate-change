@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from climate_risk.data.ipcc import transform_ipcc
+from climate_risk.data.ipcc import IPCC_FILE, IPCC_SHEET, SCENARIO_COLUMNS, transform_ipcc
 
 # The published series runs five-yearly and the projection ends in 2100. Stated literally, not
 # imported, so a changed constant fails instead of moving the expectation with it.
@@ -82,3 +82,11 @@ def test_a_missing_observation_leaves_the_level_missing(scenarios, co2_observati
     levels = transform_ipcc(scenarios, without_anchor)
 
     assert np.isnan(levels.loc[FIRST_PROJECTED_YEAR, "SSP1-19"])
+
+
+def test_the_vendored_workbook_carries_what_the_loader_reads():
+    """The workbook ships with the package, so replacing it must not quietly change what is read."""
+    published = pd.read_excel(IPCC_FILE, sheet_name=IPCC_SHEET)
+
+    assert set(SCENARIO_COLUMNS) <= set(published.columns)
+    assert published["Panel emissions - SSP1-19 - x (year)"].tolist() == list(range(2015, 2101, STEP_YEARS))

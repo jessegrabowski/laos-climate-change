@@ -5,23 +5,13 @@ from pathlib import Path
 import pandas as pd
 
 from climate_risk.data.cache import cached, pandas_csv
-from climate_risk.data.fetch import fetch
-from climate_risk.data.source import DataSource
 from climate_risk.data_functions.combine_data import load_all_data
 
 _log = logging.getLogger(__name__)
 
-IPCC = DataSource(
-    url=(
-        "https://sedac.ciesin.columbia.edu/ddc/ar6-syr-lr-cross-section-box2-fig1a"
-        "/data/AR6-SYR-LR-CSB2-F1-Panel(a).xlsx"
-    ),
-    filename="AR6-SYR-LR-CSB2-F1-Panel(a).xlsx",
-    licence="CC BY 4.0 (NASA SEDAC)",
-    citation="IPCC AR6 Synthesis Report, cross-section box 2 figure 1a, via NASA SEDAC",
-    retrieved="2026-08-05",
-    sha256=None,
-)
+# SEDAC, which published this figure's data, was decommissioned in June 2025, so the workbook is
+# redistributed with the package. Its licence and citation are in vendored/ATTRIBUTION.md.
+IPCC_FILE = Path(__file__).parent / "vendored" / "ipcc_ar6_syr_csb2_fig1a.xlsx"
 
 IPCC_SHEET = "CO2 Emissions"
 
@@ -77,9 +67,9 @@ def transform_ipcc(scenarios: pd.DataFrame, co2_observations: pd.DataFrame) -> p
 
 def process_ipcc_scenarios(cache_dir: Path, *, force_reload: bool = False) -> pd.DataFrame:
     def build() -> pd.DataFrame:
-        raw = fetch(IPCC, cache_dir, force=force_reload)
         _log.info("Reading IPCC scenario emissions")
-        scenarios = pd.read_excel(raw, sheet_name=IPCC_SHEET)[list(SCENARIO_COLUMNS)].rename(columns=SCENARIO_COLUMNS)
+        published = pd.read_excel(IPCC_FILE, sheet_name=IPCC_SHEET)
+        scenarios = published[list(SCENARIO_COLUMNS)].rename(columns=SCENARIO_COLUMNS)
 
         return transform_ipcc(scenarios, load_all_data(cache_dir)["df_time_series"][["co2"]])
 
