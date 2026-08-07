@@ -34,7 +34,6 @@ GPCC = {
             "https://doi.org/10.5676/DWD_GPCC/FD_M_V2022_100"
         ),
         retrieved="2026-08-05",
-        sha256=None,
     )
     for decade in GPCC_DECADES
 }

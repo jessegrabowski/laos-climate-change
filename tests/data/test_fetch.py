@@ -1,13 +1,10 @@
-import hashlib
-
 import pytest
 import requests
 
-from climate_risk.data.fetch import USER_AGENT, ChecksumMismatchError, fetch, sha256_of
+from climate_risk.data.fetch import USER_AGENT, fetch
 from climate_risk.data.source import DataSource
 
 PAYLOAD = b"Year,co2\n1990,354.4\n"
-PAYLOAD_SHA256 = hashlib.sha256(PAYLOAD).hexdigest()
 
 
 def make_source(**overrides) -> DataSource:
@@ -17,7 +14,6 @@ def make_source(**overrides) -> DataSource:
         "licence": "public domain",
         "citation": "NOAA GML",
         "retrieved": "2026-08-03",
-        "sha256": None,
     }
     return DataSource(**(fields | overrides))
 
@@ -98,24 +94,6 @@ def test_an_interrupted_download_is_not_mistaken_for_a_cache_hit(tmp_path, downl
     assert not leftover.exists()
 
 
-def test_a_matching_digest_is_accepted(tmp_path, downloads):
-    path = fetch(make_source(sha256=PAYLOAD_SHA256), tmp_path)
-
-    assert path.read_bytes() == PAYLOAD
-
-
-def test_a_mismatched_digest_raises_and_leaves_nothing_in_place(tmp_path, downloads):
-    """Drift must not be silently cached, or every later run trusts the wrong bytes."""
-    source = make_source(sha256="0" * 64)
-
-    with pytest.raises(ChecksumMismatchError, match="expected sha256"):
-        fetch(source, tmp_path)
-
-    assert not source.path(tmp_path).exists()
-    # The error tells the reader where the bad bytes are, so they have to still be there.
-    assert (tmp_path / "noaa_co2.csv.part").read_bytes() == PAYLOAD
-
-
 def test_an_http_error_propagates(tmp_path, monkeypatch):
     monkeypatch.setattr(
         requests, "get", lambda url, **kwargs: FakeResponse(b"", status_error=requests.HTTPError("404"))
@@ -125,13 +103,6 @@ def test_an_http_error_propagates(tmp_path, monkeypatch):
         fetch(make_source(), tmp_path)
 
     assert not (tmp_path / "noaa_co2.csv").exists()
-
-
-def test_the_digest_is_of_the_file_contents(tmp_path):
-    path = tmp_path / "payload"
-    path.write_bytes(PAYLOAD)
-
-    assert sha256_of(path) == PAYLOAD_SHA256
 
 
 def test_a_cache_directory_that_does_not_exist_yet_is_created(tmp_path, downloads):

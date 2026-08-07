@@ -24,7 +24,6 @@ HADCRUT = DataSource(
         "provided under an Open Government Licence."
     ),
     retrieved="2026-08-05",
-    sha256=None,
 )
 
 # The gridded record starts long before the panel does, and the early years are sparse.

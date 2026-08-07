@@ -18,7 +18,6 @@ OCEAN_HEAT = DataSource(
         "https://doi.org/10.7289/V53F4MVP"
     ),
     retrieved="2026-08-05",
-    sha256=None,
 )
 
 # Shifts the NCEI anomalies onto the baseline the published results were estimated against. The

@@ -17,7 +17,6 @@ CO2 = DataSource(
         "Keeling, R., Scripps Institution of Oceanography. Mauna Loa annual mean CO2."
     ),
     retrieved="2026-08-05",
-    sha256=None,
 )
 
 # The published file carries its licence and methodology above the header row.

@@ -1,19 +1,12 @@
-import re
-
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
-
-SHA256_PATTERN = re.compile(r"[0-9a-f]{64}")
 
 
 @dataclass(frozen=True, slots=True)
 class DataSource:
     """
     One upstream file, declared beside the loader that fetches it.
-
-    ``sha256`` detects drift between what upstream served when ``retrieved`` was recorded and what it
-    serves now. It is not provenance: nobody has verified the recorded digest against the publisher.
 
     Parameters
     ----------
@@ -26,9 +19,7 @@ class DataSource:
     citation : str
         How to credit the publisher.
     retrieved : str
-        ISO date the ``sha256`` was recorded.
-    sha256 : str or None
-        Lower-case hex digest of the downloaded bytes, or None to skip verification.
+        ISO date this declaration was last checked against the publisher.
     """
 
     url: str
@@ -36,7 +27,6 @@ class DataSource:
     licence: str
     citation: str
     retrieved: str
-    sha256: str | None
 
     def __post_init__(self) -> None:
         if not self.url.startswith(("http://", "https://")):
@@ -45,9 +35,6 @@ class DataSource:
         # A filename carrying a directory would let a source write outside the cache.
         if not self.filename or Path(self.filename).name != self.filename:
             raise ValueError(f"url {self.url}: filename must be a bare name, got {self.filename!r}")
-
-        if self.sha256 is not None and not SHA256_PATTERN.fullmatch(self.sha256):
-            raise ValueError(f"{self.filename}: sha256 must be 64 lower-case hex characters")
 
         try:
             date.fromisoformat(self.retrieved)
