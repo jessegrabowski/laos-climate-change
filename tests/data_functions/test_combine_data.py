@@ -34,6 +34,14 @@ def test_the_panel_spans_the_full_country_year_grid(merged):
     assert not panel.select("ISO", "Start_Year").is_duplicated().any()
 
 
+def test_a_country_year_with_no_indicators_still_reaches_the_panel(merged):
+    """The panel is an outer join: EM-DAT reaches back to 1969, the indicators only cover 1990-91."""
+    early = merged["df_panel"].filter(pl.col("Start_Year") == date(1970, 1, 1))
+
+    assert len(early) > 0
+    assert early["gdp_per_cap"].is_null().all()
+
+
 def test_precipitation_is_totalled_over_the_year_not_averaged(merged):
     """GPCC publishes monthly; the panel wants the year's total rainfall, not a monthly mean."""
     annual = merged["gpcc"].filter((pl.col("ISO") == "AAA") & (pl.col("year") == date(1990, 1, 1)))
