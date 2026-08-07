@@ -141,13 +141,21 @@ def test_forcing_a_reload_downloads_again(tmp_path, serves):
     assert len(calls) == 2
 
 
-def test_the_download_covers_the_whole_record_and_tolerates_our_codes(tmp_path, serves):
-    """XKX postdates kuznets' code list, and its warning would otherwise fail the run."""
+def test_the_download_reaches_back_before_any_indicator_starts(tmp_path, serves):
+    """A later start year would silently shorten every series in the panel."""
     calls = serves(downloaded([("Aruba", "1990", 10.0, 1000.0, 100000, 5.0, 180.0)]))
 
     load_wb_data(tmp_path)
 
     assert calls[0]["start"] == 1900
+
+
+def test_the_download_tolerates_codes_kuznets_does_not_know(tmp_path, serves):
+    """XKX postdates kuznets' code list, and its warning is an error in this suite."""
+    calls = serves(downloaded([("Aruba", "1990", 10.0, 1000.0, 100000, 5.0, 180.0)]))
+
+    load_wb_data(tmp_path)
+
     assert calls[0]["errors"] == "ignore"
     assert "XKX" in calls[0]["country"]
 
