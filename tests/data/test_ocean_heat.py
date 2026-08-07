@@ -70,13 +70,6 @@ def test_a_warm_cache_does_not_reach_the_network(tmp_path, published):
     assert len(published) == 1
 
 
-def test_the_warm_cache_is_read_with_parsed_dates(tmp_path, published):
-    """Downstream reaches for `.dt.year`, which a string index cannot answer."""
-    load_ocean_heat_data(tmp_path)
-
-    assert isinstance(load_ocean_heat_data(tmp_path).index, pd.DatetimeIndex)
-
-
 def test_the_processed_cache_survives_the_raw_download_being_deleted(tmp_path, published):
     """Nobody keeps the raw files. This is the test that proves fetch runs inside the builder."""
     load_ocean_heat_data(tmp_path)

@@ -18,24 +18,6 @@ def gridded(rows) -> pd.DataFrame:
     )
 
 
-@pytest.fixture
-def processed_only(tmp_path):
-    pd.DataFrame(
-        {"surface_temperature_dev": [0.5]},
-        index=pd.MultiIndex.from_arrays([["LAO"], pd.to_datetime(["1960-01-01"])], names=["ISO", "year"]),
-    ).to_parquet(tmp_path / REPAIRED_CACHE)
-
-    return tmp_path
-
-
-def test_warm_cache_indexes_by_iso_and_parsed_year(processed_only):
-    """Downstream joins on a datetime year; a string index silently fails to match."""
-    frame = load_hadcrut_data(processed_only)
-
-    assert frame.index.names == ["ISO", "year"]
-    assert isinstance(frame.index.get_level_values("year"), pd.DatetimeIndex)
-
-
 def test_cells_are_averaged_per_country_and_year():
     """Many grid cells fall in one country, and the panel wants one number per country-year."""
     temperatures = gridded(

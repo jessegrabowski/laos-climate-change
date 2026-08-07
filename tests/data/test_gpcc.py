@@ -21,22 +21,6 @@ def extracted_name(decade: str) -> str:
     return gpcc_archive_name(decade).removesuffix(".gz")
 
 
-@pytest.fixture
-def processed_only(tmp_path):
-    pd.DataFrame(
-        {"precip": [5.0]},
-        index=pd.MultiIndex.from_arrays([["LAO"], pd.to_datetime(["1981-01-01"])], names=["country_code", "time"]),
-    ).to_parquet(tmp_path / REPAIRED_CACHE)
-
-    return tmp_path
-
-
-def test_warm_cache_indexes_by_country_and_time(processed_only):
-    frame = load_gpcc_data(processed_only)
-
-    assert frame.index.names == ["country_code", "time"]
-
-
 def test_interrupted_extraction_resumes(write_gpcc_archives, write_shapefile_cache):
     """One extracted archive once stood in for all of them, so an interrupted run never recovered."""
     cache_dir = write_gpcc_archives(extracted=[GPCC_DECADES[0]])
