@@ -156,6 +156,7 @@ filterwarnings = [
 # An include list that only grows. A package joins it when it is typed, and never leaves.
 files = [
     "climate_risk/data",
+    "climate_risk/data_functions/combine_data.py",
     "climate_risk/data_functions/emdat_processing.py",
     "climate_risk/geo",
     "climate_risk/stats",

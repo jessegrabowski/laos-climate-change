@@ -71,6 +71,8 @@ def process_ipcc_scenarios(cache_dir: Path, *, force_reload: bool = False) -> pd
         published = pd.read_excel(IPCC_FILE, sheet_name=IPCC_SHEET)
         scenarios = published[list(SCENARIO_COLUMNS)].rename(columns=SCENARIO_COLUMNS)
 
-        return transform_ipcc(scenarios, load_all_data(cache_dir)["df_time_series"][["co2"]])
+        observed = load_all_data(cache_dir)["df_time_series"].to_pandas().set_index("year")
+
+        return transform_ipcc(scenarios, observed[["co2"]])
 
     return cached(cache_dir, "ipcc_scenarios", build, pandas_parquet(), force=force_reload)

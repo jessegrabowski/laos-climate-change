@@ -2,6 +2,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import polars as pl
 
 from statsmodels.tsa.seasonal import STL
 
@@ -9,17 +10,26 @@ from climate_risk import load_all_data
 from climate_risk.stats.descriptive import nan_or_sum
 
 
+def _as_pandas(frame: pl.DataFrame, index: str | list[str]) -> pd.DataFrame:
+    """Convert a tidy polars frame from combine_data into the pandas this module merges in."""
+    return frame.to_pandas().set_index(index)
+
+
 def create_replication_data(cache_dir: Path) -> pd.DataFrame:
     # Load data
     data = load_all_data(cache_dir)
-    df_clim = data["df_time_series"][["co2", "Temp", "precip"]].iloc[1:-1]
-    emdat_damage_hydro = data["emdat_damage"][["Total_Damage_Adjusted_hydro", "Total_Affected_hydro"]]
-    emdat_damage_clim = data["emdat_damage"]["Total_Damage_Adjusted_clim"]
-    hydro_disasters = data["emdat_events"][["Flood", "Storm"]]
-    climate_disasters = data["emdat_events"][["Extreme temperature", "Wildfire", "Drought"]]
-    disasters = data["emdat_events"]
-    development_indicators = data["wb_data"]
-    precipitation = data["gpcc"]
+    panel = ["ISO", "Start_Year"]
+    emdat_damage = _as_pandas(data["emdat_damage"], panel)
+    events = _as_pandas(data["emdat_events"], panel)
+
+    df_clim = _as_pandas(data["df_time_series"], "year")[["co2", "Temp", "precip"]].iloc[1:-1]
+    emdat_damage_hydro = emdat_damage[["Total_Damage_Adjusted_hydro", "Total_Affected_hydro"]]
+    emdat_damage_clim = emdat_damage["Total_Damage_Adjusted_clim"]
+    hydro_disasters = events[["Flood", "Storm"]]
+    climate_disasters = events[["Extreme temperature", "Wildfire", "Drought"]]
+    disasters = events
+    development_indicators = _as_pandas(data["wb_data"], panel)
+    precipitation = _as_pandas(data["gpcc"], ["ISO", "year"])
 
     # Calculate total climatological and hydrological disasters columns
 
