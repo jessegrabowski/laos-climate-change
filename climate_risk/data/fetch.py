@@ -29,7 +29,7 @@ def fetch(source: DataSource, cache_dir: Path, *, force: bool = False) -> Path:
     Parameters
     ----------
     source : DataSource
-        What to fetch, and the digest to verify it against.
+        What to fetch.
     cache_dir : Path
         Directory to store the file in. Created if absent.
     force : bool, optional
