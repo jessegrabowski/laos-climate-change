@@ -24,7 +24,8 @@ SCENARIO_COLUMNS = {
     "Panel emissions - SSP5-85 - y": "SSP5-85",
 }
 
-ANCHOR_YEARS = (2015, 2020)
+# The projection starts here, taking the observed level, and accumulates changes from it.
+ANCHOR_YEAR = 2020
 LAST_PROJECTED_YEAR = 2100
 
 
@@ -47,20 +48,14 @@ def transform_ipcc(scenarios: pl.DataFrame, co2_observations: pl.DataFrame) -> p
     observed = co2_observations.select(pl.col("year").dt.year().alias("year"), "co2")
     scenario_names = [name for name in SCENARIO_COLUMNS.values() if name != "year"]
 
-    anchor = ANCHOR_YEARS[-1]
-    anchor_level = pl.col("co2").filter(pl.col("year") == anchor).first()
+    anchor_level = pl.col("co2").filter(pl.col("year") == ANCHOR_YEAR).first()
 
     def level(name: str) -> pl.Expr:
         # Each published row is a change from the one before, so a level is the anchor plus every
         # change since it. Years at or before the anchor contribute nothing to that running total.
-        accumulated = pl.when(pl.col("year") > anchor).then(pl.col(f"{name}_change")).otherwise(0.0).cum_sum()
+        accumulated = pl.when(pl.col("year") > ANCHOR_YEAR).then(pl.col(f"{name}_change")).otherwise(0.0).cum_sum()
 
-        return (
-            pl.when(pl.col("year").is_in(ANCHOR_YEARS))
-            .then(pl.col("co2"))
-            .otherwise(anchor_level + accumulated)
-            .alias(name)
-        )
+        return (anchor_level + accumulated).alias(name)
 
     published = (
         scenarios.join(observed, on="year", how="left")
@@ -69,7 +64,7 @@ def transform_ipcc(scenarios: pl.DataFrame, co2_observations: pl.DataFrame) -> p
     )
     levels = published.with_columns(level(name) for name in scenario_names)
 
-    every_year = pl.DataFrame({"year": range(anchor, LAST_PROJECTED_YEAR + 1)}, schema={"year": pl.Int64})
+    every_year = pl.DataFrame({"year": range(ANCHOR_YEAR, LAST_PROJECTED_YEAR + 1)}, schema={"year": pl.Int64})
 
     return (
         every_year.join(levels, on="year", how="left")
