@@ -137,7 +137,6 @@ def _damage_totals(events: pl.DataFrame, grid: pl.DataFrame, regions: pl.DataFra
 def load_emdat_data(
     cache_dir: Path,
     *,
-    force_reload: bool = False,
     window_start: dt.date = EMDAT_WINDOW_START,
 ) -> dict[str, pl.DataFrame]:
     cache_dir.mkdir(parents=True, exist_ok=True)
