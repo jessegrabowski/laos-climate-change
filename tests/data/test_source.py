@@ -1,7 +1,12 @@
 import re
 
 import pytest
+import requests
 
+from climate_risk.data.co2 import CO2
+from climate_risk.data.gpcc import GPCC
+from climate_risk.data.hadcrut import HADCRUT
+from climate_risk.data.ocean_heat import OCEAN_HEAT
 from climate_risk.data.source import DataSource
 
 FIELDS = {
@@ -68,3 +73,22 @@ def test_a_source_cannot_be_mutated():
     """Sources are module-level literals; a caller reassigning one would affect every later caller."""
     with pytest.raises(AttributeError):
         source().url = "https://elsewhere.example/f.csv"
+
+
+# Every source the library downloads. A new one is added here so the reachability check covers it.
+SOURCES = {"CO2": CO2, "OCEAN_HEAT": OCEAN_HEAT, "HADCRUT": HADCRUT} | {
+    f"GPCC[{decade}]": archive for decade, archive in GPCC.items()
+}
+
+
+@pytest.mark.network
+@pytest.mark.parametrize("declared", SOURCES.values(), ids=SOURCES.keys())
+def test_every_declared_source_is_still_published(declared):
+    """Upstream reorganises without notice, and a dead URL surfaces as a failed run months later."""
+    response = requests.head(declared.url, timeout=30, allow_redirects=True)
+    if response.status_code >= 400:
+        # Some hosts refuse HEAD; ask for one byte instead of downloading the archive.
+        response = requests.get(declared.url, timeout=30, headers={"Range": "bytes=0-0"}, stream=True)
+        response.close()
+
+    assert response.status_code < 400
