@@ -77,7 +77,7 @@ def test_region_metadata_survives_reindexing(write_emdat_cache):
     )
 
     events = load_emdat_data(cache_dir)["df_prob_filtered_adjusted"]
-    quiet_year = events.loc[("AAA", pd.Timestamp("1995-01-01"))]
+    quiet_year = events.xs(("AAA", pd.Timestamp("1995-01-01")))
 
     assert quiet_year["Region"] == "Africa"
     assert quiet_year["Subregion"] == "Eastern Africa"

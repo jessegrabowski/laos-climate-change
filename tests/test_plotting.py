@@ -70,7 +70,7 @@ def test_plotting_one_country_draws_only_its_observations(idata, counts):
     fig = plotting_function(idata, counts, "AAA")
 
     predicted_line = fig.axes[0].lines[0]
-    assert len(predicted_line.get_xdata()) == 2
+    assert len(np.asarray(predicted_line.get_xdata())) == 2
 
 
 def test_damage_bounds_bracket_the_prediction(damages_idata, damages):
@@ -86,4 +86,4 @@ def test_plotting_damages_draws_only_one_country(damages_idata, damages):
     fig = plotting_function_damages(damages_idata, damages, "AAA", "damage_millions")
 
     observed_points = fig.axes[0].collections[0]
-    assert len(observed_points.get_offsets()) == 2
+    assert len(np.asarray(observed_points.get_offsets())) == 2

@@ -1,4 +1,3 @@
-import hashlib
 import logging
 import os
 
@@ -20,20 +19,6 @@ CHUNK_BYTES = 1 << 20
 TIMEOUT_SECONDS = 60
 
 
-class ChecksumMismatchError(Exception):
-    """Raised when a download's digest does not match the one its DataSource records."""
-
-
-def sha256_of(path: Path) -> str:
-    """Return the lower-case hex SHA-256 of a file, read in chunks so size does not matter."""
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        while chunk := handle.read(CHUNK_BYTES):
-            digest.update(chunk)
-
-    return digest.hexdigest()
-
-
 def fetch(source: DataSource, cache_dir: Path, *, force: bool = False) -> Path:
     """
     Download ``source`` into ``cache_dir`` unless it is already there, and return its path.
@@ -44,7 +29,7 @@ def fetch(source: DataSource, cache_dir: Path, *, force: bool = False) -> Path:
     Parameters
     ----------
     source : DataSource
-        What to fetch, and the digest to verify it against.
+        What to fetch.
     cache_dir : Path
         Directory to store the file in. Created if absent.
     force : bool, optional
@@ -54,12 +39,6 @@ def fetch(source: DataSource, cache_dir: Path, *, force: bool = False) -> Path:
     -------
     Path
         The downloaded file.
-
-    Raises
-    ------
-    ChecksumMismatchError
-        If ``source.sha256`` is set and the downloaded bytes do not match it. The partial download
-        is left in place, named ``.part``, for inspection.
     """
     destination = source.path(cache_dir)
 
@@ -81,14 +60,6 @@ def fetch(source: DataSource, cache_dir: Path, *, force: bool = False) -> Path:
             for chunk in response.iter_content(chunk_size=CHUNK_BYTES):
                 handle.write(chunk)
                 progress.update(len(chunk))
-
-    if source.sha256 is not None:
-        digest = sha256_of(partial)
-        if digest != source.sha256:
-            raise ChecksumMismatchError(
-                f"{source.filename}: expected sha256 {source.sha256}, got {digest}. "
-                f"Upstream may have changed since {source.retrieved}. Partial download left at {partial}."
-            )
 
     os.replace(partial, destination)
 

@@ -365,7 +365,7 @@ def load_synthetic_non_disaster_points(
 
 def load_non_disaster_grid(
     cache_dir: Path,
-    grid: gpd.GeoDataFrame,
+    grid: gpd.GeoDataFrame | None,
     grid_name: str,
     *,
     force_generate: bool = False,

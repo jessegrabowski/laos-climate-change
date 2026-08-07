@@ -65,10 +65,6 @@ LAOS_URL = (
 )
 LAOS_FILENAME = "lao_admin_boundaries.shp.zip"
 
-CO2_URL = "https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_annmean_mlo.csv"
-CO2_FILENAME = "noaa_co2.csv"
-OCEAN_HEAT_URL = "https://www.ncei.noaa.gov/data/oceans/woa/DATA_ANALYSIS/3M_HEAT_CONTENT/DATA/basin/3month/ohc_levitus_climdash_seasonal.csv"
-OCEAN_HEAT_FILENAME = "ncei_global_ocean_heat.csv"
 MODEL_DF_FILENAME = "model_df.csv"
 DAMAGE_DF_FILENAME = "damage_df.csv"
 RIVERS_URL = "https://data.hydrosheds.org/file/HydroRIVERS/HydroRIVERS_v10_shp.zip"
@@ -97,12 +93,6 @@ VARIABLES_DICTIONARY = {
     "population_density": "Population density (people per sq. km of land area)",
 }
 
-
-def make_gpcc_url(years: str):
-    return f"https://opendata.dwd.de/climate_environment/GPCC/full_data_monthly_v2022/10/full_data_monthly_v2022_{years}_10.nc.gz"
-
-
-GPCC_YEARS = ["1981_1990", "1991_2000", "2001_2010", "2011_2020"]
 
 COUNTRIES_ISO = [
     "ABW",
@@ -633,30 +623,6 @@ WB_RENAME_DICT = {
 
 REGIONS = ["Asia", "Europe", "Africa", "Oceania", "Americas"]
 
-HADCRUT_URL = "https://crudata.uea.ac.uk/cru/data/temperature/HadCRUT.5.0.2.0.analysis.anomalies.ensemble_mean.nc"
 
 COASTLINE_FILENAME = "gshhg-shp-2.3.7.zip"
 COASTLINE_URL = "https://www.soest.hawaii.edu/pwessel/gshhg/gshhg-shp-2.3.7.zip"
-
-IPCC_PREDICTIONS_RAW_NAME = "AR6-SYR-LR-CSB2-F1-Panel(a).xlsx"
-IPCC_URL = (
-    "https://sedac.ciesin.columbia.edu/ddc/ar6-syr-lr-cross-section-box2-fig1a/data/AR6-SYR-LR-CSB2-F1-Panel(a).xlsx"
-)
-IPCC_PROCESSED_FILENAME = "ipcc_predictions.csv"
-IPCC_COLS = [
-    "Panel emissions - SSP1-19 - x (year)",
-    "Panel emissions - SSP1-19 - y",
-    "Panel emissions - SSP1-26 - y",
-    "Panel emissions - SSP2-45 - y",
-    "Panel emissions - SSP3-70 - y",
-    "Panel emissions - SSP5-85 - y",
-]
-
-IPCC_RENAME_DICT = {
-    "Panel emissions - SSP1-19 - x (year)": "year",
-    "Panel emissions - SSP1-19 - y": "SSP1-19",
-    "Panel emissions - SSP1-26 - y": "SSP1-26",
-    "Panel emissions - SSP2-45 - y": "SSP2-45",
-    "Panel emissions - SSP3-70 - y": "SSP3-70",
-    "Panel emissions - SSP5-85 - y": "SSP5-85",
-}

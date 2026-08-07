@@ -12,10 +12,7 @@ from shapely.geometry import LineString, Point, box
 
 from climate_risk.const_vars import (
     BIG_RIVERS_FILENAME,
-    CO2_FILENAME,
-    GPCC_YEARS,
     MEDIUM_BIG_RIVERS_FILENAME,
-    OCEAN_HEAT_FILENAME,
 )
 
 # One event that clears every downstream filter: deaths above 100, affected above 1000, and a start
@@ -141,18 +138,26 @@ def toy_precipitation(year_range):
     )
 
 
+# The archive layout is stated literally, not derived from the loader, so a wrong path fails.
+GPCC_DECADES = ("1981_1990", "1991_2000", "2001_2010", "2011_2020")
+
+
+def gpcc_archive_name(decade: str) -> str:
+    return f"full_data_monthly_v2022_{decade}_10.nc.gz"
+
+
 @pytest.fixture
 def write_gpcc_archives(tmp_path):
-    """Return a callable writing one gzipped archive per year range, some already extracted."""
+    """Return a callable writing one gzipped archive per decade, some already extracted."""
 
     def write(extracted=()):
         gpcc_dir = tmp_path / "gpcc"
         gpcc_dir.mkdir(parents=True, exist_ok=True)
-        for year_range in GPCC_YEARS:
-            raw = bytes(toy_precipitation(year_range).to_netcdf())
-            (gpcc_dir / f"gpcc_raw_{year_range}.nc.gz").write_bytes(gzip.compress(raw))
-            if year_range in extracted:
-                (gpcc_dir / f"gpcc_raw_{year_range}.nc").write_bytes(raw)
+        for decade in GPCC_DECADES:
+            raw = bytes(toy_precipitation(decade).to_netcdf())
+            (gpcc_dir / gpcc_archive_name(decade)).write_bytes(gzip.compress(raw))
+            if decade in extracted:
+                (gpcc_dir / gpcc_archive_name(decade).removesuffix(".gz")).write_bytes(raw)
         return tmp_path
 
     return write
@@ -207,11 +212,10 @@ def write_full_cache(tmp_path, write_emdat_cache):
             "DDD,1990,3000.0,30.0,3000000\nDDD,1991,3300.0,33.0,3030000\n"
             "EEE,1990,4000.0,40.0,4000000\nEEE,1991,4400.0,44.0,4040000\n"
         )
-        (tmp_path / CO2_FILENAME).write_text("Date,co2\n1990-01-01,354.0\n1991-01-01,355.0\n")
-        (tmp_path / OCEAN_HEAT_FILENAME).write_text("Date,Temp\n1990-01-01,1.0\n1991-01-01,2.0\n")
-        gpcc_dir = tmp_path / "gpcc"
-        gpcc_dir.mkdir(parents=True, exist_ok=True)
-        (gpcc_dir / "gpcc_precipitations.csv").write_text(
+        # The cache key is stated literally, so a wrong one fails rather than agreeing with itself.
+        (tmp_path / "co2.csv").write_text("Date,co2\n1990-01-01,354.0\n1991-01-01,355.0\n")
+        (tmp_path / "ocean_heat.csv").write_text("Date,Temp\n1990-01-01,1.0\n1991-01-01,2.0\n")
+        (tmp_path / "gpcc__repaired_iso=True.csv").write_text(
             "country_code,time,precip\nAAA,1990-01-01,100.0\nAAA,1991-01-01,110.0\n"
             "BBB,1990-01-01,200.0\nBBB,1991-01-01,220.0\n"
             "FFF,1990-01-01,300.0\nFFF,1991-01-01,330.0\n"

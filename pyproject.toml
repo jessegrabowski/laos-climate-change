@@ -150,7 +150,7 @@ filterwarnings = [
 
 [tool.mypy]
 # An include list that only grows. A package joins it when it is typed, and never leaves.
-files = ["climate_risk/data", "climate_risk/geo", "climate_risk/stats", "climate_risk/models"]
+files = ["climate_risk/data", "climate_risk/geo", "climate_risk/stats", "climate_risk/models", "tests"]
 python_version = "3.12"
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
@@ -166,6 +166,13 @@ strict_equality = true
 [[tool.mypy.overrides]]
 module = ["pymc.*", "pytensor.*", "sklearn.*", "statsmodels.*"]
 ignore_missing_imports = true
+
+# Test functions carry no annotations, so their bodies need checking on their own terms.
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
 
 [tool.ruff]
 line-length = 120
