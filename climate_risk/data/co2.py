@@ -1,8 +1,8 @@
 from pathlib import Path
 
-import pandas as pd
+import polars as pl
 
-from climate_risk.data.cache import cached, pandas_parquet
+from climate_risk.data.cache import cached, polars_parquet
 from climate_risk.data.fetch import fetch
 from climate_risk.data.source import DataSource
 
@@ -22,9 +22,9 @@ CO2 = DataSource(
 CO2_HEADER_ROW = 43
 
 
-def transform_co2(raw: pd.DataFrame) -> pd.DataFrame:
+def transform_co2(raw: pl.DataFrame) -> pl.DataFrame:
     """
-    Reduce the NOAA annual means to a single ``co2`` column indexed by year-start timestamp.
+    Reduce the NOAA annual means to a ``Date`` and a ``co2`` column.
 
     Parameters
     ----------
@@ -34,18 +34,19 @@ def transform_co2(raw: pd.DataFrame) -> pd.DataFrame:
     Returns
     -------
     DataFrame
-        One row per year, indexed by ``Date``.
+        One row per year, dated to its first day.
     """
-    dated = raw.assign(Date=lambda x: pd.to_datetime(x["year"], format="%Y"))
+    return raw.select(
+        pl.date(pl.col("year"), 1, 1).alias("Date"),
+        pl.col("mean").alias("co2"),
+    )
 
-    return dated.set_index("Date").rename(columns={"mean": "co2"})[["co2"]]
 
-
-def load_co2_data(cache_dir: Path, *, force_reload: bool = False) -> pd.DataFrame:
-    def build() -> pd.DataFrame:
+def load_co2_data(cache_dir: Path, *, force_reload: bool = False) -> pl.DataFrame:
+    def build() -> pl.DataFrame:
         # Fetching inside the builder keeps a warm cache from reaching the network.
         raw = fetch(CO2, cache_dir, force=force_reload)
 
-        return transform_co2(pd.read_csv(raw, skiprows=CO2_HEADER_ROW))
+        return transform_co2(pl.read_csv(raw, skip_rows=CO2_HEADER_ROW))
 
-    return cached(cache_dir, "co2", build, pandas_parquet(), force=force_reload)
+    return cached(cache_dir, "co2", build, polars_parquet(), force=force_reload)

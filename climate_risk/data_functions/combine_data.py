@@ -2,12 +2,18 @@ from functools import partial, reduce
 from pathlib import Path
 
 import pandas as pd
+import polars as pl
 
 from climate_risk.data.co2 import load_co2_data
 from climate_risk.data.gpcc import load_gpcc_data
 from climate_risk.data.ocean_heat import load_ocean_heat_data
 from climate_risk.data.world_bank import load_wb_data
 from climate_risk.data_functions.emdat_processing import DISASTER_TYPES, load_emdat_data
+
+
+def _as_pandas(frame: pl.DataFrame) -> pd.DataFrame:
+    """Convert a tidy polars frame from the data layer into the pandas this module merges in."""
+    return frame.to_pandas()
 
 
 def load_all_data(cache_dir: Path) -> dict[str, pd.DataFrame]:
@@ -55,10 +61,8 @@ def load_all_data(cache_dir: Path) -> dict[str, pd.DataFrame]:
     merged_dict["df_inten_filtered_adjusted_clim"] = emdat["df_inten_filtered_adjusted_clim"]
 
     # 3. The WB data, index (Year, ISO3)
-    merged_dict["wb_data"] = load_wb_data(cache_dir)
     merged_dict["wb_data"] = (
-        merged_dict["wb_data"]
-        .reset_index()
+        _as_pandas(load_wb_data(cache_dir))
         .rename(columns={"country_code": "ISO", "year": "Start_Year"})
         .assign(Start_Year=lambda x: pd.to_datetime(x.Start_Year, format="%Y"))
         .set_index(["ISO", "Start_Year"])
@@ -72,14 +76,13 @@ def load_all_data(cache_dir: Path) -> dict[str, pd.DataFrame]:
     merged_dict["gpcc_agg"] = gpcc.pivot_table(values="precip", index=["year"], aggfunc="sum")
 
     # 4.2 NOAA: CO2
-    co2 = load_co2_data(cache_dir)
-    co2.reset_index(inplace=True)
+    co2 = _as_pandas(load_co2_data(cache_dir))
     co2["year"] = pd.to_datetime(co2["Date"].dt.year, format="%Y")
     merged_dict["co2"] = co2.pivot_table(values="co2", index="year", aggfunc="sum")
 
     # 4.3 NECI: ocean temperature
-    ocean_heat = load_ocean_heat_data(cache_dir)
-    ocean_heat["year"] = ocean_heat.reset_index()["Date"].dt.year.values
+    ocean_heat = _as_pandas(load_ocean_heat_data(cache_dir))
+    ocean_heat["year"] = ocean_heat["Date"].dt.year
     ocean_heat = ocean_heat.pivot_table(values="Temp", index="year", aggfunc="mean")
     ocean_heat.index = pd.to_datetime(ocean_heat.index, format="%Y")
     merged_dict["ocean_temperature"] = ocean_heat

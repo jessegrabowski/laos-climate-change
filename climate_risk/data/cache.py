@@ -7,6 +7,7 @@ from pathlib import Path
 
 import geopandas as gpd
 import pandas as pd
+import polars as pl
 
 _log = logging.getLogger(__name__)
 
@@ -48,6 +49,16 @@ def pandas_parquet() -> CacheFormat[pd.DataFrame]:
         suffix=".parquet",
         read=pd.read_parquet,
         write=lambda frame, path: frame.to_parquet(path),
+        atomic=True,
+    )
+
+
+def polars_parquet() -> CacheFormat[pl.DataFrame]:
+    """A parquet round-trip for a tidy frame. The file carries dtypes, so nothing is restored by hand."""
+    return CacheFormat(
+        suffix=".parquet",
+        read=pl.read_parquet,
+        write=lambda frame, path: frame.write_parquet(path),
         atomic=True,
     )
 

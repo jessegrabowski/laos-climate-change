@@ -1,12 +1,15 @@
 from dataclasses import replace
+from datetime import date
 
 import geopandas as gpd
 import pandas as pd
+import polars as pl
 import pytest
 
+from polars.testing import assert_frame_equal
 from shapely.geometry import Point
 
-from climate_risk.data.cache import cache_key, cached, geo_shapefile, pandas_parquet
+from climate_risk.data.cache import cache_key, cached, geo_shapefile, pandas_parquet, polars_parquet
 
 
 @pytest.fixture
@@ -131,3 +134,22 @@ def test_a_write_killed_partway_does_not_poison_the_cache(tmp_path, frame):
 def test_an_empty_name_is_rejected():
     with pytest.raises(ValueError, match="must not be empty"):
         cache_key("")
+
+
+def test_a_polars_frame_round_trips_without_an_index(tmp_path):
+    """A tidy frame carries its columns in the file, so nothing has to be restored on read."""
+    frame = pl.DataFrame({"year": [1990, 1991], "co2": [354.4, 355.6]})
+
+    cached(tmp_path, "co2", lambda: frame, polars_parquet())
+    reloaded = cached(tmp_path, "co2", lambda: frame, polars_parquet())
+
+    assert_frame_equal(reloaded, frame)
+
+
+def test_a_polars_date_column_keeps_its_type(tmp_path):
+    """A date returning as text is how the cold and warm paths drift apart; parquet carries the dtype."""
+    frame = pl.DataFrame({"Date": [date(1990, 1, 1)], "co2": [354.4]})
+
+    cached(tmp_path, "co2", lambda: frame, polars_parquet())
+
+    assert cached(tmp_path, "co2", lambda: frame, polars_parquet()).schema["Date"] == pl.Date

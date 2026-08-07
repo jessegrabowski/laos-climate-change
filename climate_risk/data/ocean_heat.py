@@ -1,8 +1,8 @@
 from pathlib import Path
 
-import pandas as pd
+import polars as pl
 
-from climate_risk.data.cache import cached, pandas_parquet
+from climate_risk.data.cache import cached, polars_parquet
 from climate_risk.data.fetch import fetch
 from climate_risk.data.source import DataSource
 
@@ -25,7 +25,7 @@ OCEAN_HEAT = DataSource(
 OCEAN_HEAT_BASELINE_OFFSET = 152
 
 
-def transform_ocean_heat(seasonal: pd.DataFrame) -> pd.DataFrame:
+def transform_ocean_heat(seasonal: pl.DataFrame) -> pl.DataFrame:
     """
     Average seasonal ocean-heat anomalies to calendar years and shift them onto the project baseline.
 
@@ -37,24 +37,21 @@ def transform_ocean_heat(seasonal: pd.DataFrame) -> pd.DataFrame:
     Returns
     -------
     DataFrame
-        Annual means indexed by year-start timestamp, offset by ``OCEAN_HEAT_BASELINE_OFFSET``.
+        Annual means dated to each year's first day, offset by ``OCEAN_HEAT_BASELINE_OFFSET``.
     """
-    annual = (
-        seasonal.assign(Date=lambda x: pd.to_datetime(x["Date"], format="%Y-%m"))
-        .set_index("Date")
-        .resample("YE")
-        .mean()
+    return (
+        seasonal.with_columns(pl.col("Date").str.to_date("%Y-%m"))
+        .group_by(pl.col("Date").dt.year().alias("year"))
+        .agg(pl.col("Temp").mean())
+        .select(pl.date(pl.col("year"), 1, 1).alias("Date"), pl.col("Temp") + OCEAN_HEAT_BASELINE_OFFSET)
+        .sort("Date")
     )
-    # Shifting the year-end label back also clears freq, which the CSV round-trip cannot carry.
-    annual.index = pd.DatetimeIndex(annual.index) - pd.offsets.YearBegin()
-
-    return annual + OCEAN_HEAT_BASELINE_OFFSET
 
 
-def load_ocean_heat_data(cache_dir: Path, *, force_reload: bool = False) -> pd.DataFrame:
-    def build() -> pd.DataFrame:
+def load_ocean_heat_data(cache_dir: Path, *, force_reload: bool = False) -> pl.DataFrame:
+    def build() -> pl.DataFrame:
         raw = fetch(OCEAN_HEAT, cache_dir, force=force_reload)
 
-        return transform_ocean_heat(pd.read_csv(raw, header=0, names=["Date", "Temp"]))
+        return transform_ocean_heat(pl.read_csv(raw, has_header=True, new_columns=["Date", "Temp"]))
 
-    return cached(cache_dir, "ocean_heat", build, pandas_parquet(), force=force_reload)
+    return cached(cache_dir, "ocean_heat", build, polars_parquet(), force=force_reload)

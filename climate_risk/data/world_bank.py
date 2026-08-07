@@ -2,11 +2,11 @@ import logging
 
 from pathlib import Path
 
-import pandas as pd
+import polars as pl
 
 from kuznets import wb
 
-from climate_risk.data.cache import cached, pandas_parquet
+from climate_risk.data.cache import cached, polars_parquet
 
 _log = logging.getLogger(__name__)
 
@@ -17,11 +17,11 @@ COUNTRIES_FILE = Path(__file__).parent / "world_bank_countries.csv"
 
 def _read_countries() -> tuple[dict[str, str], list[str]]:
     """Return the name-to-code mapping and the codes to download, read from ``COUNTRIES_FILE``."""
-    table = pd.read_csv(COUNTRIES_FILE)
+    table = pl.read_csv(COUNTRIES_FILE)
 
     return (
         dict(zip(table["country"], table["country_code"], strict=True)),
-        table.loc[table["requested"], "country_code"].tolist(),
+        table.filter("requested")["country_code"].to_list(),
     )
 
 
@@ -51,54 +51,50 @@ FIRST_YEAR = 1900
 COUNTRY_CODE_ERRORS = "ignore"
 
 
-def transform_world_bank(raw: pd.DataFrame) -> pd.DataFrame:
+def transform_world_bank(raw: pl.DataFrame) -> pl.DataFrame:
     """
     Key the World Bank indicators by ISO code and year, under their readable names.
 
     Parameters
     ----------
     raw : DataFrame
-        Indicators as ``kuznets`` returns them, indexed by ``country`` name and ``year``.
+        Indicators as ``kuznets`` returns them tidy, with ``country`` and ``year`` columns.
 
     Returns
     -------
     DataFrame
-        One row per country and year, indexed by ``country_code`` and an integer ``year``.
+        One row per country and year, sorted, with an integer ``year``.
     """
-    coded = raw.reset_index().assign(country_code=lambda x: x["country"].map(COUNTRY_CODE_BY_NAME))
-    matched = coded["country_code"].notna()
+    coded = raw.with_columns(pl.col("country").replace_strict(COUNTRY_CODE_BY_NAME, default=None).alias("country_code"))
 
-    unmatched = sorted(set(coded.loc[~matched, "country"]))
+    unmatched = sorted(set(coded.filter(pl.col("country_code").is_null())["country"].to_list()))
     if unmatched:
         _log.warning(f"Dropping {len(unmatched)} countries with no ISO code: {', '.join(unmatched)}")
 
     return (
-        coded[matched][["country_code", "year", *WB_INDICATORS]]
-        .rename(columns=INDICATOR_NAMES)
-        # Upstream serves the year as a string; the cache reads it back as an integer.
-        .astype({"year": int})
-        .set_index(["country_code", "year"])
-        .sort_index()
+        coded.drop_nulls("country_code")
+        .select(
+            "country_code",
+            # Upstream serves the year as a string, in both the pandas and the tidy output.
+            pl.col("year").cast(pl.Int64),
+            *(pl.col(code).alias(name) for code, name in INDICATOR_NAMES.items()),
+        )
+        .sort("country_code", "year")
     )
 
 
-def load_wb_data(cache_dir: Path, *, force_reload: bool = False) -> pd.DataFrame:
-    def build() -> pd.DataFrame:
+def load_wb_data(cache_dir: Path, *, force_reload: bool = False) -> pl.DataFrame:
+    def build() -> pl.DataFrame:
         _log.info("Downloading World Bank indicators")
-        downloaded: pd.DataFrame = wb.download(
+        downloaded: pl.DataFrame = wb.download(
             indicator=WB_INDICATORS,
             country=REQUESTED_COUNTRY_CODES,
             start=FIRST_YEAR,
             end=None,
             errors=COUNTRY_CODE_ERRORS,
+            output_type="polars",
         )
 
         return transform_world_bank(downloaded)
 
-    return cached(
-        cache_dir,
-        "world_bank",
-        build,
-        pandas_parquet(),
-        force=force_reload,
-    )
+    return cached(cache_dir, "world_bank", build, polars_parquet(), force=force_reload)

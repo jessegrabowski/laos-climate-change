@@ -1,5 +1,8 @@
+from datetime import date
+
 import numpy as np
 import pandas as pd
+import polars as pl
 import pytest
 
 from climate_risk.replication_data import create_replication_data
@@ -56,18 +59,18 @@ def wide_cache(tmp_path, write_emdat_cache):
         for n, iso in enumerate(WORLD_BANK_COUNTRIES)
         for i, year in enumerate(YEARS)
     ]
-    pd.DataFrame(
-        world_bank, columns=["country_code", "year", "gdp_per_cap", "population_density", "Population"]
-    ).set_index(["country_code", "year"]).to_parquet(tmp_path / "world_bank.parquet")
-    pd.DataFrame(
-        {"co2": [float(350 + i) for i in range(len(YEARS))]},
-        index=pd.DatetimeIndex([f"{year}-01-01" for year in YEARS], name="Date"),
-    ).to_parquet(tmp_path / "co2.parquet")
+    pl.DataFrame(
+        world_bank,
+        schema=["country_code", "year", "gdp_per_cap", "population_density", "Population"],
+        orient="row",
+    ).write_parquet(tmp_path / "world_bank.parquet")
+    pl.DataFrame(
+        {"Date": [date(year, 1, 1) for year in YEARS], "co2": [float(350 + i) for i in range(len(YEARS))]}
+    ).write_parquet(tmp_path / "co2.parquet")
     # A wave rather than a ramp, so STL has a trend to separate a deviation from.
-    pd.DataFrame(
-        {"Temp": [i + np.sin(i) for i in range(len(YEARS))]},
-        index=pd.DatetimeIndex([f"{year}-01-01" for year in YEARS], name="Date"),
-    ).to_parquet(tmp_path / "ocean_heat.parquet")
+    pl.DataFrame(
+        {"Date": [date(year, 1, 1) for year in YEARS], "Temp": [i + np.sin(i) for i in range(len(YEARS))]}
+    ).write_parquet(tmp_path / "ocean_heat.parquet")
     precipitation = [
         (iso, pd.Timestamp(f"{year}-01-01"), 100.0 * (n + 1) + 5 * i)
         for n, iso in enumerate(PRECIPITATION_COUNTRIES)
@@ -76,7 +79,6 @@ def wide_cache(tmp_path, write_emdat_cache):
     pd.DataFrame(precipitation, columns=["country_code", "time", "precip"]).set_index(
         ["country_code", "time"]
     ).to_parquet(tmp_path / "gpcc__repaired_iso=True.parquet")
-
     return tmp_path
 
 

@@ -1,7 +1,9 @@
 import logging
 
-import pandas as pd
+import polars as pl
 import pytest
+
+from polars.testing import assert_frame_equal
 
 from climate_risk.data import world_bank
 from climate_risk.data.world_bank import (
@@ -17,11 +19,9 @@ from climate_risk.data.world_bank import (
 CACHE_FILE = "world_bank.parquet"
 
 
-def downloaded(rows) -> pd.DataFrame:
-    """Indicators shaped as kuznets returns them: a (country, year) index and raw indicator codes."""
-    frame = pd.DataFrame(rows, columns=["country", "year", *WB_INDICATORS])
-
-    return frame.set_index(["country", "year"])
+def downloaded(rows) -> pl.DataFrame:
+    """Indicators shaped as kuznets returns them tidy: flat columns under the raw indicator codes."""
+    return pl.DataFrame(rows, schema=["country", "year", *WB_INDICATORS], orient="row")
 
 
 @pytest.fixture
@@ -46,8 +46,8 @@ def test_indicators_are_keyed_by_iso_code_and_year():
 
     frame = transform_world_bank(raw)
 
-    assert frame.index.names == ["country_code", "year"]
-    assert frame.index.tolist() == [("ABW", 1990)]
+    assert frame.columns[:2] == ["country_code", "year"]
+    assert frame.select("country_code", "year").rows() == [("ABW", 1990)]
 
 
 def test_the_year_is_an_integer_whichever_way_it_arrives():
@@ -56,7 +56,7 @@ def test_the_year_is_an_integer_whichever_way_it_arrives():
 
     frame = transform_world_bank(raw)
 
-    assert frame.index.get_level_values("year").dtype.kind == "i"
+    assert frame.schema["year"] == pl.Int64
 
 
 def test_indicator_codes_become_readable_names():
@@ -65,13 +65,15 @@ def test_indicator_codes_become_readable_names():
     frame = transform_world_bank(raw)
 
     assert set(frame.columns) == {
+        "country_code",
+        "year",
         "population_density",
         "gdp_per_cap",
         "Population",
         "real_gdp",
         "surface_area_km2",
     }
-    assert frame.loc[("ABW", 1990), "gdp_per_cap"] == 1000.0
+    assert frame["gdp_per_cap"].to_list() == [1000.0]
 
 
 def test_a_country_with_no_iso_code_is_dropped():
@@ -85,7 +87,7 @@ def test_a_country_with_no_iso_code_is_dropped():
 
     frame = transform_world_bank(raw)
 
-    assert frame.index.get_level_values("country_code").tolist() == ["ABW"]
+    assert frame["country_code"].to_list() == ["ABW"]
 
 
 def test_the_result_is_sorted_by_country_and_year():
@@ -99,22 +101,28 @@ def test_the_result_is_sorted_by_country_and_year():
 
     frame = transform_world_bank(raw)
 
-    assert frame.index.tolist() == [("ABW", 1990), ("ABW", 1991), ("ZWE", 1991)]
+    assert frame.select("country_code", "year").rows() == [("ABW", 1990), ("ABW", 1991), ("ZWE", 1991)]
 
 
 def test_a_warm_cache_does_not_download(tmp_path, serves):
     """The download is hundreds of requests; a present cache must not trigger it."""
     calls = serves(downloaded([("Aruba", "1990", 10.0, 1000.0, 100000, 5.0, 180.0)]))
-    pd.DataFrame(
-        [(10.0, 1000.0, 100000, 5.0, 180.0)],
-        columns=["population_density", "gdp_per_cap", "Population", "real_gdp", "surface_area_km2"],
-        index=pd.MultiIndex.from_tuples([("ABW", 1990)], names=["country_code", "year"]),
-    ).to_parquet(tmp_path / CACHE_FILE)
+    pl.DataFrame(
+        {
+            "country_code": ["ABW"],
+            "year": [1990],
+            "population_density": [10.0],
+            "gdp_per_cap": [1000.0],
+            "Population": [100000],
+            "real_gdp": [5.0],
+            "surface_area_km2": [180.0],
+        }
+    ).write_parquet(tmp_path / CACHE_FILE)
 
     frame = load_wb_data(tmp_path)
 
     assert calls == []
-    assert frame.index.tolist() == [("ABW", 1990)]
+    assert frame.select("country_code", "year").rows() == [("ABW", 1990)]
 
 
 def test_the_cold_run_writes_the_cache_it_will_read(tmp_path, serves):
@@ -133,7 +141,7 @@ def test_the_cold_and_warm_frames_agree(tmp_path, serves):
     cold = load_wb_data(tmp_path)
     warm = load_wb_data(tmp_path)
 
-    pd.testing.assert_frame_equal(cold, warm)
+    assert_frame_equal(cold, warm)
 
 
 def test_forcing_a_reload_downloads_again(tmp_path, serves):
@@ -192,7 +200,7 @@ def test_the_aggregates_are_not_requested():
 
 def test_no_two_countries_share_a_name():
     """The mapping is built with dict(zip(...)), so a repeated name would quietly overwrite a code."""
-    table = pd.read_csv(COUNTRIES_FILE)
+    table = pl.read_csv(COUNTRIES_FILE)
 
     assert len(COUNTRY_CODE_BY_NAME) == len(table)
 

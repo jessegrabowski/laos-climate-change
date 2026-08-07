@@ -2,9 +2,12 @@ import gzip
 import socket
 import zipfile
 
+from datetime import date
+
 import geopandas as gpd
 import numpy as np
 import pandas as pd
+import polars as pl
 import pytest
 import xarray as xr
 
@@ -205,7 +208,7 @@ def write_full_cache(tmp_path, write_emdat_cache):
             )
         )
         write_emdat_cache(events)
-        pd.DataFrame(
+        pl.DataFrame(
             [
                 ("AAA", 1990, 1000.0, 10.0, 1000000),
                 ("AAA", 1991, 1100.0, 11.0, 1010000),
@@ -216,15 +219,16 @@ def write_full_cache(tmp_path, write_emdat_cache):
                 ("EEE", 1990, 4000.0, 40.0, 4000000),
                 ("EEE", 1991, 4400.0, 44.0, 4040000),
             ],
-            columns=["country_code", "year", "gdp_per_cap", "population_density", "Population"],
-        ).set_index(["country_code", "year"]).to_parquet(tmp_path / "world_bank.parquet")
+            schema=["country_code", "year", "gdp_per_cap", "population_density", "Population"],
+            orient="row",
+        ).write_parquet(tmp_path / "world_bank.parquet")
         # The cache key is stated literally, so a wrong one fails rather than agreeing with itself.
-        pd.DataFrame(
-            {"co2": [354.0, 355.0]}, index=pd.DatetimeIndex(["1990-01-01", "1991-01-01"], name="Date")
-        ).to_parquet(tmp_path / "co2.parquet")
-        pd.DataFrame(
-            {"Temp": [1.0, 2.0]}, index=pd.DatetimeIndex(["1990-01-01", "1991-01-01"], name="Date")
-        ).to_parquet(tmp_path / "ocean_heat.parquet")
+        pl.DataFrame({"Date": [date(1990, 1, 1), date(1991, 1, 1)], "co2": [354.0, 355.0]}).write_parquet(
+            tmp_path / "co2.parquet"
+        )
+        pl.DataFrame({"Date": [date(1990, 1, 1), date(1991, 1, 1)], "Temp": [1.0, 2.0]}).write_parquet(
+            tmp_path / "ocean_heat.parquet"
+        )
         pd.DataFrame(
             [
                 ("AAA", pd.Timestamp("1990-01-01"), 100.0),
