@@ -4,6 +4,7 @@ import pytest
 import requests
 
 from climate_risk.data.co2 import CO2
+from climate_risk.data.fetch import USER_AGENT
 from climate_risk.data.gpcc import GPCC
 from climate_risk.data.hadcrut import HADCRUT
 from climate_risk.data.ocean_heat import OCEAN_HEAT
@@ -55,10 +56,12 @@ SOURCES = {"CO2": CO2, "OCEAN_HEAT": OCEAN_HEAT, "HADCRUT": HADCRUT} | {
 @pytest.mark.parametrize("declared", SOURCES.values(), ids=SOURCES.keys())
 def test_every_declared_source_is_still_published(declared):
     """Upstream reorganises without notice, and a dead URL surfaces as a failed run months later."""
-    response = requests.head(declared.url, timeout=30, allow_redirects=True)
+    # Hosts vary their answer by agent, so the check has to send the one fetch will send.
+    headers = {"User-Agent": USER_AGENT}
+    response = requests.head(declared.url, timeout=30, allow_redirects=True, headers=headers)
     if response.status_code >= 400:
         # Some hosts refuse HEAD; ask for one byte instead of downloading the archive.
-        response = requests.get(declared.url, timeout=30, headers={"Range": "bytes=0-0"}, stream=True)
+        response = requests.get(declared.url, timeout=30, headers=headers | {"Range": "bytes=0-0"}, stream=True)
         response.close()
 
     assert response.status_code < 400
