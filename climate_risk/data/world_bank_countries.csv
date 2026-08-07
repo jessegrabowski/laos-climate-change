@@ -1,0 +1,297 @@
+country,country_code,requested
+Aruba,ABW,true
+Africa Eastern and Southern,AFE,false
+Afghanistan,AFG,true
+Africa,AFR,false
+Africa Western and Central,AFW,false
+Angola,AGO,true
+Albania,ALB,true
+Andorra,AND,true
+Arab World,ARB,false
+United Arab Emirates,ARE,true
+Argentina,ARG,true
+Armenia,ARM,true
+American Samoa,ASM,true
+Antigua and Barbuda,ATG,true
+Australia,AUS,true
+Austria,AUT,true
+Azerbaijan,AZE,true
+Burundi,BDI,true
+East Asia & Pacific (IBRD-only countries),BEA,false
+Europe & Central Asia (IBRD-only countries),BEC,false
+Belgium,BEL,true
+Benin,BEN,true
+Burkina Faso,BFA,true
+Bangladesh,BGD,true
+Bulgaria,BGR,true
+IBRD countries classified as high income,BHI,false
+Bahrain,BHR,true
+"Bahamas, The",BHS,true
+Bosnia and Herzegovina,BIH,true
+Latin America & the Caribbean (IBRD-only countries),BLA,false
+Belarus,BLR,true
+Belize,BLZ,true
+Middle East & North Africa (IBRD-only countries),BMN,false
+Bermuda,BMU,true
+Bolivia,BOL,true
+Brazil,BRA,true
+Barbados,BRB,true
+Brunei Darussalam,BRN,true
+Sub-Saharan Africa (IBRD-only countries),BSS,false
+Bhutan,BTN,true
+Botswana,BWA,true
+Sub-Saharan Africa (IFC classification),CAA,false
+Central African Republic,CAF,true
+Canada,CAN,true
+East Asia and the Pacific (IFC classification),CEA,false
+Central Europe and the Baltics,CEB,false
+Europe and Central Asia (IFC classification),CEU,false
+Switzerland,CHE,true
+Channel Islands,CHI,false
+Chile,CHL,true
+China,CHN,true
+Cote d'Ivoire,CIV,true
+Latin America and the Caribbean (IFC classification),CLA,false
+Middle East and North Africa (IFC classification),CME,false
+Cameroon,CMR,true
+"Congo, Dem. Rep.",COD,true
+"Congo, Rep.",COG,true
+Colombia,COL,true
+Comoros,COM,true
+Cabo Verde,CPV,true
+Costa Rica,CRI,true
+South Asia (IFC classification),CSA,false
+Caribbean small states,CSS,false
+Cuba,CUB,true
+Curacao,CUW,true
+Cayman Islands,CYM,true
+Cyprus,CYP,true
+Czechia,CZE,true
+East Asia & Pacific (IDA-eligible countries),DEA,false
+Europe & Central Asia (IDA-eligible countries),DEC,false
+Germany,DEU,true
+Djibouti,DJI,true
+Latin America & the Caribbean (IDA-eligible countries),DLA,false
+Dominica,DMA,true
+Middle East & North Africa (IDA-eligible countries),DMN,false
+Denmark,DNK,true
+IDA countries in Sub-Saharan Africa not classified as fragile situations ,DNS,false
+Dominican Republic,DOM,true
+South Asia (IDA-eligible countries),DSA,false
+IDA countries in Sub-Saharan Africa classified as fragile situations ,DSF,false
+Sub-Saharan Africa (IDA-eligible countries),DSS,false
+Algeria,DZA,true
+East Asia & Pacific (excluding high income),EAP,false
+Early-demographic dividend,EAR,false
+East Asia & Pacific,EAS,false
+Europe & Central Asia (excluding high income),ECA,false
+Europe & Central Asia,ECS,false
+Ecuador,ECU,true
+"Egypt, Arab Rep.",EGY,true
+Euro area,EMU,false
+Eritrea,ERI,true
+Spain,ESP,true
+Estonia,EST,true
+Ethiopia,ETH,true
+European Union,EUU,false
+Fragile and conflict affected situations,FCS,false
+Finland,FIN,true
+Fiji,FJI,true
+France,FRA,true
+Faroe Islands,FRO,true
+"Micronesia, Fed. Sts.",FSM,true
+"IDA countries classified as fragile situations, excluding Sub-Saharan Africa",FXS,false
+Gabon,GAB,true
+United Kingdom,GBR,true
+Georgia,GEO,true
+Ghana,GHA,true
+Gibraltar,GIB,false
+Guinea,GIN,true
+"Gambia, The",GMB,true
+Guinea-Bissau,GNB,true
+Equatorial Guinea,GNQ,true
+Greece,GRC,true
+Grenada,GRD,true
+Greenland,GRL,true
+Guatemala,GTM,true
+Guam,GUM,true
+Guyana,GUY,true
+High income,HIC,false
+"Hong Kong SAR, China",HKG,false
+Honduras,HND,true
+Heavily indebted poor countries (HIPC),HPC,false
+Croatia,HRV,true
+Haiti,HTI,true
+Hungary,HUN,true
+"IBRD, including blend",IBB,false
+IBRD only,IBD,false
+IDA & IBRD total,IBT,false
+IDA total,IDA,false
+IDA blend,IDB,false
+Indonesia,IDN,true
+IDA only,IDX,false
+Isle of Man,IMN,true
+India,IND,true
+Not classified,INX,false
+Ireland,IRL,true
+"Iran, Islamic Rep.",IRN,true
+Iraq,IRQ,true
+Iceland,ISL,true
+Israel,ISR,false
+Italy,ITA,true
+Jamaica,JAM,true
+Jordan,JOR,true
+Japan,JPN,true
+Kazakhstan,KAZ,true
+Kenya,KEN,true
+Kyrgyz Republic,KGZ,true
+Cambodia,KHM,true
+Kiribati,KIR,true
+St. Kitts and Nevis,KNA,true
+"Korea, Rep.",KOR,true
+Kuwait,KWT,true
+Latin America & Caribbean (excluding high income),LAC,false
+Lao PDR,LAO,true
+Lebanon,LBN,true
+Liberia,LBR,true
+Libya,LBY,true
+St. Lucia,LCA,true
+Latin America & Caribbean ,LCN,false
+Least developed countries: UN classification,LDC,false
+Low income,LIC,false
+Liechtenstein,LIE,true
+Sri Lanka,LKA,true
+Lower middle income,LMC,false
+Low & middle income,LMY,false
+Lesotho,LSO,true
+Late-demographic dividend,LTE,false
+Lithuania,LTU,true
+Luxembourg,LUX,true
+Latvia,LVA,true
+"Macao SAR, China",MAC,false
+St. Martin (French part),MAF,true
+Morocco,MAR,true
+Monaco,MCO,true
+Moldova,MDA,true
+Middle East (developing only),MDE,false
+Madagascar,MDG,true
+Maldives,MDV,true
+Middle East & North Africa,MEA,false
+Mexico,MEX,true
+Marshall Islands,MHL,true
+Middle income,MIC,false
+North Macedonia,MKD,true
+Mali,MLI,true
+Malta,MLT,true
+Myanmar,MMR,true
+Middle East & North Africa (excluding high income),MNA,false
+Montenegro,MNE,true
+Mongolia,MNG,true
+Northern Mariana Islands,MNP,true
+Mozambique,MOZ,true
+Mauritania,MRT,true
+Mauritius,MUS,true
+Malawi,MWI,true
+Malaysia,MYS,true
+North America,NAC,false
+North Africa,NAF,false
+Namibia,NAM,true
+New Caledonia,NCL,true
+Niger,NER,true
+Nigeria,NGA,true
+Nicaragua,NIC,true
+Netherlands,NLD,true
+Norway,NOR,true
+Nepal,NPL,true
+Non-resource rich Sub-Saharan Africa countries,NRS,false
+Nauru,NRU,true
+"IDA countries not classified as fragile situations, excluding Sub-Saharan Africa",NXS,false
+New Zealand,NZL,true
+OECD members,OED,false
+Oman,OMN,true
+Other small states,OSS,false
+Pakistan,PAK,true
+Panama,PAN,true
+Peru,PER,true
+Philippines,PHL,true
+Palau,PLW,true
+Papua New Guinea,PNG,true
+Poland,POL,true
+Pre-demographic dividend,PRE,false
+Puerto Rico,PRI,true
+"Korea, Dem. People's Rep.",PRK,true
+Portugal,PRT,true
+Paraguay,PRY,true
+West Bank and Gaza,PSE,false
+Pacific island small states,PSS,false
+Post-demographic dividend,PST,false
+French Polynesia,PYF,true
+Qatar,QAT,true
+Romania,ROU,true
+Resource rich Sub-Saharan Africa countries,RRS,false
+Russian Federation,RUS,true
+Rwanda,RWA,true
+South Asia,SAS,false
+Saudi Arabia,SAU,true
+Sudan,SDN,true
+Senegal,SEN,true
+Singapore,SGP,true
+Solomon Islands,SLB,true
+Sierra Leone,SLE,true
+El Salvador,SLV,true
+San Marino,SMR,true
+Somalia,SOM,true
+Serbia,SRB,true
+Sub-Saharan Africa (excluding high income),SSA,false
+South Sudan,SSD,true
+Sub-Saharan Africa ,SSF,false
+Small states,SST,false
+Sao Tome and Principe,STP,true
+Suriname,SUR,true
+Slovak Republic,SVK,true
+Slovenia,SVN,true
+Sweden,SWE,true
+Eswatini,SWZ,true
+Sint Maarten (Dutch part),SXM,true
+Sub-Saharan Africa excluding South Africa,SXZ,false
+Seychelles,SYC,true
+Syrian Arab Republic,SYR,true
+Turks and Caicos Islands,TCA,true
+Chad,TCD,true
+East Asia & Pacific (IDA & IBRD countries),TEA,false
+Europe & Central Asia (IDA & IBRD countries),TEC,false
+Togo,TGO,true
+Thailand,THA,true
+Tajikistan,TJK,true
+Turkmenistan,TKM,true
+Latin America & the Caribbean (IDA & IBRD countries),TLA,false
+Timor-Leste,TLS,true
+Middle East & North Africa (IDA & IBRD countries),TMN,false
+Tonga,TON,true
+South Asia (IDA & IBRD),TSA,false
+Sub-Saharan Africa (IDA & IBRD countries),TSS,false
+Trinidad and Tobago,TTO,true
+Tunisia,TUN,true
+Turkiye,TUR,true
+Tuvalu,TUV,true
+Tanzania,TZA,true
+Uganda,UGA,true
+Ukraine,UKR,true
+Upper middle income,UMC,false
+Uruguay,URY,true
+United States,USA,true
+Uzbekistan,UZB,true
+St. Vincent and the Grenadines,VCT,true
+"Venezuela, RB",VEN,true
+British Virgin Islands,VGB,true
+Virgin Islands (U.S.),VIR,true
+Viet Nam,VNM,true
+Vanuatu,VUT,true
+World,WLD,false
+Samoa,WSM,true
+Kosovo,XKX,true
+Sub-Saharan Africa excluding South Africa and Nigeria,XZN,false
+"Yemen, Rep.",YEM,true
+South Africa,ZAF,true
+Zambia,ZMB,true
+Zimbabwe,ZWE,true

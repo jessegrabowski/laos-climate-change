@@ -2,7 +2,13 @@ import pandas as pd
 import pytest
 
 from climate_risk.data import world_bank
-from climate_risk.data.world_bank import WB_INDICATORS, load_wb_data, transform_world_bank
+from climate_risk.data.world_bank import (
+    COUNTRIES_ISO,
+    ISO_DICTIONARY,
+    WB_INDICATORS,
+    load_wb_data,
+    transform_world_bank,
+)
 
 # The cache key is stated literally, so a wrong one fails rather than agreeing with itself.
 CACHE_FILE = "world_bank.csv"
@@ -144,3 +150,29 @@ def test_the_download_covers_the_whole_record_and_tolerates_our_codes(tmp_path, 
     assert calls[0]["start"] == 1900
     assert calls[0]["errors"] == "ignore"
     assert "XKX" in calls[0]["country"]
+
+
+def test_every_country_code_is_an_iso_alpha_3():
+    """The table is hand-edited; a lower-case or truncated code would fail only on a cold run."""
+    malformed = [code for code in ISO_DICTIONARY.values() if not (len(code) == 3 and code.isupper())]
+
+    assert malformed == []
+
+
+def test_no_two_countries_share_a_code():
+    """Two names on one code would silently collapse rows when the download is keyed by code."""
+    codes = list(ISO_DICTIONARY.values())
+
+    assert len(codes) == len(set(codes))
+
+
+def test_kosovo_is_requested_under_the_code_the_world_bank_uses():
+    """XKX is not in kuznets' validation list, so it is the row most likely to be tidied away."""
+    assert ISO_DICTIONARY["Kosovo"] == "XKX"
+    assert "XKX" in COUNTRIES_ISO
+
+
+def test_the_aggregates_are_not_requested():
+    """The Bank returns regional and income aggregates; asking for them would double-count."""
+    assert "ARB" not in COUNTRIES_ISO
+    assert ISO_DICTIONARY["Arab World"] == "ARB"

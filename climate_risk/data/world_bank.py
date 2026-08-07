@@ -6,10 +6,26 @@ import pandas as pd
 
 from kuznets import wb
 
-from climate_risk.const_vars import COUNTRIES_ISO, ISO_DICTIONARY
 from climate_risk.data.cache import cached, pandas_csv
 
 _log = logging.getLogger(__name__)
+
+# Every country name the World Bank can return, its ISO code, and whether we ask for it. The rows
+# it does not request are the Bank's regional and income aggregates, which are not countries.
+COUNTRIES_FILE = Path(__file__).parent / "world_bank_countries.csv"
+
+
+def _read_countries() -> tuple[dict[str, str], list[str]]:
+    """Return the name-to-code mapping and the codes to download, read from ``COUNTRIES_FILE``."""
+    table = pd.read_csv(COUNTRIES_FILE)
+
+    return (
+        dict(zip(table["country"], table["country_code"], strict=True)),
+        table.loc[table["requested"], "country_code"].tolist(),
+    )
+
+
+ISO_DICTIONARY, COUNTRIES_ISO = _read_countries()
 
 WB_INDICATORS = [
     "EN.POP.DNST",
