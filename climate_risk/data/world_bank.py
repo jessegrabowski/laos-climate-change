@@ -6,14 +6,25 @@ import pandas as pd
 
 from kuznets import wb
 
-from climate_risk.const_vars import (
-    COUNTRIES_ISO,
-    ISO_DICTIONARY,
-    WB_INDICATORS,
-    WB_RENAME_DICT,
-)
+from climate_risk.const_vars import COUNTRIES_ISO, ISO_DICTIONARY
 
 _log = logging.getLogger(__name__)
+
+WB_INDICATORS = [
+    "EN.POP.DNST",
+    "NY.GDP.PCAP.KD",
+    "SP.POP.TOTL",
+    "NY.GDP.MKTP.CD",
+    "AG.SRF.TOTL.K2",
+]
+
+WB_RENAME_DICT = {
+    "EN.POP.DNST": "population_density",
+    "NY.GDP.PCAP.KD": "gdp_per_cap",
+    "SP.POP.TOTL": "Population",
+    "NY.GDP.MKTP.CD": "real_gdp",
+    "AG.SRF.TOTL.K2": "surface_area_km2",
+}
 
 
 def load_wb_data(cache_dir: Path, *, force_reload: bool = False) -> pd.DataFrame:
@@ -23,7 +34,7 @@ def load_wb_data(cache_dir: Path, *, force_reload: bool = False) -> pd.DataFrame
 
     if not path_to_wb_data.exists() or force_reload:
         # Importing data
-        wb_df = wb.download(
+        wb_df: pd.DataFrame = wb.download(
             indicator=WB_INDICATORS,
             country=COUNTRIES_ISO,
             start="1900",
