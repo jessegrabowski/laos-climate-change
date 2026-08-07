@@ -25,7 +25,7 @@ def _read_countries() -> tuple[dict[str, str], list[str]]:
     )
 
 
-ISO_DICTIONARY, COUNTRIES_ISO = _read_countries()
+COUNTRY_CODE_BY_NAME, REQUESTED_COUNTRY_CODES = _read_countries()
 
 WB_INDICATORS = [
     "EN.POP.DNST",
@@ -35,7 +35,7 @@ WB_INDICATORS = [
     "AG.SRF.TOTL.K2",
 ]
 
-WB_RENAME_DICT = {
+INDICATOR_NAMES = {
     "EN.POP.DNST": "population_density",
     "NY.GDP.PCAP.KD": "gdp_per_cap",
     "SP.POP.TOTL": "Population",
@@ -65,7 +65,7 @@ def transform_world_bank(raw: pd.DataFrame) -> pd.DataFrame:
     DataFrame
         One row per country and year, indexed by ``country_code`` and an integer ``year``.
     """
-    coded = raw.reset_index().assign(country_code=lambda x: x["country"].map(ISO_DICTIONARY))
+    coded = raw.reset_index().assign(country_code=lambda x: x["country"].map(COUNTRY_CODE_BY_NAME))
     matched = coded["country_code"].notna()
 
     unmatched = sorted(set(coded.loc[~matched, "country"]))
@@ -74,7 +74,7 @@ def transform_world_bank(raw: pd.DataFrame) -> pd.DataFrame:
 
     return (
         coded[matched][["country_code", "year", *WB_INDICATORS]]
-        .rename(columns=WB_RENAME_DICT)
+        .rename(columns=INDICATOR_NAMES)
         # Upstream serves the year as a string; the cache reads it back as an integer.
         .astype({"year": int})
         .set_index(["country_code", "year"])
@@ -87,7 +87,7 @@ def load_wb_data(cache_dir: Path, *, force_reload: bool = False) -> pd.DataFrame
         _log.info("Downloading World Bank indicators")
         downloaded: pd.DataFrame = wb.download(
             indicator=WB_INDICATORS,
-            country=COUNTRIES_ISO,
+            country=REQUESTED_COUNTRY_CODES,
             start=FIRST_YEAR,
             end=None,
             errors=COUNTRY_CODE_ERRORS,
