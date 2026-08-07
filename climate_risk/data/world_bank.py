@@ -46,10 +46,6 @@ INDICATOR_NAMES = {
 # Earlier than any indicator's coverage, so the series starts wherever the data does.
 FIRST_YEAR = 1900
 
-# kuznets validates against a 2014-era code list that predates XKX, which this project uses on
-# purpose. Warnings are errors in the suite, and the code is correct, so the check is turned off.
-COUNTRY_CODE_ERRORS = "ignore"
-
 
 def transform_world_bank(raw: pl.DataFrame) -> pl.DataFrame:
     """
@@ -75,8 +71,9 @@ def transform_world_bank(raw: pl.DataFrame) -> pl.DataFrame:
         coded.drop_nulls("country_code")
         .select(
             "country_code",
-            # Upstream serves the year as a string, in both the pandas and the tidy output.
-            pl.col("year").cast(pl.Int64),
+            # Upstream dates the year. dt.year() narrows it to Int32, and a join key that changes
+            # width is a join that stops matching.
+            pl.col("year").dt.year().cast(pl.Int64),
             *(pl.col(code).alias(name) for code, name in INDICATOR_NAMES.items()),
         )
         .sort("country_code", "year")
@@ -86,14 +83,15 @@ def transform_world_bank(raw: pl.DataFrame) -> pl.DataFrame:
 def load_wb_data(cache_dir: Path, *, force_reload: bool = False) -> pl.DataFrame:
     def build() -> pl.DataFrame:
         _log.info("Downloading World Bank indicators")
-        downloaded: pl.DataFrame = wb.download(
+        downloaded = wb.download(
             indicator=WB_INDICATORS,
             country=REQUESTED_COUNTRY_CODES,
             start=FIRST_YEAR,
             end=None,
-            errors=COUNTRY_CODE_ERRORS,
             output_type="polars",
         )
+        if not isinstance(downloaded, pl.DataFrame):
+            raise TypeError(f"kuznets returned a {type(downloaded).__name__} for output_type='polars'")
 
         return transform_world_bank(downloaded)
 

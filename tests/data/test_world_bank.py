@@ -20,8 +20,10 @@ CACHE_FILE = "world_bank.parquet"
 
 
 def downloaded(rows) -> pl.DataFrame:
-    """Indicators shaped as kuznets returns them tidy: flat columns under the raw indicator codes."""
-    return pl.DataFrame(rows, schema=["country", "year", *WB_INDICATORS], orient="row")
+    """Indicators shaped as kuznets returns them tidy, with the year dated rather than numbered."""
+    frame = pl.DataFrame(rows, schema=["country", "year", *WB_INDICATORS], orient="row")
+
+    return frame.with_columns(pl.col("year").str.to_datetime("%Y"))
 
 
 @pytest.fixture
@@ -50,8 +52,8 @@ def test_indicators_are_keyed_by_iso_code_and_year():
     assert frame.select("country_code", "year").rows() == [("ABW", 1990)]
 
 
-def test_the_year_is_an_integer_whichever_way_it_arrives():
-    """Upstream serves it as a string and the cache as an integer; the two paths must agree."""
+def test_the_dated_year_becomes_an_integer():
+    """Upstream dates the year; casting that date rather than reading it yields microseconds."""
     raw = downloaded([("Aruba", "1990", 10.0, 1000.0, 100000, 5.0, 180.0)])
 
     frame = transform_world_bank(raw)
@@ -162,16 +164,6 @@ def test_the_download_reaches_back_before_any_indicator_starts(tmp_path, serves)
     assert calls[0]["start"] == 1900
 
 
-def test_the_download_tolerates_codes_kuznets_does_not_know(tmp_path, serves):
-    """XKX postdates kuznets' code list, and its warning is an error in this suite."""
-    calls = serves(downloaded([("Aruba", "1990", 10.0, 1000.0, 100000, 5.0, 180.0)]))
-
-    load_wb_data(tmp_path)
-
-    assert calls[0]["errors"] == "ignore"
-    assert "XKX" in calls[0]["country"]
-
-
 def test_every_country_code_is_an_iso_alpha_3():
     """The table is hand-edited; a lower-case or truncated code would fail only on a cold run."""
     malformed = [code for code in COUNTRY_CODE_BY_NAME.values() if not (len(code) == 3 and code.isupper())]
@@ -187,7 +179,7 @@ def test_no_two_countries_share_a_code():
 
 
 def test_kosovo_is_requested_under_the_code_the_world_bank_uses():
-    """XKX is not in kuznets' validation list, so it is the row most likely to be tidied away."""
+    """The World Bank serves Kosovo under a code no ISO 3166-1 standard assigns."""
     assert COUNTRY_CODE_BY_NAME["Kosovo"] == "XKX"
     assert "XKX" in REQUESTED_COUNTRY_CODES
 
@@ -218,3 +210,11 @@ def test_dropping_an_unmatched_country_says_which_one(caplog):
         transform_world_bank(raw)
 
     assert "Not A Country" in caplog.text
+
+
+def test_a_backend_other_than_polars_is_rejected(tmp_path, monkeypatch):
+    """The transform is polars-only, so a frame from another backend must fail here, not in a select."""
+    monkeypatch.setattr(world_bank.wb, "download", lambda **kwargs: object())
+
+    with pytest.raises(TypeError, match="output_type='polars'"):
+        load_wb_data(tmp_path)

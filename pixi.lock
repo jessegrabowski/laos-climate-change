@@ -383,7 +383,7 @@ environments:
       - pypi: .
       - pypi: https://files.pythonhosted.org/packages/08/f6/af32e23e563971ffb0fb86be52bc5be5c2c118858ffc119bf6a9039b173d/lxml-6.1.1-cp312-cp312-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/37/7c/67ada9621b3c93caa75aba1a0b651dae988b22cdea93b33e7e49261364f5/joblib_stubs-1.5.3.1.20260117-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/7b/90/e51761ed14129102b77103c9daf399bc0ecbb51bae7eb4b99b7c04c12c2e/kuznets-1.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/f4/56/ff1348a6965a603e854059574b36d9f3466ce201b0cecf6b52d4f957d86e/kuznets-1.0.1-py3-none-any.whl
       osx-arm64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/adwaita-icon-theme-49.0-unix_0.conda
@@ -707,7 +707,7 @@ environments:
       - pypi: .
       - pypi: https://files.pythonhosted.org/packages/37/7c/67ada9621b3c93caa75aba1a0b651dae988b22cdea93b33e7e49261364f5/joblib_stubs-1.5.3.1.20260117-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/6a/6e/c4add832b6fc1e887125b96f880d7b9b70aae5248718e046b1704bcac4b9/lxml-6.1.1-cp312-cp312-macosx_10_13_universal2.whl
-      - pypi: https://files.pythonhosted.org/packages/7b/90/e51761ed14129102b77103c9daf399bc0ecbb51bae7eb4b99b7c04c12c2e/kuznets-1.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/f4/56/ff1348a6965a603e854059574b36d9f3466ce201b0cecf6b52d4f957d86e/kuznets-1.0.1-py3-none-any.whl
   notebooks:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -1175,10 +1175,10 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/37/7c/67ada9621b3c93caa75aba1a0b651dae988b22cdea93b33e7e49261364f5/joblib_stubs-1.5.3.1.20260117-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/5f/97/2aab507d3d00ca626e8e57c1eac6a79e4e5fbcc63eb99733ff55d1717f65/pydantic_core-2.46.4-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/78/0f/cc6afea3542a5142c5d8fc8211c5e059a8375105d004a41dfa2c7948dbb0/openai-2.53.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/7b/90/e51761ed14129102b77103c9daf399bc0ecbb51bae7eb4b99b7c04c12c2e/kuznets-1.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/99/91/8acff4f5e50511b911bbccb72b8628a49c68ce14148cd9f6431094859a90/annotated_types-0.8.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/a8/d2/4839422241aa12860ce597b20068727094ba0bc480723c74924ca5bad483/jiter-0.16.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/dc/9b/47798a6c91d8bdb567fe2698fe81e0c6b7cb7ef4d13da4114b41d239f65d/typing_inspection-0.4.2-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/f4/56/ff1348a6965a603e854059574b36d9f3466ce201b0cecf6b52d4f957d86e/kuznets-1.0.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/fd/7b/122376b1fd3c62c1ed9dc80c931ace4844b3c55407b6fb2d199377c9736f/pydantic-2.13.4-py3-none-any.whl
       osx-arm64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
@@ -1593,10 +1593,10 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/37/7c/67ada9621b3c93caa75aba1a0b651dae988b22cdea93b33e7e49261364f5/joblib_stubs-1.5.3.1.20260117-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/6a/6e/c4add832b6fc1e887125b96f880d7b9b70aae5248718e046b1704bcac4b9/lxml-6.1.1-cp312-cp312-macosx_10_13_universal2.whl
       - pypi: https://files.pythonhosted.org/packages/78/0f/cc6afea3542a5142c5d8fc8211c5e059a8375105d004a41dfa2c7948dbb0/openai-2.53.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/7b/90/e51761ed14129102b77103c9daf399bc0ecbb51bae7eb4b99b7c04c12c2e/kuznets-1.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/94/2e/34957c2c1b661c252ba9bcc60ae0bddc27e0f7202c6073326a13c5390eec/jiter-0.16.0-cp312-cp312-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/99/91/8acff4f5e50511b911bbccb72b8628a49c68ce14148cd9f6431094859a90/annotated_types-0.8.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/dc/9b/47798a6c91d8bdb567fe2698fe81e0c6b7cb7ef4d13da4114b41d239f65d/typing_inspection-0.4.2-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/f4/56/ff1348a6965a603e854059574b36d9f3466ce201b0cecf6b52d4f957d86e/kuznets-1.0.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/fd/7b/122376b1fd3c62c1ed9dc80c931ace4844b3c55407b6fb2d199377c9736f/pydantic-2.13.4-py3-none-any.whl
 packages:
 - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-7_kmp_llvm.conda
@@ -12889,7 +12889,7 @@ packages:
   - fastexcel>=0.20,<1
   - geopandas>=1.1,<2
   - h5netcdf>=1.6,<2
-  - kuznets[polars]>=1.0,<2
+  - kuznets[polars]>=1.0.1,<2
   - matplotlib>=3.11,<4
   - numpy>=2.4,<3
   - nutpie>=0.16,<1
@@ -12995,39 +12995,6 @@ packages:
   - numpy>=2.0.2 ; extra == 'voice-helpers'
   - sounddevice>=0.5.1 ; extra == 'voice-helpers'
   requires_python: '>=3.10'
-- pypi: https://files.pythonhosted.org/packages/7b/90/e51761ed14129102b77103c9daf399bc0ecbb51bae7eb4b99b7c04c12c2e/kuznets-1.0-py3-none-any.whl
-  name: kuznets
-  version: '1.0'
-  sha256: a3e7c8f15856e921f5e6da72aee894fda19d70f51424c72de1069f4c6b7ade7c
-  requires_dist:
-  - lxml
-  - narwhals>=2.0
-  - pandas>=3.0
-  - requests
-  - dask[dataframe] ; extra == 'backends'
-  - polars ; extra == 'backends'
-  - pyarrow ; extra == 'backends'
-  - dask[dataframe] ; extra == 'dask'
-  - coverage ; extra == 'dev'
-  - dask[dataframe] ; extra == 'dev'
-  - polars ; extra == 'dev'
-  - pre-commit ; extra == 'dev'
-  - pyarrow ; extra == 'dev'
-  - pytest-cov ; extra == 'dev'
-  - pytest-xdist ; extra == 'dev'
-  - pytest>=8 ; extra == 'dev'
-  - ruff ; extra == 'dev'
-  - wrapt ; extra == 'dev'
-  - ipython ; extra == 'docs'
-  - matplotlib ; extra == 'docs'
-  - pickleshare ; extra == 'docs'
-  - pydata-sphinx-theme ; extra == 'docs'
-  - requests-cache ; extra == 'docs'
-  - sphinx ; extra == 'docs'
-  - polars ; extra == 'polars'
-  - pyarrow ; extra == 'polars'
-  - pyarrow ; extra == 'pyarrow'
-  requires_python: '>=3.12'
 - pypi: https://files.pythonhosted.org/packages/94/2e/34957c2c1b661c252ba9bcc60ae0bddc27e0f7202c6073326a13c5390eec/jiter-0.16.0-cp312-cp312-macosx_11_0_arm64.whl
   name: jiter
   version: 0.16.0
@@ -13050,6 +13017,43 @@ packages:
   requires_dist:
   - typing-extensions>=4.12.0
   requires_python: '>=3.9'
+- pypi: https://files.pythonhosted.org/packages/f4/56/ff1348a6965a603e854059574b36d9f3466ce201b0cecf6b52d4f957d86e/kuznets-1.0.1-py3-none-any.whl
+  name: kuznets
+  version: 1.0.1
+  sha256: 9962ec19ebf54027fa9c37bf855aa2f9242f8e661fe0999730c7bbdf2e73c915
+  requires_dist:
+  - lxml
+  - narwhals>=2.0
+  - pandas>=3.0
+  - requests
+  - dask[dataframe] ; extra == 'backends'
+  - polars ; extra == 'backends'
+  - pyarrow ; extra == 'backends'
+  - dask[dataframe] ; extra == 'dask'
+  - coverage ; extra == 'dev'
+  - dask[dataframe] ; extra == 'dev'
+  - lxml-stubs ; extra == 'dev'
+  - mypy ; extra == 'dev'
+  - pandas-stubs ; extra == 'dev'
+  - polars ; extra == 'dev'
+  - pre-commit ; extra == 'dev'
+  - pyarrow ; extra == 'dev'
+  - pytest-cov ; extra == 'dev'
+  - pytest-xdist ; extra == 'dev'
+  - pytest>=8 ; extra == 'dev'
+  - ruff ; extra == 'dev'
+  - types-requests ; extra == 'dev'
+  - wrapt ; extra == 'dev'
+  - ipython ; extra == 'docs'
+  - matplotlib ; extra == 'docs'
+  - pickleshare ; extra == 'docs'
+  - pydata-sphinx-theme ; extra == 'docs'
+  - requests-cache ; extra == 'docs'
+  - sphinx ; extra == 'docs'
+  - polars ; extra == 'polars'
+  - pyarrow ; extra == 'polars'
+  - pyarrow ; extra == 'pyarrow'
+  requires_python: '>=3.12'
 - pypi: https://files.pythonhosted.org/packages/fd/7b/122376b1fd3c62c1ed9dc80c931ace4844b3c55407b6fb2d199377c9736f/pydantic-2.13.4-py3-none-any.whl
   name: pydantic
   version: 2.13.4

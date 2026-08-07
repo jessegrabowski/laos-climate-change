@@ -24,7 +24,7 @@ dependencies = [
     "openpyxl>=3.1,<4",
     "xlrd>=2.0,<3",
     "fastexcel>=0.20,<1",
-    "kuznets[polars]>=1.0,<2",
+    "kuznets[polars]>=1.0.1,<2",
     "geopandas>=1.1,<2",
     "pymc>=6.2,<7",
     "pytensor>=3.2,<4",
@@ -177,7 +177,7 @@ strict_equality = true
 
 # None of these four ships stubs, and none exists on the index.
 [[tool.mypy.overrides]]
-module = ["kuznets.*", "pymc.*", "pytensor.*", "sklearn.*", "statsmodels.*"]
+module = ["pymc.*", "pytensor.*", "sklearn.*", "statsmodels.*"]
 ignore_missing_imports = true
 
 # Test functions carry no annotations, so their bodies need checking on their own terms.
