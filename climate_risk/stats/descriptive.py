@@ -1,11 +1,4 @@
-import numpy as np
 import pandas as pd
-
-
-def nan_or_sum(x: np.ndarray | pd.Series) -> float:
-    if np.isnan(x).all():
-        return np.nan
-    return float(np.nansum(x))
 
 
 def descriptive_stats_function(df: pd.DataFrame, varlist: list[str]) -> pd.DataFrame:

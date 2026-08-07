@@ -176,7 +176,7 @@ def test_a_country_with_no_climatological_damage_totals_to_missing(replication):
 
 
 def test_a_country_year_with_no_disasters_stays_missing(replication):
-    """nan_or_sum keeps no-data distinct from no-disasters, which a zero would erase."""
+    """A country-year with no record stays missing; summing it as a zero would erase the distinction."""
     quiet = replication.filter(pl.col("year") == date(QUIET_YEAR, 1, 1))
 
     assert len(quiet) > 0

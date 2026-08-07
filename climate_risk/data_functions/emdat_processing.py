@@ -41,8 +41,8 @@ DAMAGE_VARS = [
     "Total_Damage_Adjusted",
 ]
 
-# A country-year with no events reads as missing rather than zero, which is what `nan_or_sum`
-# downstream relies on. Floats keep that true whether the frame is read as polars or as pandas.
+# A country-year with no events reads as missing rather than zero, which is what the replication
+# panel relies on. Floats keep that true whether the frame is read as polars or as pandas.
 COUNT_DTYPE = pl.Float64
 
 

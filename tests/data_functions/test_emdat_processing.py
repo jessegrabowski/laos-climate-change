@@ -68,7 +68,7 @@ def test_window_start_after_the_newest_event_is_rejected(write_emdat_cache):
 
 
 def test_a_year_without_events_is_nan_not_zero(write_emdat_cache):
-    """replication_data's nan_or_sum relies on this to distinguish no-data from no-disasters."""
+    """The replication panel relies on this to distinguish no-data from no-disasters."""
     cache_dir = write_emdat_cache(
         [emdat_event({"Start Year": 1990}), emdat_event({"DisNo.": "later", "Start Year": 1995})]
     )
