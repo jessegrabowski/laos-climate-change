@@ -157,6 +157,7 @@ filterwarnings = [
 files = [
     "climate_risk/data",
     "climate_risk/data_functions/combine_data.py",
+    "climate_risk/replication_data.py",
     "climate_risk/data_functions/emdat_processing.py",
     "climate_risk/geo",
     "climate_risk/stats",

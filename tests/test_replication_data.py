@@ -87,12 +87,16 @@ def replication(wide_cache):
     return create_replication_data(wide_cache)
 
 
-def row(frame, iso, year):
-    return frame.set_index(["ISO", "year"]).loc[(iso, pd.Timestamp(f"{year}-01-01"))]
+def row(frame: pl.DataFrame, iso: str, year: int) -> dict:
+    """The one row for a country and year, as a plain mapping."""
+    match = frame.filter((pl.col("ISO") == iso) & (pl.col("year") == date(year, 1, 1)))
+
+    assert len(match) == 1, f"expected one row for {iso} {year}, got {len(match)}"
+    return match.to_dicts()[0]
 
 
 def test_the_frame_is_one_row_per_country_and_year(replication):
-    assert not replication.duplicated(subset=["ISO", "year"]).any()
+    assert not replication.select("ISO", "year").is_duplicated().any()
 
 
 def test_only_countries_present_in_both_disaster_and_indicator_data_survive(replication):
@@ -143,11 +147,11 @@ def test_the_gdp_and_density_logs_are_natural(replication):
 
 def test_both_squared_terms_square_their_own_log(replication):
     """One is written as a product and the other as a power; both must hold for every row."""
-    known = replication.dropna(subset=["ln_gdp_pc", "ln_population_density"])
+    known = replication.drop_nulls(["ln_gdp_pc", "ln_population_density"])
 
     assert len(known) > 0
-    assert (known["square_ln_gdp_pc"] == known["ln_gdp_pc"] ** 2).all()
-    assert (known["ln_population_density_squared"] == known["ln_population_density"] ** 2).all()
+    assert (known["square_ln_gdp_pc"] - known["ln_gdp_pc"] ** 2).abs().max() < 1e-12
+    assert (known["ln_population_density_squared"] - known["ln_population_density"] ** 2).abs().max() < 1e-12
 
 
 def test_the_time_trend_counts_years_over_a_century(replication):
@@ -156,28 +160,27 @@ def test_the_time_trend_counts_years_over_a_century(replication):
 
 
 def test_total_damage_adds_the_two_classes(replication):
-    both = replication.dropna(subset=["Total_Damage_Adjusted_hydro", "Total_Damage_Adjusted_clim"])
+    both = replication.drop_nulls(["Total_Damage_Adjusted_hydro", "Total_Damage_Adjusted_clim"])
 
     assert len(both) > 0
-    assert (
-        both["Total_Damage_Adjusted_all"] == both["Total_Damage_Adjusted_hydro"] + both["Total_Damage_Adjusted_clim"]
-    ).all()
+    expected = both["Total_Damage_Adjusted_hydro"] + both["Total_Damage_Adjusted_clim"]
+    assert (both["Total_Damage_Adjusted_all"] - expected).abs().max() < 1e-9
 
 
 def test_a_country_with_no_climatological_damage_totals_to_missing(replication):
     """pandas propagates the null through the sum; polars would sum it as zero and invent damage."""
     entry = row(replication, "BBB", SAMPLE_YEAR)
 
-    assert np.isnan(entry["Total_Damage_Adjusted_clim"])
-    assert np.isnan(entry["Total_Damage_Adjusted_all"])
+    assert entry["Total_Damage_Adjusted_clim"] is None
+    assert entry["Total_Damage_Adjusted_all"] is None
 
 
 def test_a_country_year_with_no_disasters_stays_missing(replication):
     """nan_or_sum keeps no-data distinct from no-disasters, which a zero would erase."""
-    quiet = replication[replication["year"] == pd.Timestamp(f"{QUIET_YEAR}-01-01")]
+    quiet = replication.filter(pl.col("year") == date(QUIET_YEAR, 1, 1))
 
     assert len(quiet) > 0
-    assert quiet["hydrological_disasters"].isna().all()
+    assert quiet["hydrological_disasters"].is_null().all()
 
 
 def test_damages_are_converted_to_millions(replication):
@@ -197,13 +200,13 @@ def test_the_damage_logs_are_offset_so_a_zero_survives(replication):
 def test_precipitation_deviation_is_measured_against_the_country_climatology(replication):
     """Each country is centred on its own mean, so the deviations over the span sum to zero."""
     for iso in ("AAA", "BBB"):
-        deviations = replication.loc[replication["ISO"] == iso, "precip_deviation"].dropna()
+        deviations = replication.filter(pl.col("ISO") == iso)["precip_deviation"].drop_nulls()
         assert deviations.sum() == pytest.approx(0.0, abs=1e-9)
 
 
 def test_the_ocean_temperature_deviation_is_residual_around_its_trend(replication):
     """It is the STL residual, so it is centred near zero and not the level of Temp itself."""
-    deviations = replication["dev_from_trend_ocean_temp"].dropna()
+    deviations = replication["dev_from_trend_ocean_temp"].drop_nulls()
 
     assert deviations.mean() == pytest.approx(0.0, abs=0.5)
     assert deviations.abs().max() < 5.0
