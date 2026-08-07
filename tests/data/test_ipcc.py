@@ -62,7 +62,7 @@ def test_the_observed_column_does_not_survive(scenarios, co2_observations):
 
 
 def test_the_index_is_named_so_the_cache_can_round_trip(scenarios, co2_observations):
-    """`pandas_csv(index_col="year")` cannot restore an index the writer left unnamed."""
+    """The cache round-trip carries the index by name, so an unnamed one comes back as a column."""
     levels = transform_ipcc(scenarios, co2_observations)
 
     assert levels.index.name == "year"

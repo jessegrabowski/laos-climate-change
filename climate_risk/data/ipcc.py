@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from climate_risk.data.cache import cached, pandas_csv
+from climate_risk.data.cache import cached, pandas_parquet
 from climate_risk.data_functions.combine_data import load_all_data
 
 _log = logging.getLogger(__name__)
@@ -73,4 +73,4 @@ def process_ipcc_scenarios(cache_dir: Path, *, force_reload: bool = False) -> pd
 
         return transform_ipcc(scenarios, load_all_data(cache_dir)["df_time_series"][["co2"]])
 
-    return cached(cache_dir, "ipcc_scenarios", build, pandas_csv(index_col="year"), force=force_reload)
+    return cached(cache_dir, "ipcc_scenarios", build, pandas_parquet(), force=force_reload)

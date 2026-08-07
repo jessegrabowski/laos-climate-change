@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from climate_risk.data.cache import cached, pandas_csv
+from climate_risk.data.cache import cached, pandas_parquet
 from climate_risk.data.fetch import fetch
 from climate_risk.data.source import DataSource
 
@@ -48,4 +48,4 @@ def load_co2_data(cache_dir: Path, *, force_reload: bool = False) -> pd.DataFram
 
         return transform_co2(pd.read_csv(raw, skiprows=CO2_HEADER_ROW))
 
-    return cached(cache_dir, "co2", build, pandas_csv(index_col="Date", parse_dates=True), force=force_reload)
+    return cached(cache_dir, "co2", build, pandas_parquet(), force=force_reload)

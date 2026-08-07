@@ -6,7 +6,7 @@ import pandas as pd
 
 from kuznets import wb
 
-from climate_risk.data.cache import cached, pandas_csv
+from climate_risk.data.cache import cached, pandas_parquet
 
 _log = logging.getLogger(__name__)
 
@@ -99,6 +99,6 @@ def load_wb_data(cache_dir: Path, *, force_reload: bool = False) -> pd.DataFrame
         cache_dir,
         "world_bank",
         build,
-        pandas_csv(index_col=["country_code", "year"]),
+        pandas_parquet(),
         force=force_reload,
     )

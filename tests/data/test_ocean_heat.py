@@ -100,4 +100,4 @@ def test_the_raw_download_is_named_for_the_file_upstream_serves(tmp_path, publis
     load_ocean_heat_data(tmp_path)
 
     assert OCEAN_HEAT.path(tmp_path).name == "ohc_levitus_climdash_seasonal.csv"
-    assert (tmp_path / "ocean_heat.csv").exists()
+    assert (tmp_path / "ocean_heat.parquet").exists()

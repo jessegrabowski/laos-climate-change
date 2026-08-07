@@ -9,8 +9,8 @@ from climate_risk.data.gpcc import load_gpcc_data, transform_gpcc
 from tests.conftest import GPCC_DECADES, gpcc_archive_name, toy_world
 
 # Stated literally, so a wrong cache key fails rather than agreeing with itself.
-UNREPAIRED_CACHE = "gpcc__repaired_iso=False.csv"
-REPAIRED_CACHE = "gpcc__repaired_iso=True.csv"
+UNREPAIRED_CACHE = "gpcc__repaired_iso=False.parquet"
+REPAIRED_CACHE = "gpcc__repaired_iso=True.parquet"
 
 
 def gridded(rows) -> pd.DataFrame:
@@ -23,7 +23,10 @@ def extracted_name(decade: str) -> str:
 
 @pytest.fixture
 def processed_only(tmp_path):
-    (tmp_path / REPAIRED_CACHE).write_text("country_code,time,precip\nLAO,1981-01-01,5.0\n")
+    pd.DataFrame(
+        {"precip": [5.0]},
+        index=pd.MultiIndex.from_arrays([["LAO"], pd.to_datetime(["1981-01-01"])], names=["country_code", "time"]),
+    ).to_parquet(tmp_path / REPAIRED_CACHE)
 
     return tmp_path
 

@@ -205,21 +205,37 @@ def write_full_cache(tmp_path, write_emdat_cache):
             )
         )
         write_emdat_cache(events)
-        (tmp_path / "world_bank.csv").write_text(
-            "country_code,year,gdp_per_cap,population_density,Population\n"
-            "AAA,1990,1000.0,10.0,1000000\nAAA,1991,1100.0,11.0,1010000\n"
-            "BBB,1990,2000.0,20.0,2000000\nBBB,1991,2200.0,22.0,2020000\n"
-            "DDD,1990,3000.0,30.0,3000000\nDDD,1991,3300.0,33.0,3030000\n"
-            "EEE,1990,4000.0,40.0,4000000\nEEE,1991,4400.0,44.0,4040000\n"
-        )
+        pd.DataFrame(
+            [
+                ("AAA", 1990, 1000.0, 10.0, 1000000),
+                ("AAA", 1991, 1100.0, 11.0, 1010000),
+                ("BBB", 1990, 2000.0, 20.0, 2000000),
+                ("BBB", 1991, 2200.0, 22.0, 2020000),
+                ("DDD", 1990, 3000.0, 30.0, 3000000),
+                ("DDD", 1991, 3300.0, 33.0, 3030000),
+                ("EEE", 1990, 4000.0, 40.0, 4000000),
+                ("EEE", 1991, 4400.0, 44.0, 4040000),
+            ],
+            columns=["country_code", "year", "gdp_per_cap", "population_density", "Population"],
+        ).set_index(["country_code", "year"]).to_parquet(tmp_path / "world_bank.parquet")
         # The cache key is stated literally, so a wrong one fails rather than agreeing with itself.
-        (tmp_path / "co2.csv").write_text("Date,co2\n1990-01-01,354.0\n1991-01-01,355.0\n")
-        (tmp_path / "ocean_heat.csv").write_text("Date,Temp\n1990-01-01,1.0\n1991-01-01,2.0\n")
-        (tmp_path / "gpcc__repaired_iso=True.csv").write_text(
-            "country_code,time,precip\nAAA,1990-01-01,100.0\nAAA,1991-01-01,110.0\n"
-            "BBB,1990-01-01,200.0\nBBB,1991-01-01,220.0\n"
-            "FFF,1990-01-01,300.0\nFFF,1991-01-01,330.0\n"
-        )
+        pd.DataFrame(
+            {"co2": [354.0, 355.0]}, index=pd.DatetimeIndex(["1990-01-01", "1991-01-01"], name="Date")
+        ).to_parquet(tmp_path / "co2.parquet")
+        pd.DataFrame(
+            {"Temp": [1.0, 2.0]}, index=pd.DatetimeIndex(["1990-01-01", "1991-01-01"], name="Date")
+        ).to_parquet(tmp_path / "ocean_heat.parquet")
+        pd.DataFrame(
+            [
+                ("AAA", pd.Timestamp("1990-01-01"), 100.0),
+                ("AAA", pd.Timestamp("1991-01-01"), 110.0),
+                ("BBB", pd.Timestamp("1990-01-01"), 200.0),
+                ("BBB", pd.Timestamp("1991-01-01"), 220.0),
+                ("FFF", pd.Timestamp("1990-01-01"), 300.0),
+                ("FFF", pd.Timestamp("1991-01-01"), 330.0),
+            ],
+            columns=["country_code", "time", "precip"],
+        ).set_index(["country_code", "time"]).to_parquet(tmp_path / "gpcc__repaired_iso=True.parquet")
         return tmp_path
 
     return write

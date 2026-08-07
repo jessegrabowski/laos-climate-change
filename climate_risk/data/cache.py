@@ -4,7 +4,6 @@ import os
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 import geopandas as gpd
 import pandas as pd
@@ -43,12 +42,12 @@ class CacheFormat[T]:
     atomic: bool
 
 
-def pandas_csv(**read_kwargs: Any) -> CacheFormat[pd.DataFrame]:
-    """A CSV round-trip, where ``read_kwargs`` restore whatever the index was when it was written."""
+def pandas_parquet() -> CacheFormat[pd.DataFrame]:
+    """A parquet round-trip. The file carries dtypes and the index, so nothing is restored by hand."""
     return CacheFormat(
-        suffix=".csv",
-        read=lambda path: pd.read_csv(path, **read_kwargs),
-        write=lambda frame, path: frame.to_csv(path),
+        suffix=".parquet",
+        read=pd.read_parquet,
+        write=lambda frame, path: frame.to_parquet(path),
         atomic=True,
     )
 

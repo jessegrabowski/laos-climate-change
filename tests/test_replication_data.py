@@ -51,29 +51,32 @@ def wide_cache(tmp_path, write_emdat_cache):
     ]
     write_emdat_cache(events)
 
-    (tmp_path / "world_bank.csv").write_text(
-        "country_code,year,gdp_per_cap,population_density,Population\n"
-        + "".join(
-            f"{iso},{year},{1000 + 100 * n + 10 * i},{10 + 10 * n + i},{1_000_000 + 100_000 * n + 1000 * i}\n"
-            for n, iso in enumerate(WORLD_BANK_COUNTRIES)
-            for i, year in enumerate(YEARS)
-        )
-    )
-    (tmp_path / "co2.csv").write_text(
-        "Date,co2\n" + "".join(f"{year}-01-01,{350 + i}\n" for i, year in enumerate(YEARS))
-    )
+    world_bank = [
+        (iso, year, 1000 + 100 * n + 10 * i, 10 + 10 * n + i, 1_000_000 + 100_000 * n + 1000 * i)
+        for n, iso in enumerate(WORLD_BANK_COUNTRIES)
+        for i, year in enumerate(YEARS)
+    ]
+    pd.DataFrame(
+        world_bank, columns=["country_code", "year", "gdp_per_cap", "population_density", "Population"]
+    ).set_index(["country_code", "year"]).to_parquet(tmp_path / "world_bank.parquet")
+    pd.DataFrame(
+        {"co2": [float(350 + i) for i in range(len(YEARS))]},
+        index=pd.DatetimeIndex([f"{year}-01-01" for year in YEARS], name="Date"),
+    ).to_parquet(tmp_path / "co2.parquet")
     # A wave rather than a ramp, so STL has a trend to separate a deviation from.
-    (tmp_path / "ocean_heat.csv").write_text(
-        "Date,Temp\n" + "".join(f"{year}-01-01,{i + np.sin(i):.4f}\n" for i, year in enumerate(YEARS))
-    )
-    (tmp_path / "gpcc__repaired_iso=True.csv").write_text(
-        "country_code,time,precip\n"
-        + "".join(
-            f"{iso},{year}-01-01,{100 * (n + 1) + 5 * i}\n"
-            for n, iso in enumerate(PRECIPITATION_COUNTRIES)
-            for i, year in enumerate(YEARS)
-        )
-    )
+    pd.DataFrame(
+        {"Temp": [i + np.sin(i) for i in range(len(YEARS))]},
+        index=pd.DatetimeIndex([f"{year}-01-01" for year in YEARS], name="Date"),
+    ).to_parquet(tmp_path / "ocean_heat.parquet")
+    precipitation = [
+        (iso, pd.Timestamp(f"{year}-01-01"), 100.0 * (n + 1) + 5 * i)
+        for n, iso in enumerate(PRECIPITATION_COUNTRIES)
+        for i, year in enumerate(YEARS)
+    ]
+    pd.DataFrame(precipitation, columns=["country_code", "time", "precip"]).set_index(
+        ["country_code", "time"]
+    ).to_parquet(tmp_path / "gpcc__repaired_iso=True.parquet")
+
     return tmp_path
 
 

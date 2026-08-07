@@ -93,4 +93,4 @@ def test_the_raw_download_is_named_for_the_file_upstream_serves(tmp_path, publis
     load_co2_data(tmp_path)
 
     assert CO2.path(tmp_path).name == "co2_annmean_mlo.csv"
-    assert (tmp_path / "co2.csv").exists()
+    assert (tmp_path / "co2.parquet").exists()

@@ -6,7 +6,7 @@ import pytest
 
 from shapely.geometry import Point
 
-from climate_risk.data.cache import cache_key, cached, geo_shapefile, pandas_csv
+from climate_risk.data.cache import cache_key, cached, geo_shapefile, pandas_parquet
 
 
 @pytest.fixture
@@ -33,33 +33,33 @@ def counting_builder(frame):
 
 def test_the_builder_runs_once_across_repeated_calls(tmp_path, counting_builder):
     """The bug this replaces recomputed silently every call, for forty minutes at a time."""
-    cached(tmp_path, "co2", counting_builder, pandas_csv(index_col="Date"))
-    result = cached(tmp_path, "co2", counting_builder, pandas_csv(index_col="Date"))
+    cached(tmp_path, "co2", counting_builder, pandas_parquet())
+    result = cached(tmp_path, "co2", counting_builder, pandas_parquet())
 
     assert counting_builder.calls == 1
     assert result.index.tolist() == ["1990-01-01", "1991-01-01"]
 
 
 def test_force_rebuilds(tmp_path, counting_builder):
-    cached(tmp_path, "co2", counting_builder, pandas_csv(index_col="Date"))
-    cached(tmp_path, "co2", counting_builder, pandas_csv(index_col="Date"), force=True)
+    cached(tmp_path, "co2", counting_builder, pandas_parquet())
+    cached(tmp_path, "co2", counting_builder, pandas_parquet(), force=True)
 
     assert counting_builder.calls == 2
 
 
 def test_different_parameters_do_not_share_an_entry(tmp_path, frame):
     """Two hardcoded filenames for one parameterised cache is what this replaces."""
-    cached(tmp_path, "rivers", lambda: frame, pandas_csv(index_col="Date"), params={"ord_flow_lt": 5})
-    cached(tmp_path, "rivers", lambda: frame.head(1), pandas_csv(index_col="Date"), params={"ord_flow_lt": 6})
+    cached(tmp_path, "rivers", lambda: frame, pandas_parquet(), params={"ord_flow_lt": 5})
+    cached(tmp_path, "rivers", lambda: frame.head(1), pandas_parquet(), params={"ord_flow_lt": 6})
 
-    assert len(cached(tmp_path, "rivers", lambda: frame, pandas_csv(index_col="Date"), params={"ord_flow_lt": 5})) == 2
-    assert len(cached(tmp_path, "rivers", lambda: frame, pandas_csv(index_col="Date"), params={"ord_flow_lt": 6})) == 1
+    assert len(cached(tmp_path, "rivers", lambda: frame, pandas_parquet(), params={"ord_flow_lt": 5})) == 2
+    assert len(cached(tmp_path, "rivers", lambda: frame, pandas_parquet(), params={"ord_flow_lt": 6})) == 1
 
 
 def test_the_written_and_read_frames_agree(tmp_path, frame):
     """A reader that does not restore the index is the cold/warm divergence this pairing prevents."""
-    written = cached(tmp_path, "co2", lambda: frame, pandas_csv(index_col="Date"))
-    reloaded = cached(tmp_path, "co2", lambda: frame, pandas_csv(index_col="Date"))
+    written = cached(tmp_path, "co2", lambda: frame, pandas_parquet())
+    reloaded = cached(tmp_path, "co2", lambda: frame, pandas_parquet())
 
     pd.testing.assert_frame_equal(written, reloaded)
 
@@ -116,16 +116,16 @@ def test_a_write_killed_partway_does_not_poison_the_cache(tmp_path, frame):
     """A truncated file left at the destination would read back as a hit forever after."""
 
     def write_half_then_die(artefact, path):
-        path.write_text("Date,co2\n1990-01-01,354.4")
+        path.write_bytes(b"PAR1 truncated")
         raise OSError("no space left on device")
 
-    dying = replace(pandas_csv(index_col="Date"), write=write_half_then_die)
+    dying = replace(pandas_parquet(), write=write_half_then_die)
 
     with pytest.raises(OSError, match="no space left"):
         cached(tmp_path, "co2", lambda: frame, dying)
 
-    assert not (tmp_path / "co2.csv").exists()
-    assert len(cached(tmp_path, "co2", lambda: frame, pandas_csv(index_col="Date"))) == 2
+    assert not (tmp_path / "co2.parquet").exists()
+    assert len(cached(tmp_path, "co2", lambda: frame, pandas_parquet())) == 2
 
 
 def test_an_empty_name_is_rejected():

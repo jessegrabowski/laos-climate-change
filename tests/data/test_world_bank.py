@@ -14,7 +14,7 @@ from climate_risk.data.world_bank import (
 )
 
 # The cache key is stated literally, so a wrong one fails rather than agreeing with itself.
-CACHE_FILE = "world_bank.csv"
+CACHE_FILE = "world_bank.parquet"
 
 
 def downloaded(rows) -> pd.DataFrame:
@@ -105,10 +105,11 @@ def test_the_result_is_sorted_by_country_and_year():
 def test_a_warm_cache_does_not_download(tmp_path, serves):
     """The download is hundreds of requests; a present cache must not trigger it."""
     calls = serves(downloaded([("Aruba", "1990", 10.0, 1000.0, 100000, 5.0, 180.0)]))
-    (tmp_path / CACHE_FILE).write_text(
-        "country_code,year,population_density,gdp_per_cap,Population,real_gdp,surface_area_km2\n"
-        "ABW,1990,10.0,1000.0,100000,5.0,180.0\n"
-    )
+    pd.DataFrame(
+        [(10.0, 1000.0, 100000, 5.0, 180.0)],
+        columns=["population_density", "gdp_per_cap", "Population", "real_gdp", "surface_area_km2"],
+        index=pd.MultiIndex.from_tuples([("ABW", 1990)], names=["country_code", "year"]),
+    ).to_parquet(tmp_path / CACHE_FILE)
 
     frame = load_wb_data(tmp_path)
 
