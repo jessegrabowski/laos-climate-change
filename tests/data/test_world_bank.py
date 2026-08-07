@@ -1,8 +1,11 @@
+import logging
+
 import pandas as pd
 import pytest
 
 from climate_risk.data import world_bank
 from climate_risk.data.world_bank import (
+    COUNTRIES_FILE,
     COUNTRY_CODE_BY_NAME,
     REQUESTED_COUNTRY_CODES,
     WB_INDICATORS,
@@ -184,3 +187,25 @@ def test_the_aggregates_are_not_requested():
     """The Bank returns regional and income aggregates; asking for them would double-count."""
     assert "ARB" not in REQUESTED_COUNTRY_CODES
     assert COUNTRY_CODE_BY_NAME["Arab World"] == "ARB"
+
+
+def test_no_two_countries_share_a_name():
+    """The mapping is built with dict(zip(...)), so a repeated name would quietly overwrite a code."""
+    table = pd.read_csv(COUNTRIES_FILE)
+
+    assert len(COUNTRY_CODE_BY_NAME) == len(table)
+
+
+def test_dropping_an_unmatched_country_says_which_one(caplog):
+    """Silent dropping is the failure mode; the warning is the only trace it leaves."""
+    raw = downloaded(
+        [
+            ("Aruba", "1990", 10.0, 1000.0, 100000, 5.0, 180.0),
+            ("Not A Country", "1990", 1.0, 2.0, 3, 4.0, 5.0),
+        ]
+    )
+
+    with caplog.at_level(logging.WARNING, logger="climate_risk.data.world_bank"):
+        transform_world_bank(raw)
+
+    assert "Not A Country" in caplog.text
