@@ -27,8 +27,12 @@ GPCC = {
             f"/full_data_monthly_v2022_{decade}_10.nc.gz"
         ),
         filename=f"full_data_monthly_v2022_{decade}_10.nc.gz",
-        licence="free for research and education (DWD GPCC)",
-        citation="GPCC Full Data Monthly Product Version 2022, Deutscher Wetterdienst",
+        licence="CC BY 4.0",
+        citation=(
+            "Schneider, U., H\u00e4nsel, S., Finger, P., Rustemeier, E., Ziese, M. (2022): GPCC Full Data "
+            "Monthly Product Version 2022 at 1.0 degrees. "
+            "https://doi.org/10.5676/DWD_GPCC/FD_M_V2022_100"
+        ),
         retrieved="2026-08-05",
         sha256=None,
     )

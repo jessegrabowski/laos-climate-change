@@ -12,8 +12,11 @@ OCEAN_HEAT = DataSource(
         "/basin/3month/ohc_levitus_climdash_seasonal.csv"
     ),
     filename="ohc_levitus_climdash_seasonal.csv",
-    licence="public domain (NOAA NCEI)",
-    citation="NOAA National Centers for Environmental Information, global ocean heat content",
+    licence="public domain (U.S. Government work, 17 U.S.C. 105)",
+    citation=(
+        "NOAA National Centers for Environmental Information, global ocean heat content. "
+        "https://doi.org/10.7289/V53F4MVP"
+    ),
     retrieved="2026-08-05",
     sha256=None,
 )
