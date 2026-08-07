@@ -83,22 +83,9 @@ def _annual_precipitation(gpcc: pl.DataFrame) -> tuple[pl.DataFrame, pl.DataFram
     )
 
 
-def _annual_co2(co2: pl.DataFrame) -> pl.DataFrame:
-    """Total the observed CO2 by year."""
-    return (
-        co2.group_by(pl.date(pl.col("Date").dt.year(), 1, 1).alias(SERIES_KEY))
-        .agg(pl.col("co2").sum())
-        .sort(SERIES_KEY)
-    )
-
-
-def _annual_ocean_heat(ocean_heat: pl.DataFrame) -> pl.DataFrame:
-    """Average the ocean-heat anomalies by year."""
-    return (
-        ocean_heat.group_by(pl.date(pl.col("Date").dt.year(), 1, 1).alias(SERIES_KEY))
-        .agg(pl.col("Temp").mean())
-        .sort(SERIES_KEY)
-    )
+def _keyed_by_year(series: pl.DataFrame) -> pl.DataFrame:
+    """Re-key an annual series onto the panel's year column. Both loaders date theirs to a year start."""
+    return series.rename({"Date": SERIES_KEY}).sort(SERIES_KEY)
 
 
 def _countries_in_common(*frames: pl.DataFrame) -> set[str]:
@@ -124,8 +111,8 @@ def load_all_data(cache_dir: Path) -> dict[str, pl.DataFrame]:
 
     merged_dict["wb_data"] = _shape_world_bank(load_wb_data(cache_dir))
     merged_dict["gpcc"], merged_dict["gpcc_agg"] = _annual_precipitation(_as_polars(load_gpcc_data(cache_dir)))
-    merged_dict["co2"] = _annual_co2(load_co2_data(cache_dir))
-    merged_dict["ocean_temperature"] = _annual_ocean_heat(load_ocean_heat_data(cache_dir))
+    merged_dict["co2"] = _keyed_by_year(load_co2_data(cache_dir))
+    merged_dict["ocean_temperature"] = _keyed_by_year(load_ocean_heat_data(cache_dir))
 
     # A country needs both a disaster record and development indicators to earn a row in the panel.
     common = _countries_in_common(merged_dict["emdat_damage"], merged_dict["wb_data"])
