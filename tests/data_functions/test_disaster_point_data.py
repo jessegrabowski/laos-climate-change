@@ -1,3 +1,5 @@
+from typing import Any
+
 import numpy as np
 import pytest
 
@@ -64,7 +66,7 @@ def test_zero_distances_do_not_become_infinite_logs(write_point_grid_cache, rive
 def test_reloading_the_cached_grid_restores_the_full_column_names(write_point_grid_cache):
     """Shapefile fields truncate to ten characters, so the warm path renames them back."""
     cache_dir = write_point_grid_cache()
-    kwargs = {"region": "custom", "iso_list": ["FRA"], "file_reg_name": "toy", "grid_size": 3}
+    kwargs: dict[str, Any] = {"region": "custom", "iso_list": ["FRA"], "file_reg_name": "toy", "grid_size": 3}
 
     written = load_grid_point_data(cache_dir, **kwargs)
     reloaded = load_grid_point_data(cache_dir, **kwargs)

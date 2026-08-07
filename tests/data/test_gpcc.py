@@ -106,7 +106,7 @@ def test_every_decade_reaches_the_result():
 
     monthly = transform_gpcc(decades, toy_world())
 
-    assert monthly.index.get_level_values("time").year.tolist() == [1981, 1991]
+    assert pd.DatetimeIndex(monthly.index.get_level_values("time")).year.tolist() == [1981, 1991]
 
 
 def test_an_interrupted_extraction_leaves_nothing_to_trust(write_gpcc_archives, write_shapefile_cache, monkeypatch):

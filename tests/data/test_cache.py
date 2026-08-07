@@ -14,18 +14,21 @@ def frame():
     return pd.DataFrame({"Date": ["1990-01-01", "1991-01-01"], "co2": [354.4, 355.6]}).set_index("Date")
 
 
+class CountingBuilder:
+    """A builder that records how often it ran, so a cache miss is observable."""
+
+    def __init__(self, frame):
+        self.frame = frame
+        self.calls = 0
+
+    def __call__(self):
+        self.calls += 1
+        return self.frame
+
+
 @pytest.fixture
 def counting_builder(frame):
-    """A builder that records how often it ran, so a cache miss is observable."""
-    calls = []
-
-    def build():
-        calls.append(1)
-        return frame
-
-    build.calls = calls
-
-    return build
+    return CountingBuilder(frame)
 
 
 def test_the_builder_runs_once_across_repeated_calls(tmp_path, counting_builder):
@@ -33,7 +36,7 @@ def test_the_builder_runs_once_across_repeated_calls(tmp_path, counting_builder)
     cached(tmp_path, "co2", counting_builder, pandas_csv(index_col="Date"))
     result = cached(tmp_path, "co2", counting_builder, pandas_csv(index_col="Date"))
 
-    assert len(counting_builder.calls) == 1
+    assert counting_builder.calls == 1
     assert result.index.tolist() == ["1990-01-01", "1991-01-01"]
 
 
@@ -41,7 +44,7 @@ def test_force_rebuilds(tmp_path, counting_builder):
     cached(tmp_path, "co2", counting_builder, pandas_csv(index_col="Date"))
     cached(tmp_path, "co2", counting_builder, pandas_csv(index_col="Date"), force=True)
 
-    assert len(counting_builder.calls) == 2
+    assert counting_builder.calls == 2
 
 
 def test_different_parameters_do_not_share_an_entry(tmp_path, frame):

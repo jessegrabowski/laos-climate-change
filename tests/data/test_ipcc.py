@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 import pytest
 
@@ -81,7 +80,7 @@ def test_a_missing_observation_leaves_the_level_missing(scenarios, co2_observati
 
     levels = transform_ipcc(scenarios, without_anchor)
 
-    assert np.isnan(levels.loc[FIRST_PROJECTED_YEAR, "SSP1-19"])
+    assert pd.isna(levels.loc[FIRST_PROJECTED_YEAR, "SSP1-19"])
 
 
 def test_the_vendored_workbook_carries_what_the_loader_reads():

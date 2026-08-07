@@ -64,7 +64,7 @@ def test_years_before_the_panel_are_dropped():
 
     annual = transform_hadcrut(temperatures, toy_world())
 
-    assert annual.index.get_level_values("year").year.tolist() == [1990]
+    assert pd.DatetimeIndex(annual.index.get_level_values("year")).year.tolist() == [1990]
 
 
 def test_the_boundary_year_is_excluded_but_the_next_is_kept():
@@ -75,7 +75,7 @@ def test_the_boundary_year_is_excluded_but_the_next_is_kept():
 
     annual = transform_hadcrut(temperatures, toy_world())
 
-    assert annual.index.get_level_values("year").year.tolist() == [FIRST_PANEL_YEAR + 1]
+    assert pd.DatetimeIndex(annual.index.get_level_values("year")).year.tolist() == [FIRST_PANEL_YEAR + 1]
 
 
 def test_repairing_iso_codes_gets_its_own_cache_entry(tmp_path):
