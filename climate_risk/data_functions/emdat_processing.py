@@ -4,6 +4,8 @@ from pathlib import Path
 
 import polars as pl
 
+from climate_risk.config.schema import EventFilters
+
 EM_DAT_COL_DICT = {
     "Start Year": "Start_Year",
     "Total Deaths": "Deaths",
@@ -173,10 +175,27 @@ def _damage_totals(events: pl.DataFrame, grid: pl.DataFrame, regions: pl.DataFra
     )
 
 
+def _selected_events(events: pl.DataFrame, filters: EventFilters) -> pl.DataFrame:
+    """Keep the events a place's thresholds count, dropping any whose severity is unrecorded."""
+    selected = events.filter(
+        (pl.col("Total_Affected") > filters.min_total_affected)
+        & (pl.col("Start_Year") >= pl.date(filters.start_year, 1, 1))
+    )
+
+    if filters.end_year is not None:
+        selected = selected.filter(pl.col("Start_Year") <= pl.date(filters.end_year, 12, 31))
+
+    if filters.min_deaths is not None:
+        selected = selected.filter(pl.col("Deaths") > filters.min_deaths)
+
+    return selected
+
+
 def load_emdat_data(
     cache_dir: Path,
     *,
     window_start: dt.date = EMDAT_WINDOW_START,
+    filters: EventFilters | None = None,
 ) -> dict[str, pl.DataFrame]:
     cache_dir.mkdir(parents=True, exist_ok=True)
 
@@ -194,9 +213,7 @@ def load_emdat_data(
     df_raw_filtered = df_raw.filter(
         (pl.col("Total_Affected") > 1000) & (pl.col("Deaths") > 100) & (pl.col("Start_Year") > dt.date(1970, 1, 1))
     )
-    df_raw_filtered_adj = df_raw.filter(
-        (pl.col("Total_Affected") > 1000) & (pl.col("Start_Year") > dt.date(1980, 1, 1))
-    )
+    df_raw_filtered_adj = _selected_events(df_raw, EventFilters() if filters is None else filters)
 
     grid = _country_years(df_raw, window_start)
     regions = _regions(df_raw)

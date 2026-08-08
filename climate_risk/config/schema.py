@@ -48,13 +48,14 @@ class EventFilters:
     Parameters
     ----------
     start_year : int
-        First year of the study window, included. Default 1970.
+        First year of the study window, included. Default 1981.
     end_year : int, optional
         Last year, included. Default None, meaning the newest event in the workbook.
     min_total_affected : int
         An event must affect more than this many people to count. Default 1000.
-    min_deaths : int
-        An event must kill more than this many people to count. Default 100.
+    min_deaths : int, optional
+        An event must kill more than this many people to count. Default None, which counts an event
+        on its reach alone.
 
     Raises
     ------
@@ -62,10 +63,10 @@ class EventFilters:
         If the window ends before it starts.
     """
 
-    start_year: int = 1970
+    start_year: int = 1981
     end_year: int | None = None
     min_total_affected: int = 1000
-    min_deaths: int = 100
+    min_deaths: int | None = None
 
     def __post_init__(self) -> None:
         if self.end_year is not None and self.end_year < self.start_year:
