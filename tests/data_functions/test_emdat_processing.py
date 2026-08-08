@@ -1,9 +1,11 @@
 from datetime import date
+from pathlib import Path
 
 import polars as pl
 import pytest
 
 from climate_risk import load_emdat_data
+from climate_risk.config.registry import CONFIG_ROOT, load_place, resolve_isos
 from climate_risk.config.schema import EventFilters
 from climate_risk.data_functions.emdat_processing import DISASTER_TYPES
 from tests.conftest import emdat_event
@@ -252,3 +254,23 @@ def test_every_disaster_type_gets_a_column_in_a_stable_order(write_emdat_cache):
     events = load_emdat_data(cache_dir)["df_prob_filtered_adjusted"]
 
     assert events.columns == ["ISO", "Start_Year", "Region", "Subregion", *DISASTER_TYPES]
+
+
+# The licensed workbook, which cannot be committed or fetched. Absent on CI and on a fresh clone.
+REAL_CACHE_DIR = Path(__file__).parents[2] / "data"
+
+SHIPPED_PLACE_KEYS = sorted(path.stem for path in (CONFIG_ROOT / "places").glob("*.toml"))
+
+
+@pytest.mark.requires_emdat
+@pytest.mark.skipif(not (REAL_CACHE_DIR / "emdat.xlsx").exists(), reason="needs the licensed EM-DAT workbook")
+@pytest.mark.parametrize("key", SHIPPED_PLACE_KEYS)
+def test_every_shipped_country_has_events_clearing_its_own_filters(key):
+    """A country whose filters admit nothing yields an empty panel, and every later test passes on it.
+
+    Synthetic fixtures cannot catch this: they contain whatever events the fixture author wrote.
+    """
+    place = load_place(key)
+    events = load_emdat_data(REAL_CACHE_DIR, filters=place.events)["df_raw_filtered_adj"]
+
+    assert len(events.filter(pl.col("ISO").is_in(resolve_isos(place)))) > 0

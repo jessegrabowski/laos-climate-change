@@ -1,5 +1,7 @@
 import re
 
+from dataclasses import replace
+
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -9,6 +11,7 @@ from geopandas.testing import assert_geodataframe_equal
 from shapely.geometry import Point
 
 from climate_risk import load_synthetic_non_disaster_points
+from climate_risk.config.registry import load_place
 from climate_risk.config.schema import CountryConfig, GeometrySpec
 from climate_risk.data_functions.disaster_point_data import (
     _load_disaster_point_data,
@@ -17,7 +20,11 @@ from climate_risk.data_functions.disaster_point_data import (
     load_non_disaster_grid,
 )
 from climate_risk.geo.crs import GEOGRAPHIC_CRS
-from tests.conftest import SYNTHETIC_SOURCE_EVENTS, toy_world_needing_repair
+from tests.conftest import SYNTHETIC_SOURCE_EVENTS, toy_world_needing_repair, toy_world_with_places
+
+# Every shipped country, with the longitudes `toy_world_with_places` puts it between. Stated
+# here rather than read from the fixture, so a country sliced out of the wrong box fails.
+COUNTRY_BOUNDS = [("lao", 20.0, 21.0), ("zmb", 23.0, 24.0), ("cri", 29.5, 30.5)]
 
 # A legacy cache spells longitude `long`; the value under `lon` is the one to keep.
 STALE_LON = 9.9
@@ -227,3 +234,48 @@ def test_the_multiplier_scales_how_many_points_are_sampled(write_synthetic_sourc
 
     assert len(single) == SYNTHETIC_SOURCE_EVENTS
     assert len(tripled) == SYNTHETIC_SOURCE_EVENTS * 3
+
+
+@pytest.mark.parametrize(("key", "west", "east"), COUNTRY_BOUNDS, ids=[key for key, _, _ in COUNTRY_BOUNDS])
+def test_every_shipped_country_grids_from_its_config_alone(write_point_grid_cache, key, west, east):
+    """The step's whole claim: a country the loaders have never heard of grids from its config alone.
+
+    The bounds check is what makes it more than a smoke test — a place resolving to the wrong ISO
+    still produces a grid, just somewhere else.
+    """
+    cache_dir = write_point_grid_cache(world=toy_world_with_places())
+    place = replace(load_place(key), geometry=GeometrySpec(grid_size=4))
+
+    grid = load_grid_point_data(cache_dir, place)
+
+    assert len(grid) > 0
+    assert grid["lon"].between(west, east).all()
+    assert grid["lat"].between(0.0, 1.0).all()
+
+
+def test_the_coastal_country_grids_nearer_the_sea_than_a_landlocked_one(write_point_grid_cache):
+    """Landlocked and coastal must take genuinely different paths, not both return nulls."""
+    cache_dir = write_point_grid_cache(world=toy_world_with_places())
+    coastal = replace(load_place("cri"), geometry=GeometrySpec(grid_size=4))
+    landlocked = replace(load_place("zmb"), geometry=GeometrySpec(grid_size=4))
+
+    on_the_coast = load_grid_point_data(cache_dir, coastal)
+    inland = load_grid_point_data(cache_dir, landlocked)
+
+    assert on_the_coast["distance_to_coastline"].max() < inland["distance_to_coastline"].min()
+
+
+def test_a_grid_size_set_in_a_place_file_reaches_the_grid(write_point_grid_cache, tmp_path):
+    """Every other test hands the loader a `Place` it built; this one starts from a file on disk.
+
+    Without it the whole config layer could be inert and the suite would not notice.
+    """
+    cache_dir = write_point_grid_cache(world=toy_world_with_places())
+
+    def zambia_gridded_at(size: int) -> gpd.GeoDataFrame:
+        root = tmp_path / str(size)
+        (root / "places").mkdir(parents=True)
+        (root / "places" / "zmb.toml").write_text(f'iso3 = "ZMB"\nname = "Zambia"\n\n[geometry]\ngrid_size = {size}\n')
+        return load_grid_point_data(cache_dir, load_place("zmb", root=root))
+
+    assert len(zambia_gridded_at(9)) > len(zambia_gridded_at(3))
