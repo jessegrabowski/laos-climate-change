@@ -153,16 +153,25 @@ filterwarnings = [
 ]
 
 [tool.mypy]
-# An include list that only grows. A package joins it when it is typed, and never leaves.
+# An include list that only grows. A package joins it when it is typed, and never leaves. A module
+# absent from this list is unchecked, so check the ones that are missing before assuming they fail.
 files = [
+    "climate_risk/__init__.py",
+    "climate_risk/_version.py",
     "climate_risk/config",
     "climate_risk/data",
+    "climate_risk/data_functions/__init__.py",
     "climate_risk/data_functions/combine_data.py",
-    "climate_risk/replication_data.py",
     "climate_risk/data_functions/emdat_processing.py",
+    "climate_risk/data_functions/rivers_damage.py",
+    "climate_risk/data_functions/rivers_data_loader.py",
+    "climate_risk/data_functions/shapefiles_data_loader.py",
+    "climate_risk/exceptions.py",
     "climate_risk/geo",
-    "climate_risk/stats",
     "climate_risk/models",
+    "climate_risk/replication_data.py",
+    "climate_risk/sample.py",
+    "climate_risk/stats",
     "tests",
 ]
 python_version = "3.12"

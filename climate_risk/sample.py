@@ -7,7 +7,7 @@ import pymc as pm
 import xarray as xr
 
 
-def drop_transformed(idata, model=None):
+def drop_transformed(idata: xr.DataTree, model: pm.Model | None = None) -> xr.DataTree:
     model = pm.modelcontext(model)
 
     value_var_names = [x.name for x in model.value_vars if x.name.endswith("__")]
@@ -58,6 +58,9 @@ def sample_or_load(
 
     # Create directory structure if necessary
     os.makedirs(_fp.parent, exist_ok=True)
+
+    # Declared up front: PyMC is untyped, so the sampling branch below infers Any without it.
+    idata: xr.DataTree
 
     if _fp.exists() and not force_resample:
         idata = xr.open_datatree(_fp)
