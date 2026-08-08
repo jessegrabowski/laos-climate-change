@@ -14,6 +14,8 @@ from climate_risk.geo.distance import get_distance_to_rivers
 
 DAMAGE_COLUMNS = ("ISO", "End Year", "Latitude", "Longitude", "River Basin", "Total_Damage", "Total_Affected", "Deaths")
 
+# Coordinates forced onto specific EM-DAT events whose recorded position is wrong. Despite the
+# name these are applied to every flood run, whichever country it covers.
 LAOS_LOCATION_DICTIONARY = {
     "1971-0048-LAO": {"Latitude": 17.9757, "Longitude": 102.6331},
     "2000-0583-LAO": {"Latitude": 19.0, "Longitude": 102.0},
