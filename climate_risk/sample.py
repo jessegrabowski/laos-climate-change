@@ -21,7 +21,7 @@ def drop_transformed(idata: xr.DataTree, model: pm.Model | None = None) -> xr.Da
 def sample_or_load(
     fp: str,
     *,
-    model: pm.Model = None,
+    model: pm.Model | None = None,
     force_resample: bool = False,
     sample_kwargs: dict | None = None,
     compile_kwargs: dict | None = None,
