@@ -26,6 +26,8 @@ from tests.conftest import SYNTHETIC_SOURCE_EVENTS, toy_world_needing_repair, to
 # here rather than read from the fixture, so a country sliced out of the wrong box fails.
 COUNTRY_BOUNDS = [("lao", 20.0, 21.0), ("zmb", 23.0, 24.0), ("cri", 29.5, 30.5)]
 
+EARTH_CIRCUMFERENCE_KM = 40_075
+
 # A legacy cache spells longitude `long`; the value under `lon` is the one to keep.
 STALE_LON = 9.9
 CURRENT_LON = 102.5
@@ -65,6 +67,16 @@ def test_grid_carries_its_distance_features(grid):
     assert (grid["distance_to_river"] > 0).all()
 
 
+@pytest.mark.parametrize("column", ["distance_to_river", "distance_to_coastline"])
+def test_grid_distances_are_in_kilometres(grid, column):
+    """Two other loaders write these same column names in kilometres, and the frames get merged.
+
+    Bounded by the circumference rather than by a value read off the fixture, so the assertion says
+    what it means: no distance on Earth is larger, and the same figure in metres would be.
+    """
+    assert grid[column].max() < EARTH_CIRCUMFERENCE_KM
+
+
 def test_zero_distances_do_not_become_infinite_logs(write_point_grid_cache, rivers_through_the_grid):
     """The grid is written to disk, so a -inf from log(0) persists into every later run."""
     cache_dir = write_point_grid_cache(rivers_through_the_grid)
@@ -75,7 +87,8 @@ def test_zero_distances_do_not_become_infinite_logs(write_point_grid_cache, rive
 
     assert len(on_a_river) > 0
     assert np.isfinite(grid[["log_distance_to_river", "log_distance_to_coastline"]]).all().all()
-    assert on_a_river["log_distance_to_river"].eq(0.0).all()
+    # The floor is one metre, which is 0.001 in the kilometres the column reports.
+    assert on_a_river["log_distance_to_river"].eq(np.log(0.001)).all()
 
     clear_of_a_river = grid[grid["distance_to_river"] > 0]
 

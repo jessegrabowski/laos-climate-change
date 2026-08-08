@@ -166,14 +166,20 @@ def load_grid_point_data(
 
         points = pd.merge(points, distances_coastlines, left_index=True, right_index=True, how="left")
 
-        # Assign is_island column
         points["is_island"] = False
 
-        # Create log of distances
+        # Kilometres, as every other frame carrying these column names reports them.
         points = points.assign(
-            log_distance_to_river=lambda x: np.log(x.distance_to_river.clip(lower=MIN_DISTANCE_METRES)),
-            log_distance_to_coastline=lambda x: np.log(x.distance_to_coastline.clip(lower=MIN_DISTANCE_METRES)),
+            distance_to_river=lambda x: to_km(x.distance_to_river),
+            distance_to_coastline=lambda x: to_km(x.distance_to_coastline),
         )
+
+        floor = to_km(MIN_DISTANCE_METRES)
+        points = points.assign(
+            log_distance_to_river=lambda x: np.log(x.distance_to_river.clip(lower=floor)),
+            log_distance_to_coastline=lambda x: np.log(x.distance_to_coastline.clip(lower=floor)),
+        )
+
         return points
 
     return cached(

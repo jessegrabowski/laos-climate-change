@@ -1,15 +1,19 @@
 import re
 import shutil
 
+import geopandas as gpd
 import pandas as pd
 import pytest
+
+from shapely.geometry import box
 
 from climate_risk import load_shapefile
 from climate_risk.config.registry import load_place
 from climate_risk.config.schema import CountryConfig, RegionConfig
 from climate_risk.data_functions.shapefiles_data_loader import load_place_boundary, repair_iso_codes
 from climate_risk.exceptions import DataValidationError, ISOCodeValidationError
-from tests.conftest import toy_world, toy_world_needing_repair
+from climate_risk.geo.crs import GEOGRAPHIC_CRS
+from tests.conftest import toy_coastline, toy_world, toy_world_needing_repair
 
 
 def test_unknown_shapefile_is_rejected(tmp_path):
@@ -46,6 +50,21 @@ def test_the_repair_does_not_depend_on_how_the_caller_capitalised_it(write_shape
 
     assert world.loc[world["WB_NAME"] == "France", "ISO_A3"].tolist() == ["FRA"]
     assert "-99" not in set(world["ISO_A3"])
+
+
+def test_the_coastline_reads_the_continental_layer_not_whichever_comes_first(write_shapefile_cache):
+    """The real archive ships six layers and the driver enumerates the Antarctic one first.
+
+    A single-layer cache cannot show this: with one file in the directory, any layer index finds it.
+    """
+    cache_dir = write_shapefile_cache("coastline", toy_coastline())
+    antarctic_ice = gpd.GeoDataFrame(geometry=[box(-180, -90, 180, -63)], crs=GEOGRAPHIC_CRS)
+    antarctic_ice.to_file(cache_dir / "shapefiles" / "GSHHS_shp" / "f" / "GSHHS_f_L6.shp")
+
+    coast = load_shapefile("coastline", cache_dir)
+
+    _, southernmost, _, _ = coast.total_bounds
+    assert southernmost > -60.0, "read an Antarctic layer instead of the shoreline"
 
 
 def test_repair_supplies_the_missing_sovereign_codes():
