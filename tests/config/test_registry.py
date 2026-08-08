@@ -57,21 +57,32 @@ def test_event_overrides_arrive_as_coordinate_pairs(config_root):
     assert place.event_location_overrides == {"1971-0048-LAO": (102.6331, 17.9757)}
 
 
-def test_a_boundary_block_becomes_a_fetchable_source(config_root):
+BOUNDARY_BLOCK = (
+    '[boundary]\nmember = "lao_admin2.shp"\n'
+    'url = "https://example.org/lao.zip"\nfilename = "lao.zip"\n'
+    'licence = "CC BY 3.0 IGO"\ncitation = "NGD"\nretrieved = "2026-08-08"\n'
+)
+
+
+def test_a_boundary_block_becomes_a_fetchable_archive(config_root):
     """It reuses `DataSource`, so a place's own boundary goes through the same fetch as everything else."""
-    root = config_root(
-        "places",
-        "lao",
-        'iso3 = "LAO"\nname = "Lao PDR"\n\n[boundary]\n'
-        'url = "https://example.org/lao.zip"\nfilename = "lao.zip"\n'
-        'licence = "CC BY 3.0 IGO"\ncitation = "NGD"\nretrieved = "2026-08-08"\n',
-    )
+    root = config_root("places", "lao", 'iso3 = "LAO"\nname = "Lao PDR"\n\n' + BOUNDARY_BLOCK)
 
     place = load_place("lao", root=root)
 
     assert isinstance(place, CountryConfig)
     assert place.boundary is not None
-    assert place.boundary.filename == "lao.zip"
+    assert place.boundary.source.filename == "lao.zip"
+    assert place.boundary.member == "lao_admin2.shp"
+
+
+def test_a_boundary_that_does_not_name_its_layer_is_an_error(config_root):
+    """The archive holds several layers, so guessing one would read a different admin level."""
+    without_member = BOUNDARY_BLOCK.replace('member = "lao_admin2.shp"\n', "")
+    root = config_root("places", "lao", 'iso3 = "LAO"\nname = "Lao PDR"\n\n' + without_member)
+
+    with pytest.raises(ValueError, match="must set member"):
+        load_place("lao", root=root)
 
 
 def test_the_directory_decides_whether_a_file_is_a_country_or_a_region(config_root):
@@ -88,6 +99,14 @@ def test_a_key_the_schema_does_not_define_is_an_error(config_root):
     root = config_root("places", "lao", 'iso3 = "LAO"\nname = "Lao PDR"\nisland_nation = true\n')
 
     with pytest.raises(ValueError, match="does not match the CountryConfig schema"):
+        load_place("lao", root=root)
+
+
+def test_a_value_the_schema_rejects_names_the_file_that_holds_it(config_root):
+    """The schema only sees the value, and a bare complaint about it does not say where to go fix it."""
+    root = config_root("places", "lao", 'iso3 = "Lao"\nname = "Lao PDR"\n')
+
+    with pytest.raises(ValueError, match=r"lao\.toml does not match the CountryConfig schema"):
         load_place("lao", root=root)
 
 

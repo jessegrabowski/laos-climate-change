@@ -66,7 +66,7 @@ def place_boundaries() -> dict[str, DataSource]:
     places = (read_place(path) for path in sorted(CONFIG_ROOT.glob("*/*.toml")))
 
     return {
-        f"{place.iso3}_BOUNDARY": place.boundary
+        f"{place.iso3}_BOUNDARY": place.boundary.source
         for place in places
         if isinstance(place, CountryConfig) and place.boundary is not None
     }

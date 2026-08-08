@@ -5,7 +5,7 @@ from climate_risk.config.schema import CountryConfig, RegionConfig
 from climate_risk.data.world_bank import COUNTRY_CODE_BY_NAME
 from climate_risk.data_functions.disaster_point_data import REGION_ISO_CODES
 from climate_risk.data_functions.rivers_damage import LAOS_LOCATION_DICTIONARY
-from climate_risk.data_functions.shapefiles_data_loader import LAOS
+from climate_risk.data_functions.shapefiles_data_loader import SHAPEFILE_ARCHIVES
 
 # Walked rather than listed, so a place file that ships without a test still has to parse.
 SHIPPED_PLACES = sorted(CONFIG_ROOT.glob("*/*.toml"))
@@ -39,7 +39,7 @@ def test_laos_carries_the_boundary_the_loader_hardcodes():
     place = load_place("lao")
 
     assert isinstance(place, CountryConfig)
-    assert place.boundary == LAOS
+    assert place.boundary == SHAPEFILE_ARCHIVES["laos"]
 
 
 def test_laos_carries_the_coordinate_overrides_the_loader_hardcodes():

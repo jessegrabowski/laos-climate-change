@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from climate_risk.config.schema import CountryConfig, EventFilters, GeometrySpec, Place, RegionConfig
-from climate_risk.data.source import DataSource
+from climate_risk.data.source import DataSource, ShapefileArchive
 
 CONFIG_ROOT = Path(__file__).parent
 
@@ -42,7 +42,7 @@ def read_place(path: Path) -> Place:
     build = RegionConfig if path.parent.name == REGION_SUBDIRECTORY else CountryConfig
     try:
         return build(**_nested(table))
-    except TypeError as error:
+    except (TypeError, ValueError) as error:
         raise ValueError(f"{path} does not match the {build.__name__} schema: {error}") from error
 
 
@@ -86,9 +86,12 @@ def _nested(table: dict[str, Any]) -> dict[str, Any]:
     """Turn a place's sub-tables into the objects the schema expects, leaving the rest alone."""
     fields = dict(table)
 
-    for key, build in (("boundary", DataSource), ("geometry", GeometrySpec), ("events", EventFilters)):
+    for key, build in (("geometry", GeometrySpec), ("events", EventFilters)):
         if key in fields:
             fields[key] = build(**fields[key])
+
+    if "boundary" in fields:
+        fields["boundary"] = _boundary(fields["boundary"])
 
     if "members" in fields:
         # TOML arrays parse as lists, and the schema promises a tuple.
@@ -100,6 +103,17 @@ def _nested(table: dict[str, Any]) -> dict[str, Any]:
         }
 
     return fields
+
+
+def _boundary(table: dict[str, Any]) -> ShapefileArchive:
+    """Split a ``[boundary]`` table into the archive to fetch and the layer to read from it."""
+    fields = dict(table)
+    try:
+        member = fields.pop("member")
+    except KeyError:
+        raise ValueError("a [boundary] must set member, naming the layer to read inside its archive") from None
+
+    return ShapefileArchive(DataSource(**fields), member)
 
 
 def _place_keys(root: Path) -> list[str]:
