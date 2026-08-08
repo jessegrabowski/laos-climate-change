@@ -102,7 +102,7 @@ def test_a_warm_cache_does_not_touch_the_archives(write_gpcc_archives, write_sha
 
 
 def test_cells_are_averaged_per_country_and_month():
-    decade = gridded(
+    grid = gridded(
         [
             ("1981-01-01", 0.5, 0.5, 4.0),
             ("1981-01-01", 0.75, 0.75, 6.0),
@@ -110,25 +110,25 @@ def test_cells_are_averaged_per_country_and_month():
         ]
     )
 
-    monthly = transform_gpcc([decade], toy_world())
+    monthly = transform_gpcc([grid], toy_world())
 
     assert monthly.loc[("AAA", pd.Timestamp("1981-01-01")), "precip"] == pytest.approx(5.0)
     assert monthly.loc[("BBB", pd.Timestamp("1981-01-01")), "precip"] == pytest.approx(100.0)
 
 
 def test_cells_over_the_ocean_are_dropped():
-    decade = gridded([("1981-01-01", 0.5, 0.5, 4.0), ("1981-01-01", 50.0, 50.0, 999.0)])
+    grid = gridded([("1981-01-01", 0.5, 0.5, 4.0), ("1981-01-01", 50.0, 50.0, 999.0)])
 
-    monthly = transform_gpcc([decade], toy_world())
+    monthly = transform_gpcc([grid], toy_world())
 
     assert monthly["precip"].tolist() == [4.0]
 
 
-def test_every_decade_reaches_the_result():
-    """The decades are read one at a time; dropping one loses ten years without an error."""
-    decades = [gridded([("1981-01-01", 0.5, 0.5, 1.0)]), gridded([("1991-01-01", 0.5, 0.5, 2.0)])]
+def test_every_archive_reaches_the_result():
+    """The archives are read one at a time; dropping one loses its years without an error."""
+    grids = [gridded([("1981-01-01", 0.5, 0.5, 1.0)]), gridded([("1991-01-01", 0.5, 0.5, 2.0)])]
 
-    monthly = transform_gpcc(decades, toy_world())
+    monthly = transform_gpcc(grids, toy_world())
 
     assert pd.DatetimeIndex(monthly.index.get_level_values("time")).year.tolist() == [1981, 1991]
 
@@ -164,9 +164,9 @@ def test_the_archives_are_decompressed_before_reading(write_gpcc_archives, write
 
 def test_the_world_boundaries_decide_the_countries():
     """Passing the boundaries in is what lets this run without the 606MB shapefile."""
-    decade = gridded([("1981-01-01", 0.5, 0.5, 4.0)])
+    grid = gridded([("1981-01-01", 0.5, 0.5, 4.0)])
     one_country = gpd.GeoDataFrame(toy_world().iloc[:1])
 
-    monthly = transform_gpcc([decade], one_country)
+    monthly = transform_gpcc([grid], one_country)
 
     assert monthly.index.get_level_values("country_code").tolist() == ["AAA"]
