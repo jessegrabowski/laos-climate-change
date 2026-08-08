@@ -6,10 +6,11 @@ import pandas as pd
 import polars as pl
 import pytest
 
+from geopandas.testing import assert_geodataframe_equal
 from polars.testing import assert_frame_equal
 from shapely.geometry import Point
 
-from climate_risk.data.cache import cache_key, cached, geo_shapefile, pandas_parquet, polars_parquet
+from climate_risk.data.cache import cache_key, cached, geo_parquet, pandas_parquet, polars_parquet
 
 
 @pytest.fixture
@@ -67,14 +68,14 @@ def test_the_written_and_read_frames_agree(tmp_path, frame):
     pd.testing.assert_frame_equal(written, reloaded)
 
 
-def test_a_geodataframe_round_trips_through_its_sidecars(tmp_path):
-    points = gpd.GeoDataFrame({"kind": ["river"], "geometry": [Point(102.5, 18.5)]}, crs="EPSG:4326")
+def test_a_geodataframe_round_trips_without_losing_anything(tmp_path):
+    """A shapefile truncates field names to ten characters, which diverges cold from warm."""
+    points = gpd.GeoDataFrame({"distance_to_river_km": [4.5], "geometry": [Point(102.5, 18.5)]}, crs="EPSG:4326")
 
-    cached(tmp_path, "points", lambda: points, geo_shapefile())
-    reloaded = cached(tmp_path, "points", lambda: points, geo_shapefile())
+    written = cached(tmp_path, "points", lambda: points, geo_parquet())
+    reloaded = cached(tmp_path, "points", lambda: points, geo_parquet())
 
-    assert reloaded.geometry.x.tolist() == [102.5]
-    assert reloaded.crs == points.crs
+    assert_geodataframe_equal(reloaded, written)
 
 
 def test_parameters_are_ordered_so_the_key_is_stable():
