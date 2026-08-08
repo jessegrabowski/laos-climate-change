@@ -32,9 +32,10 @@ DWD_DATE_UNITS = "day as %Y%m%d.%f"
 FULL_DATA_START = 1891
 FULL_DATA_END = 2020
 
-# The gauge analysis stops at FULL_DATA_END and the near-real-time product carries on from there.
-# Complete calendar years only: the annual totals downstream would read a part-year as a drought.
-MONITORING_YEARS = tuple(range(FULL_DATA_END + 1, 2026))
+# The near-real-time product carries on where the gauge analysis stops. Complete calendar years
+# only: the annual totals downstream would read a part-year as a drought.
+MONITORING_END = 2025
+MONITORING_YEARS = tuple(range(FULL_DATA_END + 1, MONITORING_END + 1))
 
 FULL_DATA_DECADES = tuple(f"{start}_{start + 9}" for start in range(FULL_DATA_START, FULL_DATA_END, 10))
 
@@ -74,9 +75,9 @@ class GriddedProduct:
 
 def coverage_of(products: Iterable[GriddedProduct]) -> str:
     """Return the span a set of products covers, as the string their cache entry is keyed on."""
-    spans = tuple(products)
+    covered = tuple(products)
 
-    return f"{min(product.first_year for product in spans)}-{max(product.last_year for product in spans)}"
+    return f"{min(product.first_year for product in covered)}-{max(product.last_year for product in covered)}"
 
 
 def _full_data_archive(decade: str) -> DataSource:
@@ -214,8 +215,9 @@ def _read_archive(archive: Path, variable: str) -> pd.DataFrame:
     """Read one archive's precipitation grid, under the canonical name and with its dates decoded."""
     with xr.open_dataset(_extract(archive)) as dataset:
         grid = dataset[variable]
+        dated = grid.assign_coords(time=_as_timestamps(grid["time"]))
 
-        return grid.assign_coords(time=_as_timestamps(grid["time"])).rename(PRECIPITATION).to_dataframe().reset_index()
+        return dated.rename(PRECIPITATION).to_dataframe().reset_index()
 
 
 def load_gpcc_data(

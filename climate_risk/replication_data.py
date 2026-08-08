@@ -77,10 +77,11 @@ def _precipitation_deviation(precipitation: pl.DataFrame, baseline: tuple[int, i
     within_baseline = pl.col("year").dt.year().is_between(first_year, last_year)
     reference = precipitation.filter(within_baseline)
 
+    span = last_year - first_year + 1
     covered = reference["year"].dt.year().n_unique()
-    if covered < last_year - first_year + 1:
+    if covered < span:
         raise ValueError(
-            f"The precipitation record covers {covered} of the {last_year - first_year + 1} years in the "
+            f"The precipitation record covers {covered} of the {span} years in the "
             f"{first_year}-{last_year} baseline, so the climatology would be drawn from a shorter period "
             f"than the one it is named for."
         )
