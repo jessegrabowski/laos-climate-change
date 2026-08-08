@@ -5,12 +5,13 @@ import pytest
 
 from climate_risk import load_all_data
 from climate_risk.data_functions.combine_data import _annual_precipitation
-from tests.conftest import emdat_event
+from tests.conftest import emdat_event, write_merge_cache
 
 
-@pytest.fixture
-def merged(write_full_cache):
-    return load_all_data(write_full_cache())
+@pytest.fixture(scope="module")
+def merged(tmp_path_factory):
+    """Built once: every test here only reads the merge, and rebuilding it per test dominated them."""
+    return load_all_data(write_merge_cache(tmp_path_factory.mktemp("merge")))
 
 
 @pytest.mark.parametrize("frame", ["emdat_events", "emdat_damage", "wb_data"])

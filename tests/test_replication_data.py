@@ -6,7 +6,7 @@ import polars as pl
 import pytest
 
 from climate_risk.replication_data import create_replication_data
-from tests.conftest import GPCC_CACHE_FILE, emdat_event
+from tests.conftest import GPCC_CACHE_FILE, emdat_event, write_emdat_workbook
 
 # Long enough that `iloc[1:-1]` still leaves an STL-able series: STL(period=3) needs 2*3+1 points.
 YEARS = tuple(range(1985, 2021))
@@ -35,13 +35,14 @@ SAMPLE_YEAR = YEARS[1]
 QUIET_YEAR = 1975
 
 
-@pytest.fixture
-def wide_cache(tmp_path, write_emdat_cache):
+@pytest.fixture(scope="module")
+def wide_cache(tmp_path_factory):
     """A cache spanning enough years for the trend fit and the climatology to do anything.
 
     AAA gets a drought on top of its flood, so climatological and hydrological damage are both
     present for one country and only hydrological for the others.
     """
+    tmp_path = tmp_path_factory.mktemp("replication")
     events = [
         emdat_event({"ISO": iso, "DisNo.": f"{iso}-{year}", "Start Year": year, "End Year": year})
         for iso in EMDAT_COUNTRIES
@@ -59,7 +60,7 @@ def wide_cache(tmp_path, write_emdat_cache):
         )
         for year in YEARS
     ]
-    write_emdat_cache(events)
+    write_emdat_workbook(tmp_path, events)
 
     world_bank = [
         (iso, year, 1000 + 100 * n + 10 * i, 10 + 10 * n + i, 1_000_000 + 100_000 * n + 1000 * i)
@@ -92,8 +93,9 @@ def wide_cache(tmp_path, write_emdat_cache):
     return tmp_path
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def replication(wide_cache):
+    """Built once: every test here only reads the panel."""
     return create_replication_data(wide_cache)
 
 
