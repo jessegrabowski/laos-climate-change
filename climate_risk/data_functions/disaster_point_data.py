@@ -19,9 +19,6 @@ from climate_risk.geo.island_countries import ISLAND_COUNTRY_ISO3
 
 _log = logging.getLogger(__name__)
 
-# The default generator is seeded so a run reproduces, which is why callers may pass their own.
-SAMPLING_SEED = sum(map(ord, "Laos GGGI Climate Adaptation"))
-
 
 def disaster_points_path(cache_dir: Path) -> Path:
     return cache_dir / "disaster_locations_gpt_repaired_w_features.csv"
@@ -257,19 +254,43 @@ SAMPLING_STRATEGIES = tuple(SAMPLERS)
 
 def load_synthetic_non_disaster_points(
     cache_dir: Path,
-    countries,
-    list_name: str,
+    place: Place,
     *,
-    rng=None,
-    force_generate=False,
-    by="region",
-    multiplier=1,
-):
+    rng: np.random.Generator | None = None,
+    force_generate: bool = False,
+    by: str = "region",
+    multiplier: int = 1,
+) -> gpd.GeoDataFrame:
+    """
+    Sample non-disaster points to stand against the disasters a place recorded, and cache them.
+
+    Parameters
+    ----------
+    cache_dir : Path
+        Directory the shapefile, river and point caches live under.
+    place : CountryConfig or RegionConfig
+        The place to sample within. Its ``random_seed`` seeds the default generator.
+    rng : numpy.random.Generator, optional
+        Generator to draw with. Default None, meaning one seeded from the place.
+    force_generate : bool, optional
+        Resample even when the cache is warm. Default False.
+    by : str, optional
+        Sampling strategy, one of ``SAMPLING_STRATEGIES``. Default ``"region"``.
+    multiplier : int, optional
+        How many non-disasters to sample per recorded disaster. Default 1.
+
+    Returns
+    -------
+    GeoDataFrame
+        One row per sampled point, with distances to river and coastline and a drawn start year.
+    """
     if by not in SAMPLING_STRATEGIES:
         raise ValueError(f"by should be one of {sorted(SAMPLING_STRATEGIES)}, got {by}")
 
     if rng is None:
-        rng = np.random.default_rng(SAMPLING_SEED)
+        rng = np.random.default_rng(place.random_seed)
+
+    countries = resolve_isos(place)
 
     def build() -> gpd.GeoDataFrame:
         world = load_shapefile("world", cache_dir)
@@ -316,7 +337,7 @@ def load_synthetic_non_disaster_points(
         "synthetic_non_disasters",
         build,
         geo_parquet(),
-        params={"by": by, "times": multiplier, "list_name": list_name},
+        params={"by": by, "times": multiplier, "list_name": place_key(place)},
         force=force_generate,
     )
 

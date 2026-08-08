@@ -1,7 +1,5 @@
 import re
 
-from typing import Any
-
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -40,7 +38,7 @@ def test_missing_geocoded_locations_names_the_file_it_looked_for(tmp_path):
 def test_unknown_sampling_strategy_is_rejected(tmp_path):
     """An unknown `by` once fell through both branches and failed on an unbound name."""
     with pytest.raises(ValueError, match="by should be one of"):
-        load_synthetic_non_disaster_points(tmp_path, ["LAO"], "sea", by="continent")
+        load_synthetic_non_disaster_points(tmp_path, france(), by="continent")
 
 
 @pytest.fixture
@@ -141,13 +139,13 @@ def test_a_warm_synthetic_cache_is_reused(tmp_path):
     the socket guard fails the test.
     """
     # Stated literally, so a changed key fails rather than agreeing with the loader.
-    cache = tmp_path / "synthetic_non_disasters__by=region__list_name=sea__times=1.parquet"
+    cache = tmp_path / "synthetic_non_disasters__by=region__list_name=lao__times=1.parquet"
     gpd.GeoDataFrame(
         {"ISO": ["LAO"], "Start_Year": [pd.Timestamp("1990-01-01")], "geometry": [Point(102.5, 18.5)]},
         crs=GEOGRAPHIC_CRS,
     ).to_parquet(cache)
 
-    points = load_synthetic_non_disaster_points(tmp_path, ["LAO"], "sea")
+    points = load_synthetic_non_disaster_points(tmp_path, CountryConfig(iso3="LAO", name="Lao PDR"))
 
     assert points["ISO"].tolist() == ["LAO"]
 
@@ -168,10 +166,10 @@ def test_a_warm_non_disaster_grid_is_reused(tmp_path):
 def test_the_sampled_years_come_from_the_generator_the_caller_passed(write_synthetic_source_cache, by):
     """Every other draw honours `rng`, so a caller seeding it gets reproducibility for all but this one."""
     cache_dir = write_synthetic_source_cache()
-    kwargs: dict[str, Any] = {"countries": ["FRA"], "list_name": "toy", "by": by}
-
-    first = load_synthetic_non_disaster_points(cache_dir, rng=np.random.default_rng(0), **kwargs)
-    second = load_synthetic_non_disaster_points(cache_dir, rng=np.random.default_rng(0), force_generate=True, **kwargs)
+    first = load_synthetic_non_disaster_points(cache_dir, france(), rng=np.random.default_rng(0), by=by)
+    second = load_synthetic_non_disaster_points(
+        cache_dir, france(), rng=np.random.default_rng(0), force_generate=True, by=by
+    )
 
     # Without these the comparison holds vacuously when the country filter matches nothing.
     assert len(first) == SYNTHETIC_SOURCE_EVENTS
@@ -180,13 +178,33 @@ def test_the_sampled_years_come_from_the_generator_the_caller_passed(write_synth
     assert_geodataframe_equal(first, second)
 
 
+def test_a_place_reproduces_its_own_sample_without_being_handed_a_generator(write_synthetic_source_cache):
+    """`random_seed` is the place's, so a run with no `rng` still has to repeat exactly."""
+    cache_dir = write_synthetic_source_cache()
+
+    first = load_synthetic_non_disaster_points(cache_dir, france())
+    second = load_synthetic_non_disaster_points(cache_dir, france(), force_generate=True)
+
+    assert len(first) == SYNTHETIC_SOURCE_EVENTS
+    assert_geodataframe_equal(first, second)
+
+
+def test_two_places_seeded_differently_draw_differently(write_synthetic_source_cache):
+    """One seed for every place would make the synthetic controls correlated across countries."""
+    cache_dir = write_synthetic_source_cache()
+    other = CountryConfig(iso3="FRA", name="France", random_seed=1234, geometry=GeometrySpec(grid_size=3))
+
+    default = load_synthetic_non_disaster_points(cache_dir, france())
+    reseeded = load_synthetic_non_disaster_points(cache_dir, other, force_generate=True)
+
+    assert not default.geometry.geom_equals(reseeded.geometry).all()
+
+
 def test_the_multiplier_scales_how_many_points_are_sampled(write_synthetic_source_cache):
     """It sets how many non-disasters stand against each disaster, and it keys the cache entry."""
     cache_dir = write_synthetic_source_cache()
-    kwargs: dict[str, Any] = {"countries": ["FRA"], "list_name": "toy", "rng": np.random.default_rng(0)}
-
-    single = load_synthetic_non_disaster_points(cache_dir, multiplier=1, **kwargs)
-    tripled = load_synthetic_non_disaster_points(cache_dir, multiplier=3, **kwargs)
+    single = load_synthetic_non_disaster_points(cache_dir, france(), rng=np.random.default_rng(0), multiplier=1)
+    tripled = load_synthetic_non_disaster_points(cache_dir, france(), rng=np.random.default_rng(0), multiplier=3)
 
     assert len(single) == SYNTHETIC_SOURCE_EVENTS
     assert len(tripled) == SYNTHETIC_SOURCE_EVENTS * 3

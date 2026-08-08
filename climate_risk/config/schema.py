@@ -135,6 +135,8 @@ class RegionConfig:
         Projection and grid settings. Defaults to the project-wide ones.
     events : EventFilters
         Which EM-DAT records count. Defaults to the project-wide thresholds.
+    random_seed : int
+        Seeds the synthetic non-disaster sampling. Default ``DEFAULT_RANDOM_SEED``.
 
     Raises
     ------
@@ -147,6 +149,7 @@ class RegionConfig:
     members: tuple[str, ...]
     geometry: GeometrySpec = field(default_factory=GeometrySpec)
     events: EventFilters = field(default_factory=EventFilters)
+    random_seed: int = DEFAULT_RANDOM_SEED
 
     def __post_init__(self) -> None:
         if not self.members:
