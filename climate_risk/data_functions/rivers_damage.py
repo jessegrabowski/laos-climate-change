@@ -5,6 +5,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
+from climate_risk.config.registry import all_event_location_overrides
 from climate_risk.data.cache import cached, geo_parquet
 from climate_risk.data_functions.emdat_processing import load_emdat_data
 from climate_risk.data_functions.rivers_data_loader import load_rivers_data
@@ -14,17 +15,6 @@ from climate_risk.geo.distance import get_distance_to_rivers
 
 DAMAGE_COLUMNS = ("ISO", "End Year", "Latitude", "Longitude", "River Basin", "Total_Damage", "Total_Affected", "Deaths")
 
-# Coordinates forced onto specific EM-DAT events whose recorded position is wrong. Despite the
-# name these are applied to every flood run, whichever country it covers.
-LAOS_LOCATION_DICTIONARY = {
-    "1971-0048-LAO": {"Latitude": 17.9757, "Longitude": 102.6331},
-    "2000-0583-LAO": {"Latitude": 19.0, "Longitude": 102.0},
-    "2013-0338-LAO": {"Latitude": 19.5, "Longitude": 103.5},
-    "2013-0417-LAO": {"Latitude": 16.5, "Longitude": 106.0},
-    "2015-0324-LAO": {"Latitude": 19.0, "Longitude": 104.0},
-    "2016-0316-LAO": {"Latitude": 19.9, "Longitude": 102.1},
-}
-
 
 def _create_rivers_damage(
     cache_dir: Path,
@@ -33,16 +23,16 @@ def _create_rivers_damage(
     total_suffix: str,
     log_suffix: str,
     extra_columns: Sequence[str] = (),
-    locations: dict[str, dict[str, float]] | None = None,
+    locations: dict[str, tuple[float, float]] | None = None,
 ) -> gpd.GeoDataFrame:
     """
-    Join EM-DAT damages to the nearest major river, caching the result as a shapefile.
+    Join EM-DAT damages to the nearest major river, and cache the result.
 
     Parameters
     ----------
     cache_dir : Path
         Directory holding the EM-DAT workbook, the shapefiles and the cached output.
-    filename : str
+    name : str
         Logical name the result is cached under.
     query : str
         Pandas query selecting the events, applied to the adjusted EM-DAT frame.
@@ -52,8 +42,8 @@ def _create_rivers_damage(
         Suffix for their logarithms, giving ``log_damage_{log_suffix}``.
     extra_columns : sequence of str, optional
         Columns to carry through beyond ``DAMAGE_COLUMNS``. Default empty.
-    locations : dict mapping str to dict, optional
-        Latitude and longitude to force onto specific ``DisNo.`` events. Default None, which forces
+    locations : dict mapping str to tuple of float, optional
+        Longitude and latitude to force onto specific ``DisNo.`` events. Default None, which forces
         nothing.
 
     Returns
@@ -71,10 +61,10 @@ def _create_rivers_damage(
         events = emdat.query(query)
 
         if locations is not None:
-            for disaster_number, coordinates in locations.items():
+            for disaster_number, (lon, lat) in locations.items():
                 matching = events[events["DisNo."] == disaster_number].index
-                events.loc[matching, "Latitude"] = coordinates["Latitude"]
-                events.loc[matching, "Longitude"] = coordinates["Longitude"]
+                events.loc[matching, "Latitude"] = lat
+                events.loc[matching, "Longitude"] = lon
 
         damage_df = gpd.GeoDataFrame(
             (
@@ -124,5 +114,5 @@ def create_floods_rivers_damage(cache_dir: Path) -> gpd.GeoDataFrame:
         total_suffix="Flood",
         log_suffix="floods",
         extra_columns=["Location"],
-        locations=LAOS_LOCATION_DICTIONARY,
+        locations=all_event_location_overrides(),
     )

@@ -127,3 +127,37 @@ def _place_keys(root: Path) -> list[str]:
         for subdirectory in (COUNTRY_SUBDIRECTORY, REGION_SUBDIRECTORY)
         for path in (root / subdirectory).glob("*.toml")
     )
+
+
+def all_event_location_overrides(*, root: Path = CONFIG_ROOT) -> dict[str, tuple[float, float]]:
+    """
+    Collect the coordinate corrections every shipped country declares.
+
+    Parameters
+    ----------
+    root : Path, optional
+        Directory holding ``places/``. Default the shipped configuration.
+
+    Returns
+    -------
+    dict mapping str to tuple of float
+        Longitude and latitude, keyed by EM-DAT event id.
+
+    Raises
+    ------
+    ValueError
+        If two countries both claim the same event.
+    """
+    overrides: dict[str, tuple[float, float]] = {}
+    for path in sorted((root / COUNTRY_SUBDIRECTORY).glob("*.toml")):
+        place = read_place(path)
+        if not isinstance(place, CountryConfig):
+            continue
+
+        claimed = overrides.keys() & place.event_location_overrides.keys()
+        if claimed:
+            raise ValueError(f"{path} re-declares {sorted(claimed)}, which another country already corrects")
+
+        overrides.update(place.event_location_overrides)
+
+    return overrides
