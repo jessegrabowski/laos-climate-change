@@ -1,0 +1,19 @@
+iso3 = "LAO"
+name = "Lao PDR"
+
+# Laos has its own admin-boundary file; countries without one are sliced out of the world shapefile.
+[boundary]
+url = "https://data.humdata.org/dataset/9eb6aff1-9e3f-43d3-99a6-f415fe4b4dff/resource/907a1b50-0d14-40ec-8b8a-f2d027d895aa/download/lao_admin_boundaries.shp.zip"
+filename = "lao_admin_boundaries.shp.zip"
+licence = "CC BY 3.0 IGO"
+citation = "National Geographic Department (NGD): Lao People's Democratic Republic subnational administrative boundaries, via the Humanitarian Data Exchange."
+retrieved = "2026-08-08"
+
+# Longitude and latitude forced onto EM-DAT records whose published position is wrong.
+[event_location_overrides]
+"1971-0048-LAO" = [102.6331, 17.9757]
+"2000-0583-LAO" = [102.0, 19.0]
+"2013-0338-LAO" = [103.5, 19.5]
+"2013-0417-LAO" = [106.0, 16.5]
+"2015-0324-LAO" = [104.0, 19.0]
+"2016-0316-LAO" = [102.1, 19.9]
