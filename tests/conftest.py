@@ -97,6 +97,24 @@ def toy_world_needing_repair():
     )
 
 
+def toy_world_with_places():
+    """`toy_world_needing_repair` plus the three shipped countries, so a load can still be repaired.
+
+    Costa Rica straddles `toy_coastline`; Laos and Zambia sit well inland of it.
+    """
+    countries = gpd.GeoDataFrame(
+        {
+            "WB_NAME": ["Lao PDR", "Zambia", "Costa Rica"],
+            "ISO_A3": ["LAO", "ZMB", "CRI"],
+            "CONTINENT": ["Asia", "Africa", "North America"],
+            "geometry": [box(20, 0, 21, 1), box(23, 0, 24, 1), box(29.5, 0, 30.5, 1)],
+        },
+        crs="EPSG:4326",
+    )
+
+    return gpd.GeoDataFrame(pd.concat([toy_world_needing_repair(), countries], ignore_index=True), crs="EPSG:4326")
+
+
 def toy_coastline():
     return gpd.GeoDataFrame({"geometry": [LineString([(30, -1), (30, 2)])]}, crs="EPSG:4326")
 
@@ -394,10 +412,10 @@ def write_synthetic_source_cache(tmp_path, write_shapefile_cache, write_rivers_c
 def write_point_grid_cache(write_shapefile_cache, write_rivers_cache, rivers_clear_of_the_grid):
     """Seed the world, coastline and river caches `load_grid_point_data` reads."""
 
-    def write(rivers=None):
+    def write(rivers=None, world=None):
         if rivers is None:
             rivers = rivers_clear_of_the_grid
-        write_shapefile_cache("world", toy_world_needing_repair())
+        write_shapefile_cache("world", toy_world_needing_repair() if world is None else world)
         write_shapefile_cache("coastline", toy_coastline())
         write_rivers_cache(rivers.query("ORD_FLOW < 5"))
         return write_rivers_cache(rivers, include_medium=True)
