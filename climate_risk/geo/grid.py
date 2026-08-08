@@ -11,6 +11,8 @@ def create_grid_from_shape(
     rivers: gpd.GeoDataFrame,
     coastline: gpd.GeoDataFrame,
     grid_size: int = 100,
+    *,
+    iso3: str | None = None,
 ) -> gpd.GeoDataFrame:
     """
     Lay a regular grid over the bounds of ``shapefile`` and measure each point to river and coast.
@@ -26,13 +28,27 @@ def create_grid_from_shape(
         Coastline geometries. Distance is measured to the boundary.
     grid_size : int, optional
         Points per axis, so the grid holds ``grid_size ** 2`` before clipping. Default 100.
+    iso3 : str, optional
+        Code to label every point with when ``shapefile`` carries no ``ISO_A3`` column. Default
+        None, which requires the geometry to label itself.
 
     Returns
     -------
     GeoDataFrame
         One row per surviving point, with ``lon``, ``lat``, distances to the nearest river and
         coastline, their logs, and ``ISO``.
+
+    Raises
+    ------
+    ValueError
+        If the geometry carries no ``ISO_A3`` column and no ``iso3`` says what to label it.
     """
+    labelled = "ISO_A3" in shapefile.columns
+    if not labelled and iso3 is None:
+        raise ValueError(
+            "The geometry carries no ISO_A3 column, so pass iso3 to say which country its points belong to."
+        )
+
     long_min, lat_min, long_max, lat_max = shapefile.dissolve().bounds.values.ravel()
     long_grid = np.linspace(long_min, long_max, grid_size)
     lat_grid = np.linspace(lat_min, lat_max, grid_size)
@@ -65,9 +81,6 @@ def create_grid_from_shape(
         )
     )
 
-    if "ISO_A3" in point_overlay.columns:
-        points["ISO"] = point_overlay.ISO_A3
-    else:
-        points["ISO"] = "LAO"
+    points["ISO"] = point_overlay["ISO_A3"] if labelled else iso3
 
     return points
