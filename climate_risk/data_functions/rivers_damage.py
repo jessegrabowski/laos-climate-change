@@ -5,7 +5,6 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
-from climate_risk.const_vars import LAOS_LOCATION_DICTIONARY
 from climate_risk.data.cache import cached, geo_parquet
 from climate_risk.data_functions.emdat_processing import load_emdat_data
 from climate_risk.data_functions.rivers_data_loader import load_rivers_data
@@ -14,6 +13,15 @@ from climate_risk.geo.crs import to_km
 from climate_risk.geo.distance import get_distance_to_rivers
 
 DAMAGE_COLUMNS = ("ISO", "End Year", "Latitude", "Longitude", "River Basin", "Total_Damage", "Total_Affected", "Deaths")
+
+LAOS_LOCATION_DICTIONARY = {
+    "1971-0048-LAO": {"Latitude": 17.9757, "Longitude": 102.6331},
+    "2000-0583-LAO": {"Latitude": 19.0, "Longitude": 102.0},
+    "2013-0338-LAO": {"Latitude": 19.5, "Longitude": 103.5},
+    "2013-0417-LAO": {"Latitude": 16.5, "Longitude": 106.0},
+    "2015-0324-LAO": {"Latitude": 19.0, "Longitude": 104.0},
+    "2016-0316-LAO": {"Latitude": 19.9, "Longitude": 102.1},
+}
 
 
 def _create_rivers_damage(
