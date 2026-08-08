@@ -169,3 +169,15 @@ def test_the_sampled_years_come_from_the_generator_the_caller_passed(write_synth
     assert first["Start_Year"].nunique() > 1
     # The whole frame, so the sampled locations are covered as well as the years.
     assert_geodataframe_equal(first, second)
+
+
+def test_the_multiplier_scales_how_many_points_are_sampled(write_synthetic_source_cache):
+    """It sets how many non-disasters stand against each disaster, and it keys the cache entry."""
+    cache_dir = write_synthetic_source_cache()
+    kwargs: dict[str, Any] = {"countries": ["FRA"], "list_name": "toy", "rng": np.random.default_rng(0)}
+
+    single = load_synthetic_non_disaster_points(cache_dir, multiplier=1, **kwargs)
+    tripled = load_synthetic_non_disaster_points(cache_dir, multiplier=3, **kwargs)
+
+    assert len(single) == SYNTHETIC_SOURCE_EVENTS
+    assert len(tripled) == SYNTHETIC_SOURCE_EVENTS * 3
