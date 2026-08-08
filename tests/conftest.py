@@ -3,6 +3,7 @@ import socket
 import zipfile
 
 from datetime import date
+from functools import partial
 
 import geopandas as gpd
 import numpy as np
@@ -17,6 +18,8 @@ from climate_risk.const_vars import (
     BIG_RIVERS_FILENAME,
     MEDIUM_BIG_RIVERS_FILENAME,
 )
+from climate_risk.data.gpcc import GriddedProduct
+from climate_risk.data.source import DataSource
 
 # One event that clears every downstream filter: deaths above 100, affected above 1000, and a start
 # year inside both the 1970 and 1980 cutoffs. Tests override only the field under examination.
@@ -129,7 +132,7 @@ UPSTREAM_SHAPEFILE_LAYOUT = {
 
 
 def toy_precipitation(year_range):
-    """A GPCC grid with one point inside each country of `toy_world`."""
+    """A full-data grid with one point inside each country of `toy_world`."""
     start = int(year_range.split("_")[0])
     return xr.Dataset(
         {"precip": (("time", "lat", "lon"), np.arange(3.0).reshape(1, 1, 3))},
@@ -141,33 +144,68 @@ def toy_precipitation(year_range):
     )
 
 
-# The archive layout is stated literally, not derived from the loader, so a wrong path fails.
-GPCC_DECADES = ("1981_1990", "1991_2000", "2001_2010", "2011_2020")
+def toy_monitoring(year, month):
+    """A monitoring grid, which names its variable ``p`` and dates it with a YYYYMMDD float."""
+    return xr.Dataset(
+        {"p": (("time", "lat", "lon"), np.arange(3.0).reshape(1, 1, 3))},
+        coords={
+            "time": ("time", [float(f"{year}{month:02d}01")], {"units": "day as %Y%m%d.%f"}),
+            "lat": [0.5],
+            "lon": [0.5, 2.5, 4.5],
+        },
+    )
 
 
-def gpcc_archive_name(decade: str) -> str:
-    return f"full_data_monthly_v2022_{decade}_10.nc.gz"
+# Archive names as they appear upstream, stated literally so a wrong path fails rather than agreeing
+# with the loader. One archive per product is the whole manifest a test needs: nothing the loader
+# does varies with how many are listed.
+TOY_ARCHIVES = ("full_data_monthly_v2022_1981_1990_10.nc.gz", "monitoring_v2022_10_2021_01.nc.gz")
+
+# The processed cache the published manifest writes. The key carries the span, so extending the
+# record renames the entry instead of shadowing it.
+GPCC_CACHE_FILE = "gpcc__coverage=1891-2025__repaired_iso=True.parquet"
+
+
+def toy_gpcc_products() -> tuple[GriddedProduct, ...]:
+    """The published manifest cut to one archive from each product, which differ in both fields."""
+
+    def source(filename: str) -> DataSource:
+        return DataSource(
+            url=f"https://opendata.dwd.de/climate_environment/GPCC/{filename}",
+            filename=filename,
+            licence="CC BY 4.0",
+            citation="GPCC",
+            retrieved="2026-08-07",
+        )
+
+    full_data, monitoring = TOY_ARCHIVES
+
+    return (
+        GriddedProduct(variable="precip", first_year=1981, last_year=1990, sources=(source(full_data),)),
+        GriddedProduct(variable="p", first_year=2021, last_year=2021, sources=(source(monitoring),)),
+    )
 
 
 @pytest.fixture
 def write_gpcc_archives(tmp_path):
-    """Return a callable writing one gzipped archive per decade, some already extracted."""
+    """Return a callable writing one gzipped archive per product, some already extracted."""
 
     def write(extracted=()):
         gpcc_dir = tmp_path / "gpcc"
         gpcc_dir.mkdir(parents=True, exist_ok=True)
-        for decade in GPCC_DECADES:
-            raw = bytes(toy_precipitation(decade).to_netcdf())
-            (gpcc_dir / gpcc_archive_name(decade)).write_bytes(gzip.compress(raw))
-            if decade in extracted:
-                (gpcc_dir / gpcc_archive_name(decade).removesuffix(".gz")).write_bytes(raw)
+
+        grids = zip(TOY_ARCHIVES, (toy_precipitation("1981_1990"), toy_monitoring(2021, 1)), strict=True)
+        for name, grid in grids:
+            raw = bytes(grid.to_netcdf())
+            (gpcc_dir / name).write_bytes(gzip.compress(raw))
+            if name in extracted:
+                (gpcc_dir / name.removesuffix(".gz")).write_bytes(raw)
         return tmp_path
 
     return write
 
 
-@pytest.fixture
-def write_full_cache(tmp_path, write_emdat_cache):
+def write_merge_cache(cache_dir):
     """Seed every cache `load_all_data` reads, so the whole merge runs offline.
 
     AAA and BBB appear in every source. CCC is EM-DAT only and DDD World Bank only, so the first
@@ -175,72 +213,76 @@ def write_full_cache(tmp_path, write_emdat_cache):
     survives that pass and is dropped only from the GPCC frame. FFF has precipitation and
     nothing else, so the GPCC pass has something of its own to drop.
     """
-
-    def write():
-        events = [
-            emdat_event({"ISO": iso, "DisNo.": f"{iso}-{year}", "Start Year": year, "End Year": year})
-            for iso in ("AAA", "BBB", "CCC", "EEE")
+    events = [
+        emdat_event({"ISO": iso, "DisNo.": f"{iso}-{year}", "Start Year": year, "End Year": year})
+        for iso in ("AAA", "BBB", "CCC", "EEE")
+        for year in (1990, 1991)
+    ]
+    # A climatological event, so the hydro/clim damage split has something on both sides.
+    events.append(
+        emdat_event(
+            {
+                "ISO": "AAA",
+                "DisNo.": "AAA-drought",
+                "Start Year": 1990,
+                "End Year": 1990,
+                "Disaster Type": "Drought",
+            }
+        )
+    )
+    # One country has a disaster type in a single year, so a per-year column mistaken for a
+    # country constant shows up as a duplicated country.
+    events.append(
+        emdat_event(
+            {
+                "ISO": "AAA",
+                "DisNo.": "AAA-landslide",
+                "Start Year": 1991,
+                "End Year": 1991,
+                "Disaster Type": "Mass movement (wet)",
+            }
+        )
+    )
+    write_emdat_workbook(cache_dir, events)
+    pl.DataFrame(
+        [
+            ("AAA", 1990, 1000.0, 10.0, 1000000),
+            ("AAA", 1991, 1100.0, 11.0, 1010000),
+            ("BBB", 1990, 2000.0, 20.0, 2000000),
+            ("BBB", 1991, 2200.0, 22.0, 2020000),
+            ("DDD", 1990, 3000.0, 30.0, 3000000),
+            ("DDD", 1991, 3300.0, 33.0, 3030000),
+            ("EEE", 1990, 4000.0, 40.0, 4000000),
+            ("EEE", 1991, 4400.0, 44.0, 4040000),
+        ],
+        schema=["country_code", "year", "gdp_per_cap", "population_density", "Population"],
+        orient="row",
+    ).write_parquet(cache_dir / "world_bank.parquet")
+    # The cache key is stated literally, so a wrong one fails rather than agreeing with itself.
+    pl.DataFrame({"Date": [date(1990, 1, 1), date(1991, 1, 1)], "co2": [354.0, 355.0]}).write_parquet(
+        cache_dir / "co2.parquet"
+    )
+    pl.DataFrame({"Date": [date(1990, 1, 1), date(1991, 1, 1)], "Temp": [1.0, 2.0]}).write_parquet(
+        cache_dir / "ocean_heat.parquet"
+    )
+    # GPCC publishes monthly, and only whole years survive the annual total, so each year here
+    # carries all twelve months. A total stays distinguishable from an average.
+    pd.DataFrame(
+        [
+            (iso, pd.Timestamp(f"{year}-{month:02d}-01"), base + 1000.0 * (year - 1990) + month)
+            for iso, base in (("AAA", 100.0), ("BBB", 200.0), ("FFF", 300.0))
             for year in (1990, 1991)
-        ]
-        # A climatological event, so the hydro/clim damage split has something on both sides.
-        events.append(
-            emdat_event(
-                {
-                    "ISO": "AAA",
-                    "DisNo.": "AAA-drought",
-                    "Start Year": 1990,
-                    "End Year": 1990,
-                    "Disaster Type": "Drought",
-                }
-            )
-        )
-        # One country has a disaster type in a single year, so a per-year column mistaken for a
-        # country constant shows up as a duplicated country.
-        events.append(
-            emdat_event(
-                {
-                    "ISO": "AAA",
-                    "DisNo.": "AAA-landslide",
-                    "Start Year": 1991,
-                    "End Year": 1991,
-                    "Disaster Type": "Mass movement (wet)",
-                }
-            )
-        )
-        write_emdat_cache(events)
-        pl.DataFrame(
-            [
-                ("AAA", 1990, 1000.0, 10.0, 1000000),
-                ("AAA", 1991, 1100.0, 11.0, 1010000),
-                ("BBB", 1990, 2000.0, 20.0, 2000000),
-                ("BBB", 1991, 2200.0, 22.0, 2020000),
-                ("DDD", 1990, 3000.0, 30.0, 3000000),
-                ("DDD", 1991, 3300.0, 33.0, 3030000),
-                ("EEE", 1990, 4000.0, 40.0, 4000000),
-                ("EEE", 1991, 4400.0, 44.0, 4040000),
-            ],
-            schema=["country_code", "year", "gdp_per_cap", "population_density", "Population"],
-            orient="row",
-        ).write_parquet(tmp_path / "world_bank.parquet")
-        # The cache key is stated literally, so a wrong one fails rather than agreeing with itself.
-        pl.DataFrame({"Date": [date(1990, 1, 1), date(1991, 1, 1)], "co2": [354.0, 355.0]}).write_parquet(
-            tmp_path / "co2.parquet"
-        )
-        pl.DataFrame({"Date": [date(1990, 1, 1), date(1991, 1, 1)], "Temp": [1.0, 2.0]}).write_parquet(
-            tmp_path / "ocean_heat.parquet"
-        )
-        # GPCC publishes monthly, so two months a year keeps a total distinguishable from an average.
-        pd.DataFrame(
-            [
-                (iso, pd.Timestamp(f"{year}-{month:02d}-01"), base + 10.0 * offset)
-                for iso, base in (("AAA", 100.0), ("BBB", 200.0), ("FFF", 300.0))
-                for offset, (year, month) in enumerate([(1990, 1), (1990, 7), (1991, 1), (1991, 7)])
-            ],
-            columns=["country_code", "time", "precip"],
-        ).set_index(["country_code", "time"]).to_parquet(tmp_path / "gpcc__repaired_iso=True.parquet")
-        return tmp_path
+            for month in range(1, 13)
+        ],
+        columns=["country_code", "time", "precip"],
+    ).set_index(["country_code", "time"]).to_parquet(cache_dir / GPCC_CACHE_FILE)
+    return cache_dir
 
-    return write
+
+@pytest.fixture
+def write_full_cache(tmp_path):
+    """Return a callable seeding every cache `load_all_data` reads, and giving back its directory."""
+    return partial(write_merge_cache, tmp_path)
 
 
 @pytest.fixture
@@ -339,16 +381,18 @@ class NetworkAccessError(RuntimeError):
     """Raised when a test that is not marked `network` opens a connection."""
 
 
+def write_emdat_workbook(cache_dir, events):
+    """Write the given events to a synthetic EM-DAT workbook in ``cache_dir``."""
+    with pd.ExcelWriter(cache_dir / "emdat.xlsx") as writer:
+        pd.DataFrame(list(events)).to_excel(writer, sheet_name="EM-DAT Data", index=False)
+
+    return cache_dir
+
+
 @pytest.fixture
 def write_emdat_cache(tmp_path):
     """Return a callable writing the given events to a synthetic EM-DAT workbook in the cache."""
-
-    def write(events):
-        with pd.ExcelWriter(tmp_path / "emdat.xlsx") as writer:
-            pd.DataFrame(list(events)).to_excel(writer, sheet_name="EM-DAT Data", index=False)
-        return tmp_path
-
-    return write
+    return partial(write_emdat_workbook, tmp_path)
 
 
 OUTBOUND_SOCKET_METHODS = ("connect", "connect_ex", "sendto", "sendmsg")

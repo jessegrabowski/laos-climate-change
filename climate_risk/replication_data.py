@@ -11,9 +11,8 @@ PANEL_KEY = ["ISO", "year"]
 HYDROLOGICAL_TYPES = ["Flood", "Storm"]
 CLIMATOLOGICAL_TYPES = ["Extreme temperature", "Wildfire", "Drought"]
 
-# Each country's precipitation is centred on its mean over this many years, counted from the start
-# of the record rather than from a fixed calendar period.
-CLIMATOLOGY_YEARS = 30
+# The WMO reference period each country's precipitation is centred on, inclusive of both ends.
+CLIMATOLOGY_BASELINE = (1961, 1990)
 
 # The seasonal period the ocean-heat trend is fitted with.
 OCEAN_TREND_PERIOD = 3
@@ -53,14 +52,41 @@ def _counted_or_missing(types: list[str]) -> pl.Expr:
     )
 
 
-def _precipitation_deviation(precipitation: pl.DataFrame) -> pl.DataFrame:
-    """Centre each country's precipitation on its own mean over the baseline climatology period."""
-    baseline_years = precipitation["year"].unique().sort().head(CLIMATOLOGY_YEARS)
-    climatology = (
-        precipitation.filter(pl.col("year").is_in(baseline_years))
-        .group_by("ISO")
-        .agg(pl.col("precip").mean().alias("baseline"))
-    )
+def _precipitation_deviation(precipitation: pl.DataFrame, baseline: tuple[int, int]) -> pl.DataFrame:
+    """
+    Centre each country's precipitation on its own mean over the baseline climatology period.
+
+    Parameters
+    ----------
+    precipitation : DataFrame
+        One row per country and year, carrying ``ISO``, ``year`` and ``precip``.
+    baseline : tuple of int
+        The first and last year of the reference period, both included.
+
+    Returns
+    -------
+    DataFrame
+        One row per country and year, carrying the deviation from that country's baseline mean.
+
+    Raises
+    ------
+    ValueError
+        If the record does not reach across every year of the baseline period.
+    """
+    first_year, last_year = baseline
+    within_baseline = pl.col("year").dt.year().is_between(first_year, last_year)
+    reference = precipitation.filter(within_baseline)
+
+    span = last_year - first_year + 1
+    covered = reference["year"].dt.year().n_unique()
+    if covered < span:
+        raise ValueError(
+            f"The precipitation record covers {covered} of the {span} years in the "
+            f"{first_year}-{last_year} baseline, so the climatology would be drawn from a shorter period "
+            f"than the one it is named for."
+        )
+
+    climatology = reference.group_by("ISO").agg(pl.col("precip").mean().alias("baseline"))
 
     return precipitation.join(climatology, on="ISO", how="left").select(
         *PANEL_KEY, (pl.col("precip") - pl.col("baseline")).alias("precip_deviation")
@@ -78,7 +104,7 @@ def _deviation_from_trend(climate: pl.DataFrame) -> pl.DataFrame:
     return converted.with_columns(pl.col("year").cast(pl.Date))
 
 
-def create_replication_data(cache_dir: Path) -> pl.DataFrame:
+def create_replication_data(cache_dir: Path, *, baseline: tuple[int, int] = CLIMATOLOGY_BASELINE) -> pl.DataFrame:
     data = load_all_data(cache_dir)
 
     events = data["emdat_events"].rename({"Start_Year": "year"})
@@ -112,7 +138,7 @@ def create_replication_data(cache_dir: Path) -> pl.DataFrame:
     frame = (
         disasters.join(development, on=PANEL_KEY, how="left")
         .join(damages, on=PANEL_KEY, how="left")
-        .join(_precipitation_deviation(data["gpcc"]), on=PANEL_KEY, how="left")
+        .join(_precipitation_deviation(data["gpcc"], baseline), on=PANEL_KEY, how="left")
         .join(climate.select("year", "co2"), on="year", how="left")
         .join(_deviation_from_trend(climate), on="year", how="left")
     )

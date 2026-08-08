@@ -14,6 +14,10 @@ from climate_risk.data_functions.emdat_processing import DISASTER_TYPES, load_em
 PANEL_KEY = ["ISO", "Start_Year"]
 SERIES_KEY = "year"
 
+# Annual precipitation is a sum, so a year the record only partly covers totals low. Dropping those
+# keeps a part-year at the end of the record from entering the panel as a drought.
+MONTHS_IN_YEAR = 12
+
 
 def _as_polars(frame: pd.DataFrame) -> pl.DataFrame:
     """Convert a pandas frame from the geospatial layer into the polars this module merges in."""
@@ -64,6 +68,8 @@ def _annual_precipitation(gpcc: pl.DataFrame) -> tuple[pl.DataFrame, pl.DataFram
     """
     Total monthly precipitation to years.
 
+    Years the record covers only partly are dropped from both.
+
     Returns
     -------
     by_country : DataFrame
@@ -74,13 +80,21 @@ def _annual_precipitation(gpcc: pl.DataFrame) -> tuple[pl.DataFrame, pl.DataFram
     dated = gpcc.select(
         pl.col("country_code").alias("ISO"),
         pl.date(pl.col("time").dt.year(), 1, 1).alias(SERIES_KEY),
+        pl.col("time").dt.month().alias("month"),
         "precip",
     )
 
-    return (
-        dated.group_by("ISO", SERIES_KEY).agg(pl.col("precip").sum()).sort("ISO", SERIES_KEY),
-        dated.group_by(SERIES_KEY).agg(pl.col("precip").sum()).sort(SERIES_KEY),
+    whole_years = (
+        dated.group_by(SERIES_KEY)
+        .agg(pl.col("month").n_unique().alias("months"))
+        .filter(pl.col("months") == MONTHS_IN_YEAR)
+        .select(SERIES_KEY)
     )
+    covered = dated.join(whole_years, on=SERIES_KEY, how="inner")
+
+    by_country = covered.group_by("ISO", SERIES_KEY).agg(pl.col("precip").sum()).sort("ISO", SERIES_KEY)
+
+    return by_country, by_country.group_by(SERIES_KEY).agg(pl.col("precip").sum()).sort(SERIES_KEY)
 
 
 def _keyed_by_year(series: pl.DataFrame) -> pl.DataFrame:

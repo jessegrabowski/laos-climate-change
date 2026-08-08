@@ -6,11 +6,14 @@ import polars as pl
 import pytest
 
 from climate_risk.replication_data import create_replication_data
-from tests.conftest import emdat_event
+from tests.conftest import GPCC_CACHE_FILE, emdat_event, write_emdat_workbook
 
 # Long enough that `iloc[1:-1]` still leaves an STL-able series: STL(period=3) needs 2*3+1 points.
-# Longer than CLIMATOLOGY_YEARS, so the baseline window is a real subset of the record.
 YEARS = tuple(range(1985, 2021))
+
+# Precipitation reaches back before the panel does, as the real record does, and opens well before
+# the baseline so that the reference period is neither the start of the record nor the whole of it.
+PRECIPITATION_YEARS = tuple(range(1955, 2021))
 
 # AAA and BBB appear everywhere. CCC is EM-DAT only and DDD World Bank only, so reconciliation has
 # something to drop from each side. EEE has both but no precipitation; FFF has only precipitation.
@@ -29,13 +32,14 @@ SAMPLE_YEAR = YEARS[1]
 QUIET_YEAR = 1975
 
 
-@pytest.fixture
-def wide_cache(tmp_path, write_emdat_cache):
+@pytest.fixture(scope="module")
+def wide_cache(tmp_path_factory):
     """A cache spanning enough years for the trend fit and the climatology to do anything.
 
     AAA gets a drought on top of its flood, so climatological and hydrological damage are both
     present for one country and only hydrological for the others.
     """
+    tmp_path = tmp_path_factory.mktemp("replication")
     events = [
         emdat_event({"ISO": iso, "DisNo.": f"{iso}-{year}", "Start Year": year, "End Year": year})
         for iso in EMDAT_COUNTRIES
@@ -53,7 +57,7 @@ def wide_cache(tmp_path, write_emdat_cache):
         )
         for year in YEARS
     ]
-    write_emdat_cache(events)
+    write_emdat_workbook(tmp_path, events)
 
     world_bank = [
         (iso, year, 1000 + 100 * n + 10 * i, 10 + 10 * n + i, 1_000_000 + 100_000 * n + 1000 * i)
@@ -72,19 +76,23 @@ def wide_cache(tmp_path, write_emdat_cache):
     pl.DataFrame(
         {"Date": [date(year, 1, 1) for year in YEARS], "Temp": [i + np.sin(i) for i in range(len(YEARS))]}
     ).write_parquet(tmp_path / "ocean_heat.parquet")
+    # A whole year of months, since only years the record covers in full survive the annual total.
+    # They share the year's total evenly, so the annual series is the 100(n + 1) + 5i below.
     precipitation = [
-        (iso, pd.Timestamp(f"{year}-01-01"), 100.0 * (n + 1) + 5 * i)
+        (iso, pd.Timestamp(f"{year}-{month:02d}-01"), (100.0 * (n + 1) + 5 * i) / 12)
         for n, iso in enumerate(PRECIPITATION_COUNTRIES)
-        for i, year in enumerate(YEARS)
+        for i, year in enumerate(PRECIPITATION_YEARS)
+        for month in range(1, 13)
     ]
     pd.DataFrame(precipitation, columns=["country_code", "time", "precip"]).set_index(
         ["country_code", "time"]
-    ).to_parquet(tmp_path / "gpcc__repaired_iso=True.parquet")
+    ).to_parquet(tmp_path / GPCC_CACHE_FILE)
     return tmp_path
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def replication(wide_cache):
+    """Built once: every test here only reads the panel."""
     return create_replication_data(wide_cache)
 
 
@@ -198,13 +206,20 @@ def test_the_damage_logs_are_offset_so_a_zero_survives(replication):
     assert entry["ln_damage_millions"] == pytest.approx(np.log(entry["damage_millions"] + LOG_EPSILON))
 
 
-def test_precipitation_deviation_is_measured_against_the_opening_window(replication):
-    """The baseline is the first years of the record, not the whole of it."""
-    # AAA's precipitation runs 100 + 5i over 36 years: the first 30 average 172.5, all 36 average
-    # 187.5. Only the opening window centres the first year on -72.5.
-    opening = replication.filter((pl.col("ISO") == "AAA") & (pl.col("year") == date(YEARS[0], 1, 1)))
+def test_precipitation_deviation_is_measured_against_the_named_baseline_period(replication):
+    """The baseline is a fixed calendar period, not whichever years the record happens to open with."""
+    # AAA's precipitation runs 100 + 5i from 1955. The 1961-1990 window is i = 6..35 and averages
+    # 202.5, so 1985 sits 47.5 above it; the record's first 30 years would average 172.5 and put it
+    # at 77.5 instead.
+    sample = replication.filter((pl.col("ISO") == "AAA") & (pl.col("year") == date(1985, 1, 1)))
 
-    assert opening["precip_deviation"].to_list() == [pytest.approx(-72.5)]
+    assert sample["precip_deviation"].to_list() == [pytest.approx(47.5)]
+
+
+def test_a_baseline_the_record_does_not_cover_is_refused(wide_cache):
+    """A baseline drawn from a handful of years would be published under the name of a full period."""
+    with pytest.raises(ValueError, match="baseline"):
+        create_replication_data(wide_cache, baseline=(1900, 1929))
 
 
 def test_the_ocean_temperature_deviation_is_residual_around_its_trend(replication):

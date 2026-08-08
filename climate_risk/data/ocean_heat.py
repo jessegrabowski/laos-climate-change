@@ -32,16 +32,19 @@ def transform_ocean_heat(seasonal: pl.DataFrame) -> pl.DataFrame:
     Parameters
     ----------
     seasonal : DataFrame
-        Anomalies with a ``Date`` column formatted ``YYYY-MM`` and a ``Temp`` column.
+        Anomalies with a ``Date`` column of ``YYYY-M`` text, whose month upstream leaves unpadded
+        below October, and a ``Temp`` column.
 
     Returns
     -------
     DataFrame
         Annual means dated to each year's first day, offset by ``OCEAN_HEAT_BASELINE_OFFSET``.
     """
+    # Only the year survives the average, so the year is all that is read.
+    year = pl.col("Date").str.split("-").list.first().cast(pl.Int32)
+
     return (
-        seasonal.with_columns(pl.col("Date").str.to_date("%Y-%m"))
-        .group_by(pl.col("Date").dt.year().alias("year"))
+        seasonal.group_by(year.alias("year"))
         .agg(pl.col("Temp").mean())
         .select(pl.date(pl.col("year"), 1, 1).alias("Date"), pl.col("Temp") + OCEAN_HEAT_BASELINE_OFFSET)
         .sort("Date")
