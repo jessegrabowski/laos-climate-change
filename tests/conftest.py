@@ -17,6 +17,8 @@ from climate_risk.const_vars import (
     BIG_RIVERS_FILENAME,
     MEDIUM_BIG_RIVERS_FILENAME,
 )
+from climate_risk.data.gpcc import GriddedProduct
+from climate_risk.data.source import DataSource
 
 # One event that clears every downstream filter: deaths above 100, affected above 1000, and a start
 # year inside both the 1970 and 1980 cutoffs. Tests override only the field under examination.
@@ -129,7 +131,7 @@ UPSTREAM_SHAPEFILE_LAYOUT = {
 
 
 def toy_precipitation(year_range):
-    """A GPCC grid with one point inside each country of `toy_world`."""
+    """A full-data grid with one point inside each country of `toy_world`."""
     start = int(year_range.split("_")[0])
     return xr.Dataset(
         {"precip": (("time", "lat", "lon"), np.arange(3.0).reshape(1, 1, 3))},
@@ -141,44 +143,63 @@ def toy_precipitation(year_range):
     )
 
 
-# The archive layout is stated literally, not derived from the loader, so a wrong path fails.
-GPCC_DECADES = (
-    "1891_1900",
-    "1901_1910",
-    "1911_1920",
-    "1921_1930",
-    "1931_1940",
-    "1941_1950",
-    "1951_1960",
-    "1961_1970",
-    "1971_1980",
-    "1981_1990",
-    "1991_2000",
-    "2001_2010",
-    "2011_2020",
-)
+def toy_monitoring(year, month):
+    """A monitoring grid, which names its variable ``p`` and dates it with a YYYYMMDD float."""
+    return xr.Dataset(
+        {"p": (("time", "lat", "lon"), np.arange(3.0).reshape(1, 1, 3))},
+        coords={
+            "time": ("time", [float(f"{year}{month:02d}01")], {"units": "day as %Y%m%d.%f"}),
+            "lat": [0.5],
+            "lon": [0.5, 2.5, 4.5],
+        },
+    )
 
 
-# The processed GPCC cache. Its key carries the span, so extending the record renames the entry.
-GPCC_CACHE_FILE = "gpcc__coverage=1891-2020__repaired_iso=True.parquet"
+# Archive names as they appear upstream, stated literally so a wrong path fails rather than agreeing
+# with the loader. One archive per product is the whole manifest a test needs: nothing the loader
+# does varies with how many are listed.
+TOY_ARCHIVES = ("full_data_monthly_v2022_1981_1990_10.nc.gz", "monitoring_v2022_10_2021_01.nc.gz")
+
+# The processed cache each manifest writes. The key carries the span, so extending the record renames
+# the entry instead of shadowing it.
+TOY_GPCC_CACHE = "gpcc__coverage=1981-2021__repaired_iso=True.parquet"
+GPCC_CACHE_FILE = "gpcc__coverage=1891-2025__repaired_iso=True.parquet"
 
 
-def gpcc_archive_name(decade: str) -> str:
-    return f"full_data_monthly_v2022_{decade}_10.nc.gz"
+def toy_gpcc_products() -> tuple[GriddedProduct, ...]:
+    """The published manifest cut to one archive from each product, which differ in both fields."""
+
+    def source(filename: str) -> DataSource:
+        return DataSource(
+            url=f"https://opendata.dwd.de/climate_environment/GPCC/{filename}",
+            filename=filename,
+            licence="CC BY 4.0",
+            citation="GPCC",
+            retrieved="2026-08-07",
+        )
+
+    full_data, monitoring = TOY_ARCHIVES
+
+    return (
+        GriddedProduct(variable="precip", first_year=1981, last_year=1990, sources=(source(full_data),)),
+        GriddedProduct(variable="p", first_year=2021, last_year=2021, sources=(source(monitoring),)),
+    )
 
 
 @pytest.fixture
 def write_gpcc_archives(tmp_path):
-    """Return a callable writing one gzipped archive per decade, some already extracted."""
+    """Return a callable writing one gzipped archive per product, some already extracted."""
 
     def write(extracted=()):
         gpcc_dir = tmp_path / "gpcc"
         gpcc_dir.mkdir(parents=True, exist_ok=True)
-        for decade in GPCC_DECADES:
-            raw = bytes(toy_precipitation(decade).to_netcdf())
-            (gpcc_dir / gpcc_archive_name(decade)).write_bytes(gzip.compress(raw))
-            if decade in extracted:
-                (gpcc_dir / gpcc_archive_name(decade).removesuffix(".gz")).write_bytes(raw)
+
+        grids = zip(TOY_ARCHIVES, (toy_precipitation("1981_1990"), toy_monitoring(2021, 1)), strict=True)
+        for name, grid in grids:
+            raw = bytes(grid.to_netcdf())
+            (gpcc_dir / name).write_bytes(gzip.compress(raw))
+            if name in extracted:
+                (gpcc_dir / name.removesuffix(".gz")).write_bytes(raw)
         return tmp_path
 
     return write
