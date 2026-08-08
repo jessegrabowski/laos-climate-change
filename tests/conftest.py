@@ -161,9 +161,8 @@ def toy_monitoring(year, month):
 # does varies with how many are listed.
 TOY_ARCHIVES = ("full_data_monthly_v2022_1981_1990_10.nc.gz", "monitoring_v2022_10_2021_01.nc.gz")
 
-# The processed cache each manifest writes. The key carries the span, so extending the record renames
-# the entry instead of shadowing it.
-TOY_GPCC_CACHE = "gpcc__coverage=1981-2021__repaired_iso=True.parquet"
+# The processed cache the published manifest writes. The key carries the span, so extending the
+# record renames the entry instead of shadowing it.
 GPCC_CACHE_FILE = "gpcc__coverage=1891-2025__repaired_iso=True.parquet"
 
 

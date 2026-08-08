@@ -15,9 +15,6 @@ YEARS = tuple(range(1985, 2021))
 # the baseline so that the reference period is neither the start of the record nor the whole of it.
 PRECIPITATION_YEARS = tuple(range(1955, 2021))
 
-# Stated literally rather than imported, so a narrowed baseline fails instead of moving with it.
-CLIMATOLOGY_BASELINE = (1961, 1990)
-
 # AAA and BBB appear everywhere. CCC is EM-DAT only and DDD World Bank only, so reconciliation has
 # something to drop from each side. EEE has both but no precipitation; FFF has only precipitation.
 EMDAT_COUNTRIES = ("AAA", "BBB", "CCC", "EEE")

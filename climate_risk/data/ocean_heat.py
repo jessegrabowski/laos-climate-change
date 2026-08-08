@@ -40,8 +40,7 @@ def transform_ocean_heat(seasonal: pl.DataFrame) -> pl.DataFrame:
     DataFrame
         Annual means dated to each year's first day, offset by ``OCEAN_HEAT_BASELINE_OFFSET``.
     """
-    # Only the year survives the average, so the year is all that is read. A date parse here would
-    # have to accept both the padded and the unpadded months upstream mixes.
+    # Only the year survives the average, so the year is all that is read.
     year = pl.col("Date").str.split("-").list.first().cast(pl.Int32)
 
     return (
