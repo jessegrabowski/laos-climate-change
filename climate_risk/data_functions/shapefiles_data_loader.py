@@ -5,6 +5,8 @@ from zipfile import ZipFile
 
 import geopandas as gpd
 
+from climate_risk.config.registry import resolve_isos
+from climate_risk.config.schema import CountryConfig, Place
 from climate_risk.data.fetch import fetch
 from climate_risk.data.source import DataSource, ShapefileArchive
 from climate_risk.exceptions import DataValidationError, ISOCodeValidationError
@@ -155,9 +157,10 @@ def download_shapefile(which: str, cache_dir: Path, *, force_reload: bool = Fals
 
 def extract_shapefiles(which: str, cache_dir: Path, *, force_reload: bool = False) -> None:
     """Unpack the archive for ``which`` unless what it holds is already on disk."""
-    archive = _archive_for(which)
-    directory = shapefile_dir(cache_dir)
+    _extract(_archive_for(which), shapefile_dir(cache_dir), force_reload=force_reload)
 
+
+def _extract(archive: ShapefileArchive, directory: Path, *, force_reload: bool) -> None:
     if archive.extracted_path(directory).exists() and not force_reload:
         return
 
@@ -166,15 +169,61 @@ def extract_shapefiles(which: str, cache_dir: Path, *, force_reload: bool = Fals
         zipped.extractall(path=directory)
 
 
+def load_archive(archive: ShapefileArchive, cache_dir: Path, *, force_reload: bool = False) -> gpd.GeoDataFrame:
+    """Fetch, unpack and read an archive, whether or not a registry entry names it."""
+    directory = shapefile_dir(cache_dir)
+
+    fetch(archive.source, directory, force=force_reload)
+    _extract(archive, directory, force_reload=force_reload)
+
+    return gpd.read_file(archive.extracted_path(directory), layer=0)
+
+
 def load_shapefile(
     which: str, cache_dir: Path, *, force_reload: bool = False, repair_ISO_codes: bool = True
 ) -> gpd.GeoDataFrame:
-    download_shapefile(which, cache_dir, force_reload=force_reload)
-    extract_shapefiles(which, cache_dir, force_reload=force_reload)
-
-    frame = gpd.read_file(_extracted_path(which, cache_dir), layer=0)
+    frame = load_archive(_archive_for(which), cache_dir, force_reload=force_reload)
 
     if which.lower() == "world" and repair_ISO_codes:
         return repair_iso_codes(frame)
 
     return frame
+
+
+def load_place_boundary(place: Place, cache_dir: Path, *, force_reload: bool = False) -> gpd.GeoDataFrame:
+    """
+    Read the geometry a place covers.
+
+    A place carrying its own boundary archive reads that; everything else is sliced out of the world
+    shapefile by the ISO codes the place resolves to.
+
+    Parameters
+    ----------
+    place : CountryConfig or RegionConfig
+        The place to read the geometry of.
+    cache_dir : Path
+        Directory the shapefile cache lives under.
+    force_reload : bool, optional
+        Re-download and re-unpack even when the cache is warm. Default False.
+
+    Returns
+    -------
+    GeoDataFrame
+        The place's geometry, in the boundary file's own CRS.
+
+    Raises
+    ------
+    DataValidationError
+        If the place resolves to no geometry, which would otherwise yield an empty grid.
+    """
+    if isinstance(place, CountryConfig) and place.boundary is not None:
+        return load_archive(place.boundary, cache_dir, force_reload=force_reload)
+
+    codes = resolve_isos(place)
+    world = load_shapefile("world", cache_dir, force_reload=force_reload)
+    boundary = world[world["ISO_A3"].isin(codes)]
+
+    if boundary.empty:
+        raise DataValidationError(f"The boundary file holds no geometry for {list(codes)}, so the grid would be empty.")
+
+    return boundary
