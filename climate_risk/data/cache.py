@@ -90,7 +90,7 @@ def cache_key(name: str, params: Mapping[str, object] | None = None) -> str:
     Returns
     -------
     str
-        A filename stem, such as ``points__grid_size=400__region=laos``.
+        A filename stem, such as ``points__grid_size=400__region=sea``.
 
     Raises
     ------

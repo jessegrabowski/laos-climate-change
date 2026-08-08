@@ -51,7 +51,6 @@ def _load_disaster_point_data(cache_dir: Path) -> gpd.GeoDataFrame:
 def load_disaster_point_data(cache_dir: Path):
     modified_data = False
 
-    # Load Laos shapefile
     events = load_emdat_data(cache_dir)["df_raw_filtered_adj"].to_pandas().set_index("emdat_index")
     data = _load_disaster_point_data(cache_dir)
 

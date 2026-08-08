@@ -7,8 +7,9 @@ from climate_risk.geo.crs import GEOGRAPHIC_CRS, PROJECTED_CRS
 # An ISO 3166-1 alpha-3 code, which is what every frame in the project keys countries on.
 ISO3_LENGTH = 3
 
-# Seeded so a run reproduces. Places may override it to draw a different sample.
-DEFAULT_RANDOM_SEED = sum(map(ord, "Laos GGGI Climate Adaptation"))
+# Seeded so a run reproduces. Places may override it to draw a different sample; changing this
+# value resamples every synthetic control in the project.
+DEFAULT_RANDOM_SEED = 2513
 
 
 def _validate_iso3(code: str, described_as: str) -> None:
