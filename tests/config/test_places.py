@@ -1,7 +1,7 @@
 import pytest
 
 from climate_risk.config.registry import CONFIG_ROOT, load_place, read_place, resolve_isos
-from climate_risk.config.schema import CountryConfig, RegionConfig
+from climate_risk.config.schema import CountryConfig, EventFilters, GeometrySpec, RegionConfig
 from climate_risk.data.world_bank import COUNTRY_CODE_BY_NAME
 from climate_risk.data_functions.disaster_point_data import REGION_ISO_CODES
 from climate_risk.data_functions.rivers_damage import LAOS_LOCATION_DICTIONARY
@@ -55,11 +55,11 @@ def test_laos_carries_the_coordinate_overrides_the_loader_hardcodes():
 
 
 def test_laos_takes_the_project_defaults_it_does_not_override():
-    """Stating the current defaults would freeze them here and hide a later project-wide change."""
+    """Compared against the schema, not against literals, which would freeze the defaults here too."""
     place = load_place("lao")
 
-    assert place.geometry.grid_size == 400
-    assert place.events.start_year == 1970
+    assert place.geometry == GeometrySpec()
+    assert place.events == EventFilters()
 
 
 def test_southeast_asia_matches_the_region_table_the_loader_hardcodes():
