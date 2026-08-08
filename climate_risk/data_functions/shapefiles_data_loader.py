@@ -94,11 +94,6 @@ def shapefile_dir(cache_dir: Path) -> Path:
     return cache_dir / "shapefiles"
 
 
-def _extracted_path(which: str, cache_dir: Path) -> Path:
-    """Where the archive for ``which`` unpacks to, which is what every later step reads."""
-    return _archive_for(which).extracted_path(shapefile_dir(cache_dir))
-
-
 def _archive_for(which: str) -> ShapefileArchive:
     try:
         return SHAPEFILE_ARCHIVES[which.lower()]
