@@ -6,8 +6,9 @@ import requests
 
 from climate_risk.data.ocean_heat import OCEAN_HEAT, load_ocean_heat_data, transform_ocean_heat
 
-# Upstream names its columns date and anomaly; the loader replaces the header row.
-PUBLISHED = "date,anomaly\n1960-01,0.0\n1960-07,2.0\n1961-02,10.0\n1961-08,20.0\n"
+# Upstream names its columns date and anomaly; the loader replaces the header row. The record is
+# quarterly and the month is written unpadded below October, so both spellings appear here.
+PUBLISHED = "date,anomaly\n1960-3,0.0\n1960-6,2.0\n1961-9,10.0\n1961-12,20.0\n"
 
 
 @pytest.fixture
@@ -41,13 +42,21 @@ def published(monkeypatch):
 
 @pytest.fixture
 def seasonal():
-    return pl.DataFrame({"Date": ["1960-01", "1960-07", "1961-02", "1961-08"], "Temp": [0.0, 2.0, 10.0, 20.0]})
+    return pl.DataFrame({"Date": ["1960-3", "1960-6", "1961-9", "1961-12"], "Temp": [0.0, 2.0, 10.0, 20.0]})
 
 
 def test_annual_means_are_shifted_onto_the_baseline(seasonal):
     """The offset is stated literally: the published results move if it is ever retuned."""
     annual = transform_ocean_heat(seasonal)
 
+    assert annual["Temp"].to_list() == pytest.approx([153.0, 167.0])
+
+
+def test_a_month_upstream_left_unpadded_is_still_read(seasonal):
+    """NCEI writes 1960-3, not 1960-03. A %Y-%m parse rejects 214 of the 285 published rows."""
+    annual = transform_ocean_heat(seasonal)
+
+    assert annual["Date"].to_list() == [date(1960, 1, 1), date(1961, 1, 1)]
     assert annual["Temp"].to_list() == pytest.approx([153.0, 167.0])
 
 
