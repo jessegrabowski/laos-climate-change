@@ -9,8 +9,8 @@ from climate_risk.data.gpcc import load_gpcc_data, transform_gpcc
 from tests.conftest import GPCC_DECADES, gpcc_archive_name, toy_world
 
 # Stated literally, so a wrong cache key fails rather than agreeing with itself.
-UNREPAIRED_CACHE = "gpcc__coverage=1981-2020__repaired_iso=False.parquet"
-REPAIRED_CACHE = "gpcc__coverage=1981-2020__repaired_iso=True.parquet"
+UNREPAIRED_CACHE = "gpcc__coverage=1891-2020__repaired_iso=False.parquet"
+REPAIRED_CACHE = "gpcc__coverage=1891-2020__repaired_iso=True.parquet"
 
 
 def gridded(rows) -> pd.DataFrame:

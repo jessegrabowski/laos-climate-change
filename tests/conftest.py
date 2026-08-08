@@ -142,11 +142,25 @@ def toy_precipitation(year_range):
 
 
 # The archive layout is stated literally, not derived from the loader, so a wrong path fails.
-GPCC_DECADES = ("1981_1990", "1991_2000", "2001_2010", "2011_2020")
+GPCC_DECADES = (
+    "1891_1900",
+    "1901_1910",
+    "1911_1920",
+    "1921_1930",
+    "1931_1940",
+    "1941_1950",
+    "1951_1960",
+    "1961_1970",
+    "1971_1980",
+    "1981_1990",
+    "1991_2000",
+    "2001_2010",
+    "2011_2020",
+)
 
 
 # The processed GPCC cache. Its key carries the span, so extending the record renames the entry.
-GPCC_CACHE_FILE = "gpcc__coverage=1981-2020__repaired_iso=True.parquet"
+GPCC_CACHE_FILE = "gpcc__coverage=1891-2020__repaired_iso=True.parquet"
 
 
 def gpcc_archive_name(decade: str) -> str:

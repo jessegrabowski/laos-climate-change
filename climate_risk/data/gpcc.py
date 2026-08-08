@@ -18,7 +18,9 @@ from climate_risk.geo.crs import GEOGRAPHIC_CRS
 
 _log = logging.getLogger(__name__)
 
-GPCC_DECADES = ("1981_1990", "1991_2000", "2001_2010", "2011_2020")
+# The full extent of the v2022 product. The climatology baseline is drawn from these years, so a
+# shortened list moves every published precipitation deviation.
+GPCC_DECADES = tuple(f"{start}_{start + 9}" for start in range(1891, 2020, 10))
 
 # The span the cache entry is keyed on, so extending the record writes a new entry rather than
 # serving the shorter one already on disk.
