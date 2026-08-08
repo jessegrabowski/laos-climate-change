@@ -1,9 +1,10 @@
-from datetime import date
+from datetime import date, datetime
 
 import polars as pl
 import pytest
 
 from climate_risk import load_all_data
+from climate_risk.data_functions.combine_data import _annual_precipitation
 from tests.conftest import emdat_event
 
 
@@ -46,14 +47,32 @@ def test_precipitation_is_totalled_over_the_year_not_averaged(merged):
     """GPCC publishes monthly; the panel wants the year's total rainfall, not a monthly mean."""
     annual = merged["gpcc"].filter((pl.col("ISO") == "AAA") & (pl.col("year") == date(1990, 1, 1)))
 
-    assert annual["precip"].to_list() == [pytest.approx(210.0)]
+    # AAA's 1990 months run 101..112, totalling 1278 against a monthly mean of 106.5.
+    assert annual["precip"].to_list() == [pytest.approx(1278.0)]
+
+
+def test_a_year_the_record_only_partly_covers_is_dropped():
+    """The near-real-time product ends mid-year, and a part-year total reads as a drought, not a gap."""
+    monthly = pl.DataFrame(
+        {
+            "country_code": ["AAA"] * 15,
+            "time": [datetime(2020, month, 1) for month in range(1, 13)]
+            + [datetime(2021, month, 1) for month in range(1, 4)],
+            "precip": [10.0] * 15,
+        }
+    )
+
+    by_country, worldwide = _annual_precipitation(monthly)
+
+    assert by_country["year"].to_list() == [date(2020, 1, 1)]
+    assert worldwide["year"].to_list() == [date(2020, 1, 1)]
 
 
 def test_the_worldwide_series_totals_every_country(merged):
     """It feeds a country-invariant regressor, so it sums across countries rather than averaging."""
     nineteen_ninety = merged["gpcc_agg"].filter(pl.col("year") == date(1990, 1, 1))
 
-    assert nineteen_ninety["precip"].to_list() == [pytest.approx(210.0 + 410.0 + 610.0)]
+    assert nineteen_ninety["precip"].to_list() == [pytest.approx(1278.0 + 2478.0 + 3678.0)]
 
 
 def test_the_time_series_carries_no_country(merged):

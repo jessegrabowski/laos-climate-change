@@ -78,10 +78,13 @@ def wide_cache(tmp_path, write_emdat_cache):
     pl.DataFrame(
         {"Date": [date(year, 1, 1) for year in YEARS], "Temp": [i + np.sin(i) for i in range(len(YEARS))]}
     ).write_parquet(tmp_path / "ocean_heat.parquet")
+    # A whole year of months, since only years the record covers in full survive the annual total.
+    # They share the year's total evenly, so the annual series is the 100(n + 1) + 5i below.
     precipitation = [
-        (iso, pd.Timestamp(f"{year}-01-01"), 100.0 * (n + 1) + 5 * i)
+        (iso, pd.Timestamp(f"{year}-{month:02d}-01"), (100.0 * (n + 1) + 5 * i) / 12)
         for n, iso in enumerate(PRECIPITATION_COUNTRIES)
         for i, year in enumerate(PRECIPITATION_YEARS)
+        for month in range(1, 13)
     ]
     pd.DataFrame(precipitation, columns=["country_code", "time", "precip"]).set_index(
         ["country_code", "time"]
