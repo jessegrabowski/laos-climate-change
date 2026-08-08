@@ -10,7 +10,7 @@ import geopandas as gpd
 import pandas as pd
 import xarray as xr
 
-from climate_risk.data.cache import cached, pandas_csv
+from climate_risk.data.cache import cached, pandas_parquet
 from climate_risk.data.fetch import fetch
 from climate_risk.data.source import DataSource
 from climate_risk.data_functions.shapefiles_data_loader import load_shapefile
@@ -104,7 +104,7 @@ def load_gpcc_data(cache_dir: Path, *, force_reload: bool = False, repair_ISO_co
         cache_dir,
         "gpcc",
         build,
-        pandas_csv(index_col=["country_code", "time"]),
+        pandas_parquet(),
         params={"repaired_iso": repair_ISO_codes},
         force=force_reload,
     )

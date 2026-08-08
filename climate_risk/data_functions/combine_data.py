@@ -2,142 +2,142 @@ from functools import partial, reduce
 from pathlib import Path
 
 import pandas as pd
+import polars as pl
 
 from climate_risk.data.co2 import load_co2_data
 from climate_risk.data.gpcc import load_gpcc_data
 from climate_risk.data.ocean_heat import load_ocean_heat_data
+from climate_risk.data.world_bank import load_wb_data
 from climate_risk.data_functions.emdat_processing import DISASTER_TYPES, load_emdat_data
-from climate_risk.data_functions.world_bank_data_loader import load_wb_data
+
+# The panel is keyed on the EM-DAT column names, which the other sources are renamed onto.
+PANEL_KEY = ["ISO", "Start_Year"]
+SERIES_KEY = "year"
 
 
-def load_all_data(cache_dir: Path) -> dict[str, pd.DataFrame]:
-    # Create the dictionary that contains the combined files
-    merged_dict = {}
+def _as_polars(frame: pd.DataFrame) -> pl.DataFrame:
+    """Convert a pandas frame from the geospatial layer into the polars this module merges in."""
+    return pl.from_pandas(frame.reset_index())
 
-    # 1. EM-DAT data representing number of events per year (index: Year, ISO3)
-    emdat = load_emdat_data(cache_dir)
-    merged_dict["emdat_events"] = emdat["df_prob_filtered_adjusted"].drop(columns=["Subregion"])
 
-    # 2. EM-DAT data representing the event damages (index: Year, ISO3)
-    merged_dict["emdat_damage"] = emdat["df_inten_filtered_adjusted"]
-    merged_dict["emdat_damage_hydro"] = emdat["df_inten_filtered_adjusted_hydro"]
-    merged_dict["emdat_damage_clim"] = emdat["df_inten_filtered_adjusted_clim"]
+def _outer_join(left: pl.DataFrame, right: pl.DataFrame, on: list[str] | str) -> pl.DataFrame:
+    """Join keeping every key from both sides, with the key columns merged rather than suffixed."""
+    return left.join(right, on=on, how="full", coalesce=True)
 
-    emdat["df_inten_filtered_adjusted_hydro"] = (
-        emdat["df_inten_filtered_adjusted_hydro"]
-        .drop(columns=["Region", "Subregion"])
-        .rename(columns=lambda x: f"{x}_hydro")
+
+def _suffixed_damage(damage: pl.DataFrame, suffix: str) -> pl.DataFrame:
+    """Tag one disaster class's damage columns so both classes can sit in one frame."""
+    measures = [column for column in damage.columns if column not in {*PANEL_KEY, "Region", "Subregion"}]
+
+    return damage.select(*PANEL_KEY, *(pl.col(name).alias(f"{name}_{suffix}") for name in measures))
+
+
+def _combine_emdat(emdat: dict[str, pl.DataFrame]) -> dict[str, pl.DataFrame]:
+    """Split EM-DAT into events and damages, with the hydrological and climatological classes joined on."""
+    hydro = _suffixed_damage(emdat["df_inten_filtered_adjusted_hydro"], "hydro")
+    clim = _suffixed_damage(emdat["df_inten_filtered_adjusted_clim"], "clim")
+
+    damage = emdat["df_inten_filtered_adjusted"]
+    for tagged in (hydro, clim):
+        damage = damage.join(tagged, on=PANEL_KEY, how="left")
+
+    return {
+        "emdat_events": emdat["df_prob_filtered_adjusted"].drop("Subregion"),
+        "emdat_damage": damage,
+        "emdat_damage_hydro": emdat["df_inten_filtered_adjusted_hydro"],
+        "emdat_damage_clim": emdat["df_inten_filtered_adjusted_clim"],
+        "df_inten_filtered_adjusted_hydro": hydro,
+        "df_inten_filtered_adjusted_clim": clim,
+    }
+
+
+def _shape_world_bank(indicators: pl.DataFrame) -> pl.DataFrame:
+    """Rename the World Bank columns onto the panel's key and date its years."""
+    return indicators.select(
+        pl.col("country_code").alias("ISO"),
+        pl.date(pl.col("year"), 1, 1).alias("Start_Year"),
+        pl.exclude("country_code", "year"),
     )
 
-    emdat["df_inten_filtered_adjusted_clim"] = (
-        emdat["df_inten_filtered_adjusted_clim"]
-        .drop(columns=["Region", "Subregion"])
-        .rename(columns=lambda x: f"{x}_clim")
+
+def _annual_precipitation(gpcc: pl.DataFrame) -> tuple[pl.DataFrame, pl.DataFrame]:
+    """
+    Total monthly precipitation to years.
+
+    Returns
+    -------
+    by_country : DataFrame
+        One row per country and year.
+    worldwide : DataFrame
+        One row per year, summed across countries.
+    """
+    dated = gpcc.select(
+        pl.col("country_code").alias("ISO"),
+        pl.date(pl.col("time").dt.year(), 1, 1).alias(SERIES_KEY),
+        "precip",
     )
 
-    merged_dict["emdat_damage"] = pd.merge(
-        merged_dict["emdat_damage"],
-        emdat["df_inten_filtered_adjusted_hydro"],
-        left_index=True,
-        right_index=True,
-        how="left",
+    return (
+        dated.group_by("ISO", SERIES_KEY).agg(pl.col("precip").sum()).sort("ISO", SERIES_KEY),
+        dated.group_by(SERIES_KEY).agg(pl.col("precip").sum()).sort(SERIES_KEY),
     )
 
-    merged_dict["emdat_damage"] = pd.merge(
-        merged_dict["emdat_damage"],
-        emdat["df_inten_filtered_adjusted_clim"],
-        left_index=True,
-        right_index=True,
-        how="left",
-    )
 
-    merged_dict["df_inten_filtered_adjusted_hydro"] = emdat["df_inten_filtered_adjusted_hydro"]
-    merged_dict["df_inten_filtered_adjusted_clim"] = emdat["df_inten_filtered_adjusted_clim"]
+def _keyed_by_year(series: pl.DataFrame) -> pl.DataFrame:
+    """Re-key an annual series onto the panel's year column. Both loaders date theirs to a year start."""
+    return series.rename({"Date": SERIES_KEY}).sort(SERIES_KEY)
 
-    # 3. The WB data, index (Year, ISO3)
-    merged_dict["wb_data"] = load_wb_data(cache_dir)
-    merged_dict["wb_data"] = (
-        merged_dict["wb_data"]
-        .reset_index()
-        .rename(columns={"country_code": "ISO", "year": "Start_Year"})
-        .assign(Start_Year=lambda x: pd.to_datetime(x.Start_Year, format="%Y"))
-        .set_index(["ISO", "Start_Year"])
-    )
-    # 4 A single dataframe containing all of the timeseries-only data: GPCC + NOAA + NECI, index: Year
-    # 4.1 GPCC: precipitation
-    gpcc = load_gpcc_data(cache_dir)
-    gpcc = gpcc.reset_index().rename(columns={"country_code": "ISO"})
-    gpcc["year"] = pd.to_datetime(pd.to_datetime(gpcc["time"]).dt.year, format="%Y")
-    merged_dict["gpcc"] = gpcc.pivot_table(values="precip", index=["ISO", "year"], aggfunc="sum")
-    merged_dict["gpcc_agg"] = gpcc.pivot_table(values="precip", index=["year"], aggfunc="sum")
 
-    # 4.2 NOAA: CO2
-    co2 = load_co2_data(cache_dir)
-    co2.reset_index(inplace=True)
-    co2["year"] = pd.to_datetime(co2["Date"].dt.year, format="%Y")
-    merged_dict["co2"] = co2.pivot_table(values="co2", index="year", aggfunc="sum")
+def _countries_in_common(*frames: pl.DataFrame) -> set[str]:
+    """Return the ISO codes present in every frame."""
+    return set.intersection(*(set(frame["ISO"].unique().to_list()) for frame in frames))
 
-    # 4.3 NECI: ocean temperature
-    ocean_heat = load_ocean_heat_data(cache_dir)
-    ocean_heat["year"] = ocean_heat.reset_index()["Date"].dt.year.values
-    ocean_heat = ocean_heat.pivot_table(values="Temp", index="year", aggfunc="mean")
-    ocean_heat.index = pd.to_datetime(ocean_heat.index, format="%Y")
-    merged_dict["ocean_temperature"] = ocean_heat
 
-    # ISO reconciliation: emdat and world
-    emdat_iso = merged_dict["emdat_damage"].index.get_level_values(0).unique()
-    world_iso = merged_dict["wb_data"].index.get_level_values(0).unique()
-    # Drop codes not in both
-    common_codes = set(world_iso).intersection(set(emdat_iso))
-    merged_dict["emdat_damage"] = (
-        merged_dict["emdat_damage"].loc[lambda x: x.index.get_level_values(0).isin(common_codes)].copy()
-    )
+def _only_countries(frame: pl.DataFrame, codes: set[str]) -> pl.DataFrame:
+    return frame.filter(pl.col("ISO").is_in(codes))
 
-    merged_dict["emdat_events"] = (
-        merged_dict["emdat_events"]
-        .loc[lambda x: x.index.get_level_values(0).isin(common_codes)]
-        .copy()
-        .drop(columns=["Region"])
-    )
 
-    merged_dict["wb_data"] = (
-        merged_dict["wb_data"].loc[merged_dict["wb_data"].index.get_level_values(0).isin(common_codes)].copy()
-    )
-
-    # ISO reconciliation: gpcc
-    merged_dict_iso = merged_dict["wb_data"].index.get_level_values(0).unique()
-    gpcc_iso = merged_dict["gpcc"].index.get_level_values(0).unique()
-
-    # Drop codes not in both
-    common_codes2 = set(merged_dict_iso).intersection(set(gpcc_iso))
-    merged_dict["gpcc"] = merged_dict["gpcc"].loc[lambda x: x.index.get_level_values(0).isin(common_codes2)].copy()
-
-    # 5 Country constants: everything that does not vary within a country.
-    events = emdat["df_prob_filtered_adjusted"].reset_index()
+def _country_constants(events: pl.DataFrame) -> pl.DataFrame:
+    """Reduce the events to the columns that do not vary within a country."""
     varies_by_year = {*DISASTER_TYPES, "Start_Year"}
-    constant_columns = [c for c in events.columns if c not in varies_by_year]
-    merged_dict["country_constants"] = events[constant_columns].drop_duplicates().set_index("ISO")
+    constant_columns = [column for column in events.columns if column not in varies_by_year]
 
-    # Merging panel data sets
-    merge_func = partial(pd.merge, left_index=True, right_index=True, how="outer")
+    return events.select(constant_columns).unique().sort("ISO")
+
+
+def load_all_data(cache_dir: Path) -> dict[str, pl.DataFrame]:
+    emdat = load_emdat_data(cache_dir)
+    merged_dict = _combine_emdat(emdat)
+
+    merged_dict["wb_data"] = _shape_world_bank(load_wb_data(cache_dir))
+    merged_dict["gpcc"], merged_dict["gpcc_agg"] = _annual_precipitation(_as_polars(load_gpcc_data(cache_dir)))
+    merged_dict["co2"] = _keyed_by_year(load_co2_data(cache_dir))
+    merged_dict["ocean_temperature"] = _keyed_by_year(load_ocean_heat_data(cache_dir))
+
+    # A country needs both a disaster record and development indicators to earn a row in the panel.
+    common = _countries_in_common(merged_dict["emdat_damage"], merged_dict["wb_data"])
+    merged_dict["emdat_damage"] = _only_countries(merged_dict["emdat_damage"], common)
+    merged_dict["emdat_events"] = _only_countries(merged_dict["emdat_events"], common).drop("Region")
+    merged_dict["wb_data"] = _only_countries(merged_dict["wb_data"], common)
+
+    with_precipitation = _countries_in_common(merged_dict["wb_data"], merged_dict["gpcc"])
+    merged_dict["gpcc"] = _only_countries(merged_dict["gpcc"], with_precipitation)
+
+    merged_dict["country_constants"] = _country_constants(emdat["df_prob_filtered_adjusted"])
+
     merged_dict["df_panel"] = reduce(
-        lambda left, right: merge_func(left, right),
+        partial(_outer_join, on=PANEL_KEY),
         [
             merged_dict["emdat_events"],
             merged_dict["emdat_damage"],
             merged_dict["wb_data"],
-            (merged_dict["gpcc"].reset_index().rename(columns={"year": "Start_Year"}).set_index(["ISO", "Start_Year"])),
+            merged_dict["gpcc"].rename({SERIES_KEY: "Start_Year"}),
         ],
-    )
+    ).sort(PANEL_KEY)
 
-    # Merging time series
     merged_dict["df_time_series"] = reduce(
-        lambda left, right: merge_func(left, right),
-        [
-            merged_dict["co2"],
-            merged_dict["ocean_temperature"],
-            merged_dict["gpcc_agg"],
-        ],
-    )
+        partial(_outer_join, on=SERIES_KEY),
+        [merged_dict["co2"], merged_dict["ocean_temperature"], merged_dict["gpcc_agg"]],
+    ).sort(SERIES_KEY)
 
     return merged_dict

@@ -23,7 +23,8 @@ dependencies = [
     "h5netcdf>=1.6,<2",
     "openpyxl>=3.1,<4",
     "xlrd>=2.0,<3",
-    "kuznets>=1.0,<2",
+    "fastexcel>=0.20,<1",
+    "kuznets[polars]>=1.0.1,<2",
     "geopandas>=1.1,<2",
     "pymc>=6.2,<7",
     "pytensor>=3.2,<4",
@@ -93,6 +94,9 @@ matplotlib = ">=3.11,<4"
 seaborn = ">=0.13,<1"
 tqdm = ">=4.70,<5"
 requests = ">=2.34.2,<3"
+polars = ">=1.43,<2"
+pyarrow = ">=25.0,<26"
+fastexcel = ">=0.20,<1"
 
 [tool.pixi.feature.dev.dependencies]
 ruff = ">=0.16,<1"
@@ -150,7 +154,16 @@ filterwarnings = [
 
 [tool.mypy]
 # An include list that only grows. A package joins it when it is typed, and never leaves.
-files = ["climate_risk/data", "climate_risk/geo", "climate_risk/stats", "climate_risk/models", "tests"]
+files = [
+    "climate_risk/data",
+    "climate_risk/data_functions/combine_data.py",
+    "climate_risk/replication_data.py",
+    "climate_risk/data_functions/emdat_processing.py",
+    "climate_risk/geo",
+    "climate_risk/stats",
+    "climate_risk/models",
+    "tests",
+]
 python_version = "3.12"
 disallow_untyped_defs = true
 disallow_incomplete_defs = true

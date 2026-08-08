@@ -1,4 +1,6 @@
-import pandas as pd
+from datetime import date
+
+import polars as pl
 import pytest
 import requests
 
@@ -39,19 +41,19 @@ def published(monkeypatch):
     return calls
 
 
-def test_the_annual_means_become_one_column_indexed_by_year():
-    raw = pd.DataFrame({"year": [1959, 1960], "mean": [315.98, 316.91], "unc": [0.12, 0.12]})
+def test_the_annual_means_become_a_dated_co2_column():
+    raw = pl.DataFrame({"year": [1959, 1960], "mean": [315.98, 316.91], "unc": [0.12, 0.12]})
 
     frame = transform_co2(raw)
 
-    assert frame.columns.tolist() == ["co2"]
-    assert frame.index.tolist() == [pd.Timestamp("1959-01-01"), pd.Timestamp("1960-01-01")]
-    assert frame["co2"].tolist() == [315.98, 316.91]
+    assert frame.columns == ["Date", "co2"]
+    assert frame["Date"].to_list() == [date(1959, 1, 1), date(1960, 1, 1)]
+    assert frame["co2"].to_list() == [315.98, 316.91]
 
 
 def test_the_uncertainty_column_is_dropped():
     """Downstream sums the frame, so an extra numeric column would silently join the total."""
-    raw = pd.DataFrame({"year": [1959], "mean": [315.98], "unc": [0.12]})
+    raw = pl.DataFrame({"year": [1959], "mean": [315.98], "unc": [0.12]})
 
     assert "unc" not in transform_co2(raw).columns
 
@@ -59,7 +61,7 @@ def test_the_uncertainty_column_is_dropped():
 def test_the_published_preamble_is_skipped(tmp_path, published):
     frame = load_co2_data(tmp_path)
 
-    assert frame["co2"].tolist() == [315.98, 316.91]
+    assert frame["co2"].to_list() == [315.98, 316.91]
 
 
 def test_a_warm_cache_does_not_reach_the_network(tmp_path, published):
@@ -78,7 +80,7 @@ def test_the_processed_cache_survives_the_raw_download_being_deleted(tmp_path, p
     frame = load_co2_data(tmp_path)
 
     assert len(published) == 1
-    assert frame["co2"].tolist() == [315.98, 316.91]
+    assert frame["co2"].to_list() == [315.98, 316.91]
 
 
 def test_force_reload_goes_back_to_the_source(tmp_path, published):
@@ -93,4 +95,4 @@ def test_the_raw_download_is_named_for_the_file_upstream_serves(tmp_path, publis
     load_co2_data(tmp_path)
 
     assert CO2.path(tmp_path).name == "co2_annmean_mlo.csv"
-    assert (tmp_path / "co2.csv").exists()
+    assert (tmp_path / "co2.parquet").exists()

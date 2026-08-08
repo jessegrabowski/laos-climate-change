@@ -6,7 +6,7 @@ import geopandas as gpd
 import pandas as pd
 import xarray as xr
 
-from climate_risk.data.cache import cached, pandas_csv
+from climate_risk.data.cache import cached, pandas_parquet
 from climate_risk.data.fetch import fetch
 from climate_risk.data.source import DataSource
 from climate_risk.data_functions.shapefiles_data_loader import load_shapefile
@@ -86,8 +86,7 @@ def load_hadcrut_data(cache_dir: Path, *, force_reload: bool = False, repair_ISO
         cache_dir,
         "hadcrut",
         build,
-        # Caches exist with the year written bare and as an ISO date, so no format is given.
-        pandas_csv(index_col=["ISO", "year"], parse_dates=["year"]),
+        pandas_parquet(),
         params={"repaired_iso": repair_ISO_codes},
         force=force_reload,
     )

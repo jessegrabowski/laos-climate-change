@@ -2,9 +2,12 @@ import gzip
 import socket
 import zipfile
 
+from datetime import date
+
 import geopandas as gpd
 import numpy as np
 import pandas as pd
+import polars as pl
 import pytest
 import xarray as xr
 
@@ -205,21 +208,36 @@ def write_full_cache(tmp_path, write_emdat_cache):
             )
         )
         write_emdat_cache(events)
-        (tmp_path / "world_bank.csv").write_text(
-            "country_code,year,gdp_per_cap,population_density,Population\n"
-            "AAA,1990,1000.0,10.0,1000000\nAAA,1991,1100.0,11.0,1010000\n"
-            "BBB,1990,2000.0,20.0,2000000\nBBB,1991,2200.0,22.0,2020000\n"
-            "DDD,1990,3000.0,30.0,3000000\nDDD,1991,3300.0,33.0,3030000\n"
-            "EEE,1990,4000.0,40.0,4000000\nEEE,1991,4400.0,44.0,4040000\n"
-        )
+        pl.DataFrame(
+            [
+                ("AAA", 1990, 1000.0, 10.0, 1000000),
+                ("AAA", 1991, 1100.0, 11.0, 1010000),
+                ("BBB", 1990, 2000.0, 20.0, 2000000),
+                ("BBB", 1991, 2200.0, 22.0, 2020000),
+                ("DDD", 1990, 3000.0, 30.0, 3000000),
+                ("DDD", 1991, 3300.0, 33.0, 3030000),
+                ("EEE", 1990, 4000.0, 40.0, 4000000),
+                ("EEE", 1991, 4400.0, 44.0, 4040000),
+            ],
+            schema=["country_code", "year", "gdp_per_cap", "population_density", "Population"],
+            orient="row",
+        ).write_parquet(tmp_path / "world_bank.parquet")
         # The cache key is stated literally, so a wrong one fails rather than agreeing with itself.
-        (tmp_path / "co2.csv").write_text("Date,co2\n1990-01-01,354.0\n1991-01-01,355.0\n")
-        (tmp_path / "ocean_heat.csv").write_text("Date,Temp\n1990-01-01,1.0\n1991-01-01,2.0\n")
-        (tmp_path / "gpcc__repaired_iso=True.csv").write_text(
-            "country_code,time,precip\nAAA,1990-01-01,100.0\nAAA,1991-01-01,110.0\n"
-            "BBB,1990-01-01,200.0\nBBB,1991-01-01,220.0\n"
-            "FFF,1990-01-01,300.0\nFFF,1991-01-01,330.0\n"
+        pl.DataFrame({"Date": [date(1990, 1, 1), date(1991, 1, 1)], "co2": [354.0, 355.0]}).write_parquet(
+            tmp_path / "co2.parquet"
         )
+        pl.DataFrame({"Date": [date(1990, 1, 1), date(1991, 1, 1)], "Temp": [1.0, 2.0]}).write_parquet(
+            tmp_path / "ocean_heat.parquet"
+        )
+        # GPCC publishes monthly, so two months a year keeps a total distinguishable from an average.
+        pd.DataFrame(
+            [
+                (iso, pd.Timestamp(f"{year}-{month:02d}-01"), base + 10.0 * offset)
+                for iso, base in (("AAA", 100.0), ("BBB", 200.0), ("FFF", 300.0))
+                for offset, (year, month) in enumerate([(1990, 1), (1990, 7), (1991, 1), (1991, 7)])
+            ],
+            columns=["country_code", "time", "precip"],
+        ).set_index(["country_code", "time"]).to_parquet(tmp_path / "gpcc__repaired_iso=True.parquet")
         return tmp_path
 
     return write

@@ -1,4 +1,6 @@
-import pandas as pd
+from datetime import date
+
+import polars as pl
 import pytest
 import requests
 
@@ -39,28 +41,27 @@ def published(monkeypatch):
 
 @pytest.fixture
 def seasonal():
-    return pd.DataFrame({"Date": ["1960-01", "1960-07", "1961-02", "1961-08"], "Temp": [0.0, 2.0, 10.0, 20.0]})
+    return pl.DataFrame({"Date": ["1960-01", "1960-07", "1961-02", "1961-08"], "Temp": [0.0, 2.0, 10.0, 20.0]})
 
 
 def test_annual_means_are_shifted_onto_the_baseline(seasonal):
     """The offset is stated literally: the published results move if it is ever retuned."""
     annual = transform_ocean_heat(seasonal)
 
-    assert annual["Temp"].tolist() == pytest.approx([153.0, 167.0])
+    assert annual["Temp"].to_list() == pytest.approx([153.0, 167.0])
 
 
 def test_years_are_stamped_at_their_start(seasonal):
     """The panel joins on a year-start timestamp, which resampling leaves at year-end."""
     annual = transform_ocean_heat(seasonal)
 
-    assert annual.index.tolist() == [pd.Timestamp("1960-01-01"), pd.Timestamp("1961-01-01")]
+    assert annual["Date"].to_list() == [date(1960, 1, 1), date(1961, 1, 1)]
 
 
 def test_the_published_header_is_replaced(tmp_path, published):
     frame = load_ocean_heat_data(tmp_path)
 
-    assert frame.columns.tolist() == ["Temp"]
-    assert frame.index.name == "Date"
+    assert frame.columns == ["Date", "Temp"]
 
 
 def test_a_warm_cache_does_not_reach_the_network(tmp_path, published):
@@ -68,13 +69,6 @@ def test_a_warm_cache_does_not_reach_the_network(tmp_path, published):
     load_ocean_heat_data(tmp_path)
 
     assert len(published) == 1
-
-
-def test_the_warm_cache_is_read_with_parsed_dates(tmp_path, published):
-    """Downstream reaches for `.dt.year`, which a string index cannot answer."""
-    load_ocean_heat_data(tmp_path)
-
-    assert isinstance(load_ocean_heat_data(tmp_path).index, pd.DatetimeIndex)
 
 
 def test_the_processed_cache_survives_the_raw_download_being_deleted(tmp_path, published):
@@ -85,7 +79,7 @@ def test_the_processed_cache_survives_the_raw_download_being_deleted(tmp_path, p
     frame = load_ocean_heat_data(tmp_path)
 
     assert len(published) == 1
-    assert frame["Temp"].tolist() == pytest.approx([153.0, 167.0])
+    assert frame["Temp"].to_list() == pytest.approx([153.0, 167.0])
 
 
 def test_force_reload_goes_back_to_the_source(tmp_path, published):
@@ -100,4 +94,4 @@ def test_the_raw_download_is_named_for_the_file_upstream_serves(tmp_path, publis
     load_ocean_heat_data(tmp_path)
 
     assert OCEAN_HEAT.path(tmp_path).name == "ohc_levitus_climdash_seasonal.csv"
-    assert (tmp_path / "ocean_heat.csv").exists()
+    assert (tmp_path / "ocean_heat.parquet").exists()
