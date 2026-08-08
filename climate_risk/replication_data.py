@@ -11,7 +11,8 @@ PANEL_KEY = ["ISO", "year"]
 HYDROLOGICAL_TYPES = ["Flood", "Storm"]
 CLIMATOLOGICAL_TYPES = ["Extreme temperature", "Wildfire", "Drought"]
 
-# The published baseline climatology, against which each country's precipitation is centred.
+# Each country's precipitation is centred on its mean over this many years, counted from the start
+# of the record rather than from a fixed calendar period.
 CLIMATOLOGY_YEARS = 30
 
 # The seasonal period the ocean-heat trend is fitted with.
@@ -84,7 +85,8 @@ def create_replication_data(cache_dir: Path) -> pl.DataFrame:
     damage = data["emdat_damage"].rename({"Start_Year": "year"})
     indicators = data["wb_data"].rename({"Start_Year": "year"})
 
-    # The first and last years of the series are dropped: they are the ends of the published window.
+    # The first and last years are dropped. The reason is unrecorded, and the trend below is fitted
+    # over this window, so widening it moves every published deviation.
     climate = data["df_time_series"].select("year", "co2", "Temp", "precip").slice(1, -1)
 
     disasters = events.select(
