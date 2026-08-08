@@ -14,10 +14,6 @@ import xarray as xr
 
 from shapely.geometry import LineString, Point, box
 
-from climate_risk.const_vars import (
-    BIG_RIVERS_FILENAME,
-    MEDIUM_BIG_RIVERS_FILENAME,
-)
 from climate_risk.data.gpcc import GriddedProduct
 from climate_risk.data.source import DataSource
 
@@ -365,13 +361,14 @@ def write_point_grid_cache(write_shapefile_cache, write_rivers_cache, rivers_cle
 
 @pytest.fixture
 def write_rivers_cache(tmp_path):
-    """Return a callable writing the processed river shapefiles a warm cache would hold."""
+    """Return a callable writing the processed river network a warm cache would hold."""
 
     def write(gdf, include_medium=False):
         rivers_dir = tmp_path / "rivers"
         rivers_dir.mkdir(parents=True, exist_ok=True)
-        filename = MEDIUM_BIG_RIVERS_FILENAME if include_medium else BIG_RIVERS_FILENAME
-        gdf.to_file(rivers_dir / filename)
+        # The cache key is stated literally, so a wrong one fails rather than agreeing with itself.
+        cutoff = 6 if include_medium else 5
+        gdf.to_parquet(rivers_dir / f"rivers__stream_order_below={cutoff}.parquet")
         return tmp_path
 
     return write

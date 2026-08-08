@@ -54,12 +54,6 @@ EM_DAT_COL_DICT = {
 
 MODEL_DF_FILENAME = "model_df.csv"
 DAMAGE_DF_FILENAME = "damage_df.csv"
-RIVERS_URL = "https://data.hydrosheds.org/file/HydroRIVERS/HydroRIVERS_v10_shp.zip"
-RIVERS_SHAPEFILE_FILENAME = "HydroRIVERS_v10.shp"
-RIVERS_ARCHIVE_DIRNAME = "HydroRIVERS_v10_shp"
-RIVERS_ZIP_FILENAME = "rivers_zip_file.zip"
-BIG_RIVERS_FILENAME = "big_rivers.shp"
-MEDIUM_BIG_RIVERS_FILENAME = "medium_big_rivers.shp"
 RIVERS_HYDRO_DAMAGE_FILENAME = "rivers_hydro_damage.shp"
 RIVERS_FLOODS_DAMAGE_FILENAME = "rivers_floods_damage.shp"
 LAOS_LOCATION_DICTIONARY = {
