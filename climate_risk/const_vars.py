@@ -54,8 +54,6 @@ EM_DAT_COL_DICT = {
 
 MODEL_DF_FILENAME = "model_df.csv"
 DAMAGE_DF_FILENAME = "damage_df.csv"
-RIVERS_HYDRO_DAMAGE_FILENAME = "rivers_hydro_damage.shp"
-RIVERS_FLOODS_DAMAGE_FILENAME = "rivers_floods_damage.shp"
 LAOS_LOCATION_DICTIONARY = {
     "1971-0048-LAO": {"Latitude": 17.9757, "Longitude": 102.6331},
     "2000-0583-LAO": {"Latitude": 19.0, "Longitude": 102.0},
