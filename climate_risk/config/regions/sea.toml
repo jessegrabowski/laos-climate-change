@@ -1,0 +1,6 @@
+key = "sea"
+name = "Southeast Asia"
+
+# Singapore and Brunei are excluded: both are small enough that the grid resolves to too few points
+# to be worth carrying.
+members = ["MMR", "THA", "LAO", "KHM", "VNM", "IDN", "MYS", "PHL", "TLS"]

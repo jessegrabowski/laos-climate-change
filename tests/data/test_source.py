@@ -3,6 +3,8 @@ import re
 import pytest
 import requests
 
+from climate_risk.config.registry import CONFIG_ROOT, read_place
+from climate_risk.config.schema import CountryConfig
 from climate_risk.data.co2 import CO2
 from climate_risk.data.fetch import USER_AGENT
 from climate_risk.data.gpcc import FULL_DATA, MONITORING
@@ -48,8 +50,20 @@ def test_an_unparseable_retrieved_date_is_rejected():
         source(retrieved="03-08-2026")
 
 
-# Every source the library downloads. A new one is added here so the reachability check covers it.
-# The monitoring archives all share one URL pattern, so its ends are checked rather than every month.
+def place_boundaries() -> dict[str, DataSource]:
+    """Every boundary a shipped place declares, so moving a source into TOML does not lose it here."""
+    places = (read_place(path) for path in sorted(CONFIG_ROOT.glob("*/*.toml")))
+
+    return {
+        f"{place.iso3}_BOUNDARY": place.boundary
+        for place in places
+        if isinstance(place, CountryConfig) and place.boundary is not None
+    }
+
+
+# Every source the library downloads. A new one declared in code is added here; one declared in a
+# place file is picked up automatically. The monitoring archives all share one URL pattern, so its
+# ends are checked rather than every month.
 SOURCES = (
     {
         "CO2": CO2,
@@ -62,7 +76,16 @@ SOURCES = (
     }
     | {archive.filename: archive for archive in FULL_DATA.sources}
     | {archive.filename: archive for archive in (MONITORING.sources[0], MONITORING.sources[-1])}
+    | place_boundaries()
 )
+
+
+def test_a_boundary_declared_in_a_place_file_reaches_the_check():
+    """The network check walks `SOURCES`; a place file is invisible to it unless collected here.
+
+    Runs unmarked so it fails when the collection breaks, rather than only under `--run-network`.
+    """
+    assert "LAO_BOUNDARY" in SOURCES
 
 
 @pytest.mark.network
