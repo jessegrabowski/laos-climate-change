@@ -162,7 +162,7 @@ def load_shapefile(
 
     df = gpd.read_file(shapefile_path, layer=0)
 
-    if which == "world" and repair_ISO_codes:
+    if which.lower() == "world" and repair_ISO_codes:
         df = repair_iso_codes(df)
 
     return df

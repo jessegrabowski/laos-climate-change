@@ -21,6 +21,16 @@ def test_warm_cache_reads_without_downloading(write_shapefile_cache):
     assert len(world) == 3
 
 
+def test_the_repair_does_not_depend_on_how_the_caller_capitalised_it(write_shapefile_cache):
+    """Every other branch lowercases `which`, so a capitalised call silently skipped the repair."""
+    cache_dir = write_shapefile_cache("world", toy_world_needing_repair())
+
+    world = load_shapefile("World", cache_dir)
+
+    assert world.loc[world["WB_NAME"] == "France", "ISO_A3"].tolist() == ["FRA"]
+    assert "-99" not in set(world["ISO_A3"])
+
+
 def test_laos_reads_the_district_layer_from_a_flat_archive(write_shapefile_cache):
     """The archive unpacks flat, so reading the wrong admin level means reading a different file."""
     cache_dir = write_shapefile_cache("laos", toy_world())
