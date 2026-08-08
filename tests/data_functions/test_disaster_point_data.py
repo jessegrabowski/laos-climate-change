@@ -5,6 +5,8 @@ from typing import Any
 import numpy as np
 import pytest
 
+from geopandas.testing import assert_geodataframe_equal
+
 from climate_risk import load_synthetic_non_disaster_points
 from climate_risk.data_functions.disaster_point_data import (
     REGION_ISO_CODES,
@@ -78,15 +80,26 @@ def test_zero_distances_do_not_become_infinite_logs(write_point_grid_cache, rive
     assert clear_of_a_river["log_distance_to_river"].eq(np.log(clear_of_a_river["distance_to_river"])).all()
 
 
-def test_reloading_the_cached_grid_restores_the_full_column_names(write_point_grid_cache):
-    """Shapefile fields truncate to ten characters, so the warm path renames them back."""
+def test_a_different_grid_size_is_a_different_cache_entry(write_point_grid_cache):
+    """Two resolutions sharing one entry would serve whichever run happened first."""
+    cache_dir = write_point_grid_cache()
+    kwargs: dict[str, Any] = {"region": "custom", "iso_list": ["FRA"], "file_reg_name": "toy"}
+
+    coarse = load_grid_point_data(cache_dir, grid_size=3, **kwargs)
+    fine = load_grid_point_data(cache_dir, grid_size=6, **kwargs)
+
+    assert len(fine) > len(coarse)
+
+
+def test_the_cached_grid_round_trips_unchanged(write_point_grid_cache):
+    """The grid is written once and read on every later run, so the two must be the same frame."""
     cache_dir = write_point_grid_cache()
     kwargs: dict[str, Any] = {"region": "custom", "iso_list": ["FRA"], "file_reg_name": "toy", "grid_size": 3}
 
     written = load_grid_point_data(cache_dir, **kwargs)
     reloaded = load_grid_point_data(cache_dir, **kwargs)
 
-    assert set(written.columns) == set(reloaded.columns)
+    assert_geodataframe_equal(reloaded, written)
     assert {"distance_to_river", "log_distance_to_river", "log_distance_to_coastline"} <= set(reloaded.columns)
 
 

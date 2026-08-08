@@ -7,6 +7,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
+from climate_risk.data.cache import cached, geo_parquet
 from climate_risk.data_functions.emdat_processing import load_emdat_data
 from climate_risk.data_functions.rivers_damage import load_rivers_data
 from climate_risk.data_functions.shapefiles_data_loader import load_shapefile, shapefile_dir
@@ -122,32 +123,12 @@ def load_grid_point_data(
         file_reg_name = region
         iso_list = list(REGION_ISO_CODES[region])
 
-    fname = f"{file_reg_name}_points_{grid_size}.shp"
-    folder_path = shapefile_dir(cache_dir) / fname
-
-    if not folder_path.exists():
-        folder_path.mkdir(parents=True)
-
-    fpath = folder_path / f"{fname}.shp"
-
-    if fpath.exists() and not force_reload:
-        _log.info(f"Loading data found at {fpath}")
-        points = gpd.read_file(fpath)
-        points = points.rename(
-            columns={
-                "distance_t": "distance_to_river",
-                "distance_1": "distance_to_coastline",
-                "log_distan": "log_distance_to_river",
-                "log_dist_1": "log_distance_to_coastline",
-            }
-        )
-
-    elif not fpath.exists() or force_reload:
+    def build() -> gpd.GeoDataFrame:
         _log.info("Loading shapefiles and rivers data")
         world = load_shapefile("world", cache_dir)
 
         if altered_shape_file is None:
-            point_map = world.query("ISO_A3 in @iso_list")
+            point_map = world[world["ISO_A3"].isin(iso_list)]
 
         else:
             point_map = altered_shape_file
@@ -192,10 +173,16 @@ def load_grid_point_data(
             log_distance_to_river=lambda x: np.log(x.distance_to_river.clip(lower=MIN_DISTANCE_METRES)),
             log_distance_to_coastline=lambda x: np.log(x.distance_to_coastline.clip(lower=MIN_DISTANCE_METRES)),
         )
+        return points
 
-        points.to_file(fpath)
-
-    return points
+    return cached(
+        shapefile_dir(cache_dir),
+        "points",
+        build,
+        geo_parquet(),
+        params={"region": file_reg_name, "grid_size": grid_size},
+        force=force_reload,
+    )
 
 
 def _sample_by_region(data, world, multiplier=1, rng=None):
