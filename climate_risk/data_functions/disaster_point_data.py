@@ -1,4 +1,3 @@
-import itertools
 import logging
 
 from pathlib import Path
@@ -18,6 +17,9 @@ from climate_risk.geo.distance import MIN_DISTANCE_METRES, get_distance_to
 from climate_risk.geo.island_countries import ISLAND_COUNTRY_ISO3
 
 _log = logging.getLogger(__name__)
+
+# Every grid point is stamped with this year, so the non-disaster controls sit at one point in time.
+CONTROL_YEAR = pd.Timestamp("1984-01-01")
 
 
 def disaster_points_path(cache_dir: Path) -> Path:
@@ -347,41 +349,33 @@ def load_non_disaster_grid(
     grid_name: str,
     *,
     force_generate: bool = False,
-    three_dimensioal_grid: bool = False,
-):
+) -> gpd.GeoDataFrame:
+    """
+    Label a point grid with the country each point falls in, and cache it as non-disaster controls.
+
+    Parameters
+    ----------
+    cache_dir : Path
+        Directory the shapefile and grid caches live under.
+    grid : GeoDataFrame, optional
+        Points to label. Read only when the cache is cold, so a warm call may pass None.
+    grid_name : str
+        Name the result is cached under.
+    force_generate : bool, optional
+        Rebuild even when the cache is warm. Default False.
+
+    Returns
+    -------
+    GeoDataFrame
+        One row per point, with ``ISO``, ``is_disaster`` of zero, and ``Start_Year``.
+    """
+
     def build() -> gpd.GeoDataFrame:
         world = load_shapefile("world", cache_dir)
 
-        # We merge the grid with the world shapefile to get the ISO
-        not_disasters = gpd.sjoin(
-            grid,
-            world[["geometry", "ISO_A3"]],
-            how="left",
-        ).rename(columns={"ISO_A3": "ISO"})
+        not_disasters = gpd.sjoin(grid, world[["geometry", "ISO_A3"]], how="left").rename(columns={"ISO_A3": "ISO"})
         not_disasters["is_disaster"] = 0
-
-        if three_dimensioal_grid:
-            # Obtain years and ISOs
-            years = load_disaster_point_data(cache_dir)["Start_Year"].unique()
-            country_ISOs = not_disasters["ISO"].unique()
-
-            # Create the Cartesian product of the two arrays
-            combinations = list(itertools.product(years, country_ISOs))
-            combinations_df = pd.DataFrame(combinations, columns=["Start_Date", "ISO"]).sort_values("ISO")
-
-            # Merge files and create not_disasters_grid
-            not_disasters = pd.merge(
-                not_disasters,
-                combinations_df,
-                left_on="ISO",
-                right_on="ISO",
-                how="left",
-            ).rename(columns={"Start_Date": "Start_Year"})
-
-        else:
-            not_disasters = not_disasters.rename(columns={"Start_Date": "Start_Year"})
-            not_disasters["Start_Year"] = "1984-01-01"
-            not_disasters["Start_Year"] = pd.to_datetime(not_disasters["Start_Year"])
+        not_disasters["Start_Year"] = CONTROL_YEAR
 
         return not_disasters
 

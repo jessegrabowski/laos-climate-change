@@ -17,7 +17,7 @@ from climate_risk.data_functions.disaster_point_data import (
     load_non_disaster_grid,
 )
 from climate_risk.geo.crs import GEOGRAPHIC_CRS
-from tests.conftest import SYNTHETIC_SOURCE_EVENTS
+from tests.conftest import SYNTHETIC_SOURCE_EVENTS, toy_world_needing_repair
 
 # A legacy cache spells longitude `long`; the value under `lon` is the one to keep.
 STALE_LON = 9.9
@@ -160,6 +160,25 @@ def test_a_warm_non_disaster_grid_is_reused(tmp_path):
     grid = load_non_disaster_grid(tmp_path, grid=None, grid_name="laos")
 
     assert grid["ISO"].tolist() == ["LAO"]
+
+
+def test_a_cold_non_disaster_grid_labels_each_point_with_its_country(write_shapefile_cache):
+    """The spatial join is the only thing assigning ISO, and a point can silently land in no country.
+
+    France and the Netherlands sit at opposite ends of the toy world, so a join that matched by row
+    order rather than geometry would swap them.
+    """
+    cache_dir = write_shapefile_cache("world", toy_world_needing_repair())
+    # The last point is open ocean: a control there is unlabelled, not discarded.
+    points = gpd.GeoDataFrame(geometry=[Point(12.25, 0.5), Point(0.25, 0.5), Point(50.0, 50.0)], crs=GEOGRAPHIC_CRS)
+
+    grid = load_non_disaster_grid(cache_dir, points, "toy")
+
+    assert grid["ISO"].tolist()[:2] == ["NLD", "FRA"]
+    assert pd.isna(grid["ISO"].tolist()[2])
+    assert grid["is_disaster"].tolist() == [0, 0, 0]
+    # The literal date, not CONTROL_YEAR, which would move with the code it is checking.
+    assert set(grid["Start_Year"]) == {pd.Timestamp("1984-01-01")}
 
 
 @pytest.mark.parametrize("by", ["region", "country"])
