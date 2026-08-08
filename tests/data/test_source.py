@@ -10,7 +10,7 @@ from climate_risk.data.fetch import USER_AGENT
 from climate_risk.data.gpcc import FULL_DATA, MONITORING
 from climate_risk.data.hadcrut import HADCRUT
 from climate_risk.data.ocean_heat import OCEAN_HEAT
-from climate_risk.data.source import DataSource
+from climate_risk.data.source import DataSource, ShapefileArchive
 from climate_risk.data_functions.rivers_data_loader import RIVERS
 from climate_risk.data_functions.shapefiles_data_loader import COASTLINE, LAOS, WORLD
 
@@ -44,6 +44,17 @@ def test_a_non_http_url_is_rejected(url):
         source(url=url)
 
 
+def test_an_archive_layer_unpacks_under_the_directory_it_is_given(tmp_path):
+    assert ShapefileArchive(source(), "GSHHS_shp/f").extracted_path(tmp_path) == tmp_path / "GSHHS_shp" / "f"
+
+
+@pytest.mark.parametrize("member", ["../escape.shp", "/absolute.shp", "nested/../../out.shp", ""], ids=repr)
+def test_an_archive_layer_outside_the_archive_is_rejected(member):
+    """`extracted_path` joins onto the cache directory, so an escaping member reads outside it."""
+    with pytest.raises(ValueError, match="member must"):
+        ShapefileArchive(source(), member)
+
+
 def test_an_unparseable_retrieved_date_is_rejected():
     """Sources are import-time literals, so the error must name the one that failed."""
     with pytest.raises(ValueError, match=re.escape("noaa_co2.csv: retrieved must be an ISO date")):
@@ -55,7 +66,7 @@ def place_boundaries() -> dict[str, DataSource]:
     places = (read_place(path) for path in sorted(CONFIG_ROOT.glob("*/*.toml")))
 
     return {
-        f"{place.iso3}_BOUNDARY": place.boundary
+        f"{place.iso3}_BOUNDARY": place.boundary.source
         for place in places
         if isinstance(place, CountryConfig) and place.boundary is not None
     }

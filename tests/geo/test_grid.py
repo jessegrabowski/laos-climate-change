@@ -1,5 +1,6 @@
 import geopandas as gpd
 import numpy as np
+import pytest
 
 from shapely.geometry import LineString, box
 
@@ -8,10 +9,11 @@ from tests.conftest import toy_world
 
 
 def test_grid_takes_its_iso_from_the_shapefile(rivers_clear_of_the_grid, coastline):
-    """The fallback is a hardcoded LAO, so a shapefile carrying ISO_A3 must win."""
-    grid = create_grid_from_shape(toy_world(), rivers_clear_of_the_grid, coastline, grid_size=4)
+    """A geometry that labels itself must win over whatever the caller passed as a fallback."""
+    grid = create_grid_from_shape(toy_world(), rivers_clear_of_the_grid, coastline, grid_size=4, iso3="ZZZ")
 
     assert set(grid["ISO"]) <= {"AAA", "BBB", "CCC"}
+    assert "ZZZ" not in set(grid["ISO"])
 
 
 def test_grid_points_fall_inside_the_shapefile(rivers_clear_of_the_grid, coastline):
@@ -55,10 +57,18 @@ def test_genuine_distances_are_not_floored(coastline_through_the_grid):
     assert clear_of_a_river["log_distance_to_river"].eq(np.log(clear_of_a_river["distance_to_river"])).all()
 
 
-def test_a_shapefile_without_iso_codes_falls_back_to_laos(rivers_clear_of_the_grid, coastline):
-    """The country is hardcoded, so every unlabelled region is claimed for Laos."""
+def test_an_unlabelled_shapefile_takes_the_code_it_is_given(rivers_clear_of_the_grid, coastline):
+    """A country boundary file carries no ISO column, so the caller is the only source of the code."""
     unlabelled = gpd.GeoDataFrame({"geometry": [box(0, 0, 1, 1)]}, crs="EPSG:4326")
 
-    grid = create_grid_from_shape(unlabelled, rivers_clear_of_the_grid, coastline, grid_size=3)
+    grid = create_grid_from_shape(unlabelled, rivers_clear_of_the_grid, coastline, grid_size=3, iso3="ZMB")
 
-    assert set(grid["ISO"]) == {"LAO"}
+    assert set(grid["ISO"]) == {"ZMB"}
+
+
+def test_an_unlabelled_shapefile_with_no_code_is_an_error(rivers_clear_of_the_grid, coastline):
+    """A region spans several countries, so no single code is right and stamping one mislabels them."""
+    unlabelled = gpd.GeoDataFrame({"geometry": [box(0, 0, 1, 1)]}, crs="EPSG:4326")
+
+    with pytest.raises(ValueError, match="pass iso3"):
+        create_grid_from_shape(unlabelled, rivers_clear_of_the_grid, coastline, grid_size=3)

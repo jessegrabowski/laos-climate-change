@@ -1,21 +1,18 @@
+import re
 import shutil
 
 import pandas as pd
 import pytest
 
 from climate_risk import load_shapefile
+from climate_risk.config.schema import CountryConfig, RegionConfig
 from climate_risk.data_functions.shapefiles_data_loader import (
-    SHAPEFILE_MEMBERS,
-    SHAPEFILE_SOURCES,
+    SHAPEFILE_ARCHIVES,
+    load_place_boundary,
     repair_iso_codes,
 )
 from climate_risk.exceptions import DataValidationError, ISOCodeValidationError
 from tests.conftest import toy_world, toy_world_needing_repair
-
-
-def test_every_declared_source_knows_where_its_archive_unpacks():
-    """A source without a member entry passes validation and then dies on a KeyError mid-load."""
-    assert set(SHAPEFILE_SOURCES) == set(SHAPEFILE_MEMBERS)
 
 
 def test_unknown_shapefile_is_rejected(tmp_path):
@@ -115,3 +112,41 @@ def test_duplicate_iso_codes_are_an_error():
 
     with pytest.raises(ISOCodeValidationError, match="NLD"):
         repair_iso_codes(doubled)
+
+
+def test_a_place_with_its_own_boundary_reads_that_archive(write_shapefile_cache):
+    """Its own file defines its extent, so nothing about the world shapefile should narrow it."""
+    cache_dir = write_shapefile_cache("laos", toy_world())
+    place = CountryConfig(iso3="AAA", name="Aland", boundary=SHAPEFILE_ARCHIVES["laos"])
+
+    boundary = load_place_boundary(place, cache_dir)
+
+    assert sorted(boundary["ISO_A3"]) == ["AAA", "BBB", "CCC"]
+
+
+def test_a_country_without_a_boundary_is_sliced_out_of_the_repaired_world(write_shapefile_cache):
+    """France is unlabelled upstream, so a place named FRA is only findable once the repair has run."""
+    cache_dir = write_shapefile_cache("world", toy_world_needing_repair())
+    place = CountryConfig(iso3="FRA", name="France")
+
+    boundary = load_place_boundary(place, cache_dir)
+
+    assert boundary["WB_NAME"].tolist() == ["France"]
+
+
+def test_a_region_is_sliced_by_every_member(write_shapefile_cache):
+    cache_dir = write_shapefile_cache("world", toy_world_needing_repair())
+    place = RegionConfig(key="north", name="North", members=("NOR", "NLD"))
+
+    boundary = load_place_boundary(place, cache_dir)
+
+    assert sorted(boundary["WB_NAME"]) == ["Netherlands", "Norway"]
+
+
+def test_a_place_the_world_file_does_not_know_is_an_error(write_shapefile_cache):
+    """An empty slice grids to zero points, and the empty panel only surfaces much further downstream."""
+    cache_dir = write_shapefile_cache("world", toy_world_needing_repair())
+    place = CountryConfig(iso3="ZWE", name="Zimbabwe")
+
+    with pytest.raises(DataValidationError, match=re.escape("no geometry for ['ZWE']")):
+        load_place_boundary(place, cache_dir)

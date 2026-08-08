@@ -7,6 +7,8 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
+from climate_risk.config.registry import place_key, resolve_isos
+from climate_risk.config.schema import Place
 from climate_risk.data.cache import cached, geo_parquet
 from climate_risk.data_functions.emdat_processing import load_emdat_data
 from climate_risk.data_functions.rivers_damage import load_rivers_data
@@ -19,13 +21,6 @@ _log = logging.getLogger(__name__)
 
 # The default generator is seeded so a run reproduces, which is why callers may pass their own.
 SAMPLING_SEED = sum(map(ord, "Laos GGGI Climate Adaptation"))
-
-# Singapore and Brunei are left out: both are small enough that the grid resolves to too few
-# points to be worth carrying.
-REGION_ISO_CODES = {
-    "laos": ("LAO",),
-    "sea": ("MMR", "THA", "LAO", "KHM", "VNM", "IDN", "MYS", "PHL", "TLS"),
-}
 
 
 def disaster_points_path(cache_dir: Path) -> Path:
@@ -100,34 +95,43 @@ def load_disaster_point_data(cache_dir: Path):
 
 def load_grid_point_data(
     cache_dir: Path,
+    place: Place,
     *,
-    region="laos",
-    grid_size=400,
-    iso_list: list | None = None,
     force_reload: bool = False,
-    file_reg_name: str | None = None,
-    altered_shape_file=None,
+    altered_shape_file: gpd.GeoDataFrame | None = None,
     include_medium_rivers: bool = True,
-):
-    if region not in ["laos", "sea", "custom"]:
-        raise ValueError(f"Unknown grid: {region}")
+) -> gpd.GeoDataFrame:
+    """
+    Build the point grid covering a place, and cache it.
 
-    if region == "custom" and iso_list is None:
-        raise ValueError("Must provide an iso_list for custom region")
+    Parameters
+    ----------
+    cache_dir : Path
+        Directory the shapefile, river and grid caches live under.
+    place : CountryConfig or RegionConfig
+        The place to grid. Its ``geometry.grid_size`` sets the resolution, and the codes it resolves
+        to select the geometry out of the world shapefile.
+    force_reload : bool, optional
+        Rebuild even when the cache is warm. Default False.
+    altered_shape_file : GeoDataFrame, optional
+        Geometry to grid instead of the place's own. Default None.
+    include_medium_rivers : bool, optional
+        Whether medium-flow rivers count towards the distance features. Default True.
 
-    if (region == "custom") and file_reg_name is None:
-        raise ValueError("Please provide a file_reg_name for the custom region")
-
-    if region in ("laos", "sea"):
-        file_reg_name = region
-        iso_list = list(REGION_ISO_CODES[region])
+    Returns
+    -------
+    GeoDataFrame
+        One row per grid point falling on land, with distances to river and coastline.
+    """
+    grid_size = place.geometry.grid_size
+    iso_codes = resolve_isos(place)
 
     def build() -> gpd.GeoDataFrame:
         _log.info("Loading shapefiles and rivers data")
         world = load_shapefile("world", cache_dir)
 
         if altered_shape_file is None:
-            point_map = world[world["ISO_A3"].isin(iso_list)]
+            point_map = world[world["ISO_A3"].isin(iso_codes)]
 
         else:
             point_map = altered_shape_file
@@ -179,7 +183,7 @@ def load_grid_point_data(
         "points",
         build,
         geo_parquet(),
-        params={"region": file_reg_name, "grid_size": grid_size},
+        params={"region": place_key(place), "grid_size": grid_size},
         force=force_reload,
     )
 

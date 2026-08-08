@@ -5,8 +5,10 @@ from zipfile import ZipFile
 
 import geopandas as gpd
 
+from climate_risk.config.registry import resolve_isos
+from climate_risk.config.schema import CountryConfig, Place
 from climate_risk.data.fetch import fetch
-from climate_risk.data.source import DataSource
+from climate_risk.data.source import DataSource, ShapefileArchive
 from climate_risk.exceptions import DataValidationError, ISOCodeValidationError
 
 _log = logging.getLogger(__name__)
@@ -50,19 +52,15 @@ COASTLINE = DataSource(
     retrieved="2026-08-08",
 )
 
-SHAPEFILE_SOURCES = {"world": WORLD, "laos": LAOS, "coastline": COASTLINE}
-
-# Paths inside each archive, case included -- a case-insensitive filesystem hides a mismatch here
-# that fails on Linux.
-SHAPEFILE_MEMBERS = {
-    "world": "WB_countries_Admin0_10m",
+SHAPEFILE_ARCHIVES = {
+    "world": ShapefileArchive(WORLD, "WB_countries_Admin0_10m"),
     # The Laos archive unpacks flat, one file per admin level. Level 2 is the district layer the
     # point grid is built from.
-    "laos": "lao_admin2.shp",
-    "coastline": "GSHHS_shp/f",
+    "laos": ShapefileArchive(LAOS, "lao_admin2.shp"),
+    "coastline": ShapefileArchive(COASTLINE, "GSHHS_shp/f"),
 }
 
-VALID_CHOICES = list(SHAPEFILE_SOURCES)
+VALID_CHOICES = list(SHAPEFILE_ARCHIVES)
 
 # The boundary file lists these separately but tags them with their owner's ISO code, or with no
 # code at all, so counting them would double-count the owner or introduce a country that is not one.
@@ -96,14 +94,9 @@ def shapefile_dir(cache_dir: Path) -> Path:
     return cache_dir / "shapefiles"
 
 
-def _extracted_path(which: str, cache_dir: Path) -> Path:
-    """Where the archive for ``which`` unpacks to, which is what every later step reads."""
-    return shapefile_dir(cache_dir) / SHAPEFILE_MEMBERS[which.lower()]
-
-
-def _source_for(which: str) -> DataSource:
+def _archive_for(which: str) -> ShapefileArchive:
     try:
-        return SHAPEFILE_SOURCES[which.lower()]
+        return SHAPEFILE_ARCHIVES[which.lower()]
     except KeyError:
         raise ValueError(f"which should be one of {VALID_CHOICES}, got {which}") from None
 
@@ -154,31 +147,78 @@ def repair_iso_codes(world: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
 
 def download_shapefile(which: str, cache_dir: Path, *, force_reload: bool = False) -> Path:
     """Fetch the archive for ``which`` into the shapefile cache and return where it landed."""
-    return fetch(_source_for(which), shapefile_dir(cache_dir), force=force_reload)
+    return fetch(_archive_for(which).source, shapefile_dir(cache_dir), force=force_reload)
 
 
 def extract_shapefiles(which: str, cache_dir: Path, *, force_reload: bool = False) -> None:
     """Unpack the archive for ``which`` unless what it holds is already on disk."""
-    source = _source_for(which)
-    directory = shapefile_dir(cache_dir)
+    _extract(_archive_for(which), shapefile_dir(cache_dir), force_reload=force_reload)
 
-    if _extracted_path(which, cache_dir).exists() and not force_reload:
+
+def _extract(archive: ShapefileArchive, directory: Path, *, force_reload: bool) -> None:
+    if archive.extracted_path(directory).exists() and not force_reload:
         return
 
-    _log.info(f"Extracting {source.filename}")
-    with ZipFile(source.path(directory)) as archive:
-        archive.extractall(path=directory)
+    _log.info(f"Extracting {archive.source.filename}")
+    with ZipFile(archive.source.path(directory)) as zipped:
+        zipped.extractall(path=directory)
+
+
+def load_archive(archive: ShapefileArchive, cache_dir: Path, *, force_reload: bool = False) -> gpd.GeoDataFrame:
+    """Fetch, unpack and read an archive, whether or not a registry entry names it."""
+    directory = shapefile_dir(cache_dir)
+
+    fetch(archive.source, directory, force=force_reload)
+    _extract(archive, directory, force_reload=force_reload)
+
+    return gpd.read_file(archive.extracted_path(directory), layer=0)
 
 
 def load_shapefile(
     which: str, cache_dir: Path, *, force_reload: bool = False, repair_ISO_codes: bool = True
 ) -> gpd.GeoDataFrame:
-    download_shapefile(which, cache_dir, force_reload=force_reload)
-    extract_shapefiles(which, cache_dir, force_reload=force_reload)
-
-    frame = gpd.read_file(_extracted_path(which, cache_dir), layer=0)
+    frame = load_archive(_archive_for(which), cache_dir, force_reload=force_reload)
 
     if which.lower() == "world" and repair_ISO_codes:
         return repair_iso_codes(frame)
 
     return frame
+
+
+def load_place_boundary(place: Place, cache_dir: Path, *, force_reload: bool = False) -> gpd.GeoDataFrame:
+    """
+    Read the geometry a place covers.
+
+    A place carrying its own boundary archive reads that; everything else is sliced out of the world
+    shapefile by the ISO codes the place resolves to.
+
+    Parameters
+    ----------
+    place : CountryConfig or RegionConfig
+        The place to read the geometry of.
+    cache_dir : Path
+        Directory the shapefile cache lives under.
+    force_reload : bool, optional
+        Re-download and re-unpack even when the cache is warm. Default False.
+
+    Returns
+    -------
+    GeoDataFrame
+        The place's geometry, in the boundary file's own CRS.
+
+    Raises
+    ------
+    DataValidationError
+        If the place resolves to no geometry, which would otherwise yield an empty grid.
+    """
+    if isinstance(place, CountryConfig) and place.boundary is not None:
+        return load_archive(place.boundary, cache_dir, force_reload=force_reload)
+
+    codes = resolve_isos(place)
+    world = load_shapefile("world", cache_dir, force_reload=force_reload)
+    boundary = world[world["ISO_A3"].isin(codes)]
+
+    if boundary.empty:
+        raise DataValidationError(f"The boundary file holds no geometry for {list(codes)}, so the grid would be empty.")
+
+    return boundary

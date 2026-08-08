@@ -2,7 +2,9 @@ iso3 = "LAO"
 name = "Lao PDR"
 
 # Laos has its own admin-boundary file; countries without one are sliced out of the world shapefile.
+# The archive unpacks flat, one file per admin level; level 2 is the district layer.
 [boundary]
+member = "lao_admin2.shp"
 url = "https://data.humdata.org/dataset/9eb6aff1-9e3f-43d3-99a6-f415fe4b4dff/resource/907a1b50-0d14-40ec-8b8a-f2d027d895aa/download/lao_admin_boundaries.shp.zip"
 filename = "lao_admin_boundaries.shp.zip"
 licence = "CC BY 3.0 IGO"

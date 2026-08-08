@@ -1,7 +1,7 @@
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 
-from climate_risk.data.source import DataSource
+from climate_risk.data.source import ShapefileArchive
 from climate_risk.geo.crs import GEOGRAPHIC_CRS, PROJECTED_CRS
 
 # An ISO 3166-1 alpha-3 code, which is what every frame in the project keys countries on.
@@ -85,9 +85,9 @@ class CountryConfig:
         Human-readable name, used in figures and messages.
     island : bool
         Whether the country is an island, which the point features record. Default False.
-    boundary : DataSource, optional
-        Where to fetch a country-specific boundary file. Default None, meaning slice the world
-        shapefile by ``iso3``.
+    boundary : ShapefileArchive, optional
+        A country-specific boundary archive, and the layer within it to read. Default None, meaning
+        slice the world shapefile by ``iso3``.
     geometry : GeometrySpec
         Projection and grid settings. Defaults to the project-wide ones.
     events : EventFilters
@@ -107,7 +107,7 @@ class CountryConfig:
     iso3: str
     name: str
     island: bool = False
-    boundary: DataSource | None = None
+    boundary: ShapefileArchive | None = None
     geometry: GeometrySpec = field(default_factory=GeometrySpec)
     events: EventFilters = field(default_factory=EventFilters)
     event_location_overrides: Mapping[str, tuple[float, float]] = field(default_factory=dict)

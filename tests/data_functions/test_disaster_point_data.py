@@ -11,8 +11,8 @@ from geopandas.testing import assert_geodataframe_equal
 from shapely.geometry import Point
 
 from climate_risk import load_synthetic_non_disaster_points
+from climate_risk.config.schema import CountryConfig, GeometrySpec
 from climate_risk.data_functions.disaster_point_data import (
-    REGION_ISO_CODES,
     _load_disaster_point_data,
     load_data,
     load_grid_point_data,
@@ -24,6 +24,11 @@ from tests.conftest import SYNTHETIC_SOURCE_EVENTS
 # A legacy cache spells longitude `long`; the value under `lon` is the one to keep.
 STALE_LON = 9.9
 CURRENT_LON = 102.5
+
+
+def france(grid_size=3):
+    """The one country of the toy world the grid fixtures put rivers and coastline near."""
+    return CountryConfig(iso3="FRA", name="France", geometry=GeometrySpec(grid_size=grid_size))
 
 
 def test_missing_geocoded_locations_names_the_file_it_looked_for(tmp_path):
@@ -41,12 +46,7 @@ def test_unknown_sampling_strategy_is_rejected(tmp_path):
 @pytest.fixture
 def grid(write_point_grid_cache):
     cache_dir = write_point_grid_cache()
-    return load_grid_point_data(cache_dir, region="custom", iso_list=["FRA"], file_reg_name="toy", grid_size=3)
-
-
-def test_the_laos_grid_is_a_strict_subset_of_the_sea_grid():
-    """Laos sits inside South-East Asia, so a sea grid that did not contain it covers the wrong place."""
-    assert set(REGION_ISO_CODES["laos"]) < set(REGION_ISO_CODES["sea"])
+    return load_grid_point_data(cache_dir, france())
 
 
 def test_grid_columns_use_lon_not_long(grid):
@@ -64,7 +64,7 @@ def test_zero_distances_do_not_become_infinite_logs(write_point_grid_cache, rive
     """The grid is written to disk, so a -inf from log(0) persists into every later run."""
     cache_dir = write_point_grid_cache(rivers_through_the_grid)
 
-    grid = load_grid_point_data(cache_dir, region="custom", iso_list=["FRA"], file_reg_name="toy", grid_size=3)
+    grid = load_grid_point_data(cache_dir, france())
 
     on_a_river = grid[grid["distance_to_river"] == 0]
 
@@ -81,21 +81,30 @@ def test_zero_distances_do_not_become_infinite_logs(write_point_grid_cache, rive
 def test_a_different_grid_size_is_a_different_cache_entry(write_point_grid_cache):
     """Two resolutions sharing one entry would serve whichever run happened first."""
     cache_dir = write_point_grid_cache()
-    kwargs: dict[str, Any] = {"region": "custom", "iso_list": ["FRA"], "file_reg_name": "toy"}
 
-    coarse = load_grid_point_data(cache_dir, grid_size=3, **kwargs)
-    fine = load_grid_point_data(cache_dir, grid_size=6, **kwargs)
+    coarse = load_grid_point_data(cache_dir, france(grid_size=3))
+    fine = load_grid_point_data(cache_dir, france(grid_size=6))
 
     assert len(fine) > len(coarse)
+
+
+def test_two_places_do_not_share_a_cache_entry(write_point_grid_cache):
+    """One entry for both would serve whichever place happened to be gridded first."""
+    cache_dir = write_point_grid_cache()
+    netherlands = CountryConfig(iso3="NLD", name="Netherlands", geometry=GeometrySpec(grid_size=3))
+
+    french = load_grid_point_data(cache_dir, france())
+    dutch = load_grid_point_data(cache_dir, netherlands)
+
+    assert french["lon"].max() < dutch["lon"].min()
 
 
 def test_the_cached_grid_round_trips_unchanged(write_point_grid_cache):
     """The grid is written once and read on every later run, so the two must be the same frame."""
     cache_dir = write_point_grid_cache()
-    kwargs: dict[str, Any] = {"region": "custom", "iso_list": ["FRA"], "file_reg_name": "toy", "grid_size": 3}
 
-    written = load_grid_point_data(cache_dir, **kwargs)
-    reloaded = load_grid_point_data(cache_dir, **kwargs)
+    written = load_grid_point_data(cache_dir, france())
+    reloaded = load_grid_point_data(cache_dir, france())
 
     assert_geodataframe_equal(reloaded, written)
     assert {"distance_to_river", "log_distance_to_river", "log_distance_to_coastline"} <= set(reloaded.columns)

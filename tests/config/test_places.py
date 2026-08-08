@@ -1,11 +1,10 @@
 import pytest
 
 from climate_risk.config.registry import CONFIG_ROOT, load_place, read_place, resolve_isos
-from climate_risk.config.schema import CountryConfig, RegionConfig
+from climate_risk.config.schema import CountryConfig, EventFilters, GeometrySpec, RegionConfig
 from climate_risk.data.world_bank import COUNTRY_CODE_BY_NAME
-from climate_risk.data_functions.disaster_point_data import REGION_ISO_CODES
 from climate_risk.data_functions.rivers_damage import LAOS_LOCATION_DICTIONARY
-from climate_risk.data_functions.shapefiles_data_loader import LAOS
+from climate_risk.data_functions.shapefiles_data_loader import SHAPEFILE_ARCHIVES
 
 # Walked rather than listed, so a place file that ships without a test still has to parse.
 SHIPPED_PLACES = sorted(CONFIG_ROOT.glob("*/*.toml"))
@@ -39,7 +38,7 @@ def test_laos_carries_the_boundary_the_loader_hardcodes():
     place = load_place("lao")
 
     assert isinstance(place, CountryConfig)
-    assert place.boundary == LAOS
+    assert place.boundary == SHAPEFILE_ARCHIVES["laos"]
 
 
 def test_laos_carries_the_coordinate_overrides_the_loader_hardcodes():
@@ -55,18 +54,24 @@ def test_laos_carries_the_coordinate_overrides_the_loader_hardcodes():
 
 
 def test_laos_takes_the_project_defaults_it_does_not_override():
-    """Stating the current defaults would freeze them here and hide a later project-wide change."""
+    """Compared against the schema, not against literals, which would freeze the defaults here too."""
     place = load_place("lao")
 
-    assert place.geometry.grid_size == 400
-    assert place.events.start_year == 1970
+    assert place.geometry == GeometrySpec()
+    assert place.events == EventFilters()
 
 
-def test_southeast_asia_matches_the_region_table_the_loader_hardcodes():
+def test_southeast_asia_holds_its_nine_members():
+    """Stated literally, because this file is the only record of the list, so a silent edit must fail."""
     place = load_place("sea")
 
     assert isinstance(place, RegionConfig)
-    assert place.members == REGION_ISO_CODES["sea"]
+    assert place.members == ("MMR", "THA", "LAO", "KHM", "VNM", "IDN", "MYS", "PHL", "TLS")
+
+
+def test_laos_sits_inside_southeast_asia():
+    """A sea grid that did not contain Laos would cover the wrong place."""
+    assert set(resolve_isos(load_place("lao"))) < set(resolve_isos(load_place("sea")))
 
 
 @pytest.mark.parametrize("path", SHIPPED_PLACES, ids=lambda path: f"{path.parent.name}/{path.name}")
