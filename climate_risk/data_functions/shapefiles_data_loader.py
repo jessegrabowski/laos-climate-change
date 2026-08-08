@@ -40,7 +40,9 @@ COASTLINE = DataSource(
 
 SHAPEFILE_ARCHIVES = {
     "world": ShapefileArchive(WORLD, "WB_countries_Admin0_10m"),
-    "coastline": ShapefileArchive(COASTLINE, "GSHHS_shp/f"),
+    # The archive holds six layers and the driver does not enumerate them in order, so the
+    # continental shoreline is named outright. L2-L6 are lakes, islands and Antarctic ice.
+    "coastline": ShapefileArchive(COASTLINE, "GSHHS_shp/f/GSHHS_f_L1.shp"),
 }
 
 VALID_CHOICES = list(SHAPEFILE_ARCHIVES)
