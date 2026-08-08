@@ -6,7 +6,7 @@ import polars as pl
 import pytest
 
 from climate_risk.replication_data import create_replication_data
-from tests.conftest import emdat_event
+from tests.conftest import GPCC_CACHE_FILE, emdat_event
 
 # Long enough that `iloc[1:-1]` still leaves an STL-able series: STL(period=3) needs 2*3+1 points.
 # Longer than CLIMATOLOGY_YEARS, so the baseline window is a real subset of the record.
@@ -79,7 +79,7 @@ def wide_cache(tmp_path, write_emdat_cache):
     ]
     pd.DataFrame(precipitation, columns=["country_code", "time", "precip"]).set_index(
         ["country_code", "time"]
-    ).to_parquet(tmp_path / "gpcc__repaired_iso=True.parquet")
+    ).to_parquet(tmp_path / GPCC_CACHE_FILE)
     return tmp_path
 
 

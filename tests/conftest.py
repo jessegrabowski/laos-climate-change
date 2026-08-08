@@ -145,6 +145,10 @@ def toy_precipitation(year_range):
 GPCC_DECADES = ("1981_1990", "1991_2000", "2001_2010", "2011_2020")
 
 
+# The processed GPCC cache. Its key carries the span, so extending the record renames the entry.
+GPCC_CACHE_FILE = "gpcc__coverage=1981-2020__repaired_iso=True.parquet"
+
+
 def gpcc_archive_name(decade: str) -> str:
     return f"full_data_monthly_v2022_{decade}_10.nc.gz"
 
@@ -237,7 +241,7 @@ def write_full_cache(tmp_path, write_emdat_cache):
                 for offset, (year, month) in enumerate([(1990, 1), (1990, 7), (1991, 1), (1991, 7)])
             ],
             columns=["country_code", "time", "precip"],
-        ).set_index(["country_code", "time"]).to_parquet(tmp_path / "gpcc__repaired_iso=True.parquet")
+        ).set_index(["country_code", "time"]).to_parquet(tmp_path / GPCC_CACHE_FILE)
         return tmp_path
 
     return write

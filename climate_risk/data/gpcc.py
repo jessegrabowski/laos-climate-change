@@ -20,6 +20,10 @@ _log = logging.getLogger(__name__)
 
 GPCC_DECADES = ("1981_1990", "1991_2000", "2001_2010", "2011_2020")
 
+# The span the cache entry is keyed on, so extending the record writes a new entry rather than
+# serving the shorter one already on disk.
+GPCC_COVERAGE = f"{GPCC_DECADES[0].split('_')[0]}-{GPCC_DECADES[-1].split('_')[1]}"
+
 GPCC = {
     decade: DataSource(
         url=(
@@ -105,6 +109,6 @@ def load_gpcc_data(cache_dir: Path, *, force_reload: bool = False, repair_ISO_co
         "gpcc",
         build,
         pandas_parquet(),
-        params={"repaired_iso": repair_ISO_codes},
+        params={"repaired_iso": repair_ISO_codes, "coverage": GPCC_COVERAGE},
         force=force_reload,
     )
