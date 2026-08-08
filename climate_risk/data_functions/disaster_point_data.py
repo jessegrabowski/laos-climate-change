@@ -21,11 +21,7 @@ SYNTHETIC_DATA_BASENAME = "synthetic_non_disasters.csv"
 SAMPLING_STRATEGIES = ("region", "country")
 
 
-def raw_points_path(cache_dir: Path) -> Path:
-    return cache_dir / "disaster_locations_gpt_repaired_w_features.csv"
-
-
-def features_points_path(cache_dir: Path) -> Path:
+def disaster_points_path(cache_dir: Path) -> Path:
     return cache_dir / "disaster_locations_gpt_repaired_w_features.csv"
 
 
@@ -45,15 +41,12 @@ def load_data(fpath: Path) -> gpd.GeoDataFrame:
     return data
 
 
-def _load_disaster_point_data(cache_dir: Path):
-    if features_points_path(cache_dir).exists():
-        data = load_data(features_points_path(cache_dir))
-    elif raw_points_path(cache_dir).exists():
-        data = load_data(raw_points_path(cache_dir))
-    else:
-        raise ValueError("Go run the GPT notebook first!")
+def _load_disaster_point_data(cache_dir: Path) -> gpd.GeoDataFrame:
+    path = disaster_points_path(cache_dir)
+    if not path.exists():
+        raise ValueError(f"No geocoded disaster locations at {path}. Go run the GPT notebook first!")
 
-    return data
+    return load_data(path)
 
 
 def load_disaster_point_data(cache_dir: Path):
@@ -93,7 +86,7 @@ def load_disaster_point_data(cache_dir: Path):
         modified_data = True
 
     if modified_data:
-        (data.drop(columns=[*events.columns.tolist(), "geometry"]).to_csv(features_points_path(cache_dir)))
+        (data.drop(columns=[*events.columns.tolist(), "geometry"]).to_csv(disaster_points_path(cache_dir)))
 
     return data
 

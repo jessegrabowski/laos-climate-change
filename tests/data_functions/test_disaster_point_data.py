@@ -1,3 +1,5 @@
+import re
+
 from typing import Any
 
 import numpy as np
@@ -5,6 +7,7 @@ import pytest
 
 from climate_risk import load_synthetic_non_disaster_points
 from climate_risk.data_functions.disaster_point_data import (
+    _load_disaster_point_data,
     load_data,
     load_grid_point_data,
     load_non_disaster_grid,
@@ -20,6 +23,12 @@ def test_synthetic_filename_is_a_plain_csv(tmp_path):
     fpath = make_synthetic_data_fpath(tmp_path, "region", 1, "sea")
 
     assert fpath.name == "synthetic_non_disasters_region_times_1_sea.csv"
+
+
+def test_missing_geocoded_locations_names_the_file_it_looked_for(tmp_path):
+    """The message is the only guidance a fresh clone gets, so it has to say which file is absent."""
+    with pytest.raises(ValueError, match=re.escape("disaster_locations_gpt_repaired_w_features.csv")):
+        _load_disaster_point_data(tmp_path)
 
 
 def test_unknown_sampling_strategy_is_rejected(tmp_path):
