@@ -63,13 +63,13 @@ def polars_parquet() -> CacheFormat[pl.DataFrame]:
     )
 
 
-def geo_shapefile() -> CacheFormat[gpd.GeoDataFrame]:
-    """A shapefile round-trip. Not atomic: `.shp` carries `.shx`, `.dbf`, `.prj` and `.cpg` beside it."""
+def geo_parquet() -> CacheFormat[gpd.GeoDataFrame]:
+    """A GeoParquet round-trip. Column names, dtypes and CRS all survive, and it is a single file."""
     return CacheFormat(
-        suffix=".shp",
-        read=gpd.read_file,
-        write=lambda frame, path: frame.to_file(path),
-        atomic=False,
+        suffix=".parquet",
+        read=gpd.read_parquet,
+        write=lambda frame, path: frame.to_parquet(path),
+        atomic=True,
     )
 
 

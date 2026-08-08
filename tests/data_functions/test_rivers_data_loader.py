@@ -1,6 +1,7 @@
 import pytest
 
 from climate_risk import load_rivers_data
+from climate_risk.data_functions.rivers_data_loader import transform_rivers
 from tests.conftest import NetworkAccessError, toy_rivers
 
 
@@ -13,13 +14,21 @@ def warm_cache(write_rivers_cache):
     return cache_dir
 
 
+@pytest.mark.parametrize(("cutoff", "kept"), [(5, [4]), (6, [4, 5])])
+def test_the_stream_order_cutoff_excludes_its_own_order(cutoff, kept):
+    """The warm-cache tests read back what a fixture wrote, so this is where the filter is tested."""
+    kept_rivers = transform_rivers(toy_rivers(), cutoff)
+
+    assert kept_rivers["ORD_FLOW"].tolist() == kept
+
+
 def test_big_rivers_are_read_by_default(warm_cache):
     rivers = load_rivers_data(warm_cache)
 
     assert rivers["ORD_FLOW"].tolist() == [4]
 
 
-def test_include_medium_reads_the_other_file(warm_cache):
+def test_include_medium_reads_a_separate_cache_entry(warm_cache):
     rivers = load_rivers_data(warm_cache, include_medium=True)
 
     assert rivers["ORD_FLOW"].tolist() == [4, 5]

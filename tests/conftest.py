@@ -14,10 +14,6 @@ import xarray as xr
 
 from shapely.geometry import LineString, Point, box
 
-from climate_risk.const_vars import (
-    BIG_RIVERS_FILENAME,
-    MEDIUM_BIG_RIVERS_FILENAME,
-)
 from climate_risk.data.gpcc import GriddedProduct
 from climate_risk.data.source import DataSource
 
@@ -75,25 +71,26 @@ def toy_world_needing_repair():
     to any of those tables without adding a row here fails every repair test on the missing entry.
     """
     rows = [
-        ("France", "-99"),
-        ("Norway", "-99"),
-        ("Kosovo", "-99"),
-        ("Tokelau (NZ)", "NZL"),
-        ("Guantanamo Bay (US)", "-99"),
-        ("Clipperton Island (Fr.)", "-99"),
-        ("Cocos (Keeling) Islands (Aus.)", "-99"),
-        ("Christmas Island (Aus.)", "-99"),
-        ("Bonaire (Neth.)", "NLD"),
-        ("Sint Eustatius (Neth.)", "NLD"),
-        ("Saba (Neth.)", "NLD"),
-        ("Johnston Atoll (US)", "UMI"),
-        ("Netherlands", "NLD"),
-        ("New Zealand", "NZL"),
+        ("France", "-99", "Europe"),
+        ("Norway", "-99", "Europe"),
+        ("Kosovo", "-99", "Europe"),
+        ("Tokelau (NZ)", "NZL", "Oceania"),
+        ("Guantanamo Bay (US)", "-99", "North America"),
+        ("Clipperton Island (Fr.)", "-99", "North America"),
+        ("Cocos (Keeling) Islands (Aus.)", "-99", "Asia"),
+        ("Christmas Island (Aus.)", "-99", "Asia"),
+        ("Bonaire (Neth.)", "NLD", "North America"),
+        ("Sint Eustatius (Neth.)", "NLD", "North America"),
+        ("Saba (Neth.)", "NLD", "North America"),
+        ("Johnston Atoll (US)", "UMI", "Oceania"),
+        ("Netherlands", "NLD", "Europe"),
+        ("New Zealand", "NZL", "Oceania"),
     ]
     return gpd.GeoDataFrame(
         {
-            "WB_NAME": [name for name, _ in rows],
-            "ISO_A3": [iso for _, iso in rows],
+            "WB_NAME": [name for name, _, _ in rows],
+            "ISO_A3": [iso for _, iso, _ in rows],
+            "CONTINENT": [continent for _, _, continent in rows],
             "geometry": [box(i, 0, i + 0.5, 1) for i in range(len(rows))],
         },
         crs="EPSG:4326",
@@ -348,6 +345,51 @@ def write_shapefile_cache(tmp_path):
     return write
 
 
+# Enough sampled points that an unseeded year draw cannot match a seeded one by luck.
+SYNTHETIC_SOURCE_EVENTS = 30
+
+
+@pytest.fixture
+def write_synthetic_source_cache(tmp_path, write_shapefile_cache, write_rivers_cache, write_emdat_cache):
+    """Seed every input `load_synthetic_non_disaster_points` reads when it has to generate.
+
+    The events all sit in France, which survives the ISO repair and carries a continent, so the
+    region sampler has a polygon to draw from. Enough events that two independent draws over the
+    three years cannot coincide by chance.
+    """
+
+    def write():
+        write_shapefile_cache("world", toy_world_needing_repair())
+        write_shapefile_cache("coastline", toy_coastline())
+        write_rivers_cache(toy_rivers().query("ORD_FLOW < 5"))
+        years = [1990 + index % 3 for index in range(SYNTHETIC_SOURCE_EVENTS)]
+        write_emdat_cache(
+            emdat_event(
+                {
+                    "ISO": "FRA",
+                    "Region": "Europe",
+                    "DisNo.": f"FRA-{index}",
+                    "Start Year": year,
+                    "End Year": year,
+                }
+            )
+            for index, year in enumerate(years)
+        )
+        # The geocoder's output, which the loader joins onto the workbook by row number.
+        pd.DataFrame(
+            {
+                "emdat_index": range(SYNTHETIC_SOURCE_EVENTS),
+                "location_id": [0] * SYNTHETIC_SOURCE_EVENTS,
+                "lon": np.linspace(0.05, 0.45, SYNTHETIC_SOURCE_EVENTS),
+                "lat": [0.5] * SYNTHETIC_SOURCE_EVENTS,
+            }
+        ).to_csv(tmp_path / "disaster_locations_gpt_repaired_w_features.csv", index=False)
+
+        return tmp_path
+
+    return write
+
+
 @pytest.fixture
 def write_point_grid_cache(write_shapefile_cache, write_rivers_cache, rivers_clear_of_the_grid):
     """Seed the world, coastline and river caches `load_grid_point_data` reads."""
@@ -365,13 +407,14 @@ def write_point_grid_cache(write_shapefile_cache, write_rivers_cache, rivers_cle
 
 @pytest.fixture
 def write_rivers_cache(tmp_path):
-    """Return a callable writing the processed river shapefiles a warm cache would hold."""
+    """Return a callable writing the processed river network a warm cache would hold."""
 
     def write(gdf, include_medium=False):
         rivers_dir = tmp_path / "rivers"
         rivers_dir.mkdir(parents=True, exist_ok=True)
-        filename = MEDIUM_BIG_RIVERS_FILENAME if include_medium else BIG_RIVERS_FILENAME
-        gdf.to_file(rivers_dir / filename)
+        # The cache key is stated literally, so a wrong one fails rather than agreeing with itself.
+        cutoff = 6 if include_medium else 5
+        gdf.to_parquet(rivers_dir / f"rivers__stream_order_below={cutoff}.parquet")
         return tmp_path
 
     return write

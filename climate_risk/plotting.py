@@ -11,7 +11,7 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.offsetbox import AnchoredText
 from scipy import stats
 
-from climate_risk.const_vars import REGIONS
+REGIONS = ["Asia", "Europe", "Africa", "Oceania", "Americas"]
 
 
 def configure_plot_style(add_grid=False):

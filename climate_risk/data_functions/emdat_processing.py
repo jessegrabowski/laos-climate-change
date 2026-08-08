@@ -4,11 +4,50 @@ from pathlib import Path
 
 import polars as pl
 
-from climate_risk.const_vars import (
-    EM_DAT_COL_DICT,
-    INTENSITY_COLS,
-    PROB_COLS,
-)
+EM_DAT_COL_DICT = {
+    "Start Year": "Start_Year",
+    "Total Deaths": "Deaths",
+    "No. Injured": "Injured",
+    "No. Affected": "Numb_Affected",
+    "No. Homeless": "Homeless",
+    "Total Affected": "Total_Affected",
+    "Reconstruction Costs ('000 US$)": "Reconstruction_Costs",
+    "Reconstruction Costs, Adjusted ('000 US$)": "Reconstruction_Costs_Adjusted",
+    "Insured Damage ('000 US$)": "Insured_Damage",
+    "Insured Damage, Adjusted ('000 US$)": "Insured_Damage_Adjusted",
+    "Total Damage ('000 US$)": "Total_Damage",
+    "Total Damage, Adjusted ('000 US$)": "Total_Damage_Adjusted",
+}
+
+PROB_COLS = [
+    "Country",
+    "ISO",
+    "Start_Year",
+    "Drought",
+    "Extreme temperature",
+    "Flood",
+    "Storm",
+    "Wildfire",
+    "Mass movement (dry)",
+    "Mass movement (wet)",
+    "Region",
+    "Subregion",
+]
+
+INTENSITY_COLS = [
+    "Country",
+    "ISO",
+    "Start_Year",
+    "Region",
+    "Deaths",
+    "Injured",
+    "Numb_Affected",
+    "Homeless",
+    "Total_Affected",
+    "Total_Damage",
+    "Total_Damage_Adjusted",
+    "Disaster Type",
+]
 
 # The study window opens in 1969 and closes on the newest event in the workbook.
 EMDAT_WINDOW_START = dt.date(1969, 1, 1)

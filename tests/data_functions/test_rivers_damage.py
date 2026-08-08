@@ -5,7 +5,6 @@ import pytest
 from shapely.geometry import LineString
 
 from climate_risk.data_functions.rivers_damage import (
-    YEAR_RESOLUTION,
     create_floods_rivers_damage,
     create_hydro_rivers_damage,
 )
@@ -162,11 +161,21 @@ def test_laos_flood_coordinates_are_overridden(damage_cache):
 
 def test_the_year_survives_the_round_trip_as_a_timestamp(damage_cache):
     """Downstream reaches for `.dt`, which a string year cannot answer."""
-    create_hydro_rivers_damage(damage_cache)
+    cold = create_hydro_rivers_damage(damage_cache)
     warm = create_hydro_rivers_damage(damage_cache)
 
-    assert warm["year"].dtype == YEAR_RESOLUTION
+    assert warm["year"].dtype == cold["year"].dtype
     assert set(warm["year"].dt.year) == {1990}
+
+
+def test_the_column_names_survive_the_round_trip(damage_cache):
+    """A shapefile truncates a field name to ten characters, so `Total_Damage_Hydro` came back
+    as `Total_Dama` and every reader had to un-truncate it."""
+    cold = create_hydro_rivers_damage(damage_cache)
+    warm = create_hydro_rivers_damage(damage_cache)
+
+    assert list(warm.columns) == list(cold.columns)
+    assert "Total_Damage_Hydro" in warm.columns
 
 
 def test_an_event_missing_one_coordinate_is_dropped(damage_cache):

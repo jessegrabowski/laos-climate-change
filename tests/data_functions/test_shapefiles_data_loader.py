@@ -1,10 +1,21 @@
+import shutil
+
 import pandas as pd
 import pytest
 
 from climate_risk import load_shapefile
-from climate_risk.data_functions.shapefiles_data_loader import repair_iso_codes
+from climate_risk.data_functions.shapefiles_data_loader import (
+    SHAPEFILE_MEMBERS,
+    SHAPEFILE_SOURCES,
+    repair_iso_codes,
+)
 from climate_risk.exceptions import DataValidationError, ISOCodeValidationError
 from tests.conftest import toy_world, toy_world_needing_repair
+
+
+def test_every_declared_source_knows_where_its_archive_unpacks():
+    """A source without a member entry passes validation and then dies on a KeyError mid-load."""
+    assert set(SHAPEFILE_SOURCES) == set(SHAPEFILE_MEMBERS)
 
 
 def test_unknown_shapefile_is_rejected(tmp_path):
@@ -19,6 +30,28 @@ def test_warm_cache_reads_without_downloading(write_shapefile_cache):
     world = load_shapefile("world", cache_dir, repair_ISO_codes=False)
 
     assert len(world) == 3
+
+
+def test_only_the_archive_on_disk_is_enough_to_load(write_shapefile_cache):
+    """A half-populated cache is the normal state after an interrupted run; extraction must resume."""
+    cache_dir = write_shapefile_cache("world", toy_world())
+    # Stated literally, not derived from the loader, so a wrong layout leaves the real files in
+    # place and fails here rather than agreeing with itself.
+    shutil.rmtree(cache_dir / "shapefiles" / "WB_countries_Admin0_10m")
+
+    world = load_shapefile("world", cache_dir, repair_ISO_codes=False)
+
+    assert len(world) == 3
+
+
+def test_the_repair_does_not_depend_on_how_the_caller_capitalised_it(write_shapefile_cache):
+    """Every other branch lowercases `which`, so a capitalised call silently skipped the repair."""
+    cache_dir = write_shapefile_cache("world", toy_world_needing_repair())
+
+    world = load_shapefile("World", cache_dir)
+
+    assert world.loc[world["WB_NAME"] == "France", "ISO_A3"].tolist() == ["FRA"]
+    assert "-99" not in set(world["ISO_A3"])
 
 
 def test_laos_reads_the_district_layer_from_a_flat_archive(write_shapefile_cache):
