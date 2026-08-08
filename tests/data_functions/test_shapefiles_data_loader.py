@@ -5,12 +5,9 @@ import pandas as pd
 import pytest
 
 from climate_risk import load_shapefile
+from climate_risk.config.registry import load_place
 from climate_risk.config.schema import CountryConfig, RegionConfig
-from climate_risk.data_functions.shapefiles_data_loader import (
-    SHAPEFILE_ARCHIVES,
-    load_place_boundary,
-    repair_iso_codes,
-)
+from climate_risk.data_functions.shapefiles_data_loader import load_place_boundary, repair_iso_codes
 from climate_risk.exceptions import DataValidationError, ISOCodeValidationError
 from tests.conftest import toy_world, toy_world_needing_repair
 
@@ -49,16 +46,6 @@ def test_the_repair_does_not_depend_on_how_the_caller_capitalised_it(write_shape
 
     assert world.loc[world["WB_NAME"] == "France", "ISO_A3"].tolist() == ["FRA"]
     assert "-99" not in set(world["ISO_A3"])
-
-
-def test_laos_reads_the_district_layer_from_a_flat_archive(write_shapefile_cache):
-    """The archive unpacks flat, so reading the wrong admin level means reading a different file."""
-    cache_dir = write_shapefile_cache("laos", toy_world())
-    (cache_dir / "shapefiles" / "lao_admin0.shp").write_text("not a shapefile")
-
-    laos = load_shapefile("laos", cache_dir, repair_ISO_codes=False)
-
-    assert sorted(laos["ISO_A3"]) == ["AAA", "BBB", "CCC"]
 
 
 def test_repair_supplies_the_missing_sovereign_codes():
@@ -114,12 +101,15 @@ def test_duplicate_iso_codes_are_an_error():
         repair_iso_codes(doubled)
 
 
-def test_a_place_with_its_own_boundary_reads_that_archive(write_shapefile_cache):
-    """Its own file defines its extent, so nothing about the world shapefile should narrow it."""
-    cache_dir = write_shapefile_cache("laos", toy_world())
-    place = CountryConfig(iso3="AAA", name="Aland", boundary=SHAPEFILE_ARCHIVES["laos"])
+def test_a_place_reads_the_boundary_layer_its_config_names(write_shapefile_cache):
+    """The archive unpacks flat, so reading the wrong admin level means reading a different file.
 
-    boundary = load_place_boundary(place, cache_dir)
+    Only the boundary archive is cached here, so falling back to the world slice cannot quietly work.
+    """
+    cache_dir = write_shapefile_cache("laos", toy_world())
+    (cache_dir / "shapefiles" / "lao_admin0.shp").write_text("not a shapefile")
+
+    boundary = load_place_boundary(load_place("lao"), cache_dir)
 
     assert sorted(boundary["ISO_A3"]) == ["AAA", "BBB", "CCC"]
 

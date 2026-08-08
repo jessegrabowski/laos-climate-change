@@ -4,7 +4,6 @@ from climate_risk.config.registry import CONFIG_ROOT, load_place, read_place, re
 from climate_risk.config.schema import CountryConfig, EventFilters, GeometrySpec, RegionConfig
 from climate_risk.data.world_bank import COUNTRY_CODE_BY_NAME
 from climate_risk.data_functions.rivers_damage import LAOS_LOCATION_DICTIONARY
-from climate_risk.data_functions.shapefiles_data_loader import SHAPEFILE_ARCHIVES
 
 # Walked rather than listed, so a place file that ships without a test still has to parse.
 SHIPPED_PLACES = sorted(CONFIG_ROOT.glob("*/*.toml"))
@@ -33,12 +32,14 @@ def test_a_place_is_filed_under_the_key_it_declares(path):
     assert path.stem == declared
 
 
-def test_laos_carries_the_boundary_the_loader_hardcodes():
-    """The config has to reproduce current behaviour exactly, or Laos results move when it is adopted."""
+def test_laos_carries_its_own_boundary_archive():
+    """Stated literally, because this file is the only record of the archive and the layer to read."""
     place = load_place("lao")
 
     assert isinstance(place, CountryConfig)
-    assert place.boundary == SHAPEFILE_ARCHIVES["laos"]
+    assert place.boundary is not None
+    assert place.boundary.source.filename == "lao_admin_boundaries.shp.zip"
+    assert place.boundary.member == "lao_admin2.shp"
 
 
 def test_laos_carries_the_coordinate_overrides_the_loader_hardcodes():
