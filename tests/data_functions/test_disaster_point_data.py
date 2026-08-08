@@ -7,6 +7,7 @@ import pytest
 
 from climate_risk import load_synthetic_non_disaster_points
 from climate_risk.data_functions.disaster_point_data import (
+    REGION_ISO_CODES,
     _load_disaster_point_data,
     load_data,
     load_grid_point_data,
@@ -41,6 +42,11 @@ def test_unknown_sampling_strategy_is_rejected(tmp_path):
 def grid(write_point_grid_cache):
     cache_dir = write_point_grid_cache()
     return load_grid_point_data(cache_dir, region="custom", iso_list=["FRA"], file_reg_name="toy", grid_size=3)
+
+
+def test_the_laos_grid_is_a_strict_subset_of_the_sea_grid():
+    """Laos sits inside South-East Asia, so a sea grid that did not contain it covers the wrong place."""
+    assert set(REGION_ISO_CODES["laos"]) < set(REGION_ISO_CODES["sea"])
 
 
 def test_grid_columns_use_lon_not_long(grid):

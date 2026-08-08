@@ -20,6 +20,13 @@ SYNTHETIC_DATA_BASENAME = "synthetic_non_disasters.csv"
 
 SAMPLING_STRATEGIES = ("region", "country")
 
+# Singapore and Brunei are left out: both are small enough that the grid resolves to too few
+# points to be worth carrying.
+REGION_ISO_CODES = {
+    "laos": ("LAO",),
+    "sea": ("MMR", "THA", "LAO", "KHM", "VNM", "IDN", "MYS", "PHL", "TLS"),
+}
+
 
 def disaster_points_path(cache_dir: Path) -> Path:
     return cache_dir / "disaster_locations_gpt_repaired_w_features.csv"
@@ -111,8 +118,9 @@ def load_grid_point_data(
     if (region == "custom") and file_reg_name is None:
         raise ValueError("Please provide a file_reg_name for the custom region")
 
-    if (region == "laos") or (region == "sea"):
+    if region in ("laos", "sea"):
         file_reg_name = region
+        iso_list = list(REGION_ISO_CODES[region])
 
     fname = f"{file_reg_name}_points_{grid_size}.shp"
     folder_path = shapefile_dir(cache_dir) / fname
@@ -137,23 +145,6 @@ def load_grid_point_data(
     elif not fpath.exists() or force_reload:
         _log.info("Loading shapefiles and rivers data")
         world = load_shapefile("world", cache_dir)
-
-        if region == "sea":
-            iso_list = [
-                "MMR",  # Myanmar
-                "THA",  # Thailand
-                "LAO",  # Laos
-                "KHM",  # Cambodia
-                "VNM",  # Vietnam
-                "IDN",  # Indonesia
-                "MYS",  # Malaysia
-                # "SGP",  # Singapore
-                "PHL",  # Philippines
-                # "BRN",  # Brunei
-                "TLS",  # Timor-Leste
-            ]
-        elif region == "laos":
-            iso_list = ["LAO"]
 
         if altered_shape_file is None:
             point_map = world.query("ISO_A3 in @iso_list")
