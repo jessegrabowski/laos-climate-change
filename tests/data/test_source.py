@@ -9,6 +9,7 @@ from climate_risk.data.gpcc import FULL_DATA, MONITORING
 from climate_risk.data.hadcrut import HADCRUT
 from climate_risk.data.ocean_heat import OCEAN_HEAT
 from climate_risk.data.source import DataSource
+from climate_risk.data_functions.shapefiles_data_loader import COASTLINE, LAOS, WORLD
 
 FIELDS = {
     "url": "https://example.org/co2.csv",
@@ -49,7 +50,7 @@ def test_an_unparseable_retrieved_date_is_rejected():
 # Every source the library downloads. A new one is added here so the reachability check covers it.
 # The monitoring archives all share one URL pattern, so its ends are checked rather than every month.
 SOURCES = (
-    {"CO2": CO2, "OCEAN_HEAT": OCEAN_HEAT, "HADCRUT": HADCRUT}
+    {"CO2": CO2, "OCEAN_HEAT": OCEAN_HEAT, "HADCRUT": HADCRUT, "WORLD": WORLD, "LAOS": LAOS, "COASTLINE": COASTLINE}
     | {archive.filename: archive for archive in FULL_DATA.sources}
     | {archive.filename: archive for archive in (MONITORING.sources[0], MONITORING.sources[-1])}
 )

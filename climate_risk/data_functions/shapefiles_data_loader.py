@@ -1,35 +1,60 @@
 import logging
 
 from pathlib import Path
-from urllib.request import urlretrieve
 from zipfile import ZipFile
 
 import geopandas as gpd
 
-from climate_risk.const_vars import (
-    COASTLINE_FILENAME,
-    COASTLINE_URL,
-    LAOS_FILENAME,
-    LAOS_URL,
-    WORLD_FILENAME,
-    WORLD_URL,
-)
+from climate_risk.data.fetch import fetch
+from climate_risk.data.source import DataSource
 from climate_risk.exceptions import DataValidationError, ISOCodeValidationError
 
 _log = logging.getLogger(__name__)
 
+# The catalog's metadata API is rate-limited; its file host is not, and is where the published
+# artefact actually lives.
+WORLD = DataSource(
+    url=("https://datacatalogfiles.worldbank.org/ddh-published/0038272/DR0046659/wb_countries_admin0_10m.zip"),
+    filename="wb_countries_admin0_10m.zip",
+    licence="CC BY 4.0",
+    citation=(
+        "World Bank Official Boundaries, dataset 0038272 in the World Bank Data Catalog. "
+        "https://datacatalog.worldbank.org/search/dataset/0038272"
+    ),
+    retrieved="2026-08-08",
+)
 
-shapefile_name_dict = {
-    "world": WORLD_FILENAME.replace(".zip", ""),
-    "laos": LAOS_FILENAME.replace(".zip", ""),
-    "coastline": COASTLINE_FILENAME.replace(".zip", ""),
-}
+LAOS = DataSource(
+    url=(
+        "https://data.humdata.org/dataset/9eb6aff1-9e3f-43d3-99a6-f415fe4b4dff"
+        "/resource/907a1b50-0d14-40ec-8b8a-f2d027d895aa/download/lao_admin_boundaries.shp.zip"
+    ),
+    filename="lao_admin_boundaries.shp.zip",
+    licence="CC BY 3.0 IGO",
+    citation=(
+        "National Geographic Department (NGD): Lao People's Democratic Republic subnational "
+        "administrative boundaries, via the Humanitarian Data Exchange."
+    ),
+    retrieved="2026-08-08",
+)
 
-shapefile_url_dict = {"world": WORLD_URL, "laos": LAOS_URL, "coastline": COASTLINE_URL}
+COASTLINE = DataSource(
+    url="https://www.soest.hawaii.edu/pwessel/gshhg/gshhg-shp-2.3.7.zip",
+    filename="gshhg-shp-2.3.7.zip",
+    licence="LGPL",
+    citation=(
+        "Wessel, P., and Smith, W. H. F. (1996): A global, self-consistent, hierarchical, "
+        "high-resolution shoreline database. Journal of Geophysical Research, 101(B4), 8741-8743. "
+        "https://doi.org/10.1029/96JB00104"
+    ),
+    retrieved="2026-08-08",
+)
 
-# Paths inside each archive, case included -- a case-insensitive filesystem hides a mismatch
-# here that fails on Linux.
-shapefile_filename_dict = {
+SHAPEFILE_SOURCES = {"world": WORLD, "laos": LAOS, "coastline": COASTLINE}
+
+# Paths inside each archive, case included -- a case-insensitive filesystem hides a mismatch here
+# that fails on Linux.
+SHAPEFILE_MEMBERS = {
     "world": "WB_countries_Admin0_10m",
     # The Laos archive unpacks flat, one file per admin level. Level 2 is the district layer the
     # point grid is built from.
@@ -37,13 +62,7 @@ shapefile_filename_dict = {
     "coastline": "GSHHS_shp/f",
 }
 
-
-VALID_CHOICES = list(shapefile_name_dict.keys())
-
-
-def shapefile_dir(cache_dir: Path) -> Path:
-    return cache_dir / "shapefiles"
-
+VALID_CHOICES = list(SHAPEFILE_SOURCES)
 
 # The boundary file lists these separately but tags them with their owner's ISO code, or with no
 # code at all, so counting them would double-count the owner or introduce a country that is not one.
@@ -71,6 +90,22 @@ ISO_CODE_REPAIRS = {
     "Norway": "NOR",
     "Kosovo": "XKX",
 }
+
+
+def shapefile_dir(cache_dir: Path) -> Path:
+    return cache_dir / "shapefiles"
+
+
+def _extracted_path(which: str, cache_dir: Path) -> Path:
+    """Where the archive for ``which`` unpacks to, which is what every later step reads."""
+    return shapefile_dir(cache_dir) / SHAPEFILE_MEMBERS[which.lower()]
+
+
+def _source_for(which: str) -> DataSource:
+    try:
+        return SHAPEFILE_SOURCES[which.lower()]
+    except KeyError:
+        raise ValueError(f"which should be one of {VALID_CHOICES}, got {which}") from None
 
 
 def repair_iso_codes(world: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
@@ -117,52 +152,33 @@ def repair_iso_codes(world: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     return repaired
 
 
-def download_shapefile(which: str, cache_dir: Path, *, force_reload: bool = False) -> None:
-    if which.lower() not in VALID_CHOICES:
-        raise ValueError(f"which should be one of {VALID_CHOICES}, got {which}")
-    url = shapefile_url_dict[which.lower()]
-    filename = shapefile_name_dict[which.lower()] + ".zip"
-
-    output_path = shapefile_dir(cache_dir)
-    path_to_file = output_path / filename
-
-    output_path.mkdir(parents=True, exist_ok=True)
-
-    if not path_to_file.exists() or force_reload:
-        _log.info(f"Downloading {which} shapefiles to {output_path}")
-        urlretrieve(url, path_to_file)
+def download_shapefile(which: str, cache_dir: Path, *, force_reload: bool = False) -> Path:
+    """Fetch the archive for ``which`` into the shapefile cache and return where it landed."""
+    return fetch(_source_for(which), shapefile_dir(cache_dir), force=force_reload)
 
 
 def extract_shapefiles(which: str, cache_dir: Path, *, force_reload: bool = False) -> None:
-    if which.lower() not in VALID_CHOICES:
-        raise ValueError(f"which should be one of {VALID_CHOICES}, got {which}")
-    zip_filename = shapefile_name_dict[which.lower()]
-    filename = shapefile_filename_dict[which.lower()]
+    """Unpack the archive for ``which`` unless what it holds is already on disk."""
+    source = _source_for(which)
+    directory = shapefile_dir(cache_dir)
 
-    output_path = shapefile_dir(cache_dir)
-    shapefile_path = output_path / filename
+    if _extracted_path(which, cache_dir).exists() and not force_reload:
+        return
 
-    if not shapefile_path.exists() or force_reload:
-        _log.info(f"Extracting {zip_filename}.zip")
-
-        with ZipFile(output_path / (zip_filename + ".zip"), "r") as zObject:
-            zObject.extractall(path=output_path)
+    _log.info(f"Extracting {source.filename}")
+    with ZipFile(source.path(directory)) as archive:
+        archive.extractall(path=directory)
 
 
 def load_shapefile(
     which: str, cache_dir: Path, *, force_reload: bool = False, repair_ISO_codes: bool = True
 ) -> gpd.GeoDataFrame:
-    if which.lower() not in VALID_CHOICES:
-        raise ValueError(f"which should be one of {VALID_CHOICES}, got {which}")
-    filename = shapefile_filename_dict[which.lower()]
-
-    shapefile_path = shapefile_dir(cache_dir) / filename
     download_shapefile(which, cache_dir, force_reload=force_reload)
     extract_shapefiles(which, cache_dir, force_reload=force_reload)
 
-    df = gpd.read_file(shapefile_path, layer=0)
+    frame = gpd.read_file(_extracted_path(which, cache_dir), layer=0)
 
     if which.lower() == "world" and repair_ISO_codes:
-        df = repair_iso_codes(df)
+        return repair_iso_codes(frame)
 
-    return df
+    return frame

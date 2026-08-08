@@ -52,19 +52,6 @@ EM_DAT_COL_DICT = {
 }
 
 
-# The World Bank data catalog serves downloads through a rate-limited API with no stable direct
-# link, so this points at a humanitarian CKAN node mirroring the same archive.
-WORLD_URL = (
-    "https://ckan.rdas.live/dataset/36f4b9e3-13d4-4865-98b9-1e299a9c6458"
-    "/resource/fd848e6b-bf73-470f-9c51-25ce4ff76f20/download/wb_countries_admin0_10m.zip"
-)
-WORLD_FILENAME = "wb_countries_admin0_10m.zip"
-LAOS_URL = (
-    "https://data.humdata.org/dataset/9eb6aff1-9e3f-43d3-99a6-f415fe4b4dff"
-    "/resource/907a1b50-0d14-40ec-8b8a-f2d027d895aa/download/lao_admin_boundaries.shp.zip"
-)
-LAOS_FILENAME = "lao_admin_boundaries.shp.zip"
-
 MODEL_DF_FILENAME = "model_df.csv"
 DAMAGE_DF_FILENAME = "damage_df.csv"
 RIVERS_URL = "https://data.hydrosheds.org/file/HydroRIVERS/HydroRIVERS_v10_shp.zip"
@@ -95,7 +82,3 @@ VARIABLES_DICTIONARY = {
 
 
 REGIONS = ["Asia", "Europe", "Africa", "Oceania", "Americas"]
-
-
-COASTLINE_FILENAME = "gshhg-shp-2.3.7.zip"
-COASTLINE_URL = "https://www.soest.hawaii.edu/pwessel/gshhg/gshhg-shp-2.3.7.zip"
