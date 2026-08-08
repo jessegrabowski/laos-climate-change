@@ -44,3 +44,37 @@ class DataSource:
     def path(self, cache_dir: Path) -> Path:
         """Return where this source is stored inside ``cache_dir``."""
         return cache_dir / self.filename
+
+
+@dataclass(frozen=True, slots=True)
+class ShapefileArchive:
+    """
+    A zipped shapefile, together with the layer inside it to read.
+
+    Parameters
+    ----------
+    source : DataSource
+        The archive to fetch.
+    member : str
+        Path to the layer within the archive, case included. A case-insensitive filesystem hides a
+        mismatch here that fails on Linux.
+
+    Raises
+    ------
+    ValueError
+        If ``member`` is empty, or escapes the directory the archive unpacks into.
+    """
+
+    source: DataSource
+    member: str
+
+    def __post_init__(self) -> None:
+        if not self.member:
+            raise ValueError(f"{self.source.filename}: member must name a layer inside the archive")
+
+        if Path(self.member).is_absolute() or ".." in Path(self.member).parts:
+            raise ValueError(f"{self.source.filename}: member must stay inside the archive, got {self.member!r}")
+
+    def extracted_path(self, directory: Path) -> Path:
+        """Return where this archive's layer unpacks to under ``directory``."""
+        return directory / self.member

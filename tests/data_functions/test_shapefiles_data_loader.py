@@ -4,18 +4,9 @@ import pandas as pd
 import pytest
 
 from climate_risk import load_shapefile
-from climate_risk.data_functions.shapefiles_data_loader import (
-    SHAPEFILE_MEMBERS,
-    SHAPEFILE_SOURCES,
-    repair_iso_codes,
-)
+from climate_risk.data_functions.shapefiles_data_loader import repair_iso_codes
 from climate_risk.exceptions import DataValidationError, ISOCodeValidationError
 from tests.conftest import toy_world, toy_world_needing_repair
-
-
-def test_every_declared_source_knows_where_its_archive_unpacks():
-    """A source without a member entry passes validation and then dies on a KeyError mid-load."""
-    assert set(SHAPEFILE_SOURCES) == set(SHAPEFILE_MEMBERS)
 
 
 def test_unknown_shapefile_is_rejected(tmp_path):
