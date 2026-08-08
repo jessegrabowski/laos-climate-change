@@ -19,8 +19,6 @@ _log = logging.getLogger(__name__)
 
 SYNTHETIC_DATA_BASENAME = "synthetic_non_disasters.csv"
 
-SAMPLING_STRATEGIES = ("region", "country")
-
 # Singapore and Brunei are left out: both are small enough that the grid resolves to too few
 # points to be worth carrying.
 REGION_ISO_CODES = {
@@ -254,6 +252,11 @@ def make_synthetic_data_fpath(cache_dir: Path, by: str, multipler: int, list_nam
     return cache_dir / fname
 
 
+# Sampling strategies, keyed by the name callers pass as `by`.
+SAMPLERS = {"region": _sample_by_region, "country": _sample_by_country}
+SAMPLING_STRATEGIES = tuple(SAMPLERS)
+
+
 def load_synthetic_non_disaster_points(
     cache_dir: Path,
     countries,
@@ -280,14 +283,11 @@ def load_synthetic_non_disaster_points(
 
         data = load_disaster_point_data(cache_dir).dropna(subset="Region").query("ISO in @countries")
 
-        if by == "region":
-            _log.info("Sampling non-disasters by region")
-            not_disasters = _sample_by_region(data, world, multiplier=multiplier, rng=rng)
-        elif by == "country":
-            _log.info("Sampling non-disasters by country")
-            not_disasters = _sample_by_country(data, world, multiplier=multiplier, rng=rng)
-        island_dict = data[["ISO", "is_island"]].drop_duplicates().set_index("ISO").to_dict()["is_island"]
-        not_disasters["is_island"] = not_disasters["ISO"].map(island_dict.get)
+        _log.info(f"Sampling non-disasters by {by}")
+        not_disasters = SAMPLERS[by](data, world, multiplier=multiplier, rng=rng)
+
+        is_island_by_iso = data[["ISO", "is_island"]].drop_duplicates().set_index("ISO").to_dict()["is_island"]
+        not_disasters["is_island"] = not_disasters["ISO"].map(is_island_by_iso.get)
 
         distances = get_distance_to(
             rivers,
