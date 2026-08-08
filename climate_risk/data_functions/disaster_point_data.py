@@ -17,7 +17,8 @@ from climate_risk.geo.island_countries import ISLAND_COUNTRY_ISO3
 
 _log = logging.getLogger(__name__)
 
-SYNTHETIC_DATA_BASENAME = "synthetic_non_disasters.csv"
+# The default generator is seeded so a run reproduces, which is why callers may pass their own.
+SAMPLING_SEED = sum(map(ord, "Laos GGGI Climate Adaptation"))
 
 # Singapore and Brunei are left out: both are small enough that the grid resolves to too few
 # points to be worth carrying.
@@ -31,10 +32,10 @@ def disaster_points_path(cache_dir: Path) -> Path:
     return cache_dir / "disaster_locations_gpt_repaired_w_features.csv"
 
 
-def read_cached_points(fpath: Path, index_col: int | None = None) -> pd.DataFrame:
+def read_cached_points(fpath: Path) -> pd.DataFrame:
     """Read a cached point CSV, normalising a `long` column to `lon`."""
     # Remove once no cache on disk spells it long.
-    frame = pd.read_csv(fpath, index_col=index_col)
+    frame = pd.read_csv(fpath)
 
     return frame if "lon" in frame.columns else frame.rename(columns={"long": "lon"})
 
@@ -245,13 +246,6 @@ def _sample_by_country(data, world, multiplier=1, rng=None):
     return not_disasters.rename(columns={"CONTINENT": "Region"})
 
 
-def make_synthetic_data_fpath(cache_dir: Path, by: str, multipler: int, list_name: str) -> Path:
-    basename = Path(SYNTHETIC_DATA_BASENAME)
-    fname = f"{basename.stem}_{by}_times_{multipler}_{list_name}{basename.suffix}"
-
-    return cache_dir / fname
-
-
 # Sampling strategies, keyed by the name callers pass as `by`.
 SAMPLERS = {"region": _sample_by_region, "country": _sample_by_country}
 SAMPLING_STRATEGIES = tuple(SAMPLERS)
@@ -271,17 +265,15 @@ def load_synthetic_non_disaster_points(
         raise ValueError(f"by should be one of {sorted(SAMPLING_STRATEGIES)}, got {by}")
 
     if rng is None:
-        seed = sum(map(ord, "Laos GGGI Climate Adaptation"))
-        rng = np.random.default_rng(seed)
+        rng = np.random.default_rng(SAMPLING_SEED)
 
-    fpath = make_synthetic_data_fpath(cache_dir, by, multiplier, list_name)
-
-    if not fpath.exists() or force_generate:
+    def build() -> gpd.GeoDataFrame:
         world = load_shapefile("world", cache_dir)
         coastline = load_shapefile("coastline", cache_dir)
         rivers = load_rivers_data(cache_dir)
 
-        data = load_disaster_point_data(cache_dir).dropna(subset="Region").query("ISO in @countries")
+        data = load_disaster_point_data(cache_dir).dropna(subset="Region")
+        data = data[data["ISO"].isin(countries)]
 
         _log.info(f"Sampling non-disasters by {by}")
         not_disasters = SAMPLERS[by](data, world, multiplier=multiplier, rng=rng)
@@ -310,22 +302,19 @@ def load_synthetic_non_disaster_points(
         not_disasters["lon"] = not_disasters.geometry.apply(lambda x: x.x)
         not_disasters["lat"] = not_disasters.geometry.apply(lambda x: x.y)
 
-        not_disasters.sort_values(by=["ISO"], inplace=True)
+        not_disasters = not_disasters.sort_values("ISO").reset_index(drop=True)
         not_disasters["Start_Year"] = rng.choice(data.Start_Year.unique(), size=not_disasters.shape[0], replace=True)
-        not_disasters.reset_index(inplace=True, drop=True)
 
-        not_disasters.sort_index().drop(columns=["geometry"]).to_csv(fpath)
+        return not_disasters
 
-    else:
-        _log.info(f"Loading data found at {fpath}")
-        not_disasters = read_cached_points(fpath, index_col=0)
-        not_disasters["geometry"] = gpd.points_from_xy(not_disasters.lon, not_disasters.lat)
-        not_disasters["Start_Year"] = pd.to_datetime(not_disasters["Start_Year"])
-
-        # The cache stores bare lat/lon columns, so the CRS is asserted rather than read back.
-        not_disasters = gpd.GeoDataFrame(not_disasters, crs=GEOGRAPHIC_CRS)
-
-    return not_disasters
+    return cached(
+        cache_dir,
+        "synthetic_non_disasters",
+        build,
+        geo_parquet(),
+        params={"by": by, "times": multiplier, "list_name": list_name},
+        force=force_generate,
+    )
 
 
 def load_non_disaster_grid(
@@ -336,9 +325,7 @@ def load_non_disaster_grid(
     force_generate: bool = False,
     three_dimensioal_grid: bool = False,
 ):
-    fpath = cache_dir / grid_name
-
-    if not fpath.exists() or force_generate:
+    def build() -> gpd.GeoDataFrame:
         world = load_shapefile("world", cache_dir)
 
         # We merge the grid with the world shapefile to get the ISO
@@ -372,10 +359,13 @@ def load_non_disaster_grid(
             not_disasters["Start_Year"] = "1984-01-01"
             not_disasters["Start_Year"] = pd.to_datetime(not_disasters["Start_Year"])
 
-        # Save file
-        not_disasters.to_csv(fpath)
+        return not_disasters
 
-    if fpath.exists():
-        not_disasters = read_cached_points(fpath, index_col=0)
-
-    return not_disasters
+    return cached(
+        cache_dir,
+        "non_disaster_grid",
+        build,
+        geo_parquet(),
+        params={"grid": grid_name},
+        force=force_generate,
+    )

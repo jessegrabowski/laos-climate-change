@@ -2,10 +2,13 @@ import re
 
 from typing import Any
 
+import geopandas as gpd
 import numpy as np
+import pandas as pd
 import pytest
 
 from geopandas.testing import assert_geodataframe_equal
+from shapely.geometry import Point
 
 from climate_risk import load_synthetic_non_disaster_points
 from climate_risk.data_functions.disaster_point_data import (
@@ -14,19 +17,13 @@ from climate_risk.data_functions.disaster_point_data import (
     load_data,
     load_grid_point_data,
     load_non_disaster_grid,
-    make_synthetic_data_fpath,
 )
+from climate_risk.geo.crs import GEOGRAPHIC_CRS
 from tests.conftest import SYNTHETIC_SOURCE_EVENTS
 
 # A legacy cache spells longitude `long`; the value under `lon` is the one to keep.
 STALE_LON = 9.9
 CURRENT_LON = 102.5
-
-
-def test_synthetic_filename_is_a_plain_csv(tmp_path):
-    fpath = make_synthetic_data_fpath(tmp_path, "region", 1, "sea")
-
-    assert fpath.name == "synthetic_non_disasters_region_times_1_sea.csv"
 
 
 def test_missing_geocoded_locations_names_the_file_it_looked_for(tmp_path):
@@ -128,25 +125,34 @@ def test_a_cache_holding_both_spellings_keeps_one_lon(tmp_path):
     assert STALE_LON not in data.geometry.x.tolist()
 
 
-def test_the_synthetic_warm_path_normalises_longitude(tmp_path):
-    """It reads the largest cache in the project, so it must go through the same shim."""
-    fpath = make_synthetic_data_fpath(tmp_path, "region", 1, "sea")
-    fpath.write_text(f",ISO,long,lat,Start_Year\n0,LAO,{CURRENT_LON},18.5,1990-01-01\n")
+def test_a_warm_synthetic_cache_is_reused(tmp_path):
+    """The old key never matched the name it wrote, so synthetics were regenerated on every run.
+
+    Nothing here seeds the inputs a build needs, so a key that misses reaches for the network and
+    the socket guard fails the test.
+    """
+    # Stated literally, so a changed key fails rather than agreeing with the loader.
+    cache = tmp_path / "synthetic_non_disasters__by=region__list_name=sea__times=1.parquet"
+    gpd.GeoDataFrame(
+        {"ISO": ["LAO"], "Start_Year": [pd.Timestamp("1990-01-01")], "geometry": [Point(102.5, 18.5)]},
+        crs=GEOGRAPHIC_CRS,
+    ).to_parquet(cache)
 
     points = load_synthetic_non_disaster_points(tmp_path, ["LAO"], "sea")
 
-    assert "lon" in points.columns
-    assert points.geometry.x.tolist() == [CURRENT_LON]
+    assert points["ISO"].tolist() == ["LAO"]
 
 
-def test_the_non_disaster_grid_warm_path_normalises_longitude(tmp_path):
-    fpath = tmp_path / "grid.csv"
-    fpath.write_text(f",ISO,long,lat\n0,LAO,{CURRENT_LON},18.5\n")
+def test_a_warm_non_disaster_grid_is_reused(tmp_path):
+    """As above: the grid name has to reach the cache key, or every call rebuilds."""
+    cache = tmp_path / "non_disaster_grid__grid=laos.parquet"
+    gpd.GeoDataFrame(
+        {"ISO": ["LAO"], "is_disaster": [0], "geometry": [Point(102.5, 18.5)]}, crs=GEOGRAPHIC_CRS
+    ).to_parquet(cache)
 
-    grid = load_non_disaster_grid(tmp_path, grid=None, grid_name="grid.csv")
+    grid = load_non_disaster_grid(tmp_path, grid=None, grid_name="laos")
 
-    assert "lon" in grid.columns
-    assert "long" not in grid.columns
+    assert grid["ISO"].tolist() == ["LAO"]
 
 
 @pytest.mark.parametrize("by", ["region", "country"])
