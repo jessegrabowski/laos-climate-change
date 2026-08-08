@@ -12,7 +12,7 @@ from climate_risk.data.hadcrut import HADCRUT
 from climate_risk.data.ocean_heat import OCEAN_HEAT
 from climate_risk.data.source import DataSource, ShapefileArchive
 from climate_risk.data_functions.rivers_data_loader import RIVERS
-from climate_risk.data_functions.shapefiles_data_loader import COASTLINE, LAOS, WORLD
+from climate_risk.data_functions.shapefiles_data_loader import COASTLINE, WORLD
 
 FIELDS = {
     "url": "https://example.org/co2.csv",
@@ -81,7 +81,6 @@ SOURCES = (
         "OCEAN_HEAT": OCEAN_HEAT,
         "HADCRUT": HADCRUT,
         "WORLD": WORLD,
-        "LAOS": LAOS,
         "COASTLINE": COASTLINE,
         "RIVERS": RIVERS,
     }

@@ -26,20 +26,6 @@ WORLD = DataSource(
     retrieved="2026-08-08",
 )
 
-LAOS = DataSource(
-    url=(
-        "https://data.humdata.org/dataset/9eb6aff1-9e3f-43d3-99a6-f415fe4b4dff"
-        "/resource/907a1b50-0d14-40ec-8b8a-f2d027d895aa/download/lao_admin_boundaries.shp.zip"
-    ),
-    filename="lao_admin_boundaries.shp.zip",
-    licence="CC BY 3.0 IGO",
-    citation=(
-        "National Geographic Department (NGD): Lao People's Democratic Republic subnational "
-        "administrative boundaries, via the Humanitarian Data Exchange."
-    ),
-    retrieved="2026-08-08",
-)
-
 COASTLINE = DataSource(
     url="https://www.soest.hawaii.edu/pwessel/gshhg/gshhg-shp-2.3.7.zip",
     filename="gshhg-shp-2.3.7.zip",
@@ -54,9 +40,6 @@ COASTLINE = DataSource(
 
 SHAPEFILE_ARCHIVES = {
     "world": ShapefileArchive(WORLD, "WB_countries_Admin0_10m"),
-    # The Laos archive unpacks flat, one file per admin level. Level 2 is the district layer the
-    # point grid is built from.
-    "laos": ShapefileArchive(LAOS, "lao_admin2.shp"),
     "coastline": ShapefileArchive(COASTLINE, "GSHHS_shp/f"),
 }
 

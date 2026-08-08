@@ -16,7 +16,6 @@ def prediction_to_gpd_df(
         predictions_dict[variable] = (
             prediction_idata.posterior_predictive.mean(dim=("chain", "draw"))[variable].to_dataframe().reset_index()
         )
-        # Merge predictions with Laos points
         predictions_dict[variable] = pd.merge(
             predictions_dict[variable],
             points,

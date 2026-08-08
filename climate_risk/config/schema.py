@@ -7,8 +7,9 @@ from climate_risk.geo.crs import GEOGRAPHIC_CRS, PROJECTED_CRS
 # An ISO 3166-1 alpha-3 code, which is what every frame in the project keys countries on.
 ISO3_LENGTH = 3
 
-# Seeded so a run reproduces. Places may override it to draw a different sample.
-DEFAULT_RANDOM_SEED = sum(map(ord, "Laos GGGI Climate Adaptation"))
+# Seeded so a run reproduces. Places may override it to draw a different sample; changing this
+# value resamples every synthetic control in the project.
+DEFAULT_RANDOM_SEED = 2513
 
 
 def _validate_iso3(code: str, described_as: str) -> None:
@@ -48,13 +49,14 @@ class EventFilters:
     Parameters
     ----------
     start_year : int
-        First year of the study window, included. Default 1970.
+        First year of the study window, included. Default 1981.
     end_year : int, optional
         Last year, included. Default None, meaning the newest event in the workbook.
     min_total_affected : int
         An event must affect more than this many people to count. Default 1000.
-    min_deaths : int
-        An event must kill more than this many people to count. Default 100.
+    min_deaths : int, optional
+        An event must kill more than this many people to count. Default None, which counts an event
+        on its reach alone.
 
     Raises
     ------
@@ -62,10 +64,10 @@ class EventFilters:
         If the window ends before it starts.
     """
 
-    start_year: int = 1970
+    start_year: int = 1981
     end_year: int | None = None
     min_total_affected: int = 1000
-    min_deaths: int = 100
+    min_deaths: int | None = None
 
     def __post_init__(self) -> None:
         if self.end_year is not None and self.end_year < self.start_year:
@@ -134,6 +136,8 @@ class RegionConfig:
         Projection and grid settings. Defaults to the project-wide ones.
     events : EventFilters
         Which EM-DAT records count. Defaults to the project-wide thresholds.
+    random_seed : int
+        Seeds the synthetic non-disaster sampling. Default ``DEFAULT_RANDOM_SEED``.
 
     Raises
     ------
@@ -146,6 +150,7 @@ class RegionConfig:
     members: tuple[str, ...]
     geometry: GeometrySpec = field(default_factory=GeometrySpec)
     events: EventFilters = field(default_factory=EventFilters)
+    random_seed: int = DEFAULT_RANDOM_SEED
 
     def __post_init__(self) -> None:
         if not self.members:

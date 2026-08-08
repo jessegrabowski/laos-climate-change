@@ -4,6 +4,7 @@ import polars as pl
 import pytest
 
 from climate_risk import load_emdat_data
+from climate_risk.config.schema import EventFilters
 from climate_risk.data_functions.emdat_processing import DISASTER_TYPES
 from tests.conftest import emdat_event
 
@@ -129,16 +130,78 @@ def test_unadjusted_filter_drops_low_casualty_events(write_emdat_cache):
 
 
 def test_adjusted_filter_ignores_deaths_but_starts_in_1981(write_emdat_cache):
+    """1980 itself is excluded, so the boundary is pinned on both sides rather than approximately."""
     cache_dir = write_emdat_cache(
         [
             emdat_event({"DisNo.": "kept-no-deaths", "Start Year": 1990, "Total Deaths": 0}),
+            emdat_event({"DisNo.": "first-year", "Start Year": 1981}),
+            emdat_event({"DisNo.": "boundary-year", "Start Year": 1980}),
             emdat_event({"DisNo.": "too-early", "Start Year": 1975}),
         ]
     )
 
     kept = load_emdat_data(cache_dir)["df_raw_filtered_adj"]["DisNo."]
 
-    assert kept.to_list() == ["kept-no-deaths"]
+    assert sorted(kept.to_list()) == ["first-year", "kept-no-deaths"]
+
+
+def test_an_event_exactly_on_the_affected_threshold_does_not_count(write_emdat_cache):
+    """The threshold is strict, and an event sitting on it is the only way to tell that apart."""
+    cache_dir = write_emdat_cache(
+        [
+            emdat_event({"DisNo.": "over", "Start Year": 1995, "Total Affected": 1_001}),
+            emdat_event({"DisNo.": "exactly-on-it", "Start Year": 1995, "Total Affected": 1_000}),
+        ]
+    )
+
+    kept = load_emdat_data(cache_dir)["df_raw_filtered_adj"]["DisNo."]
+
+    assert kept.to_list() == ["over"]
+
+
+def test_the_adjusted_view_follows_the_filters_it_is_given(write_emdat_cache):
+    """The window is a place's setting, so a place with a shorter one must get a shorter panel."""
+    cache_dir = write_emdat_cache(
+        [
+            emdat_event({"DisNo.": "in-window", "Start Year": 1995}),
+            emdat_event({"DisNo.": "before-window", "Start Year": 1985}),
+        ]
+    )
+
+    kept = load_emdat_data(cache_dir, filters=EventFilters(start_year=1990))["df_raw_filtered_adj"]["DisNo."]
+
+    assert kept.to_list() == ["in-window"]
+
+
+def test_a_deaths_threshold_applies_only_when_a_place_sets_one(write_emdat_cache):
+    """The default counts an event on reach alone, so a deadly-but-small event needs an explicit floor."""
+    cache_dir = write_emdat_cache(
+        [
+            emdat_event({"DisNo.": "deadly", "Start Year": 1995, "Total Deaths": 500}),
+            emdat_event({"DisNo.": "harmless", "Start Year": 1995, "Total Deaths": 0}),
+        ]
+    )
+
+    by_default = load_emdat_data(cache_dir)["df_raw_filtered_adj"]["DisNo."]
+    with_a_floor = load_emdat_data(cache_dir, filters=EventFilters(min_deaths=100))["df_raw_filtered_adj"]["DisNo."]
+
+    assert by_default.to_list() == ["deadly", "harmless"]
+    assert with_a_floor.to_list() == ["deadly"]
+
+
+def test_a_place_can_close_its_window_before_the_newest_event(write_emdat_cache):
+    """`end_year` is the only filter that trims the recent end, and it counts its own year."""
+    cache_dir = write_emdat_cache(
+        [
+            emdat_event({"DisNo.": "in-window", "Start Year": 1995}),
+            emdat_event({"DisNo.": "last-year", "Start Year": 2000}),
+            emdat_event({"DisNo.": "after-window", "Start Year": 2005}),
+        ]
+    )
+
+    kept = load_emdat_data(cache_dir, filters=EventFilters(end_year=2000))["df_raw_filtered_adj"]["DisNo."]
+
+    assert kept.to_list() == ["in-window", "last-year"]
 
 
 def test_the_window_extends_to_the_newest_event(write_emdat_cache):

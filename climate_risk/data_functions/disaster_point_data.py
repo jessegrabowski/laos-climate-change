@@ -1,4 +1,3 @@
-import itertools
 import logging
 
 from pathlib import Path
@@ -19,8 +18,8 @@ from climate_risk.geo.island_countries import ISLAND_COUNTRY_ISO3
 
 _log = logging.getLogger(__name__)
 
-# The default generator is seeded so a run reproduces, which is why callers may pass their own.
-SAMPLING_SEED = sum(map(ord, "Laos GGGI Climate Adaptation"))
+# Every grid point is stamped with this year, so the non-disaster controls sit at one point in time.
+CONTROL_YEAR = pd.Timestamp("1984-01-01")
 
 
 def disaster_points_path(cache_dir: Path) -> Path:
@@ -54,7 +53,6 @@ def _load_disaster_point_data(cache_dir: Path) -> gpd.GeoDataFrame:
 def load_disaster_point_data(cache_dir: Path):
     modified_data = False
 
-    # Load Laos shapefile
     events = load_emdat_data(cache_dir)["df_raw_filtered_adj"].to_pandas().set_index("emdat_index")
     data = _load_disaster_point_data(cache_dir)
 
@@ -257,19 +255,43 @@ SAMPLING_STRATEGIES = tuple(SAMPLERS)
 
 def load_synthetic_non_disaster_points(
     cache_dir: Path,
-    countries,
-    list_name: str,
+    place: Place,
     *,
-    rng=None,
-    force_generate=False,
-    by="region",
-    multiplier=1,
-):
+    rng: np.random.Generator | None = None,
+    force_generate: bool = False,
+    by: str = "region",
+    multiplier: int = 1,
+) -> gpd.GeoDataFrame:
+    """
+    Sample non-disaster points to stand against the disasters a place recorded, and cache them.
+
+    Parameters
+    ----------
+    cache_dir : Path
+        Directory the shapefile, river and point caches live under.
+    place : CountryConfig or RegionConfig
+        The place to sample within. Its ``random_seed`` seeds the default generator.
+    rng : numpy.random.Generator, optional
+        Generator to draw with. Default None, meaning one seeded from the place.
+    force_generate : bool, optional
+        Resample even when the cache is warm. Default False.
+    by : str, optional
+        Sampling strategy, one of ``SAMPLING_STRATEGIES``. Default ``"region"``.
+    multiplier : int, optional
+        How many non-disasters to sample per recorded disaster. Default 1.
+
+    Returns
+    -------
+    GeoDataFrame
+        One row per sampled point, with distances to river and coastline and a drawn start year.
+    """
     if by not in SAMPLING_STRATEGIES:
         raise ValueError(f"by should be one of {sorted(SAMPLING_STRATEGIES)}, got {by}")
 
     if rng is None:
-        rng = np.random.default_rng(SAMPLING_SEED)
+        rng = np.random.default_rng(place.random_seed)
+
+    countries = resolve_isos(place)
 
     def build() -> gpd.GeoDataFrame:
         world = load_shapefile("world", cache_dir)
@@ -316,7 +338,7 @@ def load_synthetic_non_disaster_points(
         "synthetic_non_disasters",
         build,
         geo_parquet(),
-        params={"by": by, "times": multiplier, "list_name": list_name},
+        params={"by": by, "times": multiplier, "list_name": place_key(place)},
         force=force_generate,
     )
 
@@ -327,41 +349,33 @@ def load_non_disaster_grid(
     grid_name: str,
     *,
     force_generate: bool = False,
-    three_dimensioal_grid: bool = False,
-):
+) -> gpd.GeoDataFrame:
+    """
+    Label a point grid with the country each point falls in, and cache it as non-disaster controls.
+
+    Parameters
+    ----------
+    cache_dir : Path
+        Directory the shapefile and grid caches live under.
+    grid : GeoDataFrame, optional
+        Points to label. Read only when the cache is cold, so a warm call may pass None.
+    grid_name : str
+        Name the result is cached under.
+    force_generate : bool, optional
+        Rebuild even when the cache is warm. Default False.
+
+    Returns
+    -------
+    GeoDataFrame
+        One row per point, with ``ISO``, ``is_disaster`` of zero, and ``Start_Year``.
+    """
+
     def build() -> gpd.GeoDataFrame:
         world = load_shapefile("world", cache_dir)
 
-        # We merge the grid with the world shapefile to get the ISO
-        not_disasters = gpd.sjoin(
-            grid,
-            world[["geometry", "ISO_A3"]],
-            how="left",
-        ).rename(columns={"ISO_A3": "ISO"})
+        not_disasters = gpd.sjoin(grid, world[["geometry", "ISO_A3"]], how="left").rename(columns={"ISO_A3": "ISO"})
         not_disasters["is_disaster"] = 0
-
-        if three_dimensioal_grid:
-            # Obtain years and ISOs
-            years = load_disaster_point_data(cache_dir)["Start_Year"].unique()
-            country_ISOs = not_disasters["ISO"].unique()
-
-            # Create the Cartesian product of the two arrays
-            combinations = list(itertools.product(years, country_ISOs))
-            combinations_df = pd.DataFrame(combinations, columns=["Start_Date", "ISO"]).sort_values("ISO")
-
-            # Merge files and create not_disasters_grid
-            not_disasters = pd.merge(
-                not_disasters,
-                combinations_df,
-                left_on="ISO",
-                right_on="ISO",
-                how="left",
-            ).rename(columns={"Start_Date": "Start_Year"})
-
-        else:
-            not_disasters = not_disasters.rename(columns={"Start_Date": "Start_Year"})
-            not_disasters["Start_Year"] = "1984-01-01"
-            not_disasters["Start_Year"] = pd.to_datetime(not_disasters["Start_Year"])
+        not_disasters["Start_Year"] = CONTROL_YEAR
 
         return not_disasters
 

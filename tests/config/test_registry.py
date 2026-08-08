@@ -1,7 +1,7 @@
 import pytest
 
 from climate_risk.config.registry import load_place, read_place, resolve_isos
-from climate_risk.config.schema import DEFAULT_RANDOM_SEED, CountryConfig, RegionConfig
+from climate_risk.config.schema import DEFAULT_RANDOM_SEED, CountryConfig, EventFilters, RegionConfig
 
 
 @pytest.fixture
@@ -39,8 +39,7 @@ def test_a_sub_table_becomes_the_object_the_schema_declares(config_root):
     place = load_place("lao", root=root)
 
     assert place.geometry.grid_size == 200
-    assert place.events.end_year == 2024
-    assert place.events.min_deaths == 100
+    assert place.events == EventFilters(start_year=1970, end_year=2024)
 
 
 def test_event_overrides_arrive_as_coordinate_pairs(config_root):
