@@ -16,6 +16,7 @@ from climate_risk.data_functions.disaster_point_data import (
     load_non_disaster_grid,
     make_synthetic_data_fpath,
 )
+from tests.conftest import SYNTHETIC_SOURCE_EVENTS
 
 # A legacy cache spells longitude `long`; the value under `lon` is the one to keep.
 STALE_LON = 9.9
@@ -146,3 +147,19 @@ def test_the_non_disaster_grid_warm_path_normalises_longitude(tmp_path):
 
     assert "lon" in grid.columns
     assert "long" not in grid.columns
+
+
+@pytest.mark.parametrize("by", ["region", "country"])
+def test_the_sampled_years_come_from_the_generator_the_caller_passed(write_synthetic_source_cache, by):
+    """Every other draw honours `rng`, so a caller seeding it gets reproducibility for all but this one."""
+    cache_dir = write_synthetic_source_cache()
+    kwargs: dict[str, Any] = {"countries": ["FRA"], "list_name": "toy", "by": by}
+
+    first = load_synthetic_non_disaster_points(cache_dir, rng=np.random.default_rng(0), **kwargs)
+    second = load_synthetic_non_disaster_points(cache_dir, rng=np.random.default_rng(0), force_generate=True, **kwargs)
+
+    # Without these the comparison holds vacuously when the country filter matches nothing.
+    assert len(first) == SYNTHETIC_SOURCE_EVENTS
+    assert first["Start_Year"].nunique() > 1
+    # The whole frame, so the sampled locations are covered as well as the years.
+    assert_geodataframe_equal(first, second)

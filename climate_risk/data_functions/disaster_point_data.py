@@ -311,9 +311,7 @@ def load_synthetic_non_disaster_points(
         not_disasters["lat"] = not_disasters.geometry.apply(lambda x: x.y)
 
         not_disasters.sort_values(by=["ISO"], inplace=True)
-        not_disasters["Start_Year"] = np.random.choice(
-            data.Start_Year.unique(), size=not_disasters.shape[0], replace=True
-        )
+        not_disasters["Start_Year"] = rng.choice(data.Start_Year.unique(), size=not_disasters.shape[0], replace=True)
         not_disasters.reset_index(inplace=True, drop=True)
 
         not_disasters.sort_index().drop(columns=["geometry"]).to_csv(fpath)
