@@ -65,6 +65,18 @@ def test_the_monitoring_dates_are_decoded_rather_than_read_as_numbers(write_gpcc
     assert months.max() == pd.Timestamp("2021-01-01")
 
 
+def test_a_wider_manifest_rebuilds_rather_than_reading_the_narrower_cache(write_gpcc_archives, write_shapefile_cache):
+    """Extending the record must not serve the shorter frame a previous run left on disk."""
+    cache_dir = write_gpcc_archives()
+    write_shapefile_cache("world", toy_world())
+    full_data, monitoring = toy_gpcc_products()
+
+    narrow = load_gpcc_data(cache_dir, products=(full_data,), repair_ISO_codes=False)
+    wide = load_gpcc_data(cache_dir, products=(full_data, monitoring), repair_ISO_codes=False)
+
+    assert len(wide) > len(narrow)
+
+
 def test_the_published_manifest_lists_an_archive_for_every_period_it_claims():
     """A decade or a month left off the list is a hole in the record that nothing downstream sees."""
     full_data, monitoring = GPCC_PRODUCTS
