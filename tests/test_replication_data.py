@@ -9,7 +9,8 @@ from climate_risk.replication_data import create_replication_data
 from tests.conftest import emdat_event
 
 # Long enough that `iloc[1:-1]` still leaves an STL-able series: STL(period=3) needs 2*3+1 points.
-YEARS = tuple(range(1985, 1997))
+# Longer than CLIMATOLOGY_YEARS, so the baseline window is a real subset of the record.
+YEARS = tuple(range(1985, 2021))
 
 # AAA and BBB appear everywhere. CCC is EM-DAT only and DDD World Bank only, so reconciliation has
 # something to drop from each side. EEE has both but no precipitation; FFF has only precipitation.
@@ -197,11 +198,13 @@ def test_the_damage_logs_are_offset_so_a_zero_survives(replication):
     assert entry["ln_damage_millions"] == pytest.approx(np.log(entry["damage_millions"] + LOG_EPSILON))
 
 
-def test_precipitation_deviation_is_measured_against_the_country_climatology(replication):
-    """Each country is centred on its own mean, so the deviations over the span sum to zero."""
-    for iso in ("AAA", "BBB"):
-        deviations = replication.filter(pl.col("ISO") == iso)["precip_deviation"].drop_nulls()
-        assert deviations.sum() == pytest.approx(0.0, abs=1e-9)
+def test_precipitation_deviation_is_measured_against_the_opening_window(replication):
+    """The baseline is the first years of the record, not the whole of it."""
+    # AAA's precipitation runs 100 + 5i over 36 years: the first 30 average 172.5, all 36 average
+    # 187.5. Only the opening window centres the first year on -72.5.
+    opening = replication.filter((pl.col("ISO") == "AAA") & (pl.col("year") == date(YEARS[0], 1, 1)))
+
+    assert opening["precip_deviation"].to_list() == [pytest.approx(-72.5)]
 
 
 def test_the_ocean_temperature_deviation_is_residual_around_its_trend(replication):
