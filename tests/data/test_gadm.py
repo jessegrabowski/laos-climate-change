@@ -7,7 +7,7 @@ from pathlib import Path
 import polars as pl
 import pytest
 
-from climate_risk.data.gadm import GADM, gadm_dir, gadm_path, load_admin_units
+from climate_risk.data.gadm import GADM, gadm_dir, gadm_path, load_admin_units, load_units_in_country
 from climate_risk.data_functions.emdat_processing import load_emdat_events
 from climate_risk.exceptions import DataValidationError
 
@@ -90,6 +90,57 @@ def test_the_same_id_asked_for_twice_is_read_once(write_gadm_cache):
     units = load_admin_units([("LAO.1_1", 1), ("LAO.1_1", 1)], cache_dir)
 
     assert len(units) == 1
+
+
+def test_a_country_reads_back_every_unit_it_holds_at_a_level(write_gadm_cache):
+    """A search by geometry needs the candidates, which is the opposite question to `by id`."""
+    cache_dir = write_gadm_cache()
+
+    provinces = load_units_in_country("LAO", 1, cache_dir)
+
+    assert sorted(provinces["gid"]) == ["LAO.1_1", "LAO.2_1"]
+    assert set(provinces["admin_level"]) == {1}
+
+
+def test_a_country_reads_back_its_districts(write_gadm_cache):
+    """Level decides which column is read, and reading the wrong one returns the wrong geography."""
+    cache_dir = write_gadm_cache()
+
+    districts = load_units_in_country("LAO", 2, cache_dir)
+
+    assert sorted(districts["name"]) == ["Houayxay", "Samakhixay", "Sanamxay"]
+
+
+def test_a_province_spanning_several_districts_is_one_row(write_gadm_cache):
+    """The table stores districts, so Attapu is two rows that have to become one polygon."""
+    cache_dir = write_gadm_cache()
+
+    attapu = load_units_in_country("LAO", 1, cache_dir).set_index("gid").loc["LAO.1_1"]
+
+    assert attapu["geometry"].bounds == (0.0, 0.0, 2.0, 1.0)
+
+
+def test_only_the_country_asked_for_comes_back(write_gadm_cache):
+    """Matching a footprint against another country's units places it somewhere else entirely."""
+    cache_dir = write_gadm_cache()
+
+    assert load_units_in_country("ZMB", 1, cache_dir)["gid"].tolist() == ["ZMB.1_1"]
+
+
+def test_a_country_gadm_does_not_hold_is_empty_but_still_carries_the_crs(write_gadm_cache):
+    cache_dir = write_gadm_cache()
+
+    units = load_units_in_country("CRI", 1, cache_dir)
+
+    assert units.empty
+    assert units.crs == "EPSG:4326"
+
+
+def test_a_level_gadm_is_not_read_at_is_rejected_for_a_country(write_gadm_cache):
+    cache_dir = write_gadm_cache()
+
+    with pytest.raises(DataValidationError, match="read at levels"):
+        load_units_in_country("LAO", 0, cache_dir)
 
 
 # The GeoPackage is non-commercial and hand-placed, so it is absent on CI and on a fresh clone.
