@@ -1,3 +1,5 @@
+import json
+
 from datetime import date
 from pathlib import Path
 
@@ -12,6 +14,7 @@ from climate_risk.data_functions.emdat_processing import (
     count_events_by_type,
     country_year_grid,
     event_filter,
+    event_units,
     load_emdat_events,
     total_damage,
 )
@@ -289,3 +292,121 @@ def test_every_shipped_country_has_events_clearing_its_own_filters(key):
     events = selected_events(REAL_CACHE_DIR, filters=place.events)
 
     assert len(events.filter(pl.col("ISO").is_in(resolve_isos(place)))) > 0
+
+
+def units_json(*units) -> str:
+    """The `GADM Admin Units` column as EM-DAT writes it: a JSON array of per-unit objects."""
+    return json.dumps(list(units))
+
+
+def test_an_event_with_no_units_contributes_no_rows(write_emdat_cache):
+    """Half the workbook has no geography; those events must not appear with an empty unit."""
+    cache_dir = write_emdat_cache([emdat_event({"GADM Admin Units": ""}), emdat_event({"DisNo.": "b"})])
+
+    units = event_units(load_emdat_events(cache_dir))
+
+    assert units.is_empty()
+    assert units.columns == ["DisNo.", "gid", "name", "admin_level", "migration_method"]
+
+
+def test_an_event_naming_several_units_yields_a_row_for_each(write_emdat_cache):
+    """73% of located events name more than one unit; collapsing them loses the footprint."""
+    cache_dir = write_emdat_cache(
+        [
+            emdat_event(
+                {
+                    "DisNo.": "many",
+                    "GADM Admin Units": units_json(
+                        {"gid_1": "LAO.1_1", "name_1": "Attapu", "migration_method": "jaccard1"},
+                        {"gid_1": "LAO.2_1", "name_1": "Bokeo", "migration_method": "jaccard1"},
+                        {"gid_1": "LAO.4_1", "name_1": "Champasak", "migration_method": "puzzle1_1"},
+                    ),
+                }
+            ),
+            emdat_event({"DisNo.": "one", "GADM Admin Units": units_json({"gid_1": "ZMB.1_1", "name_1": "Central"})}),
+        ]
+    )
+
+    units = event_units(load_emdat_events(cache_dir))
+
+    assert units.group_by("DisNo.").len().sort("DisNo.")["len"].to_list() == [3, 1]
+    assert units.filter(pl.col("DisNo.") == "many")["gid"].to_list() == ["LAO.1_1", "LAO.2_1", "LAO.4_1"]
+
+
+def test_the_level_comes_from_the_key_not_the_shape_of_the_id(write_emdat_cache):
+    """GADM numbers Ghana `GHA11_2` and `GHA7.13_2`, so the id cannot be parsed for its level."""
+    cache_dir = write_emdat_cache(
+        [
+            emdat_event(
+                {
+                    "GADM Admin Units": units_json(
+                        {"gid_1": "GHA11_2", "name_1": "Savannah", "migration_method": "puzzle1_1"},
+                        {"gid_2": "GHA7.13_2", "name_2": "Ga Central", "migration_method": "jaccard2"},
+                        {"gid_2": "LAO.1.1_1", "name_2": "Sanamxay", "migration_method": "jaccard2"},
+                    )
+                }
+            )
+        ]
+    )
+
+    units = event_units(load_emdat_events(cache_dir))
+
+    assert units["admin_level"].to_list() == [1, 2, 2]
+
+
+def test_a_unit_with_no_name_or_no_method_still_yields_a_row(write_emdat_cache):
+    """EM-DAT omits the name where GADM has none, and the method where nothing was migrated.
+
+    Requiring either would silently drop 1,370 native-GADM units and 574 unnamed ones.
+    """
+    cache_dir = write_emdat_cache(
+        [
+            emdat_event(
+                {
+                    "GADM Admin Units": units_json(
+                        {"gid_2": "GBR.1.26_1", "migration_method": "jaccard2"},
+                        {"gid_1": "COL.27_1", "name_1": "San Andrés y Providencia"},
+                    )
+                }
+            )
+        ]
+    )
+
+    units = event_units(load_emdat_events(cache_dir))
+
+    assert units["gid"].to_list() == ["GBR.1.26_1", "COL.27_1"]
+    assert units["name"].to_list() == [None, "San Andrés y Providencia"]
+    assert units["migration_method"].to_list() == ["jaccard2", None]
+
+
+def test_a_unit_carrying_no_gid_names_the_event_it_came_from(write_emdat_cache):
+    """An unidentifiable unit is a schema change upstream, and the error has to be findable."""
+    cache_dir = write_emdat_cache(
+        [emdat_event({"DisNo.": "broken", "GADM Admin Units": units_json({"name_1": "Nowhere"})})]
+    )
+
+    with pytest.raises(ValueError, match="broken"):
+        event_units(load_emdat_events(cache_dir))
+
+
+@pytest.mark.requires_emdat
+@pytest.mark.skipif(not (REAL_CACHE_DIR / "emdat.xlsx").exists(), reason="needs the licensed EM-DAT workbook")
+def test_the_unit_table_keeps_every_event_that_has_geography():
+    """Synthetic fixtures hold whatever the author wrote; only the workbook shows the real shape.
+
+    Counts are asserted as properties rather than literals, because a re-download moves them.
+    """
+    events = load_emdat_events(REAL_CACHE_DIR)
+    units = event_units(events)
+
+    with_geography = events.filter(pl.col("GADM Admin Units").str.strip_chars().str.len_chars() > 2)
+    assert units["DisNo."].n_unique() == len(with_geography)
+
+    assert units["gid"].null_count() == 0
+    assert set(units["admin_level"].unique()) == {1, 2}
+
+    # Most located events name several units, which is why the table is long rather than one row
+    # per event. A collapse to one unit each would leave both of these at zero.
+    per_event = units.group_by("DisNo.").len()
+    assert per_event.filter(pl.col("len") > 1).height > per_event.height / 2
+    assert per_event.filter(pl.col("len") > 100).height > 0

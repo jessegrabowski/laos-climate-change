@@ -1,4 +1,5 @@
 import datetime as dt
+import json
 
 from pathlib import Path
 
@@ -254,6 +255,66 @@ def load_emdat_events(cache_dir: Path) -> pl.DataFrame:
         )
 
     return _read_workbook(emdat_path)
+
+
+GADM_UNITS_COLUMN = "GADM Admin Units"
+
+# One row per affected administrative unit. `name` and `migration_method` are absent on some units:
+# EM-DAT omits the name where GADM has none, and the method where the unit was never migrated.
+EVENT_UNIT_SCHEMA = {
+    "DisNo.": pl.String,
+    "gid": pl.String,
+    "name": pl.String,
+    "admin_level": pl.Int8,
+    "migration_method": pl.String,
+}
+
+
+def event_units(events: pl.DataFrame) -> pl.DataFrame:
+    """
+    Explode each event's GADM administrative units into one row per event-unit.
+
+    The level comes from the key EM-DAT files a unit under, ``gid_1`` or ``gid_2``, because a GADM
+    identifier does not reliably state it: Ghana's are numbered ``GHA11_2`` and ``GHA7.13_2``.
+
+    Parameters
+    ----------
+    events : DataFrame
+        The workbook, as :func:`load_emdat_events` returns it.
+
+    Returns
+    -------
+    DataFrame
+        ``DisNo.``, ``gid``, ``name``, ``admin_level`` and ``migration_method``. An event carrying no
+        units contributes no rows, so this is narrower than ``events``.
+
+    Raises
+    ------
+    ValueError
+        If a unit carries neither ``gid_1`` nor ``gid_2``, which would leave it unidentifiable.
+    """
+    rows = []
+
+    for disno, raw in zip(events["DisNo."], events[GADM_UNITS_COLUMN], strict=True):
+        if not str(raw or "").strip():
+            continue
+
+        for unit in json.loads(raw):
+            level = 2 if "gid_2" in unit else 1
+            if f"gid_{level}" not in unit:
+                raise ValueError(f"{disno}: an administrative unit carries no gid_1 or gid_2: {unit}")
+
+            rows.append(
+                {
+                    "DisNo.": disno,
+                    "gid": unit[f"gid_{level}"],
+                    "name": unit.get(f"name_{level}"),
+                    "admin_level": level,
+                    "migration_method": unit.get("migration_method"),
+                }
+            )
+
+    return pl.DataFrame(rows, schema=EVENT_UNIT_SCHEMA)
 
 
 def event_filter(filters: EventFilters) -> pl.Expr:
