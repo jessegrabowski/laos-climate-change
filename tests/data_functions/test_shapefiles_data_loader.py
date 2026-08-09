@@ -8,12 +8,12 @@ import pytest
 from shapely.geometry import box
 
 from climate_risk import load_shapefile
-from climate_risk.config.registry import load_place
+from climate_risk.config.registry import CONFIG_ROOT, load_place
 from climate_risk.config.schema import CountryConfig, RegionConfig
 from climate_risk.data_functions.shapefiles_data_loader import load_place_boundary, repair_iso_codes
 from climate_risk.exceptions import DataValidationError, ISOCodeValidationError
 from climate_risk.geo.crs import GEOGRAPHIC_CRS
-from tests.conftest import toy_coastline, toy_world, toy_world_needing_repair
+from tests.conftest import toy_coastline, toy_world, toy_world_needing_repair, toy_world_with_places
 
 
 def test_unknown_shapefile_is_rejected(tmp_path):
@@ -159,3 +159,33 @@ def test_a_place_the_world_file_does_not_know_is_an_error(write_shapefile_cache)
 
     with pytest.raises(DataValidationError, match=re.escape("no geometry for ['ZWE']")):
         load_place_boundary(place, cache_dir)
+
+
+SHIPPED_PLACE_KEYS = sorted(path.stem for path in (CONFIG_ROOT / "places").glob("*.toml"))
+
+# Where `toy_world_with_places` puts each shipped country. Stated here rather than read from the
+# fixture, so a place resolving to the wrong ISO fails instead of agreeing with itself.
+SHIPPED_BOUNDS = {"lao": (20.0, 21.0), "zmb": (23.0, 24.0), "cri": (29.5, 30.5)}
+
+
+@pytest.mark.parametrize("key", SHIPPED_PLACE_KEYS)
+def test_every_shipped_country_resolves_to_geometry_from_its_config_alone(write_shapefile_cache, key):
+    """A country the loaders have never heard of has to work from its config file and nothing else.
+
+    Laos reads its own boundary archive and the other two are sliced out of the world file, so this
+    covers both paths. Checking the bounds is what makes it more than a smoke test: a place resolving
+    to the wrong ISO still returns geometry, just somewhere else.
+    """
+    cache_dir = write_shapefile_cache("world", toy_world_with_places())
+    # Laos declares its own archive, so seed that too rather than letting the fetch reach the network.
+    write_shapefile_cache("laos", toy_world_with_places())
+
+    place = load_place(key)
+
+    boundary = load_place_boundary(place, cache_dir)
+
+    assert not boundary.empty
+    if isinstance(place, CountryConfig) and place.boundary is None:
+        west, east = SHIPPED_BOUNDS[key]
+        assert boundary.total_bounds[0] >= west
+        assert boundary.total_bounds[2] <= east

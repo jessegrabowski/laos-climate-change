@@ -82,11 +82,6 @@ def resolve_isos(place: Place) -> tuple[str, ...]:
     return (place.iso3,) if isinstance(place, CountryConfig) else place.members
 
 
-def place_key(place: Place) -> str:
-    """Return the short name a place is filed and cached under."""
-    return place.iso3.lower() if isinstance(place, CountryConfig) else place.key
-
-
 def _nested(table: dict[str, Any]) -> dict[str, Any]:
     """Turn a place's sub-tables into the objects the schema expects, leaving the rest alone."""
     fields = dict(table)

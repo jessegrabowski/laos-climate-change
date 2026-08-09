@@ -404,67 +404,6 @@ def write_gadm_cache(tmp_path):
     return write
 
 
-# Enough sampled points that an unseeded year draw cannot match a seeded one by luck.
-SYNTHETIC_SOURCE_EVENTS = 30
-
-
-@pytest.fixture
-def write_synthetic_source_cache(tmp_path, write_shapefile_cache, write_rivers_cache, write_emdat_cache):
-    """Seed every input `load_synthetic_non_disaster_points` reads when it has to generate.
-
-    The events all sit in France, which survives the ISO repair and carries a continent, so the
-    region sampler has a polygon to draw from. Enough events that two independent draws over the
-    three years cannot coincide by chance.
-    """
-
-    def write():
-        write_shapefile_cache("world", toy_world_needing_repair())
-        write_shapefile_cache("coastline", toy_coastline())
-        write_rivers_cache(toy_rivers().query("ORD_FLOW < 5"))
-        years = [1990 + index % 3 for index in range(SYNTHETIC_SOURCE_EVENTS)]
-        write_emdat_cache(
-            emdat_event(
-                {
-                    "ISO": "FRA",
-                    "Region": "Europe",
-                    "DisNo.": f"FRA-{index}",
-                    "Start Year": year,
-                    "End Year": year,
-                }
-            )
-            for index, year in enumerate(years)
-        )
-        # The geocoder's output, which the loader joins onto the workbook by event id. Written in
-        # reverse order, so a join that pairs by position rather than by id gets every point wrong.
-        pd.DataFrame(
-            {
-                "DisNo.": [f"FRA-{index}" for index in reversed(range(SYNTHETIC_SOURCE_EVENTS))],
-                "location_id": [0] * SYNTHETIC_SOURCE_EVENTS,
-                "lon": np.linspace(0.05, 0.45, SYNTHETIC_SOURCE_EVENTS),
-                "lat": [0.5] * SYNTHETIC_SOURCE_EVENTS,
-            }
-        ).to_csv(tmp_path / "disaster_locations_gpt_repaired_w_features.csv", index=False)
-
-        return tmp_path
-
-    return write
-
-
-@pytest.fixture
-def write_point_grid_cache(write_shapefile_cache, write_rivers_cache, rivers_clear_of_the_grid):
-    """Seed the world, coastline and river caches `load_grid_point_data` reads."""
-
-    def write(rivers=None, world=None):
-        if rivers is None:
-            rivers = rivers_clear_of_the_grid
-        write_shapefile_cache("world", toy_world_needing_repair() if world is None else world)
-        write_shapefile_cache("coastline", toy_coastline())
-        write_rivers_cache(rivers.query("ORD_FLOW < 5"))
-        return write_rivers_cache(rivers, include_medium=True)
-
-    return write
-
-
 @pytest.fixture
 def write_rivers_cache(tmp_path):
     """Return a callable writing the processed river network a warm cache would hold."""
