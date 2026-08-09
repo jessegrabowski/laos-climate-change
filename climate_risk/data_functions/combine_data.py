@@ -106,9 +106,15 @@ def _annual_precipitation(gpcc: pl.DataFrame) -> tuple[pl.DataFrame, pl.DataFram
     )
     covered = dated.join(whole_years, on=SERIES_KEY, how="inner")
 
-    by_country = covered.group_by("ISO", SERIES_KEY).agg(pl.col("precip").sum()).sort("ISO", SERIES_KEY)
+    # Added in calendar order. polars gathers each group's rows in whatever order its threads
+    # finish, and floating-point addition is not associative, so an unordered sum of the same
+    # twelve months lands on a different total from one run to the next.
+    by_country = (
+        covered.group_by("ISO", SERIES_KEY).agg(pl.col("precip").sort_by("month").sum()).sort("ISO", SERIES_KEY)
+    )
+    worldwide = by_country.group_by(SERIES_KEY).agg(pl.col("precip").sort_by("ISO").sum()).sort(SERIES_KEY)
 
-    return by_country, by_country.group_by(SERIES_KEY).agg(pl.col("precip").sum()).sort(SERIES_KEY)
+    return by_country, worldwide
 
 
 def _keyed_by_year(series: pl.DataFrame) -> pl.DataFrame:
