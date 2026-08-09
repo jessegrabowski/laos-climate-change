@@ -80,6 +80,20 @@ def _units_at_level(gids: list[str], level: int, path: Path, layer: str) -> gpd.
     return found.rename(columns={gid_column: "gid", name_column: "name"}).assign(admin_level=level)
 
 
+def _no_units(path: Path, layer: str) -> gpd.GeoDataFrame:
+    """
+    An empty result carrying the layer's CRS, read without any of its rows.
+
+    A CRS-less frame concatenates with projected geometry without complaint and reprojects to the
+    wrong place, so the empty case has to match the populated one.
+    """
+    return gpd.GeoDataFrame(
+        {"gid": [], "name": [], "admin_level": pd.Series([], dtype="int64")},
+        geometry=[],
+        crs=gpd.read_file(path, layer=layer, where="0=1").crs,
+    )
+
+
 def load_admin_units(
     units: Collection[tuple[str, int]], cache_dir: Path, *, layer: str = GADM_LAYER
 ) -> gpd.GeoDataFrame:
@@ -131,9 +145,7 @@ def load_admin_units(
         if (frame := _units_at_level(gids_at_level, level, path, layer)) is not None
     ]
     resolved = (
-        gpd.GeoDataFrame(pd.concat(frames, ignore_index=True), crs=frames[0].crs)
-        if frames
-        else gpd.GeoDataFrame({"gid": [], "name": [], "admin_level": []}, geometry=[])
+        gpd.GeoDataFrame(pd.concat(frames, ignore_index=True), crs=frames[0].crs) if frames else _no_units(path, layer)
     )
 
     missing = sorted({gid for gid, _ in requested} - set(resolved["gid"]))

@@ -158,3 +158,17 @@ def test_the_units_carry_the_geopackage_crs(write_gadm_cache):
     units = load_admin_units([("LAO.1_1", 1)], cache_dir)
 
     assert units.crs == "EPSG:4326"
+
+
+def test_an_empty_request_still_carries_the_crs(write_gadm_cache):
+    """A CRS-less frame concatenates with projected geometry silently and reprojects it wrongly.
+
+    The empty result has to be usable in the same places the populated one is.
+    """
+    cache_dir = write_gadm_cache()
+
+    units = load_admin_units([], cache_dir)
+
+    assert units.empty
+    assert units.crs == "EPSG:4326"
+    assert list(units.columns) == ["gid", "name", "admin_level", "geometry"]
