@@ -1,9 +1,16 @@
+import json
 import re
+import sqlite3
 
+from pathlib import Path
+
+import polars as pl
 import pytest
 
-from climate_risk.data.gadm import GADM, gadm_dir, gadm_path
+from climate_risk.data.gadm import GADM, gadm_dir, gadm_path, load_admin_units
 from climate_risk.data.source import ManualSource
+from climate_risk.data_functions.emdat_processing import load_emdat_events
+from climate_risk.exceptions import DataValidationError
 
 
 def test_the_geopackage_is_looked_for_under_the_cache(tmp_path):
@@ -46,3 +53,102 @@ def test_gadm_is_not_a_fetchable_source():
     """
     assert isinstance(GADM, ManualSource)
     assert not hasattr(GADM, "url")
+
+
+def test_a_unit_above_the_finest_level_is_read_as_one_polygon(write_gadm_cache):
+    """GADM stores one row per district, so a province is the union of several rows.
+
+    Attapu spans two districts in the fixture; taking the first row would return half its area.
+    """
+    cache_dir = write_gadm_cache()
+
+    units = load_admin_units([("LAO.1_1", 1)], cache_dir)
+
+    assert units["gid"].tolist() == ["LAO.1_1"]
+    assert units["name"].tolist() == ["Attapu"]
+    assert units["admin_level"].tolist() == [1]
+    # The two district boxes span x 0..2; either row alone would be half of it.
+    assert units.geometry.iloc[0].bounds == (0.0, 0.0, 2.0, 1.0)
+
+
+def test_levels_may_be_mixed_in_one_request(write_gadm_cache):
+    """EM-DAT codes some events to provinces and others to districts, often within one country."""
+    cache_dir = write_gadm_cache()
+
+    units = load_admin_units([("LAO.2_1", 1), ("LAO.1.1_1", 2)], cache_dir).set_index("gid")
+
+    assert units.loc["LAO.2_1", "admin_level"] == 1
+    assert units.loc["LAO.1.1_1", "admin_level"] == 2
+    assert units.loc["LAO.1.1_1", "name"] == "Sanamxay"
+
+
+def test_an_id_gadm_does_not_hold_is_an_error_not_a_dropped_row(write_gadm_cache):
+    """Returning fewer rows than asked for would quietly shrink an event's footprint."""
+    cache_dir = write_gadm_cache()
+
+    with pytest.raises(DataValidationError, match=re.escape("LAO.99_1")):
+        load_admin_units([("LAO.1_1", 1), ("LAO.99_1", 1)], cache_dir)
+
+
+def test_a_level_gadm_is_not_read_at_is_rejected(write_gadm_cache):
+    """Units are read at level 1 and 2; anything else would silently match nothing."""
+    cache_dir = write_gadm_cache()
+
+    with pytest.raises(DataValidationError, match="read at levels"):
+        load_admin_units([("LAO", 0)], cache_dir)
+
+
+def test_the_same_id_asked_for_twice_is_read_once(write_gadm_cache):
+    cache_dir = write_gadm_cache()
+
+    units = load_admin_units([("LAO.1_1", 1), ("LAO.1_1", 1)], cache_dir)
+
+    assert len(units) == 1
+
+
+# The GeoPackage is non-commercial and hand-placed, so it is absent on CI and on a fresh clone.
+REAL_CACHE_DIR = Path(__file__).parents[2] / "data"
+
+
+@pytest.mark.requires_gadm
+@pytest.mark.requires_emdat
+@pytest.mark.skipif(not (REAL_CACHE_DIR / "gadm" / "gadm_410.gpkg").exists(), reason="needs the GADM GeoPackage")
+@pytest.mark.skipif(not (REAL_CACHE_DIR / "emdat.xlsx").exists(), reason="needs the licensed EM-DAT workbook")
+def test_every_gid_em_dat_references_resolves_against_gadm():
+    """The whole event-unit table rests on this: a gid that does not resolve is a lost footprint.
+
+    Synthetic fixtures cannot catch a version mismatch, because they are written to agree. This is
+    the only check that the GeoPackage on disk is the one EM-DAT coded against.
+    """
+    events = load_emdat_events(REAL_CACHE_DIR).filter(pl.col("GADM Admin Units").str.strip_chars().str.len_chars() > 2)
+    referenced = {
+        (unit["gid_2"], 2) if "gid_2" in unit else (unit["gid_1"], 1)
+        for raw in events["GADM Admin Units"]
+        for unit in json.loads(raw)
+    }
+    assert len(referenced) > 10_000, "the workbook should reference thousands of units"
+
+    # Set membership, not geometry: the claim is that the ids exist, and assembling twelve thousand
+    # polygons to answer it turns a two-second check into a four-minute one.
+    with sqlite3.connect(REAL_CACHE_DIR / "gadm" / "gadm_410.gpkg") as gadm:
+        held = {
+            (gid, level)
+            for level, column in ((1, "GID_1"), (2, "GID_2"))
+            for (gid,) in gadm.execute(f"SELECT DISTINCT {column} FROM gadm_410 WHERE {column} IS NOT NULL")
+        }
+
+    assert referenced <= held, f"GADM holds no unit for {sorted(referenced - held)[:5]}"
+
+
+@pytest.mark.parametrize(("gid", "level", "name"), [("GHA11_2", 1, "Savannah"), ("GHA7.13_2", 2, "Ga Central")])
+def test_an_id_that_does_not_state_its_own_level_still_resolves(write_gadm_cache, gid, level, name):
+    """GADM numbers Ghana without the dot every other country has, so the id cannot imply the level.
+
+    Inferring it from the string reads `GHA11_2` as a country and drops a real province.
+    """
+    cache_dir = write_gadm_cache()
+
+    units = load_admin_units([(gid, level)], cache_dir)
+
+    assert units["name"].tolist() == [name]
+    assert units["admin_level"].tolist() == [level]
