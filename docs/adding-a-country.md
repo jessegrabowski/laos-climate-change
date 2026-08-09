@@ -63,12 +63,24 @@ position is wrong, keyed by event id. Two countries may not both claim the same 
 **`random_seed`** — seeds the synthetic non-disaster sampling. Change it only to draw a different
 sample deliberately; two countries sharing a seed is fine, since they sample different geometry.
 
+## Reading a country's events
+
+`[events]` says which records are severe enough and recent enough to count; it does not select a
+country. Filtering is an ordinary polars predicate, so narrow it yourself:
+
+```python
+import polars as pl
+
+from climate_risk.config.registry import load_place
+from climate_risk.data_functions.emdat_processing import event_filter, load_emdat_events
+
+place = load_place("zmb")
+events = load_emdat_events(cache_dir).filter(event_filter(place.events) & (pl.col("ISO") == place.iso3))
+```
+
 ## What is still global
 
-Three things do not yet vary by country, and will surprise you if you assume they do.
-
-The **EM-DAT event frame** is filtered by severity and window, not by country. `[events]` narrows
-which events count everywhere, not which country's events you get.
+Two things do not vary by country, and will surprise you if you assume they do.
 
 The **river-damage frames** cover every country at once. `create_floods_rivers_damage` returns
 world-wide flood events; the coordinate overrides are applied across all of them, which works
