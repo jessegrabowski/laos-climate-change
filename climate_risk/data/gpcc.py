@@ -159,8 +159,10 @@ def transform_gpcc(grids: Iterable[pd.DataFrame], world: gpd.GeoDataFrame) -> pd
         for gridded in grids
     ]
 
-    return pd.concat(over_land, axis=0).pivot_table(
-        values=PRECIPITATION, index=["country_code", "time"], aggfunc="mean"
+    return (
+        pd.concat(over_land, axis=0)
+        .astype({PRECIPITATION: "float64"})
+        .pivot_table(values=PRECIPITATION, index=["country_code", "time"], aggfunc="mean")
     )
 
 
@@ -242,6 +244,6 @@ def load_gpcc_data(
         "gpcc",
         build,
         pandas_parquet(),
-        params={"repaired_iso": repair_ISO_codes, "coverage": coverage_of(products)},
+        params={"repaired_iso": repair_ISO_codes, "coverage": coverage_of(products), "precision": "float64"},
         force=force_reload,
     )

@@ -6,12 +6,12 @@ import pandas as pd
 import pytest
 import xarray as xr
 
-from climate_risk.data.gpcc import GPCC_PRODUCTS, _as_timestamps, load_gpcc_data, transform_gpcc
+from climate_risk.data.gpcc import GPCC_PRODUCTS, PRECIPITATION, _as_timestamps, load_gpcc_data, transform_gpcc
 from tests.conftest import TOY_ARCHIVES, toy_gpcc_products, toy_world
 
 # Stated literally, so a wrong cache key fails rather than agreeing with itself. The span is the
 # toy manifest's, not the published one.
-UNREPAIRED_CACHE = "gpcc__coverage=1981-2021__repaired_iso=False.parquet"
+UNREPAIRED_CACHE = "gpcc__coverage=1981-2021__precision=float64__repaired_iso=False.parquet"
 
 
 def gridded(rows) -> pd.DataFrame:
@@ -40,6 +40,20 @@ def test_cold_run_aggregates_precipitation_by_country(write_gpcc_archives, write
 
     assert frame.index.names == ["country_code", "time"]
     assert sorted(frame.index.get_level_values("country_code").unique()) == ["AAA", "BBB", "CCC"]
+
+
+def test_the_cache_is_written_in_double_precision(write_gpcc_archives, write_shapefile_cache):
+    """The archives are float32, and every total taken from this cache adds partial results.
+
+    Whichever order the threads add them in has to reach the same answer, which float32 across a
+    wide spread of values does not.
+    """
+    cache_dir = write_gpcc_archives()
+    write_shapefile_cache("world", toy_world())
+
+    gpcc = load_gpcc_data(cache_dir, products=toy_gpcc_products(), repair_ISO_codes=False)
+
+    assert gpcc[PRECIPITATION].dtype == "float64"
 
 
 def test_the_cold_run_writes_the_cache_it_will_read(write_gpcc_archives, write_shapefile_cache):
