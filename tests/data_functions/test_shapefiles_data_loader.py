@@ -1,5 +1,6 @@
 import re
 import shutil
+import zipfile
 
 import geopandas as gpd
 import pandas as pd
@@ -40,6 +41,21 @@ def test_only_the_archive_on_disk_is_enough_to_load(write_shapefile_cache):
     world = load_shapefile("world", cache_dir, repair_ISO_codes=False)
 
     assert len(world) == 3
+
+
+def test_an_archive_holds_only_its_own_layer(write_shapefile_cache):
+    """A boundary archive is written into the directory it archives, so it can swallow its neighbours.
+
+    Including itself: zipping a growing file into itself never reaches EOF, and fills the disk
+    instead of failing.
+    """
+    cache_dir = write_shapefile_cache("world", toy_world())
+    write_shapefile_cache("laos", toy_world())
+
+    with zipfile.ZipFile(cache_dir / "shapefiles" / "lao_admin_boundaries.shp.zip") as bundle:
+        archived = bundle.namelist()
+
+    assert all(name.startswith("lao_admin2.") for name in archived), archived
 
 
 def test_the_repair_does_not_depend_on_how_the_caller_capitalised_it(write_shapefile_cache):

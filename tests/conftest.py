@@ -359,8 +359,11 @@ def write_shapefile_cache(tmp_path):
         gdf.to_file(shapefile)
 
         archive = tmp_path / "shapefiles" / archive_name
+        # Only the member's own sidecars, so an archive written beside an earlier one never
+        # contains it, or itself.
+        sidecars = sorted(part for part in shapefile.parent.iterdir() if part.stem == shapefile.stem)
         with zipfile.ZipFile(archive, "w") as bundle:
-            for part in shapefile.parent.iterdir():
+            for part in sidecars:
                 bundle.write(part, str(part.relative_to(tmp_path / "shapefiles")))
 
         return tmp_path
