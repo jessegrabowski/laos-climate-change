@@ -331,17 +331,17 @@ def event_units(events: pl.DataFrame) -> pl.DataFrame:
 # what the source holds, and a model chooses which tiers it will accept.
 GEOMETRY_SOURCES = ("gadm", "emdat_point", "country")
 
-EVENT_GEOGRAPHY_SCHEMA = {
-    "DisNo.": pl.String,
-    "ISO": pl.String,
-    "geometry_source": pl.String,
-    "gid": pl.String,
-    "name": pl.String,
-    "admin_level": pl.Int8,
-    "migration_method": pl.String,
-    "Latitude": pl.Float64,
-    "Longitude": pl.Float64,
-}
+EVENT_GEOGRAPHY_COLUMNS = (
+    "DisNo.",
+    "ISO",
+    "geometry_source",
+    "gid",
+    "name",
+    "admin_level",
+    "migration_method",
+    "Latitude",
+    "Longitude",
+)
 
 
 def event_geography(events: pl.DataFrame) -> pl.DataFrame:
@@ -371,8 +371,7 @@ def event_geography(events: pl.DataFrame) -> pl.DataFrame:
 
     from_units = units.join(located, on="DisNo.", how="left").with_columns(pl.lit("gadm").alias("geometry_source"))
 
-    coded = set(units["DisNo."])
-    rest = located.filter(~pl.col("DisNo.").is_in(coded)).with_columns(
+    rest = located.join(units.select("DisNo.").unique(), on="DisNo.", how="anti").with_columns(
         pl.when(pl.col("Latitude").is_not_null())
         .then(pl.lit("emdat_point"))
         .otherwise(pl.lit("country"))
@@ -383,9 +382,9 @@ def event_geography(events: pl.DataFrame) -> pl.DataFrame:
         pl.lit(None, dtype=pl.String).alias("migration_method"),
     )
 
-    columns = list(EVENT_GEOGRAPHY_SCHEMA)
-
-    return pl.concat([from_units.select(columns), rest.select(columns)]).sort("DisNo.", "gid", nulls_last=True)
+    return pl.concat([from_units.select(EVENT_GEOGRAPHY_COLUMNS), rest.select(EVENT_GEOGRAPHY_COLUMNS)]).sort(
+        "DisNo.", "gid", nulls_last=True
+    )
 
 
 def event_filter(filters: EventFilters) -> pl.Expr:
