@@ -312,7 +312,7 @@ def event_units(events: pl.DataFrame) -> pl.DataFrame:
 
 # Where an event's geometry comes from, best first. Nothing is filtered on this: the column records
 # what the source holds, and a model chooses which tiers it will accept.
-GEOMETRY_SOURCES = ("gadm", "emdat_point", "country")
+GEOMETRY_SOURCES = ("gadm", "geo_disasters", "emdat_point", "country")
 
 EVENT_GEOGRAPHY_COLUMNS = (
     "DisNo.",

@@ -1,3 +1,4 @@
+import logging
 import unicodedata
 
 from collections.abc import Mapping
@@ -6,7 +7,11 @@ from pathlib import Path
 import geopandas as gpd
 import pandas as pd
 
+from climate_risk.data.gadm import load_units_in_country
 from climate_risk.data.source import ManualSource
+from climate_risk.exceptions import DataValidationError
+
+_log = logging.getLogger(__name__)
 
 # The geometries are a GAUL 2015 derivative and non-commercial, so the archive is placed by hand
 # and never appears in the fetchable registry. The attribute table is CC-BY-4.0.
@@ -110,6 +115,112 @@ def unit_names(locations: pd.DataFrame) -> pd.Series:
         named[at_level] = locations.loc[at_level, column]
 
     return named
+
+
+def load_event_footprints(cache_dir: Path, *, iso: str, layer: str = GEO_DISASTERS_LAYER) -> gpd.GeoDataFrame:
+    """
+    Read one country's geocoded locations with the polygons attached.
+
+    These polygons are the non-commercial half of the licence, and :data:`GAUL_ATTRIBUTION` has to
+    appear on anything derived from them. :func:`load_event_locations` reads the same rows without
+    geometry where the attributes alone will do.
+
+    Parameters
+    ----------
+    cache_dir : Path
+        Directory the caches live under.
+    iso : str
+        ISO 3166-1 alpha-3 country code to read.
+    layer : str, optional
+        Layer to read inside the GeoPackage. Default ``GEO_DISASTERS_LAYER``.
+
+    Returns
+    -------
+    GeoDataFrame
+        The columns of :func:`load_event_locations` and the footprint of each location.
+    """
+    footprints = gpd.read_file(geo_disasters_path(cache_dir), layer=layer, where=f"ISO = '{iso}'")
+
+    return footprints.reset_index(drop=True)
+
+
+EQUAL_AREA_CRS = "ESRI:54009"
+
+RESOLVED_COLUMNS = ["DisNo.", "ISO", "geometry_source", "gid", "name", "admin_level", "geocoding_q", "overlap"]
+
+
+def _best_unit_per_footprint(footprints: gpd.GeoDataFrame, units: gpd.GeoDataFrame) -> pd.DataFrame:
+    """Pair each footprint with the single unit covering most of it, dropping any that meet none."""
+    located = footprints[["DisNo.", "ISO", "geocoding_q", "geometry"]].reset_index(names="footprint")
+    pieces = gpd.overlay(located, units, how="intersection", keep_geom_type=False)
+    if pieces.empty:
+        return pd.DataFrame(columns=RESOLVED_COLUMNS)
+
+    pieces = pieces.assign(covered=pieces.geometry.area)
+    best = pieces.sort_values("covered").groupby("footprint").tail(1).set_index("footprint")
+    shares = best["covered"] / footprints.geometry.area.reindex(best.index)
+
+    return best.assign(overlap=shares).drop(columns=["geometry", "covered"])
+
+
+def resolve_to_gadm(footprints: gpd.GeoDataFrame, cache_dir: Path) -> pd.DataFrame:
+    """
+    Name each Geo-Disasters footprint as the GADM unit it covers, so it can join EM-DAT's own units.
+
+    The two gazetteers share no identifier and spell the same unit differently, so a footprint is
+    placed by where it is rather than what it is called, and the largest overlap wins outright. No
+    minimum share applies: the published polygons are simplified to 0.005°, roughly 550 m, which
+    costs a small municipality a third of its area and a province almost none, so the same share
+    means different things at different sizes.
+
+    A footprint covering no unit at all is dropped and logged.
+
+    Parameters
+    ----------
+    footprints : GeoDataFrame
+        Locations for one country, as :func:`load_event_footprints` returns them.
+    cache_dir : Path
+        Directory the caches live under.
+
+    Returns
+    -------
+    DataFrame
+        ``DisNo.``, ``ISO``, ``geometry_source``, the GADM unit that was matched, the location's
+        ``geocoding_q``, and ``overlap``, the share of the footprint the unit covers.
+    """
+    if footprints.empty:
+        return pd.DataFrame(columns=RESOLVED_COLUMNS)
+
+    countries = set(footprints["ISO"])
+    if len(countries) > 1:
+        raise DataValidationError(
+            f"resolve_to_gadm reads one country's units at a time, but these footprints span "
+            f"{sorted(countries)}. Call it once per country."
+        )
+
+    iso = countries.pop()
+    matched = []
+
+    for level in sorted(set(footprints["admin_level"]) & set(NAME_COLUMNS)):
+        at_level = footprints[footprints["admin_level"] == level].to_crs(EQUAL_AREA_CRS)
+        units = load_units_in_country(iso, level, cache_dir).to_crs(EQUAL_AREA_CRS)
+        if units.empty:
+            _log.warning("GADM holds no level-%d unit for %s, so %d footprints go unplaced", level, iso, len(at_level))
+            continue
+
+        matched.append(_best_unit_per_footprint(at_level, units))
+
+    resolved = pd.concat(matched) if matched else pd.DataFrame(columns=RESOLVED_COLUMNS)
+    unplaced = len(footprints) - len(resolved)
+    if unplaced:
+        _log.warning("%d of %d %s footprints cover no GADM unit and were dropped", unplaced, len(footprints), iso)
+
+    return (
+        pd.DataFrame(resolved)
+        .assign(geometry_source="geo_disasters")[RESOLVED_COLUMNS]
+        .sort_values(["DisNo.", "gid"])
+        .reset_index(drop=True)
+    )
 
 
 def normalise_unit_name(name: str) -> str:

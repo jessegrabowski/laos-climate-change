@@ -1,3 +1,5 @@
+import re
+
 from pathlib import Path
 
 import pytest
@@ -5,14 +7,19 @@ import pytest
 from climate_risk.data.geo_disasters import (
     AGREEMENT_LEVELS,
     GEO_DISASTERS,
+    RESOLVED_COLUMNS,
     compare_event_units,
     event_unit_names,
     geo_disasters_dir,
     geo_disasters_path,
+    load_event_footprints,
     load_event_locations,
     normalise_unit_name,
+    resolve_to_gadm,
     unit_names,
 )
+from climate_risk.exceptions import DataValidationError
+from tests.conftest import toy_geo_disasters
 
 
 def test_the_geopackage_is_looked_for_under_the_cache(tmp_path):
@@ -175,6 +182,33 @@ REAL_CACHE_DIR = Path(__file__).parents[2] / "data"
 REAL_GEOPACKAGE = REAL_CACHE_DIR / "geo_disasters" / "disaster_subnational_90_23.gpkg"
 
 
+def test_footprints_spanning_two_countries_are_refused(tmp_path):
+    """Only the first country's units would be read, and every other country's footprint would be
+    placed against them — wrong geography, with nothing to show for it."""
+    with pytest.raises(DataValidationError, match=re.escape("['LAO', 'ZMB']")):
+        resolve_to_gadm(toy_geo_disasters(), tmp_path)
+
+
+def test_no_footprints_resolve_to_an_empty_frame_of_the_right_shape(tmp_path):
+    """A country Geo-Disasters never geocoded is ordinary, and the caller concatenates the result."""
+    empty = toy_geo_disasters().iloc[:0]
+
+    resolved = resolve_to_gadm(empty, tmp_path)
+
+    assert resolved.empty
+    assert list(resolved.columns) == RESOLVED_COLUMNS
+
+
+def test_footprints_come_back_with_their_geometry(write_geo_disasters_cache):
+    """The counterpart to the attribute-only read: resolving needs the polygons."""
+    cache_dir = write_geo_disasters_cache()
+
+    footprints = load_event_footprints(cache_dir, iso="LAO")
+
+    assert not footprints.geometry.isna().any()
+    assert footprints.crs == "EPSG:4326"
+
+
 def test_every_classification_is_one_of_the_declared_levels():
     """`AGREEMENT_LEVELS` is the published vocabulary; a verdict outside it is one no caller can
     branch on."""
@@ -184,6 +218,59 @@ def test_every_classification_is_one_of_the_declared_levels():
     )
 
     assert set(report["agreement"]) == set(AGREEMENT_LEVELS)
+
+
+REAL_GADM = REAL_CACHE_DIR / "gadm" / "gadm_410.gpkg"
+
+needs_both = pytest.mark.skipif(
+    not (REAL_GEOPACKAGE.exists() and REAL_GADM.exists()), reason="needs the Geo-Disasters and GADM GeoPackages"
+)
+
+
+@pytest.mark.requires_geo_disasters
+@pytest.mark.requires_gadm
+@needs_both
+def test_a_footprint_resolves_to_the_gadm_unit_it_covers():
+    """The two gazetteers share no identifier and spell the same province differently, so a
+    footprint is placed by where it is. Laos is small enough to check every row."""
+    footprints = load_event_footprints(REAL_CACHE_DIR, iso="LAO")
+
+    resolved = resolve_to_gadm(footprints, REAL_CACHE_DIR)
+
+    assert len(resolved) == len(footprints), "every Laos footprint sits on a GADM unit"
+    assert set(resolved["geometry_source"]) == {"geo_disasters"}
+    assert resolved["gid"].str.startswith("LAO").all()
+
+
+@pytest.mark.requires_geo_disasters
+@pytest.mark.requires_gadm
+@needs_both
+def test_a_footprint_is_matched_at_its_own_admin_level():
+    """Matching a district against provinces returns the province containing it, which silently
+    coarsens the footprint to something several times its size."""
+    footprints = load_event_footprints(REAL_CACHE_DIR, iso="LAO")
+
+    resolved = resolve_to_gadm(footprints, REAL_CACHE_DIR).set_index("DisNo.")
+
+    at_level_2 = resolved[resolved["admin_level"] == 2]
+    assert not at_level_2.empty, "Laos has district-level footprints to match"
+    assert at_level_2["gid"].str.count(r"\.").eq(2).all(), "a level-2 gid names a district"
+
+
+@pytest.mark.requires_geo_disasters
+@pytest.mark.requires_gadm
+@needs_both
+def test_the_names_corroborate_the_geometry():
+    """Geometry decides the match, so nothing checks the names — and a systematic mis-join would
+    look perfectly healthy. Most matched pairs should still agree on the name."""
+    footprints = load_event_footprints(REAL_CACHE_DIR, iso="LAO")
+
+    resolved = resolve_to_gadm(footprints, REAL_CACHE_DIR)
+
+    published = unit_names(footprints).map(normalise_unit_name)
+    matched = resolved["name"].map(normalise_unit_name)
+    agreeing = sum(name in set(published) for name in matched)
+    assert agreeing / len(matched) > 0.8, f"only {agreeing} of {len(matched)} matched units kept their name"
 
 
 @pytest.mark.requires_geo_disasters
