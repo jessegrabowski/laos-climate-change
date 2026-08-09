@@ -92,7 +92,7 @@ def test_a_stale_row_number_on_the_point_file_is_ignored(tmp_path, write_emdat_c
     data = load_disaster_point_data(tmp_path).reset_index()
 
     assert data["ISO"].tolist() == ["AAA"]
-    assert 4321 not in data["emdat_index"].tolist()
+    assert "emdat_index" not in data.columns
 
 
 def test_a_point_whose_event_is_absent_carries_no_event_columns(tmp_path, write_emdat_cache):

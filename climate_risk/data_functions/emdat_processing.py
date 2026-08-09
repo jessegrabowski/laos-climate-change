@@ -105,15 +105,9 @@ def _read_workbook(emdat_path: Path) -> pl.DataFrame:
             f"Re-download the database, or update EM_DAT_COL_DICT if the export has changed."
         )
 
-    # disaster_point_data stores this row number in its own cache, so it is a key the workbook's
-    # row order defines and must survive filtering.
-    return (
-        workbook.with_row_index("emdat_index")
-        .rename(EM_DAT_COL_DICT)
-        .with_columns(
-            pl.date(pl.col("Start_Year"), 1, 1).alias("Start_Year"),
-            pl.col("Disaster Type").replace_strict(DISASTER_CLASSES, default=None).alias("disaster_class"),
-        )
+    return workbook.rename(EM_DAT_COL_DICT).with_columns(
+        pl.date(pl.col("Start_Year"), 1, 1).alias("Start_Year"),
+        pl.col("Disaster Type").replace_strict(DISASTER_CLASSES, default=None).alias("disaster_class"),
     )
 
 
@@ -240,7 +234,7 @@ def load_emdat_events(cache_dir: Path) -> pl.DataFrame:
     Returns
     -------
     DataFrame
-        One row per recorded event, carrying ``emdat_index``, ``disaster_class`` and the renamed
+        One row per recorded event, keyed by ``DisNo.``, carrying ``disaster_class`` and the renamed
         damage columns.
 
     Raises

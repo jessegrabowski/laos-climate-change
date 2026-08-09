@@ -51,7 +51,7 @@ def _load_disaster_point_data(cache_dir: Path) -> gpd.GeoDataFrame:
         )
 
     # The workbook row number a file written before the re-key still carries. It identifies nothing
-    # across downloads, and it collides with the same column on the workbook side.
+    # across downloads, so it does not travel with the point.
     return data.drop(columns="emdat_index", errors="ignore")
 
 
