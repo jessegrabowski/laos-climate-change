@@ -3,10 +3,14 @@ from pathlib import Path
 import pytest
 
 from climate_risk.data.geo_disasters import (
+    AGREEMENT_LEVELS,
     GEO_DISASTERS,
+    compare_event_units,
+    event_unit_names,
     geo_disasters_dir,
     geo_disasters_path,
     load_event_locations,
+    normalise_unit_name,
     unit_names,
 )
 
@@ -87,9 +91,99 @@ def test_geometry_is_left_on_disk(write_geo_disasters_cache):
     assert "geometry" not in locations.columns
 
 
+@pytest.mark.parametrize(
+    ("published", "other"),
+    [("Attapu", "attapu"), ("Bolikhamxai", "Bolikhamxai "), ("Xekong", "Xékong"), ("Xai-somboun", "Xaisomboun")],
+    ids=["casing", "whitespace", "accent", "hyphen"],
+)
+def test_the_same_unit_spelled_two_ways_normalises_alike(published, other):
+    """GADM and GAUL differ in casing, spacing, accents and hyphens for units that are the same one,
+    and a literal comparison would report every one of these as the sources disagreeing."""
+    assert normalise_unit_name(published) == normalise_unit_name(other)
+
+
+def test_units_that_are_genuinely_different_stay_different():
+    """Normalisation that collapses too far reports agreement everywhere and validates nothing."""
+    assert normalise_unit_name("Savannakhet") != normalise_unit_name("Khammouan")
+
+
+def test_a_different_romanisation_is_not_reconciled():
+    """Normalisation handles typography, not spelling. `Xiangkhouang` and `Xiangkhoang` are one
+    province under two romanisations, and they compare as different units — so a `partial` in the
+    report is an upper bound on real disagreement, not a measurement of it."""
+    assert normalise_unit_name("Xiangkhouang") != normalise_unit_name("Xiangkhoang")
+
+
+def test_geo_disasters_names_are_collected_per_event(write_geo_disasters_cache):
+    cache_dir = write_geo_disasters_cache()
+
+    names = event_unit_names(load_event_locations(cache_dir, iso="LAO"))
+
+    assert names == {"1991-0761-LAO": {"Savannakhet", "Khammouan"}, "2018-0339-LAO": {"Sanamxay"}}
+
+
+@pytest.mark.parametrize(
+    ("em_dat", "geo_disasters", "expected"),
+    [
+        ({"Savannakhet", "Khammouan"}, {"Savannakhet", "Khammouan"}, "exact"),
+        ({"Vientiane", "Xaisomboun"}, {"Vientiane"}, "partial"),
+        ({"Vientiane"}, {"Attapu"}, "disjoint"),
+        (set(), {"Xekong", "Attapu"}, "gained"),
+        ({"Bokeo"}, set(), "unmatched"),
+    ],
+    ids=["exact", "partial", "disjoint", "gained", "unmatched"],
+)
+def test_an_event_is_classified_by_how_the_two_geocodings_overlap(em_dat, geo_disasters, expected):
+    report = compare_event_units({"E": em_dat}, {"E": geo_disasters})
+
+    assert report["agreement"].tolist() == [expected]
+
+
+def test_an_event_neither_source_geocoded_is_left_out():
+    """Two thirds of EM-DAT carries no units at all; reporting them would bury the comparison."""
+    report = compare_event_units({"E": set()}, {"E": set()})
+
+    assert report.empty
+    assert list(report.columns) == ["DisNo.", "agreement", "em_dat_units", "geo_disasters_units", "shared_units"]
+
+
+def test_agreement_is_judged_after_normalisation():
+    """The whole point of normalising: Xekong and Xékong are one province, not a disjoint pair."""
+    report = compare_event_units({"E": {"Xékong"}}, {"E": {"Xekong"}})
+
+    assert report["agreement"].tolist() == ["exact"]
+    assert report["shared_units"].tolist() == [1]
+
+
+def test_the_counts_describe_each_side_and_the_overlap():
+    report = compare_event_units({"E": {"Vientiane", "Xaisomboun"}}, {"E": {"Vientiane", "Attapu"}})
+
+    assert report.loc[0, "em_dat_units"] == 2
+    assert report.loc[0, "geo_disasters_units"] == 2
+    assert report.loc[0, "shared_units"] == 1
+
+
+def test_every_event_either_source_geocoded_appears_once():
+    """A join done the wrong way round silently drops whichever side is absent."""
+    report = compare_event_units({"A": {"x"}, "B": {"y"}}, {"B": {"y"}, "C": {"z"}})
+
+    assert report["DisNo."].tolist() == ["A", "B", "C"]
+
+
 # The GeoPackage is non-commercial and hand-placed, so it is absent on CI and on a fresh clone.
 REAL_CACHE_DIR = Path(__file__).parents[2] / "data"
 REAL_GEOPACKAGE = REAL_CACHE_DIR / "geo_disasters" / "disaster_subnational_90_23.gpkg"
+
+
+def test_every_classification_is_one_of_the_declared_levels():
+    """`AGREEMENT_LEVELS` is the published vocabulary; a verdict outside it is one no caller can
+    branch on."""
+    report = compare_event_units(
+        {"exact": {"a"}, "partial": {"a", "b"}, "disjoint": {"a"}, "unmatched": {"a"}},
+        {"exact": {"a"}, "partial": {"a"}, "disjoint": {"z"}, "gained": {"a"}},
+    )
+
+    assert set(report["agreement"]) == set(AGREEMENT_LEVELS)
 
 
 @pytest.mark.requires_geo_disasters
