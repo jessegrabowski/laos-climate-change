@@ -109,7 +109,8 @@ class ManualSource:
         path = self.path(directory)
         if not path.exists():
             raise NotImplementedError(
-                f"No {self.filename} was found at `{path}`. It is licensed as: {self.licence} "
+                f"No {self.filename} was found at `{path}`.\n"
+                f"Licence: {self.licence}\n"
                 f"Obtain it from {self.homepage} and place it at `{path}`."
             )
 
