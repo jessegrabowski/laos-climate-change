@@ -37,11 +37,6 @@ def create_grid_from_shape(
     GeoDataFrame
         One row per surviving point, with ``lon``, ``lat``, distances to the nearest river and
         coastline, their logs, and ``ISO``.
-
-    Raises
-    ------
-    ValueError
-        If the geometry carries no ``ISO_A3`` column and no ``iso3`` says what to label it.
     """
     labelled = "ISO_A3" in shapefile.columns
     if not labelled and iso3 is None:

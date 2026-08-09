@@ -46,11 +46,6 @@ class EventFilters:
     min_deaths : int, optional
         An event must kill more than this many people to count. Default None, which counts an event
         on its reach alone.
-
-    Raises
-    ------
-    ValueError
-        If the window ends before it starts.
     """
 
     start_year: int = 1981
@@ -86,11 +81,6 @@ class CountryConfig:
     event_location_overrides : mapping of str to tuple of float
         Longitude and latitude to force onto specific EM-DAT event ids, for records whose published
         coordinates are wrong. Default empty.
-
-    Raises
-    ------
-    ValueError
-        If ``iso3`` is not an alpha-3 code.
     """
 
     iso3: str
@@ -122,11 +112,6 @@ class RegionConfig:
         Projection and grid settings. Defaults to the project-wide ones.
     events : EventFilters
         Which EM-DAT records count. Defaults to the project-wide thresholds.
-
-    Raises
-    ------
-    ValueError
-        If the region has no members, repeats one, or names a code that is not alpha-3.
     """
 
     key: str

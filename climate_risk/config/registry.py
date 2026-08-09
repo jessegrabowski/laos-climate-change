@@ -28,11 +28,6 @@ def read_place(path: Path) -> Place:
     -------
     CountryConfig or RegionConfig
         The place the file describes.
-
-    Raises
-    ------
-    ValueError
-        If the file will not parse, or names a key the schema does not define.
     """
     try:
         table = tomllib.loads(path.read_text())
@@ -62,11 +57,6 @@ def load_place(key: str, *, root: Path = CONFIG_ROOT) -> Place:
     -------
     CountryConfig or RegionConfig
         The place, read fresh from disk.
-
-    Raises
-    ------
-    ValueError
-        If nothing is filed under ``key``.
     """
     for subdirectory in (COUNTRY_SUBDIRECTORY, REGION_SUBDIRECTORY):
         path = root / subdirectory / f"{key}.toml"
@@ -137,11 +127,6 @@ def all_event_location_overrides(*, root: Path = CONFIG_ROOT) -> dict[str, tuple
     -------
     dict mapping str to tuple of float
         Longitude and latitude, keyed by EM-DAT event id.
-
-    Raises
-    ------
-    ValueError
-        If two countries both claim the same event.
     """
     overrides: dict[str, tuple[float, float]] = {}
     for path in sorted((root / COUNTRY_SUBDIRECTORY).glob("*.toml")):

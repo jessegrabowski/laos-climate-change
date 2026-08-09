@@ -47,11 +47,6 @@ def gadm_path(cache_dir: Path) -> Path:
     -------
     Path
         Location of ``gadm_410.gpkg``.
-
-    Raises
-    ------
-    NotImplementedError
-        If the GeoPackage is absent. Its licence forbids downloading it automatically.
     """
     return GADM.require(gadm_dir(cache_dir))
 
@@ -117,13 +112,6 @@ def load_admin_units(
     -------
     GeoDataFrame
         Columns ``gid``, ``name``, ``admin_level`` and ``geometry``, one row per distinct id.
-
-    Raises
-    ------
-    NotImplementedError
-        If the GeoPackage is absent.
-    DataValidationError
-        If GADM holds no unit for one of the ids, or a level is one GADM is not read at.
     """
     path = gadm_path(cache_dir)
     requested = set(units)
