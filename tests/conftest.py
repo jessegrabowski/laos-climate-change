@@ -396,10 +396,11 @@ def write_synthetic_source_cache(tmp_path, write_shapefile_cache, write_rivers_c
             )
             for index, year in enumerate(years)
         )
-        # The geocoder's output, which the loader joins onto the workbook by row number.
+        # The geocoder's output, which the loader joins onto the workbook by event id. Written in
+        # reverse order, so a join that pairs by position rather than by id gets every point wrong.
         pd.DataFrame(
             {
-                "emdat_index": range(SYNTHETIC_SOURCE_EVENTS),
+                "DisNo.": [f"FRA-{index}" for index in reversed(range(SYNTHETIC_SOURCE_EVENTS))],
                 "location_id": [0] * SYNTHETIC_SOURCE_EVENTS,
                 "lon": np.linspace(0.05, 0.45, SYNTHETIC_SOURCE_EVENTS),
                 "lat": [0.5] * SYNTHETIC_SOURCE_EVENTS,

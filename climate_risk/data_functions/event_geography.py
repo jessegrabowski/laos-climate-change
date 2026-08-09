@@ -11,6 +11,10 @@ from climate_risk.geo.crs import GEOGRAPHIC_CRS, to_km
 from climate_risk.geo.distance import get_distance_to
 from climate_risk.geo.island_countries import ISLAND_COUNTRY_ISO3
 
+# The geocoded points join to the workbook on the event id. A row number does not survive a
+# re-download: EM-DAT inserts historical records, so position moves and the join goes silently wrong.
+EVENT_KEY = "DisNo."
+
 
 def disaster_points_path(cache_dir: Path) -> Path:
     return cache_dir / "disaster_locations_gpt_repaired_w_features.csv"
@@ -37,22 +41,47 @@ def _load_disaster_point_data(cache_dir: Path) -> gpd.GeoDataFrame:
     if not path.exists():
         raise ValueError(f"No geocoded disaster locations at {path}. Go run the GPT notebook first!")
 
-    return load_data(path)
+    data = load_data(path)
+    if EVENT_KEY not in data.columns:
+        raise ValueError(
+            f"`{path}` has no `{EVENT_KEY}` column, so it is keyed on the workbook's row order. "
+            "Row numbers do not survive a re-download — EM-DAT inserts historical records, which "
+            "moves every later row and silently attaches each point to the wrong event. Re-key the "
+            "file against the workbook vintage it was built from before loading it."
+        )
+
+    # The workbook row number a file written before the re-key still carries. It identifies nothing
+    # across downloads, and it collides with the same column on the workbook side.
+    return data.drop(columns="emdat_index", errors="ignore")
 
 
-def load_disaster_point_data(cache_dir: Path):
+def load_disaster_point_data(cache_dir: Path) -> gpd.GeoDataFrame:
+    """
+    Read the geocoded disaster points and attach the EM-DAT event each one belongs to.
+
+    Distance features absent from the file are computed and written back into it.
+
+    Parameters
+    ----------
+    cache_dir : Path
+        Directory holding the geocoded point file and the EM-DAT workbook.
+
+    Returns
+    -------
+    GeoDataFrame
+        One row per event-location, indexed by ``DisNo.`` and ``location_id``.
+
+    Raises
+    ------
+    ValueError
+        If the point file is absent, or is keyed on row order rather than on ``DisNo.``.
+    """
     modified_data = False
 
-    events = load_emdat_events(cache_dir).filter(event_filter(EventFilters())).to_pandas().set_index("emdat_index")
+    events = load_emdat_events(cache_dir).filter(event_filter(EventFilters())).to_pandas().set_index(EVENT_KEY)
     data = _load_disaster_point_data(cache_dir)
 
-    data = (
-        data.set_index(["emdat_index"])
-        .join(events)
-        .reset_index(drop=False)
-        .rename(columns={"index": "emdat_index"})
-        .set_index(["emdat_index", "location_id"])
-    )
+    data = data.set_index([EVENT_KEY]).join(events).reset_index(drop=False).set_index([EVENT_KEY, "location_id"])
 
     if "distance_to_river" not in data.columns:
         rivers = load_rivers_data(cache_dir)
