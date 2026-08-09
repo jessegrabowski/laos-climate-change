@@ -7,88 +7,18 @@ import numpy as np
 import pandas as pd
 
 from climate_risk.config.registry import place_key, resolve_isos
-from climate_risk.config.schema import EventFilters, Place
+from climate_risk.config.schema import Place
 from climate_risk.data.cache import cached, geo_parquet
-from climate_risk.data_functions.emdat_processing import event_filter, load_emdat_events
+from climate_risk.data_functions.event_geography import load_disaster_point_data
 from climate_risk.data_functions.rivers_damage import load_rivers_data
 from climate_risk.data_functions.shapefiles_data_loader import load_shapefile, shapefile_dir
 from climate_risk.geo.crs import GEOGRAPHIC_CRS, to_km
 from climate_risk.geo.distance import MIN_DISTANCE_METRES, get_distance_to
-from climate_risk.geo.island_countries import ISLAND_COUNTRY_ISO3
 
 _log = logging.getLogger(__name__)
 
 # Every grid point is stamped with this year, so the non-disaster controls sit at one point in time.
 CONTROL_YEAR = pd.Timestamp("1984-01-01")
-
-
-def disaster_points_path(cache_dir: Path) -> Path:
-    return cache_dir / "disaster_locations_gpt_repaired_w_features.csv"
-
-
-def read_cached_points(fpath: Path) -> pd.DataFrame:
-    """Read a cached point CSV, normalising a `long` column to `lon`."""
-    # Remove once no cache on disk spells it long.
-    frame = pd.read_csv(fpath)
-
-    return frame if "lon" in frame.columns else frame.rename(columns={"long": "lon"})
-
-
-def load_data(fpath: Path) -> gpd.GeoDataFrame:
-    data = read_cached_points(fpath)
-    data["geometry"] = gpd.points_from_xy(data.lon, data.lat)
-    data = gpd.GeoDataFrame(data, crs=GEOGRAPHIC_CRS)
-
-    return data
-
-
-def _load_disaster_point_data(cache_dir: Path) -> gpd.GeoDataFrame:
-    path = disaster_points_path(cache_dir)
-    if not path.exists():
-        raise ValueError(f"No geocoded disaster locations at {path}. Go run the GPT notebook first!")
-
-    return load_data(path)
-
-
-def load_disaster_point_data(cache_dir: Path):
-    modified_data = False
-
-    events = load_emdat_events(cache_dir).filter(event_filter(EventFilters())).to_pandas().set_index("emdat_index")
-    data = _load_disaster_point_data(cache_dir)
-
-    data = (
-        data.set_index(["emdat_index"])
-        .join(events)
-        .reset_index(drop=False)
-        .rename(columns={"index": "emdat_index"})
-        .set_index(["emdat_index", "location_id"])
-    )
-
-    if "distance_to_river" not in data.columns:
-        rivers = load_rivers_data(cache_dir)
-
-        distances = get_distance_to(rivers, points=data, return_columns=["ORD_FLOW", "HYRIV_ID"]).rename(
-            columns={"distance_to_closest": "distance_to_river"}
-        )
-        data = data.join(distances).assign(distance_to_river=lambda x: to_km(x.distance_to_river))
-        modified_data = True
-
-    if "distance_to_coastline" not in data.columns:
-        coastline = load_shapefile("coastline", cache_dir)
-        distances = get_distance_to(coastline.boundary, points=data.loc[:, ["geometry"]]).rename(
-            columns={"distance_to_closest": "distance_to_coastline"}
-        )
-        data = data.join(distances).assign(distance_to_coastline=lambda x: to_km(x.distance_to_coastline))
-        modified_data = True
-
-    if "is_island" not in data.columns:
-        data["is_island"] = data.ISO.isin(ISLAND_COUNTRY_ISO3)
-        modified_data = True
-
-    if modified_data:
-        (data.drop(columns=[*events.columns.tolist(), "geometry"]).to_csv(disaster_points_path(cache_dir)))
-
-    return data
 
 
 def load_grid_point_data(
@@ -149,7 +79,6 @@ def load_grid_point_data(
         points = grid.overlay(point_map, how="intersection").geometry
         points = points.to_frame().assign(lon=lambda x: x.geometry.x, lat=lambda x: x.geometry.y)
 
-        # Obtain distance with rivers
         distances_rivers = get_distance_to(
             rivers,
             points=points,
@@ -159,7 +88,6 @@ def load_grid_point_data(
 
         points = pd.merge(points, distances_rivers, left_index=True, right_index=True, how="left")
 
-        # Obtain sea distance with coastlines
         distances_coastlines = get_distance_to(
             coastline.boundary, points=points, return_columns=None, name="coastline"
         ).rename(columns={"distance_to_closest": "distance_to_coastline"})
@@ -196,8 +124,7 @@ def _sample_by_region(data, world, multiplier=1, rng=None):
     if rng is None:
         rng = np.random.default_rng()
 
-    # "Melt" the world into 5 regions - Americas, Europe, Asia, Afria, Oceania. This corresponds with the
-    # "Regions" column from EMDAT
+    # The five regions EM-DAT reports in its `Region` column.
     simple_world = (
         world.replace({"North America": "Americas", "South America": "Americas"})
         .query('CONTINENT != "Seven seas (open ocean)"')

@@ -254,19 +254,6 @@ def test_mass_movement_events_reach_the_count_frames(write_emdat_cache):
     assert row(events, "AAA", "1990-01-01")["Mass movement (wet)"] == 1
 
 
-def test_the_workbook_row_number_survives_filtering(write_emdat_cache):
-    """disaster_point_data stores this number in its own cache, so it keys back into the workbook."""
-    cache_dir = write_emdat_cache(
-        [
-            emdat_event({"DisNo.": "too-early", "Start Year": 1975}),
-            emdat_event({"DisNo.": "kept", "Start Year": 1990}),
-        ]
-    )
-
-    assert load_emdat_events(cache_dir)["emdat_index"].to_list() == [0, 1]
-    assert selected_events(cache_dir).filter(pl.col("DisNo.") == "kept")["emdat_index"].to_list() == [1]
-
-
 def test_a_workbook_with_no_usable_year_is_rejected(write_emdat_cache):
     """A null Start_Year leaves the window with no end, which would otherwise fail deep in a join."""
     cache_dir = write_emdat_cache([emdat_event({"Start Year": None})])

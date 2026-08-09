@@ -1,5 +1,3 @@
-import re
-
 from dataclasses import replace
 
 import geopandas as gpd
@@ -13,12 +11,7 @@ from shapely.geometry import Point
 from climate_risk import load_synthetic_non_disaster_points
 from climate_risk.config.registry import load_place
 from climate_risk.config.schema import CountryConfig, GeometrySpec
-from climate_risk.data_functions.disaster_point_data import (
-    _load_disaster_point_data,
-    load_data,
-    load_grid_point_data,
-    load_non_disaster_grid,
-)
+from climate_risk.data_functions.control_points import load_grid_point_data, load_non_disaster_grid
 from climate_risk.geo.crs import GEOGRAPHIC_CRS
 from tests.conftest import SYNTHETIC_SOURCE_EVENTS, toy_world_needing_repair, toy_world_with_places
 
@@ -28,20 +21,10 @@ COUNTRY_BOUNDS = [("lao", 20.0, 21.0), ("zmb", 23.0, 24.0), ("cri", 29.5, 30.5)]
 
 EARTH_CIRCUMFERENCE_KM = 40_075
 
-# A legacy cache spells longitude `long`; the value under `lon` is the one to keep.
-STALE_LON = 9.9
-CURRENT_LON = 102.5
-
 
 def france(grid_size=3):
     """The one country of the toy world the grid fixtures put rivers and coastline near."""
     return CountryConfig(iso3="FRA", name="France", geometry=GeometrySpec(grid_size=grid_size))
-
-
-def test_missing_geocoded_locations_names_the_file_it_looked_for(tmp_path):
-    """The message is the only guidance a fresh clone gets, so it has to say which file is absent."""
-    with pytest.raises(ValueError, match=re.escape("disaster_locations_gpt_repaired_w_features.csv")):
-        _load_disaster_point_data(tmp_path)
 
 
 def test_unknown_sampling_strategy_is_rejected(tmp_path):
@@ -126,30 +109,6 @@ def test_the_cached_grid_round_trips_unchanged(write_point_grid_cache):
 
     assert_geodataframe_equal(reloaded, written)
     assert {"distance_to_river", "log_distance_to_river", "log_distance_to_coastline"} <= set(reloaded.columns)
-
-
-def test_a_cache_may_spell_longitude_long(tmp_path):
-    """A cache on disk may spell longitude `long`."""
-    legacy = tmp_path / "points.csv"
-    legacy.write_text(f"emdat_index,location_id,long,lat\n0,0,{CURRENT_LON},18.5\n")
-
-    data = load_data(legacy)
-
-    assert "lon" in data.columns
-    assert "long" not in data.columns
-    assert data.geometry.x.tolist() == [CURRENT_LON]
-
-
-def test_a_cache_holding_both_spellings_keeps_one_lon(tmp_path):
-    """Renaming unconditionally would give two columns named lon, and attribute lookup a frame."""
-    half_migrated = tmp_path / "points.csv"
-    half_migrated.write_text(f"emdat_index,location_id,long,lon,lat\n0,0,{STALE_LON},{CURRENT_LON},18.5\n")
-
-    data = load_data(half_migrated)
-
-    assert list(data.columns).count("lon") == 1
-    assert data.geometry.x.tolist() == [CURRENT_LON]
-    assert STALE_LON not in data.geometry.x.tolist()
 
 
 def test_a_warm_synthetic_cache_is_reused(tmp_path):
