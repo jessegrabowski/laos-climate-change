@@ -4,11 +4,21 @@ from pathlib import Path
 import pandas as pd
 import polars as pl
 
+from climate_risk.config.schema import EventFilters
 from climate_risk.data.co2 import load_co2_data
 from climate_risk.data.gpcc import load_gpcc_data
 from climate_risk.data.ocean_heat import load_ocean_heat_data
 from climate_risk.data.world_bank import load_wb_data
-from climate_risk.data_functions.emdat_processing import DISASTER_TYPES, load_emdat_data
+from climate_risk.data_functions.emdat_processing import (
+    CLIMATOLOGICAL,
+    DISASTER_TYPES,
+    HYDROMETEOROLOGICAL,
+    count_events_by_type,
+    country_year_grid,
+    event_filter,
+    load_emdat_events,
+    total_damage,
+)
 
 # The panel is keyed on the EM-DAT column names, which the other sources are renamed onto.
 PANEL_KEY = ["ISO", "Start_Year"]
@@ -36,20 +46,23 @@ def _suffixed_damage(damage: pl.DataFrame, suffix: str) -> pl.DataFrame:
     return damage.select(*PANEL_KEY, *(pl.col(name).alias(f"{name}_{suffix}") for name in measures))
 
 
-def _combine_emdat(emdat: dict[str, pl.DataFrame]) -> dict[str, pl.DataFrame]:
+def _combine_emdat(events: pl.DataFrame, grid: pl.DataFrame, counts: pl.DataFrame) -> dict[str, pl.DataFrame]:
     """Split EM-DAT into events and damages, with the hydrological and climatological classes joined on."""
-    hydro = _suffixed_damage(emdat["df_inten_filtered_adjusted_hydro"], "hydro")
-    clim = _suffixed_damage(emdat["df_inten_filtered_adjusted_clim"], "clim")
+    hydro_damage = total_damage(events.filter(pl.col("disaster_class") == HYDROMETEOROLOGICAL), grid)
+    clim_damage = total_damage(events.filter(pl.col("disaster_class") == CLIMATOLOGICAL), grid)
 
-    damage = emdat["df_inten_filtered_adjusted"]
+    hydro = _suffixed_damage(hydro_damage, "hydro")
+    clim = _suffixed_damage(clim_damage, "clim")
+
+    damage = total_damage(events, grid)
     for tagged in (hydro, clim):
         damage = damage.join(tagged, on=PANEL_KEY, how="left")
 
     return {
-        "emdat_events": emdat["df_prob_filtered_adjusted"].drop("Subregion"),
+        "emdat_events": counts.drop("Subregion"),
         "emdat_damage": damage,
-        "emdat_damage_hydro": emdat["df_inten_filtered_adjusted_hydro"],
-        "emdat_damage_clim": emdat["df_inten_filtered_adjusted_clim"],
+        "emdat_damage_hydro": hydro_damage,
+        "emdat_damage_clim": clim_damage,
         "df_inten_filtered_adjusted_hydro": hydro,
         "df_inten_filtered_adjusted_clim": clim,
     }
@@ -120,8 +133,12 @@ def _country_constants(events: pl.DataFrame) -> pl.DataFrame:
 
 
 def load_all_data(cache_dir: Path) -> dict[str, pl.DataFrame]:
-    emdat = load_emdat_data(cache_dir)
-    merged_dict = _combine_emdat(emdat)
+    raw = load_emdat_events(cache_dir)
+    events = raw.filter(event_filter(EventFilters()))
+    grid = country_year_grid(raw)
+    counts = count_events_by_type(events, grid)
+
+    merged_dict = _combine_emdat(events, grid, counts)
 
     merged_dict["wb_data"] = _shape_world_bank(load_wb_data(cache_dir))
     merged_dict["gpcc"], merged_dict["gpcc_agg"] = _annual_precipitation(_as_polars(load_gpcc_data(cache_dir)))
@@ -137,7 +154,7 @@ def load_all_data(cache_dir: Path) -> dict[str, pl.DataFrame]:
     with_precipitation = _countries_in_common(merged_dict["wb_data"], merged_dict["gpcc"])
     merged_dict["gpcc"] = _only_countries(merged_dict["gpcc"], with_precipitation)
 
-    merged_dict["country_constants"] = _country_constants(emdat["df_prob_filtered_adjusted"])
+    merged_dict["country_constants"] = _country_constants(counts)
 
     merged_dict["df_panel"] = reduce(
         partial(_outer_join, on=PANEL_KEY),

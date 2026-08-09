@@ -9,7 +9,7 @@ from climate_risk.data_functions.disaster_point_data import (
     load_disaster_point_data,
     load_synthetic_non_disaster_points,
 )
-from climate_risk.data_functions.emdat_processing import load_emdat_data
+from climate_risk.data_functions.emdat_processing import load_emdat_events
 from climate_risk.data_functions.rivers_data_loader import load_rivers_data
 from climate_risk.data_functions.shapefiles_data_loader import load_shapefile
 
@@ -17,7 +17,7 @@ __all__ = [
     "load_all_data",
     "load_co2_data",
     "load_disaster_point_data",
-    "load_emdat_data",
+    "load_emdat_events",
     "load_gpcc_data",
     "load_hadcrut_data",
     "load_ocean_heat_data",

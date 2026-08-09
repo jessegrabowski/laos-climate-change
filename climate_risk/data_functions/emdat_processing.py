@@ -62,14 +62,18 @@ DISASTER_TYPES = tuple(c for c in PROB_COLS if c not in {"Country", "ISO", "Star
 # earliest point a changed export becomes a named error rather than a missing attribute.
 REQUIRED_EMDAT_COLUMNS = {"ISO", "Region", "Subregion", "Disaster Type"} | set(EM_DAT_COL_DICT)
 
-# "Hydrometereological" is the wire value written by this processing and queried downstream.
+# Misspelled on the wire. Correcting it would invalidate every cached CSV on every machine, so the
+# literal stays and the constants are how code should refer to it.
+HYDROMETEOROLOGICAL = "Hydrometereological"
+CLIMATOLOGICAL = "Climatological"
+
 DISASTER_CLASSES = {
-    "Storm": "Hydrometereological",
-    "Flood": "Hydrometereological",
-    "Mass movement (wet)": "Hydrometereological",
-    "Wildfire": "Climatological",
-    "Extreme temperature": "Climatological",
-    "Drought": "Climatological",
+    "Storm": HYDROMETEOROLOGICAL,
+    "Flood": HYDROMETEOROLOGICAL,
+    "Mass movement (wet)": HYDROMETEOROLOGICAL,
+    "Wildfire": CLIMATOLOGICAL,
+    "Extreme temperature": CLIMATOLOGICAL,
+    "Drought": CLIMATOLOGICAL,
 }
 
 DAMAGE_VARS = [
@@ -113,8 +117,30 @@ def _read_workbook(emdat_path: Path) -> pl.DataFrame:
     )
 
 
-def _country_years(events: pl.DataFrame, window_start: dt.date) -> pl.DataFrame:
-    """Every country crossed with every year in the window, which is the grid all panels are laid on."""
+def country_year_grid(events: pl.DataFrame, *, window_start: dt.date = EMDAT_WINDOW_START) -> pl.DataFrame:
+    """
+    Cross every country with every year in the window, carrying each country's region.
+
+    This is the grid the count and damage panels are laid over, so it is built from the *unfiltered*
+    workbook: a country-year with no qualifying event still needs a row.
+
+    Parameters
+    ----------
+    events : DataFrame
+        The workbook, as :func:`load_emdat_events` returns it.
+    window_start : datetime.date, optional
+        First year of the panel. Default ``EMDAT_WINDOW_START``.
+
+    Returns
+    -------
+    DataFrame
+        ``ISO``, ``Start_Year``, ``Region`` and ``Subregion``, sorted by country and year.
+
+    Raises
+    ------
+    ValueError
+        If every ``Start_Year`` is missing, or the window starts after the newest event.
+    """
     newest_event = events["Start_Year"].max()
     if not isinstance(newest_event, dt.date):
         raise ValueError("Every Start_Year in the workbook is missing, so the window has no end.")
@@ -127,20 +153,33 @@ def _country_years(events: pl.DataFrame, window_start: dt.date) -> pl.DataFrame:
 
     years: pl.Series = pl.date_range(window_start, newest_event, interval="1y", eager=True)
 
+    regions = events.select("ISO", "Region", "Subregion").unique(subset="ISO", keep="first")
+
     return (
         events.select(pl.col("ISO").unique())
         .join(years.alias("Start_Year").to_frame(), how="cross")
+        .join(regions, on="ISO", how="left")
         .sort("ISO", "Start_Year")
     )
 
 
-def _regions(events: pl.DataFrame) -> pl.DataFrame:
-    """One row per country carrying its region and subregion."""
-    return events.select("ISO", "Region", "Subregion").unique(subset="ISO", keep="first")
+def count_events_by_type(events: pl.DataFrame, grid: pl.DataFrame) -> pl.DataFrame:
+    """
+    Count events per country, year and disaster type, over every row of ``grid``.
 
+    Parameters
+    ----------
+    events : DataFrame
+        Events to count, already narrowed to whichever ones should be counted.
+    grid : DataFrame
+        The country-year panel from :func:`country_year_grid`.
 
-def _count_by_type(events: pl.DataFrame, grid: pl.DataFrame, regions: pl.DataFrame) -> pl.DataFrame:
-    """Count events per country, year and disaster type, over the full grid."""
+    Returns
+    -------
+    DataFrame
+        One row per country-year, one column per disaster type. A country-year with no events
+        reads as null rather than zero.
+    """
     counted = (
         events.filter(pl.col("Disaster Type").is_in(DISASTER_TYPES))
         .group_by("ISO", "Start_Year", "Disaster Type")
@@ -152,14 +191,27 @@ def _count_by_type(events: pl.DataFrame, grid: pl.DataFrame, regions: pl.DataFra
 
     return (
         grid.join(counted.with_columns(absent), on=["ISO", "Start_Year"], how="left")
-        .join(regions, on="ISO", how="left")
         .select("ISO", "Start_Year", "Region", "Subregion", *DISASTER_TYPES)
         .sort("ISO", "Start_Year")
     )
 
 
-def _damage_totals(events: pl.DataFrame, grid: pl.DataFrame, regions: pl.DataFrame) -> pl.DataFrame:
-    """Total each damage measure per country and year, over the full grid."""
+def total_damage(events: pl.DataFrame, grid: pl.DataFrame) -> pl.DataFrame:
+    """
+    Total each damage measure per country and year, over every row of ``grid``.
+
+    Parameters
+    ----------
+    events : DataFrame
+        Events to total, already narrowed to whichever ones should count.
+    grid : DataFrame
+        The country-year panel from :func:`country_year_grid`.
+
+    Returns
+    -------
+    DataFrame
+        One row per country-year, one column per measure in ``DAMAGE_VARS``.
+    """
     totals = (
         events.filter(pl.col("Disaster Type").is_in(DISASTER_TYPES))
         .select(INTENSITY_COLS)
@@ -169,34 +221,35 @@ def _damage_totals(events: pl.DataFrame, grid: pl.DataFrame, regions: pl.DataFra
 
     return (
         grid.join(totals, on=["ISO", "Start_Year"], how="left")
-        .join(regions, on="ISO", how="left")
         .select("ISO", "Start_Year", *DAMAGE_VARS, "Region", "Subregion")
         .sort("ISO", "Start_Year")
     )
 
 
-def _selected_events(events: pl.DataFrame, filters: EventFilters) -> pl.DataFrame:
-    """Keep the events a place's thresholds count, dropping any whose severity is unrecorded."""
-    selected = events.filter(
-        (pl.col("Total_Affected") > filters.min_total_affected)
-        & (pl.col("Start_Year") >= pl.date(filters.start_year, 1, 1))
-    )
+def load_emdat_events(cache_dir: Path) -> pl.DataFrame:
+    """
+    Read the EM-DAT workbook, renamed and classified, with nothing filtered out.
 
-    if filters.end_year is not None:
-        selected = selected.filter(pl.col("Start_Year") <= pl.date(filters.end_year, 12, 31))
+    Narrow it with :func:`event_filter`, or with any other polars predicate.
 
-    if filters.min_deaths is not None:
-        selected = selected.filter(pl.col("Deaths") > filters.min_deaths)
+    Parameters
+    ----------
+    cache_dir : Path
+        Directory holding ``emdat.xlsx``.
 
-    return selected
+    Returns
+    -------
+    DataFrame
+        One row per recorded event, carrying ``emdat_index``, ``disaster_class`` and the renamed
+        damage columns.
 
-
-def load_emdat_data(
-    cache_dir: Path,
-    *,
-    window_start: dt.date = EMDAT_WINDOW_START,
-    filters: EventFilters | None = None,
-) -> dict[str, pl.DataFrame]:
+    Raises
+    ------
+    NotImplementedError
+        If the workbook is absent. It is licensed and cannot be downloaded automatically.
+    ValueError
+        If the sheet is empty or its columns have changed.
+    """
     cache_dir.mkdir(parents=True, exist_ok=True)
 
     emdat_path = cache_dir / "emdat.xlsx"
@@ -206,32 +259,33 @@ def load_emdat_data(
             f"download the database, and place it at `{emdat_path}`"
         )
 
-    df_raw = _read_workbook(emdat_path)
+    return _read_workbook(emdat_path)
 
-    # The two filtered views are what the published panel is built from; the unfiltered one is
-    # kept because the severity thresholds are a modelling choice, not a data-quality one.
-    df_raw_filtered = df_raw.filter(
-        (pl.col("Total_Affected") > 1000) & (pl.col("Deaths") > 100) & (pl.col("Start_Year") > dt.date(1970, 1, 1))
+
+def event_filter(filters: EventFilters) -> pl.Expr:
+    """
+    Turn a place's thresholds into a predicate for :meth:`polars.DataFrame.filter`.
+
+    Combine it with ``&`` to narrow further, such as to one country.
+
+    Parameters
+    ----------
+    filters : EventFilters
+        The window and severity thresholds an event has to clear.
+
+    Returns
+    -------
+    Expr
+        True for events that count. An event whose severity is unrecorded does not.
+    """
+    counts = (pl.col("Total_Affected") > filters.min_total_affected) & (
+        pl.col("Start_Year") >= pl.date(filters.start_year, 1, 1)
     )
-    df_raw_filtered_adj = _selected_events(df_raw, EventFilters() if filters is None else filters)
 
-    grid = _country_years(df_raw, window_start)
-    regions = _regions(df_raw)
+    if filters.end_year is not None:
+        counts = counts & (pl.col("Start_Year") <= pl.date(filters.end_year, 12, 31))
 
-    return {
-        "df_raw": df_raw,
-        "df_raw_filtered": df_raw_filtered,
-        "df_raw_filtered_adj": df_raw_filtered_adj,
-        "df_prob_unfiltered": _count_by_type(df_raw, grid, regions),
-        "df_prob_filtered": _count_by_type(df_raw_filtered, grid, regions),
-        "df_prob_filtered_adjusted": _count_by_type(df_raw_filtered_adj, grid, regions),
-        "df_inten_unfiltered": _damage_totals(df_raw, grid, regions),
-        "df_inten_filtered": _damage_totals(df_raw_filtered, grid, regions),
-        "df_inten_filtered_adjusted": _damage_totals(df_raw_filtered_adj, grid, regions),
-        "df_inten_filtered_adjusted_hydro": _damage_totals(
-            df_raw_filtered_adj.filter(pl.col("disaster_class") == "Hydrometereological"), grid, regions
-        ),
-        "df_inten_filtered_adjusted_clim": _damage_totals(
-            df_raw_filtered_adj.filter(pl.col("disaster_class") == "Climatological"), grid, regions
-        ),
-    }
+    if filters.min_deaths is not None:
+        counts = counts & (pl.col("Deaths") > filters.min_deaths)
+
+    return counts
