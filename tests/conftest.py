@@ -43,6 +43,8 @@ EMDAT_EVENT_DEFAULTS = {
     "Longitude": 102.0,
     "River Basin": "Mekong",
     "Location": "Somewhere",
+    # Present on every real row, empty on the two thirds EM-DAT never geocoded.
+    "GADM Admin Units": "",
 }
 
 

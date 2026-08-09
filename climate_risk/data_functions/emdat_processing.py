@@ -61,7 +61,7 @@ DISASTER_TYPES = tuple(c for c in PROB_COLS if c not in {"Country", "ISO", "Star
 
 # Columns read before any rename. Nothing detects upstream schema drift, so this check is the
 # earliest point a changed export becomes a named error rather than a missing attribute.
-REQUIRED_EMDAT_COLUMNS = {"ISO", "Region", "Subregion", "Disaster Type"} | set(EM_DAT_COL_DICT)
+REQUIRED_EMDAT_COLUMNS = {"ISO", "Region", "Subregion", "Disaster Type", "GADM Admin Units"} | set(EM_DAT_COL_DICT)
 
 # Misspelled on the wire. Correcting it would invalidate every cached CSV on every machine, so the
 # literal stays and the constants are how code should refer to it.
@@ -315,6 +315,67 @@ def event_units(events: pl.DataFrame) -> pl.DataFrame:
             )
 
     return pl.DataFrame(rows, schema=EVENT_UNIT_SCHEMA)
+
+
+# Where an event's geometry comes from, best first. Nothing is filtered on this: the column records
+# what the source holds, and a model chooses which tiers it will accept.
+GEOMETRY_SOURCES = ("gadm", "emdat_point", "country")
+
+EVENT_GEOGRAPHY_SCHEMA = {
+    "DisNo.": pl.String,
+    "ISO": pl.String,
+    "geometry_source": pl.String,
+    "gid": pl.String,
+    "name": pl.String,
+    "admin_level": pl.Int8,
+    "migration_method": pl.String,
+    "Latitude": pl.Float64,
+    "Longitude": pl.Float64,
+}
+
+
+def event_geography(events: pl.DataFrame) -> pl.DataFrame:
+    """
+    Say where every event's geometry comes from, one row per event-unit and one per event otherwise.
+
+    An event coded to administrative units contributes a row per unit; one with only a coordinate,
+    or with nothing, contributes a single row. Every event in ``events`` appears, so an absence of
+    geography is stated rather than implied by a missing row.
+
+    ``Latitude`` and ``Longitude`` are carried wherever EM-DAT supplies them, including on ``gadm``
+    rows, so the two claims stay visible side by side rather than one being discarded.
+
+    Parameters
+    ----------
+    events : DataFrame
+        The workbook, as :func:`load_emdat_events` returns it.
+
+    Returns
+    -------
+    DataFrame
+        ``DisNo.``, ``ISO``, ``geometry_source`` from ``GEOMETRY_SOURCES``, the unit columns of
+        :func:`event_units` where one applies, and the event's coordinate where it has one.
+    """
+    units = event_units(events)
+    located = events.select("DisNo.", "ISO", "Latitude", "Longitude")
+
+    from_units = units.join(located, on="DisNo.", how="left").with_columns(pl.lit("gadm").alias("geometry_source"))
+
+    coded = set(units["DisNo."])
+    rest = located.filter(~pl.col("DisNo.").is_in(coded)).with_columns(
+        pl.when(pl.col("Latitude").is_not_null())
+        .then(pl.lit("emdat_point"))
+        .otherwise(pl.lit("country"))
+        .alias("geometry_source"),
+        pl.lit(None, dtype=pl.String).alias("gid"),
+        pl.lit(None, dtype=pl.String).alias("name"),
+        pl.lit(None, dtype=pl.Int8).alias("admin_level"),
+        pl.lit(None, dtype=pl.String).alias("migration_method"),
+    )
+
+    columns = list(EVENT_GEOGRAPHY_SCHEMA)
+
+    return pl.concat([from_units.select(columns), rest.select(columns)]).sort("DisNo.", "gid", nulls_last=True)
 
 
 def event_filter(filters: EventFilters) -> pl.Expr:
