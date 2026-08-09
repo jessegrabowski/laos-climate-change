@@ -10,7 +10,7 @@ from climate_risk.data.fetch import USER_AGENT
 from climate_risk.data.gpcc import FULL_DATA, MONITORING
 from climate_risk.data.hadcrut import HADCRUT
 from climate_risk.data.ocean_heat import OCEAN_HEAT
-from climate_risk.data.source import DataSource, ShapefileArchive
+from climate_risk.data.source import DataSource, ManualSource, ShapefileArchive
 from climate_risk.data_functions.rivers_data_loader import RIVERS
 from climate_risk.data_functions.shapefiles_data_loader import COASTLINE, WORLD
 
@@ -53,6 +53,39 @@ def test_an_archive_layer_outside_the_archive_is_rejected(member):
     """`extracted_path` joins onto the cache directory, so an escaping member reads outside it."""
     with pytest.raises(ValueError, match="member must"):
         ShapefileArchive(source(), member)
+
+
+MANUAL_FIELDS = {
+    "filename": "gadm_410.gpkg",
+    "homepage": "https://gadm.org/download_world.html",
+    "licence": "non-commercial use only",
+    "citation": "GADM 4.1",
+    "retrieved": "2026-08-09",
+}
+
+
+def manual(**overrides) -> ManualSource:
+    return ManualSource(**(MANUAL_FIELDS | overrides))
+
+
+@pytest.mark.parametrize("filename", ["../escape.gpkg", "nested/f.gpkg", "/absolute.gpkg", ""], ids=repr)
+def test_a_manual_filename_carrying_a_path_is_rejected(filename):
+    """`path()` joins onto the cache directory, so a directory component reads outside it."""
+    with pytest.raises(ValueError, match="bare name"):
+        manual(filename=filename)
+
+
+@pytest.mark.parametrize("homepage", ["ftp://gadm.org", "gadm.org", ""], ids=repr)
+def test_a_manual_homepage_that_is_not_a_web_page_is_rejected(homepage):
+    """It goes into an error message a user is expected to follow."""
+    with pytest.raises(ValueError, match="homepage must be http"):
+        manual(homepage=homepage)
+
+
+def test_a_manual_source_reports_its_licence_when_the_file_is_missing(tmp_path):
+    """A user hitting this has to know the terms before going to fetch the file."""
+    with pytest.raises(NotImplementedError, match="non-commercial use only"):
+        manual().require(tmp_path)
 
 
 def test_an_unparseable_retrieved_date_is_rejected():
