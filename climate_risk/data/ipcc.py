@@ -5,7 +5,7 @@ from pathlib import Path
 import polars as pl
 
 from climate_risk.data.cache import cached, polars_parquet
-from climate_risk.data_functions.combine_data import load_all_data
+from climate_risk.data.co2 import load_co2_data
 
 _log = logging.getLogger(__name__)
 
@@ -80,6 +80,6 @@ def process_ipcc_scenarios(cache_dir: Path, *, force_reload: bool = False) -> pl
         published = pl.read_excel(IPCC_FILE, sheet_name=IPCC_SHEET)
         scenarios = published.select(pl.col(code).alias(name) for code, name in SCENARIO_COLUMNS.items())
 
-        return transform_ipcc(scenarios, load_all_data(cache_dir)["df_time_series"].select("year", "co2"))
+        return transform_ipcc(scenarios, load_co2_data(cache_dir).rename({"Date": "year"}).sort("year"))
 
     return cached(cache_dir, "ipcc_scenarios", build, polars_parquet(), force=force_reload)

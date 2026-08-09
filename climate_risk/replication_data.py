@@ -4,7 +4,11 @@ import polars as pl
 
 from statsmodels.tsa.seasonal import STL
 
-from climate_risk import load_all_data
+from climate_risk.data_functions.combine_data import (
+    annual_precipitation,
+    build_country_year_panel,
+    build_time_series,
+)
 
 PANEL_KEY = ["ISO", "year"]
 
@@ -105,24 +109,16 @@ def _deviation_from_trend(climate: pl.DataFrame) -> pl.DataFrame:
 
 
 def create_replication_data(cache_dir: Path, *, baseline: tuple[int, int] = CLIMATOLOGY_BASELINE) -> pl.DataFrame:
-    data = load_all_data(cache_dir)
-
-    events = data["emdat_events"].rename({"Start_Year": "year"})
-    damage = data["emdat_damage"].rename({"Start_Year": "year"})
-    indicators = data["wb_data"].rename({"Start_Year": "year"})
+    panel = build_country_year_panel(cache_dir).rename({"Start_Year": "year"})
 
     # The first and last years are dropped. The reason is unrecorded, and the trend below is fitted
     # over this window, so widening it moves every published deviation.
-    climate = data["df_time_series"].select("year", "co2", "Temp", "precip").slice(1, -1)
+    climate = build_time_series(cache_dir).select("year", "co2", "Temp", "precip").slice(1, -1)
 
-    disasters = events.select(
+    regressors = panel.select(
         *PANEL_KEY,
         _counted_or_missing(CLIMATOLOGICAL_TYPES).alias("climatological_disasters"),
         _counted_or_missing(HYDROLOGICAL_TYPES).alias("hydrological_disasters"),
-    )
-
-    development = indicators.select(
-        *PANEL_KEY,
         (pl.col("Population") / MILLION).alias("population"),
         pl.col("population_density").log().alias("ln_population_density"),
         pl.col("gdp_per_cap").log().alias("ln_gdp_pc"),
@@ -131,14 +127,17 @@ def create_replication_data(cache_dir: Path, *, baseline: tuple[int, int] = CLIM
         (pl.col("ln_population_density") ** 2).alias("ln_population_density_squared"),
     )
 
-    damages = damage.select(
+    damages = panel.select(
         *PANEL_KEY, "Total_Damage_Adjusted_hydro", "Total_Damage_Adjusted_clim", "Total_Affected_hydro"
     )
 
+    # Drawn from the whole precipitation record, which reaches back before the panel's first year
+    # and so can cover the baseline climatology.
+    deviation = _precipitation_deviation(annual_precipitation(cache_dir), baseline)
+
     frame = (
-        disasters.join(development, on=PANEL_KEY, how="left")
-        .join(damages, on=PANEL_KEY, how="left")
-        .join(_precipitation_deviation(data["gpcc"], baseline), on=PANEL_KEY, how="left")
+        regressors.join(damages, on=PANEL_KEY, how="left")
+        .join(deviation, on=PANEL_KEY, how="left")
         .join(climate.select("year", "co2"), on="year", how="left")
         .join(_deviation_from_trend(climate), on="year", how="left")
     )

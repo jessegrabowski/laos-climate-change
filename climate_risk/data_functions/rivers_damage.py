@@ -6,8 +6,9 @@ import numpy as np
 import pandas as pd
 
 from climate_risk.config.registry import all_event_location_overrides
+from climate_risk.config.schema import EventFilters
 from climate_risk.data.cache import cached, geo_parquet
-from climate_risk.data_functions.emdat_processing import load_emdat_data
+from climate_risk.data_functions.emdat_processing import event_filter, load_emdat_events
 from climate_risk.data_functions.rivers_data_loader import load_rivers_data
 from climate_risk.data_functions.shapefiles_data_loader import load_shapefile
 from climate_risk.geo.crs import to_km
@@ -55,7 +56,7 @@ def _create_rivers_damage(
 
     def build() -> gpd.GeoDataFrame:
         big_rivers = load_rivers_data(cache_dir)
-        emdat = load_emdat_data(cache_dir)["df_raw_filtered_adj"].to_pandas()
+        emdat = load_emdat_events(cache_dir).filter(event_filter(EventFilters())).to_pandas()
         world = load_shapefile("world", cache_dir, repair_ISO_codes=True)
 
         events = emdat.query(query)

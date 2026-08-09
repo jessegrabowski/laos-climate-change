@@ -7,9 +7,9 @@ import numpy as np
 import pandas as pd
 
 from climate_risk.config.registry import place_key, resolve_isos
-from climate_risk.config.schema import Place
+from climate_risk.config.schema import EventFilters, Place
 from climate_risk.data.cache import cached, geo_parquet
-from climate_risk.data_functions.emdat_processing import load_emdat_data
+from climate_risk.data_functions.emdat_processing import event_filter, load_emdat_events
 from climate_risk.data_functions.rivers_damage import load_rivers_data
 from climate_risk.data_functions.shapefiles_data_loader import load_shapefile, shapefile_dir
 from climate_risk.geo.crs import GEOGRAPHIC_CRS, to_km
@@ -53,7 +53,7 @@ def _load_disaster_point_data(cache_dir: Path) -> gpd.GeoDataFrame:
 def load_disaster_point_data(cache_dir: Path):
     modified_data = False
 
-    events = load_emdat_data(cache_dir)["df_raw_filtered_adj"].to_pandas().set_index("emdat_index")
+    events = load_emdat_events(cache_dir).filter(event_filter(EventFilters())).to_pandas().set_index("emdat_index")
     data = _load_disaster_point_data(cache_dir)
 
     data = (
