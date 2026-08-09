@@ -1,7 +1,9 @@
 import logging
 
 from climate_risk.data_functions import (
-    load_all_data,
+    annual_precipitation,
+    build_country_year_panel,
+    build_time_series,
     load_co2_data,
     load_disaster_point_data,
     load_emdat_events,
@@ -24,7 +26,9 @@ if not logging.root.handlers:
         _log.addHandler(handler)
 
 __all__ = [
-    "load_all_data",
+    "annual_precipitation",
+    "build_country_year_panel",
+    "build_time_series",
     "load_co2_data",
     "load_disaster_point_data",
     "load_emdat_events",

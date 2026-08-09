@@ -11,7 +11,6 @@ from climate_risk.data.ocean_heat import load_ocean_heat_data
 from climate_risk.data.world_bank import load_wb_data
 from climate_risk.data_functions.emdat_processing import (
     CLIMATOLOGICAL,
-    DISASTER_TYPES,
     HYDROMETEOROLOGICAL,
     count_events_by_type,
     country_year_grid,
@@ -39,6 +38,11 @@ def _outer_join(left: pl.DataFrame, right: pl.DataFrame, on: list[str] | str) ->
     return left.join(right, on=on, how="full", coalesce=True)
 
 
+def _left_join(left: pl.DataFrame, right: pl.DataFrame, on: list[str] | str) -> pl.DataFrame:
+    """Join keeping only the left side's keys, which fixes the rows the panel spans."""
+    return left.join(right, on=on, how="left", coalesce=True)
+
+
 def _suffixed_damage(damage: pl.DataFrame, suffix: str) -> pl.DataFrame:
     """Tag one disaster class's damage columns so both classes can sit in one frame."""
     measures = [column for column in damage.columns if column not in {*PANEL_KEY, "Region", "Subregion"}]
@@ -46,26 +50,23 @@ def _suffixed_damage(damage: pl.DataFrame, suffix: str) -> pl.DataFrame:
     return damage.select(*PANEL_KEY, *(pl.col(name).alias(f"{name}_{suffix}") for name in measures))
 
 
-def _combine_emdat(events: pl.DataFrame, grid: pl.DataFrame, counts: pl.DataFrame) -> dict[str, pl.DataFrame]:
-    """Split EM-DAT into events and damages, with the hydrological and climatological classes joined on."""
-    hydro_damage = total_damage(events.filter(pl.col("disaster_class") == HYDROMETEOROLOGICAL), grid)
-    clim_damage = total_damage(events.filter(pl.col("disaster_class") == CLIMATOLOGICAL), grid)
+def _combine_emdat(events: pl.DataFrame, grid: pl.DataFrame, counts: pl.DataFrame) -> tuple[pl.DataFrame, pl.DataFrame]:
+    """
+    Split EM-DAT into counts and damages.
 
-    hydro = _suffixed_damage(hydro_damage, "hydro")
-    clim = _suffixed_damage(clim_damage, "clim")
-
+    Returns
+    -------
+    events : DataFrame
+        Counts per country, year and disaster type.
+    damage : DataFrame
+        Totals per country and year, with each disaster class joined on as suffixed columns.
+    """
     damage = total_damage(events, grid)
-    for tagged in (hydro, clim):
-        damage = damage.join(tagged, on=PANEL_KEY, how="left")
+    for disaster_class, suffix in ((HYDROMETEOROLOGICAL, "hydro"), (CLIMATOLOGICAL, "clim")):
+        by_class = total_damage(events.filter(pl.col("disaster_class") == disaster_class), grid)
+        damage = damage.join(_suffixed_damage(by_class, suffix), on=PANEL_KEY, how="left")
 
-    return {
-        "emdat_events": counts.drop("Subregion"),
-        "emdat_damage": damage,
-        "emdat_damage_hydro": hydro_damage,
-        "emdat_damage_clim": clim_damage,
-        "df_inten_filtered_adjusted_hydro": hydro,
-        "df_inten_filtered_adjusted_clim": clim,
-    }
+    return counts.drop("Subregion"), damage
 
 
 def _shape_world_bank(indicators: pl.DataFrame) -> pl.DataFrame:
@@ -124,51 +125,83 @@ def _only_countries(frame: pl.DataFrame, codes: set[str]) -> pl.DataFrame:
     return frame.filter(pl.col("ISO").is_in(codes))
 
 
-def _country_constants(events: pl.DataFrame) -> pl.DataFrame:
-    """Reduce the events to the columns that do not vary within a country."""
-    varies_by_year = {*DISASTER_TYPES, "Start_Year"}
-    constant_columns = [column for column in events.columns if column not in varies_by_year]
+def annual_precipitation(cache_dir: Path) -> pl.DataFrame:
+    """
+    Total each country's precipitation to years.
 
-    return events.select(constant_columns).unique().sort("ISO")
+    Covers the whole GPCC record, which reaches back further than the EM-DAT panel does.
+
+    Parameters
+    ----------
+    cache_dir : Path
+        Directory the GPCC cache lives under.
+
+    Returns
+    -------
+    DataFrame
+        ``ISO``, ``year`` and ``precip``, one row per country and year.
+    """
+    by_country, _ = _annual_precipitation(_as_polars(load_gpcc_data(cache_dir)))
+
+    return by_country
 
 
-def load_all_data(cache_dir: Path) -> dict[str, pl.DataFrame]:
-    raw = load_emdat_events(cache_dir)
-    events = raw.filter(event_filter(EventFilters()))
-    grid = country_year_grid(raw)
-    counts = count_events_by_type(events, grid)
+def build_time_series(cache_dir: Path) -> pl.DataFrame:
+    """
+    Merge the worldwide annual series into one frame.
 
-    merged_dict = _combine_emdat(events, grid, counts)
+    Parameters
+    ----------
+    cache_dir : Path
+        Directory the source caches live under.
 
-    merged_dict["wb_data"] = _shape_world_bank(load_wb_data(cache_dir))
-    merged_dict["gpcc"], merged_dict["gpcc_agg"] = _annual_precipitation(_as_polars(load_gpcc_data(cache_dir)))
-    merged_dict["co2"] = _keyed_by_year(load_co2_data(cache_dir))
-    merged_dict["ocean_temperature"] = _keyed_by_year(load_ocean_heat_data(cache_dir))
+    Returns
+    -------
+    DataFrame
+        ``year``, CO2, ocean temperature and worldwide precipitation, one row per year.
+    """
+    _, worldwide = _annual_precipitation(_as_polars(load_gpcc_data(cache_dir)))
 
-    # A country needs both a disaster record and development indicators to earn a row in the panel.
-    common = _countries_in_common(merged_dict["emdat_damage"], merged_dict["wb_data"])
-    merged_dict["emdat_damage"] = _only_countries(merged_dict["emdat_damage"], common)
-    merged_dict["emdat_events"] = _only_countries(merged_dict["emdat_events"], common).drop("Region")
-    merged_dict["wb_data"] = _only_countries(merged_dict["wb_data"], common)
-
-    with_precipitation = _countries_in_common(merged_dict["wb_data"], merged_dict["gpcc"])
-    merged_dict["gpcc"] = _only_countries(merged_dict["gpcc"], with_precipitation)
-
-    merged_dict["country_constants"] = _country_constants(counts)
-
-    merged_dict["df_panel"] = reduce(
-        partial(_outer_join, on=PANEL_KEY),
-        [
-            merged_dict["emdat_events"],
-            merged_dict["emdat_damage"],
-            merged_dict["wb_data"],
-            merged_dict["gpcc"].rename({SERIES_KEY: "Start_Year"}),
-        ],
-    ).sort(PANEL_KEY)
-
-    merged_dict["df_time_series"] = reduce(
+    return reduce(
         partial(_outer_join, on=SERIES_KEY),
-        [merged_dict["co2"], merged_dict["ocean_temperature"], merged_dict["gpcc_agg"]],
+        [_keyed_by_year(load_co2_data(cache_dir)), _keyed_by_year(load_ocean_heat_data(cache_dir)), worldwide],
     ).sort(SERIES_KEY)
 
-    return merged_dict
+
+def build_country_year_panel(cache_dir: Path) -> pl.DataFrame:
+    """
+    Merge events, damages, development indicators and precipitation onto one country-year row.
+
+    Covers the years EM-DAT records and the countries that have both a disaster record and
+    development indicators. Precipitation reaches further back; :func:`annual_precipitation` has
+    the whole record.
+
+    Parameters
+    ----------
+    cache_dir : Path
+        Directory the source caches live under.
+
+    Returns
+    -------
+    DataFrame
+        One row per country and year, keyed on ``ISO`` and ``Start_Year``.
+    """
+    raw = load_emdat_events(cache_dir)
+    grid = country_year_grid(raw)
+    selected = raw.filter(event_filter(EventFilters()))
+
+    events, damage = _combine_emdat(selected, grid, count_events_by_type(selected, grid))
+    world_bank = _shape_world_bank(load_wb_data(cache_dir))
+    precipitation = annual_precipitation(cache_dir)
+
+    # A country needs both a disaster record and development indicators to earn a row.
+    common = _countries_in_common(damage, world_bank)
+    events = _only_countries(events, common).drop("Region")
+    damage = _only_countries(damage, common)
+    world_bank = _only_countries(world_bank, common)
+
+    # Left-joined onto the event grid, so the panel spans the years EM-DAT covers and no more.
+    return reduce(
+        partial(_left_join, on=PANEL_KEY),
+        [events, damage, world_bank, precipitation.rename({SERIES_KEY: "Start_Year"})],
+    ).sort(PANEL_KEY)
