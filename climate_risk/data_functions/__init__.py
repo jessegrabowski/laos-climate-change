@@ -9,11 +9,9 @@ from climate_risk.data_functions.combine_data import (
     build_country_year_panel,
     build_time_series,
 )
-from climate_risk.data_functions.disaster_point_data import (
-    load_disaster_point_data,
-    load_synthetic_non_disaster_points,
-)
+from climate_risk.data_functions.control_points import load_synthetic_non_disaster_points
 from climate_risk.data_functions.emdat_processing import load_emdat_events
+from climate_risk.data_functions.event_geography import load_disaster_point_data
 from climate_risk.data_functions.rivers_data_loader import load_rivers_data
 from climate_risk.data_functions.shapefiles_data_loader import load_shapefile
 
