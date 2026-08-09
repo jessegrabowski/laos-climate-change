@@ -147,10 +147,13 @@ UPSTREAM_SHAPEFILE_LAYOUT = {
 
 
 def toy_precipitation(year_range):
-    """A full-data grid with one point inside each country of `toy_world`."""
+    """A full-data grid with one point inside each country of `toy_world`.
+
+    Single precision, as the archives publish it, so a loader that keeps that dtype is visible here.
+    """
     start = int(year_range.split("_")[0])
     return xr.Dataset(
-        {"precip": (("time", "lat", "lon"), np.arange(3.0).reshape(1, 1, 3))},
+        {"precip": (("time", "lat", "lon"), np.arange(3.0, dtype="float32").reshape(1, 1, 3))},
         coords={
             "time": np.array([f"{start}-01-01"], dtype="datetime64[ns]"),
             "lat": [0.5],
@@ -162,7 +165,7 @@ def toy_precipitation(year_range):
 def toy_monitoring(year, month):
     """A monitoring grid, which names its variable ``p`` and dates it with a YYYYMMDD float."""
     return xr.Dataset(
-        {"p": (("time", "lat", "lon"), np.arange(3.0).reshape(1, 1, 3))},
+        {"p": (("time", "lat", "lon"), np.arange(3.0, dtype="float32").reshape(1, 1, 3))},
         coords={
             "time": ("time", [float(f"{year}{month:02d}01")], {"units": "day as %Y%m%d.%f"}),
             "lat": [0.5],
@@ -178,7 +181,7 @@ TOY_ARCHIVES = ("full_data_monthly_v2022_1981_1990_10.nc.gz", "monitoring_v2022_
 
 # The processed cache the published manifest writes. The key carries the span, so extending the
 # record renames the entry instead of shadowing it.
-GPCC_CACHE_FILE = "gpcc__coverage=1891-2025__repaired_iso=True.parquet"
+GPCC_CACHE_FILE = "gpcc__coverage=1891-2025__precision=float64__repaired_iso=True.parquet"
 
 
 def toy_gpcc_products() -> tuple[GriddedProduct, ...]:
