@@ -6,6 +6,23 @@ from pathlib import Path
 import polars as pl
 
 from climate_risk.config.schema import EventFilters
+from climate_risk.data.source import ManualSource
+
+# EM-DAT requires an account and forbids redistribution, so it is fetched by a person, not by code.
+EMDAT = ManualSource(
+    filename="emdat.xlsx",
+    homepage="https://public.emdat.be/",
+    licence=(
+        "Free for non-commercial use with attribution. Redistribution of the database is not "
+        "permitted; users must download it themselves after registering."
+    ),
+    citation=(
+        "EM-DAT, CRED / UCLouvain, Brussels, Belgium. Delforge, D. et al. (2025), EM-DAT: the "
+        "Emergency Events Database. International Journal of Disaster Risk Reduction 124, 105509. "
+        "https://doi.org/10.1016/j.ijdrr.2025.105509"
+    ),
+    retrieved="2026-08-03",
+)
 
 EM_DAT_COL_DICT = {
     "Start Year": "Start_Year",
@@ -247,14 +264,7 @@ def load_emdat_events(cache_dir: Path) -> pl.DataFrame:
     """
     cache_dir.mkdir(parents=True, exist_ok=True)
 
-    emdat_path = cache_dir / "emdat.xlsx"
-    if not emdat_path.exists():
-        raise NotImplementedError(
-            f"No EM-DAT data was found at `{emdat_path}`. Please make an account at https://public.emdat.be/, "
-            f"download the database, and place it at `{emdat_path}`"
-        )
-
-    return _read_workbook(emdat_path)
+    return _read_workbook(EMDAT.require(cache_dir))
 
 
 GADM_UNITS_COLUMN = "GADM Admin Units"

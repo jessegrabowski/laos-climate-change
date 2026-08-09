@@ -7,10 +7,12 @@ from climate_risk.config.registry import CONFIG_ROOT, read_place
 from climate_risk.config.schema import CountryConfig
 from climate_risk.data.co2 import CO2
 from climate_risk.data.fetch import USER_AGENT
+from climate_risk.data.gadm import GADM
 from climate_risk.data.gpcc import FULL_DATA, MONITORING
 from climate_risk.data.hadcrut import HADCRUT
 from climate_risk.data.ocean_heat import OCEAN_HEAT
 from climate_risk.data.source import DataSource, ManualSource, ShapefileArchive
+from climate_risk.data_functions.emdat_processing import EMDAT
 from climate_risk.data_functions.rivers_data_loader import RIVERS
 from climate_risk.data_functions.shapefiles_data_loader import COASTLINE, WORLD
 
@@ -86,6 +88,25 @@ def test_a_manual_source_reports_its_licence_when_the_file_is_missing(tmp_path):
     """A user hitting this has to know the terms before going to fetch the file."""
     with pytest.raises(NotImplementedError, match="non-commercial use only"):
         manual().require(tmp_path)
+
+
+# Every file a person has to place in the cache themselves. A loader that raises for a missing
+# hand-placed file belongs here, so the terms it is held under are recorded in one place.
+MANUAL_SOURCES = {"EMDAT": EMDAT, "GADM": GADM}
+
+
+@pytest.mark.parametrize("declared", MANUAL_SOURCES.values(), ids=MANUAL_SOURCES.keys())
+def test_every_manual_source_says_where_to_get_it_and_on_what_terms(declared):
+    """These declarations are the only record of terms binding data the repo cannot ship."""
+    assert declared.homepage.startswith("https://")
+    assert declared.licence.strip()
+    assert declared.citation.strip()
+
+
+@pytest.mark.parametrize("declared", MANUAL_SOURCES.values(), ids=MANUAL_SOURCES.keys())
+def test_a_manual_source_is_never_fetchable(declared):
+    """Both forbid redistribution or automated download; a url would let `fetch` take one anyway."""
+    assert not hasattr(declared, "url")
 
 
 def test_an_unparseable_retrieved_date_is_rejected():

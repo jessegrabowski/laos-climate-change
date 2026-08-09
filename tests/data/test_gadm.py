@@ -8,7 +8,6 @@ import polars as pl
 import pytest
 
 from climate_risk.data.gadm import GADM, gadm_dir, gadm_path, load_admin_units
-from climate_risk.data.source import ManualSource
 from climate_risk.data_functions.emdat_processing import load_emdat_events
 from climate_risk.exceptions import DataValidationError
 
@@ -35,24 +34,11 @@ def test_a_placed_geopackage_is_returned(tmp_path):
     assert gadm_path(tmp_path) == placed
 
 
-def test_the_declaration_states_its_licence_and_citation():
-    """Non-commercial terms bind every figure built from these boundaries, so they are recorded here.
-
-    Asserted on content rather than mere non-emptiness: a placeholder would satisfy `!= ""`.
-    """
+def test_the_declaration_carries_the_non_commercial_restriction():
+    """Generic checks live in test_source; what is specific here is the restriction itself, which
+    binds every figure built from these boundaries."""
     assert "non-commercial" in GADM.licence.lower()
     assert "gadm.org" in GADM.citation
-    assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", GADM.retrieved)
-
-
-def test_gadm_is_not_a_fetchable_source():
-    """Its terms forbid automated download, so it must not reach `fetch` or the reachability check.
-
-    `ManualSource` carries no url, and this pins that: growing one would make the registry able to
-    download a file the licence says a person must obtain.
-    """
-    assert isinstance(GADM, ManualSource)
-    assert not hasattr(GADM, "url")
 
 
 def test_a_unit_above_the_finest_level_is_read_as_one_polygon(write_gadm_cache):
