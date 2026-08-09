@@ -43,6 +43,8 @@ EMDAT_EVENT_DEFAULTS = {
     "Longitude": 102.0,
     "River Basin": "Mekong",
     "Location": "Somewhere",
+    # Present on every real row, empty on the two thirds EM-DAT never geocoded.
+    "GADM Admin Units": "",
 }
 
 
@@ -360,6 +362,42 @@ def write_shapefile_cache(tmp_path):
         with zipfile.ZipFile(archive, "w") as bundle:
             for part in shapefile.parent.iterdir():
                 bundle.write(part, str(part.relative_to(tmp_path / "shapefiles")))
+
+        return tmp_path
+
+    return write
+
+
+def toy_gadm() -> gpd.GeoDataFrame:
+    """A GeoPackage shaped like GADM: one row per finest unit, coarser levels spanning several rows.
+
+    `LAO.1_1` is split across two districts, so reading it back as one polygon exercises the union
+    rather than returning whichever row came first.
+
+    Ghana is included because GADM numbers it unlike everywhere else — `GHA11_2` for a province and
+    `GHA7.13_2` for a district, with no dot after the country code. Any code inferring the level
+    from the shape of the id gets Ghana wrong.
+    """
+    rows = [
+        ("LAO", "LAO.1_1", "Attapu", "LAO.1.1_1", "Sanamxay", box(0, 0, 1, 1)),
+        ("LAO", "LAO.1_1", "Attapu", "LAO.1.2_1", "Samakhixay", box(1, 0, 2, 1)),
+        ("LAO", "LAO.2_1", "Bokeo", "LAO.2.1_1", "Houayxay", box(3, 0, 4, 1)),
+        ("ZMB", "ZMB.1_1", "Central", "ZMB.1.1_1", "Kabwe", box(6, 0, 7, 1)),
+        ("GHA", "GHA11_2", "Savannah", "GHA7.13_2", "Ga Central", box(8, 0, 9, 1)),
+    ]
+    columns = ("GID_0", "GID_1", "NAME_1", "GID_2", "NAME_2", "geometry")
+
+    return gpd.GeoDataFrame(dict(zip(columns, zip(*rows, strict=True), strict=True)), crs="EPSG:4326")
+
+
+@pytest.fixture
+def write_gadm_cache(tmp_path):
+    """Return a callable writing a GADM-shaped GeoPackage into the cache, and giving back the root."""
+
+    def write(units=None):
+        directory = tmp_path / "gadm"
+        directory.mkdir(exist_ok=True)
+        (units if units is not None else toy_gadm()).to_file(directory / "gadm_410.gpkg", layer="gadm_410")
 
         return tmp_path
 

@@ -1,10 +1,28 @@
 import datetime as dt
+import json
 
 from pathlib import Path
 
 import polars as pl
 
 from climate_risk.config.schema import EventFilters
+from climate_risk.data.source import ManualSource
+
+# EM-DAT requires an account and forbids redistribution, so it is fetched by a person, not by code.
+EMDAT = ManualSource(
+    filename="emdat.xlsx",
+    homepage="https://public.emdat.be/",
+    licence=(
+        "Free for non-commercial use with attribution. Redistribution of the database is not "
+        "permitted; users must download it themselves after registering."
+    ),
+    citation=(
+        "EM-DAT, CRED / UCLouvain, Brussels, Belgium. Delforge, D. et al. (2025), EM-DAT: the "
+        "Emergency Events Database. International Journal of Disaster Risk Reduction 124, 105509. "
+        "https://doi.org/10.1016/j.ijdrr.2025.105509"
+    ),
+    retrieved="2026-08-03",
+)
 
 EM_DAT_COL_DICT = {
     "Start Year": "Start_Year",
@@ -60,7 +78,7 @@ DISASTER_TYPES = tuple(c for c in PROB_COLS if c not in {"Country", "ISO", "Star
 
 # Columns read before any rename. Nothing detects upstream schema drift, so this check is the
 # earliest point a changed export becomes a named error rather than a missing attribute.
-REQUIRED_EMDAT_COLUMNS = {"ISO", "Region", "Subregion", "Disaster Type"} | set(EM_DAT_COL_DICT)
+REQUIRED_EMDAT_COLUMNS = {"ISO", "Region", "Subregion", "Disaster Type", "GADM Admin Units"} | set(EM_DAT_COL_DICT)
 
 # Misspelled on the wire. Correcting it would invalidate every cached CSV on every machine, so the
 # literal stays and the constants are how code should refer to it.
@@ -246,14 +264,127 @@ def load_emdat_events(cache_dir: Path) -> pl.DataFrame:
     """
     cache_dir.mkdir(parents=True, exist_ok=True)
 
-    emdat_path = cache_dir / "emdat.xlsx"
-    if not emdat_path.exists():
-        raise NotImplementedError(
-            f"No EM-DAT data was found at `{emdat_path}`. Please make an account at https://public.emdat.be/, "
-            f"download the database, and place it at `{emdat_path}`"
-        )
+    return _read_workbook(EMDAT.require(cache_dir))
 
-    return _read_workbook(emdat_path)
+
+GADM_UNITS_COLUMN = "GADM Admin Units"
+
+# One row per affected administrative unit. `name` and `migration_method` are absent on some units:
+# EM-DAT omits the name where GADM has none, and the method where the unit was never migrated.
+EVENT_UNIT_SCHEMA = {
+    "DisNo.": pl.String,
+    "gid": pl.String,
+    "name": pl.String,
+    "admin_level": pl.Int8,
+    "migration_method": pl.String,
+}
+
+
+def event_units(events: pl.DataFrame) -> pl.DataFrame:
+    """
+    Explode each event's GADM administrative units into one row per event-unit.
+
+    The level comes from the key EM-DAT files a unit under, ``gid_1`` or ``gid_2``, because a GADM
+    identifier does not reliably state it: Ghana's are numbered ``GHA11_2`` and ``GHA7.13_2``.
+
+    Parameters
+    ----------
+    events : DataFrame
+        The workbook, as :func:`load_emdat_events` returns it.
+
+    Returns
+    -------
+    DataFrame
+        ``DisNo.``, ``gid``, ``name``, ``admin_level`` and ``migration_method``. An event carrying no
+        units contributes no rows, so this is narrower than ``events``.
+
+    Raises
+    ------
+    ValueError
+        If a unit carries neither ``gid_1`` nor ``gid_2``, which would leave it unidentifiable.
+    """
+    rows = []
+
+    for disno, raw in zip(events["DisNo."], events[GADM_UNITS_COLUMN], strict=True):
+        if not str(raw or "").strip():
+            continue
+
+        for unit in json.loads(raw):
+            level = 2 if "gid_2" in unit else 1
+            if f"gid_{level}" not in unit:
+                raise ValueError(f"{disno}: an administrative unit carries no gid_1 or gid_2: {unit}")
+
+            rows.append(
+                {
+                    "DisNo.": disno,
+                    "gid": unit[f"gid_{level}"],
+                    "name": unit.get(f"name_{level}"),
+                    "admin_level": level,
+                    "migration_method": unit.get("migration_method"),
+                }
+            )
+
+    return pl.DataFrame(rows, schema=EVENT_UNIT_SCHEMA)
+
+
+# Where an event's geometry comes from, best first. Nothing is filtered on this: the column records
+# what the source holds, and a model chooses which tiers it will accept.
+GEOMETRY_SOURCES = ("gadm", "emdat_point", "country")
+
+EVENT_GEOGRAPHY_COLUMNS = (
+    "DisNo.",
+    "ISO",
+    "geometry_source",
+    "gid",
+    "name",
+    "admin_level",
+    "migration_method",
+    "Latitude",
+    "Longitude",
+)
+
+
+def event_geography(events: pl.DataFrame) -> pl.DataFrame:
+    """
+    Say where every event's geometry comes from, one row per event-unit and one per event otherwise.
+
+    An event coded to administrative units contributes a row per unit; one with only a coordinate,
+    or with nothing, contributes a single row. Every event in ``events`` appears, so an absence of
+    geography is stated rather than implied by a missing row.
+
+    ``Latitude`` and ``Longitude`` are carried wherever EM-DAT supplies them, including on ``gadm``
+    rows, so the two claims stay visible side by side rather than one being discarded.
+
+    Parameters
+    ----------
+    events : DataFrame
+        The workbook, as :func:`load_emdat_events` returns it.
+
+    Returns
+    -------
+    DataFrame
+        ``DisNo.``, ``ISO``, ``geometry_source`` from ``GEOMETRY_SOURCES``, the unit columns of
+        :func:`event_units` where one applies, and the event's coordinate where it has one.
+    """
+    units = event_units(events)
+    located = events.select("DisNo.", "ISO", "Latitude", "Longitude")
+
+    from_units = units.join(located, on="DisNo.", how="left").with_columns(pl.lit("gadm").alias("geometry_source"))
+
+    rest = located.join(units.select("DisNo.").unique(), on="DisNo.", how="anti").with_columns(
+        pl.when(pl.col("Latitude").is_not_null())
+        .then(pl.lit("emdat_point"))
+        .otherwise(pl.lit("country"))
+        .alias("geometry_source"),
+        pl.lit(None, dtype=pl.String).alias("gid"),
+        pl.lit(None, dtype=pl.String).alias("name"),
+        pl.lit(None, dtype=pl.Int8).alias("admin_level"),
+        pl.lit(None, dtype=pl.String).alias("migration_method"),
+    )
+
+    return pl.concat([from_units.select(EVENT_GEOGRAPHY_COLUMNS), rest.select(EVENT_GEOGRAPHY_COLUMNS)]).sort(
+        "DisNo.", "gid", nulls_last=True
+    )
 
 
 def event_filter(filters: EventFilters) -> pl.Expr:
