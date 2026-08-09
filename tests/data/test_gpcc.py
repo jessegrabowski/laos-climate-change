@@ -12,7 +12,6 @@ from tests.conftest import TOY_ARCHIVES, toy_gpcc_products, toy_world
 # Stated literally, so a wrong cache key fails rather than agreeing with itself. The span is the
 # toy manifest's, not the published one.
 UNREPAIRED_CACHE = "gpcc__coverage=1981-2021__repaired_iso=False.parquet"
-REPAIRED_CACHE = "gpcc__coverage=1981-2021__repaired_iso=True.parquet"
 
 
 def gridded(rows) -> pd.DataFrame:
