@@ -385,17 +385,9 @@ def toy_gadm() -> gpd.GeoDataFrame:
         ("ZMB", "ZMB.1_1", "Central", "ZMB.1.1_1", "Kabwe", box(6, 0, 7, 1)),
         ("GHA", "GHA11_2", "Savannah", "GHA7.13_2", "Ga Central", box(8, 0, 9, 1)),
     ]
-    return gpd.GeoDataFrame(
-        {
-            "GID_0": [country for country, *_ in rows],
-            "GID_1": [gid_1 for _, gid_1, *_ in rows],
-            "NAME_1": [name_1 for _, _, name_1, *_ in rows],
-            "GID_2": [gid_2 for *_, gid_2, _, _ in rows],
-            "NAME_2": [name_2 for *_, name_2, _ in rows],
-            "geometry": [geometry for *_, geometry in rows],
-        },
-        crs="EPSG:4326",
-    )
+    columns = ("GID_0", "GID_1", "NAME_1", "GID_2", "NAME_2", "geometry")
+
+    return gpd.GeoDataFrame(dict(zip(columns, zip(*rows, strict=True), strict=True)), crs="EPSG:4326")
 
 
 @pytest.fixture
