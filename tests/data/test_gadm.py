@@ -138,3 +138,23 @@ def test_an_id_that_does_not_state_its_own_level_still_resolves(write_gadm_cache
 
     assert units["name"].tolist() == [name]
     assert units["admin_level"].tolist() == [level]
+
+
+def test_a_request_spanning_several_chunks_returns_all_of_them(write_gadm_cache, monkeypatch):
+    """A real request names thousands of ids and is split across reads; only the last would survive
+    a concat that overwrote rather than appended, and no fixture is large enough to notice."""
+    monkeypatch.setattr("climate_risk.data.gadm.GID_CHUNK", 1)
+    cache_dir = write_gadm_cache()
+
+    units = load_admin_units([("LAO.1_1", 1), ("LAO.2_1", 1), ("GHA11_2", 1)], cache_dir)
+
+    assert sorted(units["gid"]) == ["GHA11_2", "LAO.1_1", "LAO.2_1"]
+
+
+def test_the_units_carry_the_geopackage_crs(write_gadm_cache):
+    """Geometry with no CRS reprojects silently to the wrong place when joined to anything else."""
+    cache_dir = write_gadm_cache()
+
+    units = load_admin_units([("LAO.1_1", 1)], cache_dir)
+
+    assert units.crs == "EPSG:4326"

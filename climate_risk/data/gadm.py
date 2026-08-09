@@ -25,8 +25,8 @@ GADM_LAYER = "gadm_410"
 
 GID_COLUMNS = {1: ("GID_1", "NAME_1"), 2: ("GID_2", "NAME_2")}
 
-# SQLite caps how many terms an IN list may carry, and a long WHERE also costs more to parse than
-# the extra passes cost to run.
+# A WHERE clause naming every id at once grows past what the driver will parse, and costs more to
+# plan than the extra passes cost to run.
 GID_CHUNK = 400
 
 
@@ -61,7 +61,7 @@ def _chunks(values: list[str], size: int) -> Iterator[list[str]]:
         yield values[start : start + size]
 
 
-def _units_at_level(gids: list[str], level: int, path: Path, layer: str) -> list[gpd.GeoDataFrame]:
+def _units_at_level(gids: list[str], level: int, path: Path, layer: str) -> gpd.GeoDataFrame | None:
     gid_column, name_column = GID_COLUMNS[level]
     read = []
 
@@ -72,7 +72,12 @@ def _units_at_level(gids: list[str], level: int, path: Path, layer: str) -> list
             # The table stores the finest level, so a unit above it spans several rows.
             read.append(rows.dissolve(by=gid_column, aggfunc="first", as_index=False))
 
-    return [frame.rename(columns={gid_column: "gid", name_column: "name"}).assign(admin_level=level) for frame in read]
+    if not read:
+        return None
+
+    found = pd.concat(read, ignore_index=True) if len(read) > 1 else read[0]
+
+    return found.rename(columns={gid_column: "gid", name_column: "name"}).assign(admin_level=level)
 
 
 def load_admin_units(
@@ -121,7 +126,9 @@ def load_admin_units(
         )
 
     frames = [
-        frame for level, gids_here in by_level.items() for frame in _units_at_level(gids_here, level, path, layer)
+        frame
+        for level, gids_at_level in by_level.items()
+        if (frame := _units_at_level(gids_at_level, level, path, layer)) is not None
     ]
     resolved = (
         gpd.GeoDataFrame(pd.concat(frames, ignore_index=True), crs=frames[0].crs)
