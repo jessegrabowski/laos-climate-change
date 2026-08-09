@@ -33,8 +33,7 @@ boundary = load_place_boundary(load_place("zmb"), cache_dir)
 
 Every block below is optional.
 
-**`[geometry]`** — `grid_size` (points per side before land clipping, default 400), and the
-geographic and projected CRS.
+**`[geometry]`** — the geographic and projected CRS.
 
 **`[events]`** — `start_year`, `end_year`, `min_total_affected`, `min_deaths`. The defaults describe
 the window the published panel uses. Lower them for a country with few recorded disasters, but
@@ -59,9 +58,6 @@ in code. `licence` and `citation` are not decorative — fill them in from the p
 
 **`[event_location_overrides]`** — longitude and latitude forced onto EM-DAT records whose published
 position is wrong, keyed by event id. Two countries may not both claim the same event.
-
-**`random_seed`** — seeds the synthetic non-disaster sampling. Change it only to draw a different
-sample deliberately; two countries sharing a seed is fine, since they sample different geometry.
 
 ## Reading a country's events
 

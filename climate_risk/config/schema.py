@@ -75,7 +75,7 @@ class CountryConfig:
         A country-specific boundary archive, and the layer within it to read. Default None, meaning
         slice the world shapefile by ``iso3``.
     geometry : GeometrySpec
-        Projection and grid settings. Defaults to the project-wide ones.
+        Projection settings. Defaults to the project-wide ones.
     events : EventFilters
         Which EM-DAT records count. Defaults to the project-wide thresholds.
     event_location_overrides : mapping of str to tuple of float
@@ -109,7 +109,7 @@ class RegionConfig:
     members : tuple of str
         The ISO 3166-1 alpha-3 codes belonging to the region.
     geometry : GeometrySpec
-        Projection and grid settings. Defaults to the project-wide ones.
+        Projection settings. Defaults to the project-wide ones.
     events : EventFilters
         Which EM-DAT records count. Defaults to the project-wide thresholds.
     """
