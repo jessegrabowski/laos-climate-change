@@ -133,6 +133,21 @@ WORLD_COLUMNS = {
 }
 
 
+def _land_cells(gridded: pd.DataFrame, countries: gpd.GeoDataFrame) -> pd.DataFrame:
+    """
+    Label each grid row with the country it falls in, dropping the rows that fall in no country.
+
+    The grid repeats the same lat/lon cells for every month it covers and the boundaries do not
+    move, so the join runs once over the distinct cells rather than once per row.
+    """
+    cells = gridded[["lat", "lon"]].drop_duplicates()
+    located = gpd.GeoDataFrame(
+        cells, geometry=gpd.points_from_xy(cells["lon"], cells["lat"]), crs=GEOGRAPHIC_CRS
+    ).sjoin(countries, how="inner", predicate="intersects")[["lat", "lon", "country_code"]]
+
+    return gridded.merge(located, on=["lat", "lon"], how="inner")[["time", PRECIPITATION, "country_code"]]
+
+
 def transform_gpcc(grids: Iterable[pd.DataFrame], world: gpd.GeoDataFrame) -> pd.DataFrame:
     """
     Average gridded precipitation to one value per country and month.
@@ -144,6 +159,11 @@ def transform_gpcc(grids: Iterable[pd.DataFrame], world: gpd.GeoDataFrame) -> pd
     world : GeoDataFrame
         Country boundaries, carrying the columns named in ``WORLD_COLUMNS``.
 
+    Every month is attributed to the boundaries ``world`` carries, which are current ones. The
+    record opens in 1891, so a long series describes rainfall over a country's present-day
+    footprint rather than over the country as it was — the Soviet Union, Yugoslavia and pre-split
+    Sudan are all absent from the years they existed in.
+
     Returns
     -------
     DataFrame
@@ -152,13 +172,10 @@ def transform_gpcc(grids: Iterable[pd.DataFrame], world: gpd.GeoDataFrame) -> pd
     countries = world.rename(columns=WORLD_COLUMNS)
 
     # Each grid is reduced to land cells before the next is read, so the whole record is never held.
-    over_land = [
-        gpd.GeoDataFrame(
-            gridded, geometry=gpd.points_from_xy(gridded["lon"], gridded["lat"]), crs=GEOGRAPHIC_CRS
-        ).sjoin(countries, how="inner", predicate="intersects")[["time", PRECIPITATION, "country_code"]]
-        for gridded in grids
-    ]
+    over_land = [_land_cells(gridded, countries) for gridded in grids]
 
+    # Averaged and stored in double. The archives are float32, and both this mean and the annual
+    # totals downstream add partial results in an order float32 has too little precision to absorb.
     return (
         pd.concat(over_land, axis=0)
         .astype({PRECIPITATION: "float64"})
