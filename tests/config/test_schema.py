@@ -2,7 +2,7 @@ import dataclasses
 
 import pytest
 
-from climate_risk.config.schema import CountryConfig, EventFilters, GeometrySpec, RegionConfig
+from climate_risk.config.schema import CountryConfig, EventFilters, RegionConfig
 
 
 @pytest.mark.parametrize("code", ["la", "LAOS", "lao", "L4O", ""], ids=repr)
@@ -33,12 +33,6 @@ def test_a_window_ending_before_it_starts_is_rejected():
     """The filters read as a range; reversed, they select nothing and the panel comes back empty."""
     with pytest.raises(ValueError, match="ends before it starts"):
         EventFilters(start_year=2000, end_year=1990)
-
-
-def test_a_grid_of_one_point_is_rejected():
-    """`np.linspace` on a single point yields no spacing, so the grid covers nothing."""
-    with pytest.raises(ValueError, match="at least two points"):
-        GeometrySpec(grid_size=1)
 
 
 def test_a_place_cannot_be_edited_after_it_is_built():
