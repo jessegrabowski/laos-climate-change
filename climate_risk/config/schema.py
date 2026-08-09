@@ -7,10 +7,6 @@ from climate_risk.geo.crs import GEOGRAPHIC_CRS, PROJECTED_CRS
 # An ISO 3166-1 alpha-3 code, which is what every frame in the project keys countries on.
 ISO3_LENGTH = 3
 
-# Seeded so a run reproduces. Places may override it to draw a different sample; changing this
-# value resamples every synthetic control in the project.
-DEFAULT_RANDOM_SEED = 2513
-
 
 def _validate_iso3(code: str, described_as: str) -> None:
     if len(code) != ISO3_LENGTH or not code.isalpha() or not code.isupper():
@@ -20,7 +16,7 @@ def _validate_iso3(code: str, described_as: str) -> None:
 @dataclass(frozen=True, slots=True)
 class GeometrySpec:
     """
-    How a place is projected and how finely it is gridded.
+    How a place is projected.
 
     Parameters
     ----------
@@ -28,17 +24,10 @@ class GeometrySpec:
         The lat/lon CRS points are built in. Default ``EPSG:4326``.
     projected_crs : str
         The CRS distances are measured in, which must be metric. Default ``EPSG:3395``.
-    grid_size : int
-        Points per side of the sampling grid, before land clipping. Default 400.
     """
 
     geographic_crs: str = GEOGRAPHIC_CRS
     projected_crs: str = PROJECTED_CRS
-    grid_size: int = 400
-
-    def __post_init__(self) -> None:
-        if self.grid_size < 2:
-            raise ValueError(f"grid_size must span at least two points, got {self.grid_size}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -57,11 +46,6 @@ class EventFilters:
     min_deaths : int, optional
         An event must kill more than this many people to count. Default None, which counts an event
         on its reach alone.
-
-    Raises
-    ------
-    ValueError
-        If the window ends before it starts.
     """
 
     start_year: int = 1981
@@ -91,19 +75,12 @@ class CountryConfig:
         A country-specific boundary archive, and the layer within it to read. Default None, meaning
         slice the world shapefile by ``iso3``.
     geometry : GeometrySpec
-        Projection and grid settings. Defaults to the project-wide ones.
+        Projection settings. Defaults to the project-wide ones.
     events : EventFilters
         Which EM-DAT records count. Defaults to the project-wide thresholds.
     event_location_overrides : mapping of str to tuple of float
         Longitude and latitude to force onto specific EM-DAT event ids, for records whose published
         coordinates are wrong. Default empty.
-    random_seed : int
-        Seeds the synthetic non-disaster sampling. Default ``DEFAULT_RANDOM_SEED``.
-
-    Raises
-    ------
-    ValueError
-        If ``iso3`` is not an alpha-3 code.
     """
 
     iso3: str
@@ -113,7 +90,6 @@ class CountryConfig:
     geometry: GeometrySpec = field(default_factory=GeometrySpec)
     events: EventFilters = field(default_factory=EventFilters)
     event_location_overrides: Mapping[str, tuple[float, float]] = field(default_factory=dict)
-    random_seed: int = DEFAULT_RANDOM_SEED
 
     def __post_init__(self) -> None:
         _validate_iso3(self.iso3, "iso3")
@@ -133,16 +109,9 @@ class RegionConfig:
     members : tuple of str
         The ISO 3166-1 alpha-3 codes belonging to the region.
     geometry : GeometrySpec
-        Projection and grid settings. Defaults to the project-wide ones.
+        Projection settings. Defaults to the project-wide ones.
     events : EventFilters
         Which EM-DAT records count. Defaults to the project-wide thresholds.
-    random_seed : int
-        Seeds the synthetic non-disaster sampling. Default ``DEFAULT_RANDOM_SEED``.
-
-    Raises
-    ------
-    ValueError
-        If the region has no members, repeats one, or names a code that is not alpha-3.
     """
 
     key: str
@@ -150,7 +119,6 @@ class RegionConfig:
     members: tuple[str, ...]
     geometry: GeometrySpec = field(default_factory=GeometrySpec)
     events: EventFilters = field(default_factory=EventFilters)
-    random_seed: int = DEFAULT_RANDOM_SEED
 
     def __post_init__(self) -> None:
         if not self.members:

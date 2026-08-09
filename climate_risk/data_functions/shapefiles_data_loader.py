@@ -98,13 +98,6 @@ def repair_iso_codes(world: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     -------
     GeoDataFrame
         The repaired frame, reindexed from zero.
-
-    Raises
-    ------
-    DataValidationError
-        If a repair matches no row, which means the boundary file has changed under it.
-    ISOCodeValidationError
-        If any ISO code labels more than one geometry after the repairs.
     """
     missing_columns = {"WB_NAME", "ISO_A3"} - set(world.columns)
     if missing_columns:
@@ -190,11 +183,6 @@ def load_place_boundary(place: Place, cache_dir: Path, *, force_reload: bool = F
     -------
     GeoDataFrame
         The place's geometry, in the boundary file's own CRS.
-
-    Raises
-    ------
-    DataValidationError
-        If the place resolves to no geometry, which would otherwise yield an empty grid.
     """
     if isinstance(place, CountryConfig) and place.boundary is not None:
         return load_archive(place.boundary, cache_dir, force_reload=force_reload)

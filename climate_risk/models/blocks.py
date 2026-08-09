@@ -48,11 +48,6 @@ def add_hierarchical_effect(
         Scale of the distribution over effects.
     effect_offset : TensorVariable
         Offset of each group from the location.
-
-    Raises
-    ------
-    ValueError
-        If ``group_dim`` is not given.
     """
     if group_dim is None:
         raise ValueError("group_dim must be provided")

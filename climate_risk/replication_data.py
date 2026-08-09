@@ -71,11 +71,6 @@ def _precipitation_deviation(precipitation: pl.DataFrame, baseline: tuple[int, i
     -------
     DataFrame
         One row per country and year, carrying the deviation from that country's baseline mean.
-
-    Raises
-    ------
-    ValueError
-        If the record does not reach across every year of the baseline period.
     """
     first_year, last_year = baseline
     within_baseline = pl.col("year").dt.year().is_between(first_year, last_year)

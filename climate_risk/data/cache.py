@@ -91,11 +91,6 @@ def cache_key(name: str, params: Mapping[str, object] | None = None) -> str:
     -------
     str
         A filename stem, such as ``points__grid_size=400__region=sea``.
-
-    Raises
-    ------
-    ValueError
-        If a name or value would not survive being put in a filename.
     """
     parts = [_key_part(name, "name")]
     for key, value in sorted((params or {}).items()):
@@ -153,11 +148,6 @@ def cached[T](
     -------
     T
         The artefact, read from the cache or freshly built.
-
-    Raises
-    ------
-    ValueError
-        If ``name`` or a value in ``params`` would not survive being put in a filename.
     """
     path = (cache_dir / cache_key(name, params)).with_suffix(fmt.suffix)
 

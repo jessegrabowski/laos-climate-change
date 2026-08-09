@@ -147,11 +147,6 @@ def country_year_grid(events: pl.DataFrame, *, window_start: dt.date = EMDAT_WIN
     -------
     DataFrame
         ``ISO``, ``Start_Year``, ``Region`` and ``Subregion``, sorted by country and year.
-
-    Raises
-    ------
-    ValueError
-        If every ``Start_Year`` is missing, or the window starts after the newest event.
     """
     newest_event = events["Start_Year"].max()
     if not isinstance(newest_event, dt.date):
@@ -254,13 +249,6 @@ def load_emdat_events(cache_dir: Path) -> pl.DataFrame:
     DataFrame
         One row per recorded event, keyed by ``DisNo.``, carrying ``disaster_class`` and the renamed
         damage columns.
-
-    Raises
-    ------
-    NotImplementedError
-        If the workbook is absent. It is licensed and cannot be downloaded automatically.
-    ValueError
-        If the sheet is empty or its columns have changed.
     """
     cache_dir.mkdir(parents=True, exist_ok=True)
 
@@ -297,11 +285,6 @@ def event_units(events: pl.DataFrame) -> pl.DataFrame:
     DataFrame
         ``DisNo.``, ``gid``, ``name``, ``admin_level`` and ``migration_method``. An event carrying no
         units contributes no rows, so this is narrower than ``events``.
-
-    Raises
-    ------
-    ValueError
-        If a unit carries neither ``gid_1`` nor ``gid_2``, which would leave it unidentifiable.
     """
     rows = []
 

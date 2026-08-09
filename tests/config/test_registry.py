@@ -1,7 +1,7 @@
 import pytest
 
 from climate_risk.config.registry import load_place, read_place, resolve_isos
-from climate_risk.config.schema import DEFAULT_RANDOM_SEED, CountryConfig, EventFilters, RegionConfig
+from climate_risk.config.schema import CountryConfig, EventFilters, RegionConfig
 
 
 @pytest.fixture
@@ -24,8 +24,7 @@ def test_a_country_takes_the_defaults_it_does_not_state(config_root):
     place = load_place("zmb", root=root)
 
     assert place == CountryConfig(iso3="ZMB", name="Zambia")
-    assert place.geometry.grid_size == 400
-    assert place.random_seed == DEFAULT_RANDOM_SEED
+    assert place.geometry.projected_crs == "EPSG:3395"
 
 
 def test_a_sub_table_becomes_the_object_the_schema_declares(config_root):
@@ -33,12 +32,12 @@ def test_a_sub_table_becomes_the_object_the_schema_declares(config_root):
     root = config_root(
         "places",
         "lao",
-        'iso3 = "LAO"\nname = "Lao PDR"\n\n[geometry]\ngrid_size = 200\n\n[events]\nstart_year = 1970\nend_year = 2024\n',
+        'iso3 = "LAO"\nname = "Lao PDR"\n\n[geometry]\nprojected_crs = "EPSG:32648"\n\n[events]\nstart_year = 1970\nend_year = 2024\n',
     )
 
     place = load_place("lao", root=root)
 
-    assert place.geometry.grid_size == 200
+    assert place.geometry.projected_crs == "EPSG:32648"
     assert place.events == EventFilters(start_year=1970, end_year=2024)
 
 

@@ -24,17 +24,16 @@ Downstream, `load_place("zmb")` gives you a `CountryConfig` that the loaders acc
 
 ```python
 from climate_risk.config.registry import load_place
-from climate_risk.data_functions.disaster_point_data import load_grid_point_data
+from climate_risk.data_functions.shapefiles_data_loader import load_place_boundary
 
-grid = load_grid_point_data(cache_dir, load_place("zmb"))
+boundary = load_place_boundary(load_place("zmb"), cache_dir)
 ```
 
 ## What you can override
 
 Every block below is optional.
 
-**`[geometry]`** — `grid_size` (points per side before land clipping, default 400), and the
-geographic and projected CRS.
+**`[geometry]`** — the geographic and projected CRS.
 
 **`[events]`** — `start_year`, `end_year`, `min_total_affected`, `min_deaths`. The defaults describe
 the window the published panel uses. Lower them for a country with few recorded disasters, but
@@ -60,9 +59,6 @@ in code. `licence` and `citation` are not decorative — fill them in from the p
 **`[event_location_overrides]`** — longitude and latitude forced onto EM-DAT records whose published
 position is wrong, keyed by event id. Two countries may not both claim the same event.
 
-**`random_seed`** — seeds the synthetic non-disaster sampling. Change it only to draw a different
-sample deliberately; two countries sharing a seed is fine, since they sample different geometry.
-
 ## Reading a country's events
 
 `[events]` says which records are severe enough and recent enough to count; it does not select a
@@ -80,20 +76,17 @@ events = load_emdat_events(cache_dir).filter(event_filter(place.events) & (pl.co
 
 ## What is still global
 
-Two things do not vary by country, and will surprise you if you assume they do.
+One thing does not vary by country, and will surprise you if you assume it does.
 
 The **river-damage frames** cover every country at once. `create_floods_rivers_damage` returns
 world-wide flood events; the coordinate overrides are applied across all of them, which works
 because event ids are country-specific.
 
-The **point grid carries no country label**. Every point in it lies inside the place you asked for,
-but there is no `ISO` column until `load_non_disaster_grid` adds one.
-
 ## Before you trust it
 
-The end-to-end tests run against synthetic fixtures, which are uniform in ways real countries are
-not — a landlocked and a coastal country are represented, and the paths are asserted to differ, but
-that is a weaker claim than a real run.
+The end-to-end tests run against synthetic fixtures. Every shipped country is checked to resolve to
+geometry from its config alone, and to land where its ISO code says, but that is a weaker claim than
+a real run.
 
 The one test that uses real data is marked `requires_emdat` and skips wherever the licensed
 workbook is absent, which includes CI. Run it once on a machine that has the workbook:

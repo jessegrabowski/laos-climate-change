@@ -67,12 +67,6 @@ class ManualSource:
         How to credit the publisher.
     retrieved : str
         ISO date this declaration was last checked against the publisher.
-
-    Raises
-    ------
-    ValueError
-        If ``filename`` carries a path, ``homepage`` is not http(s), or ``retrieved`` is not an ISO
-        date.
     """
 
     filename: str
@@ -98,14 +92,7 @@ class ManualSource:
         return directory / self.filename
 
     def require(self, directory: Path) -> Path:
-        """
-        Return the path to the file, raising if nobody has put it there.
-
-        Raises
-        ------
-        NotImplementedError
-            If the file is absent. It cannot be downloaded on the user's behalf.
-        """
+        """Return the path to the file, raising if nobody has put it there."""
         path = self.path(directory)
         if not path.exists():
             raise NotImplementedError(
@@ -129,11 +116,6 @@ class ShapefileArchive:
     member : str
         Path to the layer within the archive, case included. A case-insensitive filesystem hides a
         mismatch here that fails on Linux.
-
-    Raises
-    ------
-    ValueError
-        If ``member`` is empty, or escapes the directory the archive unpacks into.
     """
 
     source: DataSource

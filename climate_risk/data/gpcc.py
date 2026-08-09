@@ -196,11 +196,6 @@ def _as_timestamps(time: xr.DataArray) -> np.ndarray:
     -------
     ndarray
         The axis as ``datetime64``.
-
-    Raises
-    ------
-    ValueError
-        If the axis is neither already decoded nor written under ``DWD_DATE_UNITS``.
     """
     if np.issubdtype(time.dtype, np.datetime64):
         return time.values
