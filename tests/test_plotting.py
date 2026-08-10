@@ -8,11 +8,13 @@ from climate_risk.plotting import (
     REGIONS,
     attach_count_predictions,
     attach_damage_predictions,
+    configure_plot_style,
     plot_aggregated_series,
     plot_aggregated_series_by_region,
     plot_descriptive,
     plot_predicted_counts,
     plot_predicted_damages,
+    prepare_gridspec_figure,
 )
 
 OBSERVATIONS = 4
@@ -132,6 +134,31 @@ def test_every_region_is_drawn_on_each_panel():
     assert all(len(axis.get_lines()) == len(REGIONS) for axis in panels)
 
 
+def test_the_grid_centres_a_short_last_row():
+    """Five plots in three columns leaves two on the bottom row; left-aligning them looks broken."""
+    _, locations = prepare_gridspec_figure(n_cols=3, n_plots=5)
+
+    assert len(locations) == 5
+    last_row_columns = [columns.start for _, columns in locations[3:]]
+    assert last_row_columns == [1, 3], "the short row should be inset, not flush left"
+
+
+def test_the_grid_is_exact_when_the_plots_fill_it():
+    _, locations = prepare_gridspec_figure(n_cols=3, n_plots=6)
+
+    assert len(locations) == 6
+    assert [columns.start for _, columns in locations[:3]] == [0, 2, 4]
+
+
+def test_configuring_the_style_turns_the_grid_on_and_off():
+    """Every notebook opens with this call, and a silently ignored argument is invisible."""
+    configure_plot_style(add_grid=True)
+    assert plt.rcParams["axes.grid"] is True
+
+    configure_plot_style()
+    assert plt.rcParams["axes.grid"] is False
+
+
 def test_a_single_column_frame_plots_without_unwrapping_it_first():
     """A one-column DataFrame took the single-panel branch and reached `data.name`, which a frame
     does not have, so every caller with one variable raised AttributeError."""
@@ -141,3 +168,12 @@ def test_a_single_column_frame_plots_without_unwrapping_it_first():
 
     assert isinstance(axis, plt.Axes), "one column returns the axis, not the figure"
     assert axis.get_title() == "only"
+
+
+def test_one_panel_is_drawn_per_column():
+    df = pd.DataFrame({name: np.linspace(0.0, 1.0, 40) for name in ("a", "b", "c")})
+
+    fig = plot_descriptive(df, add_sum_box=False)
+
+    assert isinstance(fig, plt.Figure), "several columns return the figure, not an axis"
+    assert [axis.get_title() for axis in fig.axes] == ["a", "b", "c"]
