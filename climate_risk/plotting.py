@@ -33,23 +33,24 @@ def configure_plot_style(add_grid=False):
 
 
 def prepare_gridspec_figure(n_cols: int, n_plots: int, figure: plt.Figure | None = None) -> tuple[GridSpec, list]:
-    """Prepare a figure with a grid of subplots. Centers the last row of plots if the number of plots is not square.
+    """
+    Lay out a grid of subplots, insetting the last row when it is not full.
 
     Parameters
     ----------
-     n_cols : int
-         The number of columns in the grid.
-     n_plots : int
-         The number of subplots in the grid.
-    figure: plt.Figure, optional
-        Figure on which to plot, passed to GridSpec constructor.
+    n_cols : int
+        Columns in the grid.
+    n_plots : int
+        Subplots to make room for.
+    figure : Figure, optional
+        Figure to attach the layout to. Default None, which leaves it unattached.
 
     Returns
     -------
-     GridSpec
-         A matplotlib GridSpec object representing the layout of the grid.
-    list of tuple(slice, slice)
-         A list of tuples of slices representing the indices of the grid cells to be used for each subplot.
+    gridspec : GridSpec
+        The layout the subplots are cut from.
+    locations : list of tuple of slice
+        Row and column slice for each subplot, in order.
     """
     remainder = n_plots % n_cols
     has_remainder = remainder > 0
@@ -81,23 +82,30 @@ def _plot_single_kde(
     set_title: bool = True,
     add_sum_box: bool = True,
 ):
-    """Plot a single KDE plot on a given axis.
+    """
+    Plot one series as a histogram with a kernel density estimate over it.
 
     Parameters
     ----------
-    data : array_like
-         The data to plot.
-    axis : matplotlib.axes.Axes, optional
-         The axis to plot on. If None, a new figure and axis are created.
+    data : Series
+        Values to plot. Missing values are dropped.
+    axis : Axes, optional
+        Axis to draw on. Default None, which creates a figure and axis.
     bins : int, optional
-        Number of bins to use in the histogram.
+        Histogram bins. Default 30.
     color : str, optional
-        The color of the histogram bars
+        Fill colour of the histogram. Default ``"tab:blue"``.
+    leg_loc : str, optional
+        Where to anchor the summary box. Default ``"upper left"``.
+    set_title : bool, optional
+        Whether to title the axis with the series name. Default True.
+    add_sum_box : bool, optional
+        Whether to annotate with descriptive statistics and a Jarque-Bera statistic. Default True.
 
     Returns
     -------
-     matplotlib.axes.Axes
-         The axis the plot was created on.
+    Axes
+        The axis drawn on.
     """
     data = data.dropna()
     if axis is None:
@@ -136,25 +144,32 @@ def plot_descriptive(
     add_sum_box: bool = True,
     **figure_kwargs,
 ):
-    """Plot a grid of KDE plots for each column in a DataFrame.
+    """
+    Plot one histogram and kernel density estimate per column.
 
     Parameters
     ----------
-    df : pd.DataFrame or pd.Series
-        The data to plot.
+    df : DataFrame or Series
+        Values to plot, one panel per column.
     n_cols : int, optional
-        The number of columns in the grid of plots.
+        Columns in the grid, capped at the number of panels. Default 3.
     bins : int, optional
-        Number of bins to use in the histogram.
+        Histogram bins. Default 30.
     color : str, optional
-        The color of the histogram bars
-    figure_kwargs : dict
-        Additional keyword arguments to pass to plt.figure().
+        Fill colour of the histograms. Default ``"tab:blue"``.
+    leg_loc : str, optional
+        Where to anchor each summary box. Default ``"upper left"``.
+    labels_size : int, optional
+        Point size of the y-axis labels. Default 14.
+    add_sum_box : bool, optional
+        Whether to annotate each panel with descriptive statistics. Default True.
+    **figure_kwargs
+        Passed to :func:`matplotlib.pyplot.figure`.
 
     Returns
     -------
-    fig: matplotlib.figure.Figure
-        The figure the plots were created on.
+    Figure or Axes
+        The figure the panels were drawn on, or the single axis when there is only one column.
     """
     figsize = figure_kwargs.pop("figsize", (14, 4))
     dpi = figure_kwargs.pop("dpi", 144)
@@ -301,21 +316,24 @@ def plot_aggregated_series_by_region(
 
 
 def plot_ppc_loopit(idata: xr.DataTree, target_name: str, title: str | None = None, **ppc_kwargs) -> list[plt.Axes]:
-    """Plot the posterior predictive check (PPC) and the leave-one-out predictive interval (LOO-PIT) for a given target variable.
+    """
+    Plot a posterior predictive check above its LOO-PIT diagnostics, as one figure.
 
     Parameters
     ----------
-    idata : arviz.InferenceData
-        The inference data object containing the posterior samples.
-    title : str
-        The title for the plot.
-    target_name : str, optional
-        The name of the target variable. If None, the first variable in the posterior predictive data is used.
+    idata : DataTree
+        Inference data carrying the posterior predictive samples.
+    target_name : str
+        Variable to check.
+    title : str, optional
+        Heading for the posterior predictive panel. Default None, which uses ``target_name``.
+    **ppc_kwargs
+        Passed to :func:`arviz.plot_ppc`.
 
     Returns
     -------
-    list
-        A list of matplotlib axes objects representing the plot.
+    list of Axes
+        The posterior predictive panel and the two LOO-PIT panels.
     """
     fig = plt.figure(figsize=(12, 9))
     gs = plt.GridSpec(2, 2, figure=fig)
@@ -379,9 +397,25 @@ def attach_count_predictions(idata, df):
 
 
 def plot_predicted_counts(idata, df, country: str) -> plt.Figure:
+    """
+    Plot one country's predicted disaster counts against what was observed.
+
+    Parameters
+    ----------
+    idata : DataTree
+        Inference data carrying a ``posterior_predictive`` group with a ``y_hat`` variable.
+    df : DataFrame
+        The observed frame, in the order the model saw it.
+    country : str
+        ISO 3166-1 alpha-3 code of the country to draw.
+
+    Returns
+    -------
+    Figure
+        Predicted mean, observed counts, and the 50% and 95% HDI bands.
+    """
     df_predictions = attach_count_predictions(idata=idata, df=df)
 
-    # Filter country
     data = df_predictions.query("ISO == @country")
 
     fig, ax = plt.subplots()
@@ -417,7 +451,6 @@ def plot_predicted_counts(idata, df, country: str) -> plt.Figure:
     return fig
 
 
-############################################ Functions for the damage model  #############################################
 def attach_damage_predictions(idata, df):
     """Attach posterior-predictive damage means and HDI bounds to the observed frame.
 
@@ -449,9 +482,27 @@ def attach_damage_predictions(idata, df):
 
 
 def plot_predicted_damages(idata, df: pd.DataFrame, country: str, target_variable: str) -> plt.Figure:
+    """
+    Plot one country's predicted damages against what was observed.
+
+    Parameters
+    ----------
+    idata : DataTree
+        Inference data carrying a ``posterior_predictive`` group with a ``damage_millions`` variable.
+    df : DataFrame
+        The observed frame, in the order the model saw it.
+    country : str
+        ISO 3166-1 alpha-3 code of the country to draw.
+    target_variable : str
+        Column holding the observed damages to plot against.
+
+    Returns
+    -------
+    Figure
+        Predicted mean, observed damages, and the 50% and 75% HDI bands.
+    """
     df_predictions = attach_damage_predictions(idata=idata, df=df)
 
-    # Filter country
     data = df_predictions.query("ISO == @country")
 
     fig, ax = plt.subplots()
