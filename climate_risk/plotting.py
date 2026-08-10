@@ -347,7 +347,7 @@ def _aligned_prediction_mean(draws, df):
     return predictions.values
 
 
-def generate_plot_inputs(idata, df):
+def attach_count_predictions(idata, df):
     """Attach posterior-predictive means and HDI bounds to the observed frame.
 
     Parameters
@@ -377,8 +377,8 @@ def generate_plot_inputs(idata, df):
     )
 
 
-def plotting_function(idata, df, country: str) -> plt.Figure:
-    df_predictions = generate_plot_inputs(idata=idata, df=df)
+def plot_predicted_counts(idata, df, country: str) -> plt.Figure:
+    df_predictions = attach_count_predictions(idata=idata, df=df)
 
     # Filter country
     data = df_predictions.query("ISO == @country")
@@ -417,7 +417,7 @@ def plotting_function(idata, df, country: str) -> plt.Figure:
 
 
 ############################################ Functions for the damage model  #############################################
-def generate_plot_inputs_damages(idata, df):
+def attach_damage_predictions(idata, df):
     """Attach posterior-predictive damage means and HDI bounds to the observed frame.
 
     Parameters
@@ -447,8 +447,8 @@ def generate_plot_inputs_damages(idata, df):
     )
 
 
-def plotting_function_damages(idata, df: pd.DataFrame, country: str, target_variable: str) -> plt.Figure:
-    df_predictions = generate_plot_inputs_damages(idata=idata, df=df)
+def plot_predicted_damages(idata, df: pd.DataFrame, country: str, target_variable: str) -> plt.Figure:
+    df_predictions = attach_damage_predictions(idata=idata, df=df)
 
     # Filter country
     data = df_predictions.query("ISO == @country")

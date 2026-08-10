@@ -5,12 +5,12 @@ import xarray as xr
 
 from climate_risk.plotting import (
     REGIONS,
-    generate_plot_inputs,
-    generate_plot_inputs_damages,
+    attach_count_predictions,
+    attach_damage_predictions,
     plot_aggregated_series,
     plot_aggregated_series_by_region,
-    plotting_function,
-    plotting_function_damages,
+    plot_predicted_counts,
+    plot_predicted_damages,
 )
 
 OBSERVATIONS = 4
@@ -47,7 +47,7 @@ def damages_idata():
 
 
 def test_predictions_are_attached_in_row_order(idata, counts):
-    inputs = generate_plot_inputs(idata, counts)
+    inputs = attach_count_predictions(idata, counts)
 
     assert set(counts.columns) <= set(inputs.columns)
     assert inputs["predictions"].is_monotonic_increasing
@@ -55,7 +55,7 @@ def test_predictions_are_attached_in_row_order(idata, counts):
 
 def test_hdi_bounds_bracket_the_prediction(idata, counts):
     """The bands are drawn as fill_between, so an inverted bound silently plots nothing."""
-    inputs = generate_plot_inputs(idata, counts)
+    inputs = attach_count_predictions(idata, counts)
 
     assert (inputs["lower_y_hat_95"] < inputs["predictions"]).all()
     assert (inputs["higher_y_hat_95"] > inputs["predictions"]).all()
@@ -66,18 +66,18 @@ def test_hdi_bounds_bracket_the_prediction(idata, counts):
 def test_a_frame_of_the_wrong_length_is_rejected(idata, counts):
     """Aligning by position means a mismatched frame would otherwise plot the wrong country."""
     with pytest.raises(ValueError, match="observations but df has"):
-        generate_plot_inputs(idata, counts.iloc[:2])
+        attach_count_predictions(idata, counts.iloc[:2])
 
 
 def test_plotting_one_country_draws_only_its_observations(idata, counts):
-    fig = plotting_function(idata, counts, "AAA")
+    fig = plot_predicted_counts(idata, counts, "AAA")
 
     predicted_line = fig.axes[0].lines[0]
     assert len(np.asarray(predicted_line.get_xdata())) == 2
 
 
 def test_damage_bounds_bracket_the_prediction(damages_idata, damages):
-    inputs = generate_plot_inputs_damages(damages_idata, damages)
+    inputs = attach_damage_predictions(damages_idata, damages)
 
     assert (inputs["lower_damage_75"] < inputs["predictions"]).all()
     assert (inputs["higher_damage_75"] > inputs["predictions"]).all()
@@ -86,7 +86,7 @@ def test_damage_bounds_bracket_the_prediction(damages_idata, damages):
 
 
 def test_plotting_damages_draws_only_one_country(damages_idata, damages):
-    fig = plotting_function_damages(damages_idata, damages, "AAA", "damage_millions")
+    fig = plot_predicted_damages(damages_idata, damages, "AAA", "damage_millions")
 
     observed_points = fig.axes[0].collections[0]
     assert len(np.asarray(observed_points.get_offsets())) == 2
