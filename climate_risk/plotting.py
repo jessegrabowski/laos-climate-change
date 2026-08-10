@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Any, Literal
 
 import arviz as az
 import matplotlib.pyplot as plt
@@ -11,25 +11,22 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.offsetbox import AnchoredText
 from scipy import stats
 
-REGIONS = ["Asia", "Europe", "Africa", "Oceania", "Americas"]
+REGIONS = ("Asia", "Europe", "Africa", "Oceania", "Americas")
 
 
-def configure_plot_style(add_grid=False):
-    config = {
-        "figure.figsize": (14, 4),
-        "figure.constrained_layout.use": True,
-        "figure.facecolor": "w",
-        "axes.grid": add_grid,
-        "grid.linewidth": 0.5,
-        "grid.linestyle": "--",
-        "axes.spines.top": False,
-        "axes.spines.bottom": False,
-        "axes.spines.left": False,
-        "axes.spines.right": False,
-    }
-
+def configure_plot_style(add_grid: bool = False) -> None:
     pd.set_option("display.float_format", "{:.2f}".format)
-    plt.rcParams.update(config)
+
+    plt.rcParams["figure.figsize"] = (14, 4)
+    plt.rcParams["figure.constrained_layout.use"] = True
+    plt.rcParams["figure.facecolor"] = "w"
+    plt.rcParams["axes.grid"] = add_grid
+    plt.rcParams["grid.linewidth"] = 0.5
+    plt.rcParams["grid.linestyle"] = "--"
+    plt.rcParams["axes.spines.top"] = False
+    plt.rcParams["axes.spines.bottom"] = False
+    plt.rcParams["axes.spines.left"] = False
+    plt.rcParams["axes.spines.right"] = False
 
 
 def prepare_gridspec_figure(n_cols: int, n_plots: int, figure: plt.Figure | None = None) -> tuple[GridSpec, list]:
@@ -75,13 +72,13 @@ def prepare_gridspec_figure(n_cols: int, n_plots: int, figure: plt.Figure | None
 
 def _plot_single_kde(
     data: pd.Series,
-    axis=None,
-    bins=30,
-    color="tab:blue",
-    leg_loc="upper left",
+    axis: plt.Axes | None = None,
+    bins: int = 30,
+    color: str = "tab:blue",
+    leg_loc: str = "upper left",
     set_title: bool = True,
     add_sum_box: bool = True,
-):
+) -> plt.Axes:
     """
     Plot one series as a histogram with a kernel density estimate over it.
 
@@ -116,20 +113,21 @@ def _plot_single_kde(
     sns.kdeplot(data, ax=axis, lw=2, c="k", ls="--")
 
     if add_sum_box:
-        n, minmax, mean, var, skew, kurt = stats.describe(data.values.squeeze())
-        jb = stats.jarque_bera(data.values.squeeze())
+        observations = np.asarray(data.values).squeeze()
+        n, minmax, mean, var, skew, kurt = stats.describe(observations)
+        jb = stats.jarque_bera(observations)
 
         names = ["N", "Min", "Max", "Mean", "Std", "Skew", "Kurt", "JB"]
         values = [n, minmax[0], minmax[1], mean, np.sqrt(var), skew, kurt, jb.statistic]
 
         text = "\n".join(
-            f"{name:<5} = {' ' if value > 0 else ''}{value:<3.3f}" for name, value in zip(names, values, strict=False)
+            f"{name:<5} = {' ' if value > 0 else ''}{value:<3.3f}" for name, value in zip(names, values, strict=True)
         )
         box = AnchoredText(text, loc=leg_loc, prop={"fontfamily": "monospace"})
         box.patch.set_alpha(0.5)
         axis.add_artist(box)
     if set_title:
-        axis.set_title(data.name)
+        axis.set_title(str(data.name))
 
     return axis
 
@@ -139,11 +137,11 @@ def plot_descriptive(
     n_cols: int = 3,
     bins: int = 30,
     color: str = "tab:blue",
-    leg_loc="upper left",
+    leg_loc: str = "upper left",
     labels_size: int = 14,
     add_sum_box: bool = True,
-    **figure_kwargs,
-):
+    **figure_kwargs: Any,
+) -> plt.Figure | plt.Axes:
     """
     Plot one histogram and kernel density estimate per column.
 
@@ -186,7 +184,7 @@ def plot_descriptive(
     n_cols = min(n_cols, n_plots)
     gs, locs = prepare_gridspec_figure(n_cols=n_cols, n_plots=n_plots)
 
-    for name, loc in zip(df.columns, locs, strict=False):
+    for name, loc in zip(df.columns, locs, strict=True):
         axis = fig.add_subplot(gs[loc])
         axis.set_ylabel("Density", fontsize=labels_size)
         _plot_single_kde(
@@ -315,7 +313,9 @@ def plot_aggregated_series_by_region(
     return fig
 
 
-def plot_ppc_loopit(idata: xr.DataTree, target_name: str, title: str | None = None, **ppc_kwargs) -> list[plt.Axes]:
+def plot_ppc_loopit(
+    idata: xr.DataTree, target_name: str, title: str | None = None, **ppc_kwargs: Any
+) -> list[plt.Axes]:
     """
     Plot a posterior predictive check above its LOO-PIT diagnostics, as one figure.
 
@@ -342,7 +342,7 @@ def plot_ppc_loopit(idata: xr.DataTree, target_name: str, title: str | None = No
     ax_ecdf = fig.add_subplot(gs[1, 1])
 
     az.plot_ppc(idata, ax=ax_ppc, var_names=[target_name], **ppc_kwargs)
-    for ax, ecdf in zip([ax_loo, ax_ecdf], [False, True], strict=False):
+    for ax, ecdf in zip([ax_loo, ax_ecdf], [False, True], strict=True):
         az.plot_loo_pit(idata, y=target_name, ecdf=ecdf, ax=ax)
 
     if title is None:
@@ -355,7 +355,7 @@ def plot_ppc_loopit(idata: xr.DataTree, target_name: str, title: str | None = No
 SAMPLE_DIMS = ("chain", "draw")
 
 
-def _aligned_prediction_mean(draws, df):
+def _aligned_prediction_mean(draws: xr.DataArray, df: pd.DataFrame) -> np.ndarray:
     """Return the posterior-predictive mean, checked against the frame it will be attached to."""
     predictions = draws.mean(dim=SAMPLE_DIMS)
     if predictions.size != len(df):
@@ -363,10 +363,10 @@ def _aligned_prediction_mean(draws, df):
             f"posterior_predictive holds {predictions.size} observations but df has {len(df)} rows; "
             f"they must be the observations the model saw, in the same order."
         )
-    return predictions.values
+    return np.asarray(predictions.values)
 
 
-def attach_count_predictions(idata, df):
+def attach_count_predictions(idata: xr.DataTree, df: pd.DataFrame) -> pd.DataFrame:
     """Attach posterior-predictive means and HDI bounds to the observed frame.
 
     Parameters
@@ -396,7 +396,7 @@ def attach_count_predictions(idata, df):
     )
 
 
-def plot_predicted_counts(idata, df, country: str) -> plt.Figure:
+def plot_predicted_counts(idata: xr.DataTree, df: pd.DataFrame, country: str) -> plt.Figure:
     """
     Plot one country's predicted disaster counts against what was observed.
 
@@ -451,7 +451,7 @@ def plot_predicted_counts(idata, df, country: str) -> plt.Figure:
     return fig
 
 
-def attach_damage_predictions(idata, df):
+def attach_damage_predictions(idata: xr.DataTree, df: pd.DataFrame) -> pd.DataFrame:
     """Attach posterior-predictive damage means and HDI bounds to the observed frame.
 
     Parameters
@@ -481,7 +481,7 @@ def attach_damage_predictions(idata, df):
     )
 
 
-def plot_predicted_damages(idata, df: pd.DataFrame, country: str, target_variable: str) -> plt.Figure:
+def plot_predicted_damages(idata: xr.DataTree, df: pd.DataFrame, country: str, target_variable: str) -> plt.Figure:
     """
     Plot one country's predicted damages against what was observed.
 
