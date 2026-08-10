@@ -4,6 +4,8 @@ import pandas as pd
 import pytest
 import xarray as xr
 
+from matplotlib.offsetbox import AnchoredText
+
 from climate_risk.plotting import (
     REGIONS,
     attach_count_predictions,
@@ -177,3 +179,23 @@ def test_one_panel_is_drawn_per_column():
 
     assert isinstance(fig, plt.Figure), "several columns return the figure, not an axis"
     assert [axis.get_title() for axis in fig.axes] == ["a", "b", "c"]
+
+
+def test_the_summary_box_reports_the_series_statistics():
+    """The box reads six fields off `stats.describe`; taking them positionally put the wrong number
+    against every label the moment scipy reordered them."""
+    df = pd.DataFrame({"only": np.arange(50, dtype=float)})
+
+    axis = plot_descriptive(df, add_sum_box=True)
+
+    assert isinstance(axis, plt.Axes)
+    box = next(child for child in axis.get_children() if isinstance(child, AnchoredText))
+    reported = dict(
+        (name.strip(), float(value))
+        for name, _, value in (line.partition("=") for line in box.txt.get_text().splitlines())
+    )
+    assert reported["N"] == 50
+    assert reported["Min"] == 0.0
+    assert reported["Max"] == 49.0
+    assert reported["Mean"] == pytest.approx(24.5)
+    assert reported["Std"] == pytest.approx(np.arange(50).std(ddof=1), abs=1e-3)

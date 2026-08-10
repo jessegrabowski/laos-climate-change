@@ -114,11 +114,21 @@ def _plot_single_kde(
 
     if add_sum_box:
         observations = np.asarray(data.values).squeeze()
-        n, minmax, mean, var, skew, kurt = stats.describe(observations)
+        summary = stats.describe(observations)
+        smallest, largest = summary.minmax
         jb = stats.jarque_bera(observations)
 
         names = ["N", "Min", "Max", "Mean", "Std", "Skew", "Kurt", "JB"]
-        values = [n, minmax[0], minmax[1], mean, np.sqrt(var), skew, kurt, jb.statistic]
+        values = [
+            summary.nobs,
+            smallest,
+            largest,
+            summary.mean,
+            np.sqrt(summary.variance),
+            summary.skewness,
+            summary.kurtosis,
+            jb.statistic,
+        ]
 
         text = "\n".join(
             f"{name:<5} = {' ' if value > 0 else ''}{value:<3.3f}" for name, value in zip(names, values, strict=True)

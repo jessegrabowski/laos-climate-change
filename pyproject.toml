@@ -50,9 +50,11 @@ dev = [
     "types-shapely>=2.1,<3",
     "types-tqdm>=4.70,<5",
     "joblib-stubs>=1.5.3.1,<2",
+    "scipy-stubs>=1.18.0.1,<2",
+    "types-seaborn>=0.13.2.20240417,<1",
     "types-requests>=2.33,<3",
 ]
-notebooks = ["notebook>=7.6,<8", "ipywidgets>=8.1,<9", "openai>=2.0"]
+notebooks = ["notebook>=7.6,<8", "ipywidgets>=8.1,<9", "openai>=2.0", "nbclassic>=1.3.3,<2", "nbclassic-mcp-bridge>=1.1.0,<2"]
 
 [project.urls]
 Repository = "https://github.com/jessegrabowski/laos-climate-change"
@@ -109,6 +111,8 @@ types-tqdm = ">=4.70.0.20260731,<5"
 types-geopandas = ">=1.1.4.20260728,<2"
 types-shapely = ">=2.1,<3"
 types-requests = ">=2.33.0.20260712,<3"
+scipy-stubs = ">=1.18.0.1,<2"
+types-seaborn = ">=0.13.2.20240417,<1"
 
 # joblib-stubs is not on conda-forge.
 [tool.pixi.feature.dev.pypi-dependencies]
@@ -117,6 +121,11 @@ joblib-stubs = ">=1.5.3.1,<2"
 [tool.pixi.feature.notebooks.dependencies]
 notebook = ">=7.6,<8"
 ipywidgets = ">=8.1,<9"
+nbclassic = ">=1.3.3,<2"
+
+# nbclassic-mcp-bridge is not on conda-forge.
+[tool.pixi.feature.notebooks.pypi-dependencies]
+nbclassic-mcp-bridge = ">=1.1.0,<2"
 
 [tool.pixi.pypi-dependencies]
 climate-risk = { path = ".", editable = true }
@@ -188,10 +197,9 @@ warn_unreachable = true
 warn_unused_ignores = true
 strict_equality = true
 
-# These ship no stubs in the package itself. scipy-stubs and types-seaborn exist on the index and
-# would replace two of these entries.
+# No stubs exist for these, on the index or in the packages themselves.
 [[tool.mypy.overrides]]
-module = ["arviz.*", "pymc.*", "pytensor.*", "scipy.*", "seaborn.*", "sklearn.*", "statsmodels.*"]
+module = ["arviz.*", "pymc.*", "pytensor.*", "sklearn.*", "statsmodels.*"]
 ignore_missing_imports = true
 
 # Test functions carry no annotations, so their bodies need checking on their own terms.
