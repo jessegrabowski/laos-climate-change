@@ -508,7 +508,10 @@ def test_no_tier_silently_swallows_the_others():
     assert geography["DisNo."].n_unique() == len(events)
 
     per_source = dict(geography.group_by("geometry_source").len().iter_rows())
-    assert set(per_source) == set(GEOMETRY_SOURCES)
+    # The workbook supplies these three. `geo_disasters` is resolved from a separate archive and
+    # cannot appear here.
+    assert set(per_source) == {"gadm", "emdat_point", "country"}
+    assert set(per_source) < set(GEOMETRY_SOURCES)
     assert all(count > 1_000 for count in per_source.values())
     # Coded events carry several units each, so the gadm tier is the longest despite being a
     # minority of events.

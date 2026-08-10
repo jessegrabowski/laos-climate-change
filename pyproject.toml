@@ -142,6 +142,7 @@ markers = [
     "slow: PyMC sampling or other multi-second work",
     "requires_emdat: needs the licensed EM-DAT workbook, absent from CI",
     "requires_gadm: needs the GADM GeoPackage, which is non-commercial and absent from CI",
+    "requires_geo_disasters: needs the Geo-Disasters GeoPackage, non-commercial and absent from CI",
 ]
 filterwarnings = [
     "error",

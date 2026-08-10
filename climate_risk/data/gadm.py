@@ -56,6 +56,45 @@ def _chunks(values: list[str], size: int) -> Iterator[list[str]]:
         yield values[start : start + size]
 
 
+def load_units_in_country(iso: str, level: int, cache_dir: Path, *, layer: str = GADM_LAYER) -> gpd.GeoDataFrame:
+    """
+    Read every GADM unit one country holds at one administrative level.
+
+    Where :func:`load_admin_units` answers "which polygon is this id", this answers "what units are
+    there", which is what a search by geometry needs.
+
+    Parameters
+    ----------
+    iso : str
+        ISO 3166-1 alpha-3 code of the country to read.
+    level : int
+        Administrative level, 1 or 2.
+    cache_dir : Path
+        Directory the caches live under.
+    layer : str, optional
+        Layer to read inside the GeoPackage. Default ``GADM_LAYER``.
+
+    Returns
+    -------
+    GeoDataFrame
+        Columns ``gid``, ``name``, ``admin_level`` and ``geometry``, one row per unit.
+    """
+    if level not in GID_COLUMNS:
+        raise DataValidationError(f"Units are read at levels {sorted(GID_COLUMNS)}, not {level}")
+
+    gid_column, name_column = GID_COLUMNS[level]
+    rows = gpd.read_file(gadm_path(cache_dir), layer=layer, columns=[gid_column, name_column], where=f"GID_0 = '{iso}'")
+    if rows.empty:
+        return _no_units(gadm_path(cache_dir), layer)
+
+    # The table stores the finest level, so a unit above it spans several rows.
+    units = rows.dissolve(by=gid_column, aggfunc="first", as_index=False)
+
+    return units.rename(columns={gid_column: "gid", name_column: "name"}).assign(admin_level=level)[
+        ["gid", "name", "admin_level", "geometry"]
+    ]
+
+
 def _units_at_level(gids: list[str], level: int, path: Path, layer: str) -> gpd.GeoDataFrame | None:
     gid_column, name_column = GID_COLUMNS[level]
     read = []

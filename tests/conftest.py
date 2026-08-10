@@ -407,6 +407,39 @@ def write_gadm_cache(tmp_path):
     return write
 
 
+def toy_geo_disasters() -> gpd.GeoDataFrame:
+    """A GeoPackage shaped like Geo-Disasters: one row per affected unit, keyed on ``DisNo.``.
+
+    Two Laos events, one geocoded to provinces and one to districts, so a reader taking the name
+    from a fixed column returns nothing for half the rows. The Zambian event is there for the ISO
+    filter to exclude.
+    """
+    rows = [
+        ("1991-0761-LAO", "LAO", 1, 2, "Savannakhet", None, box(0, 0, 1, 1)),
+        ("1991-0761-LAO", "LAO", 1, 2, "Khammouan", None, box(1, 0, 2, 1)),
+        ("2018-0339-LAO", "LAO", 2, 1, "Attapu", "Sanamxay", box(2, 0, 3, 1)),
+        ("2007-0225-ZMB", "ZMB", 1, 1, "Central", None, box(6, 0, 7, 1)),
+    ]
+    columns = ("DisNo.", "ISO", "admin_level", "geocoding_q", "ADM1_NAME", "ADM2_NAME", "geometry")
+
+    return gpd.GeoDataFrame(dict(zip(columns, zip(*rows, strict=True), strict=True)), crs="EPSG:4326")
+
+
+@pytest.fixture
+def write_geo_disasters_cache(tmp_path):
+    """Return a callable writing a Geo-Disasters-shaped GeoPackage into the cache."""
+
+    def write(locations=None):
+        directory = tmp_path / "geo_disasters"
+        directory.mkdir(exist_ok=True)
+        frame = locations if locations is not None else toy_geo_disasters()
+        frame.to_file(directory / "disaster_subnational_90_23.gpkg", layer="disaster_subnational_90_23")
+
+        return tmp_path
+
+    return write
+
+
 @pytest.fixture
 def write_rivers_cache(tmp_path):
     """Return a callable writing the processed river network a warm cache would hold."""
