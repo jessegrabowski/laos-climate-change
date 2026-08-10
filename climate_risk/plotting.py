@@ -1,4 +1,4 @@
-import math
+from typing import Literal
 
 import arviz as az
 import matplotlib.pyplot as plt
@@ -185,61 +185,118 @@ def plot_descriptive(
     return fig
 
 
-# Aggregated plotting function
-def subplots_function(
-    df,
-    var_list,
-    index,
-    aggregation_funct,
-    title,
-    graph_rows=2,
-    figure_size=(20, 18),
-    subplot_title_fontsize=14,
-):
-    fig, axs = plt.subplots(graph_rows, 2, figsize=figure_size)
+AGGREGATE_COLUMNS = 2
 
-    for x in var_list:
-        a = math.floor(var_list.index(x) / 2)
-        b = var_list.index(x) % 2
-        axs[a, b].plot(df.pivot_table(values=x, index=index, aggfunc=aggregation_funct)[x])
-        axs[a, b].set_title(x, fontsize=subplot_title_fontsize)
+Aggregation = Literal["count", "first", "last", "max", "mean", "median", "min", "nunique", "std", "sum", "var"]
 
-    if (len(var_list) % 2) != 0:
-        axs[graph_rows - 1, 1].set_axis_off()
+
+def plot_aggregated_series(
+    df: pd.DataFrame,
+    variables: list[str],
+    index: str,
+    aggregation: Aggregation,
+    title: str,
+    graph_rows: int = 2,
+    figure_size: tuple[float, float] = (20, 18),
+    subplot_title_fontsize: int = 14,
+) -> plt.Figure:
+    """
+    Plot one variable per panel, each aggregated over ``index``.
+
+    Parameters
+    ----------
+    df : DataFrame
+        The observations to aggregate.
+    variables : list of str
+        Columns to plot, one panel each, filling the grid left to right.
+    index : str
+        Column to aggregate over, which becomes the x axis.
+    aggregation : str
+        How to combine rows sharing an index value, as named in ``Aggregation``.
+    title : str
+        Heading for the figure.
+    graph_rows : int, optional
+        Rows in the grid, which is two columns wide. Default 2.
+    figure_size : tuple of float, optional
+        Figure width and height in inches. Default (20, 18).
+    subplot_title_fontsize : int, optional
+        Point size for each panel's title; the figure heading is ten points larger. Default 14.
+
+    Returns
+    -------
+    Figure
+        The figure the panels were drawn on.
+    """
+    fig, axes = plt.subplots(graph_rows, AGGREGATE_COLUMNS, figsize=figure_size)
+
+    for position, variable in enumerate(variables):
+        axis = axes[position // AGGREGATE_COLUMNS, position % AGGREGATE_COLUMNS]
+        axis.plot(df.pivot_table(values=variable, index=index, aggfunc=aggregation)[variable])
+        axis.set_title(variable, fontsize=subplot_title_fontsize)
+
+    if len(variables) % AGGREGATE_COLUMNS:
+        axes[graph_rows - 1, 1].set_axis_off()
 
     plt.suptitle(title, fontsize=subplot_title_fontsize + 10)
     fig.tight_layout()
 
+    return fig
 
-# Aggregated plotting function for regions
-def subplots_function_regions(
-    df,
-    var_list,
-    index,
-    aggregation_funct,
-    title,
-    graph_rows=2,
-    figure_size=(20, 18),
-    subplot_title_fontsize=14,
-):
-    fig, axs = plt.subplots(graph_rows, 2, figsize=figure_size)
 
-    for x in var_list:
-        a = math.floor(var_list.index(x) / 2)
-        b = var_list.index(x) % 2
-        for y in REGIONS:
-            axs[a, b].plot(
-                df.query(f'Region == "{y}"').pivot_table(values=x, index=index, aggfunc=aggregation_funct),
-                label=y,
-            )
-            axs[a, b].set_title(x, fontsize=subplot_title_fontsize)
-        # axs[a,b].legend()
+def plot_aggregated_series_by_region(
+    df: pd.DataFrame,
+    variables: list[str],
+    index: str,
+    aggregation: Aggregation,
+    title: str,
+    graph_rows: int = 2,
+    figure_size: tuple[float, float] = (20, 18),
+    subplot_title_fontsize: int = 14,
+) -> plt.Figure:
+    """
+    Plot one variable per panel, aggregated over ``index`` and drawn once per region.
 
-    if (len(var_list) % 2) != 0:
-        axs[graph_rows - 1, 1].set_axis_off()
-    fig.legend(REGIONS, loc="lower right", ncol=5, fontsize=16)
+    Parameters
+    ----------
+    df : DataFrame
+        The observations to aggregate, carrying a ``Region`` column.
+    variables : list of str
+        Columns to plot, one panel each, filling the grid left to right.
+    index : str
+        Column to aggregate over, which becomes the x axis.
+    aggregation : str
+        How to combine rows sharing an index value, as named in ``Aggregation``.
+    title : str
+        Heading for the figure.
+    graph_rows : int, optional
+        Rows in the grid, which is two columns wide. Default 2.
+    figure_size : tuple of float, optional
+        Figure width and height in inches. Default (20, 18).
+    subplot_title_fontsize : int, optional
+        Point size for each panel's title; the figure heading is ten points larger. Default 14.
+
+    Returns
+    -------
+    Figure
+        The figure the panels were drawn on.
+    """
+    fig, axes = plt.subplots(graph_rows, AGGREGATE_COLUMNS, figsize=figure_size)
+
+    for position, variable in enumerate(variables):
+        axis = axes[position // AGGREGATE_COLUMNS, position % AGGREGATE_COLUMNS]
+        for region in REGIONS:
+            in_region = df[df["Region"] == region]
+            axis.plot(in_region.pivot_table(values=variable, index=index, aggfunc=aggregation), label=region)
+        axis.set_title(variable, fontsize=subplot_title_fontsize)
+
+    if len(variables) % AGGREGATE_COLUMNS:
+        axes[graph_rows - 1, 1].set_axis_off()
+
+    fig.legend(list(REGIONS), loc="lower right", ncol=len(REGIONS), fontsize=16)
     plt.suptitle(title, fontsize=subplot_title_fontsize + 10)
-    fig.tight_layout(rect=[0, 0, 1, 0.95])
+    fig.tight_layout(rect=(0, 0, 1, 0.95))
+
+    return fig
 
 
 def plot_ppc_loopit(idata: xr.DataTree, target_name: str, title: str | None = None, **ppc_kwargs) -> list[plt.Axes]:

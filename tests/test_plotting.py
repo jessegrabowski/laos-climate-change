@@ -4,8 +4,11 @@ import pytest
 import xarray as xr
 
 from climate_risk.plotting import (
+    REGIONS,
     generate_plot_inputs,
     generate_plot_inputs_damages,
+    plot_aggregated_series,
+    plot_aggregated_series_by_region,
     plotting_function,
     plotting_function_damages,
 )
@@ -87,3 +90,41 @@ def test_plotting_damages_draws_only_one_country(damages_idata, damages):
 
     observed_points = fig.axes[0].collections[0]
     assert len(np.asarray(observed_points.get_offsets())) == 2
+
+
+def test_each_variable_lands_on_its_own_panel():
+    """Panels are filled by position; the previous index lookup sent duplicate names to one axis."""
+    df = pd.DataFrame({"year": [1990, 1991] * 3, "a": range(6), "b": range(6), "c": range(6)})
+
+    fig = plot_aggregated_series(df, ["a", "b", "c"], index="year", aggregation="mean", title="t")
+
+    drawn = [axis.get_title() for axis in fig.axes if axis.get_title()]
+    assert drawn == ["a", "b", "c"]
+
+
+def test_an_odd_number_of_variables_blanks_the_spare_panel():
+    """A grid is two wide, so an odd count leaves an empty axis that would otherwise show as blank
+    ticks and a frame."""
+    df = pd.DataFrame({"year": [1990, 1991] * 3, "a": range(6), "b": range(6), "c": range(6)})
+
+    fig = plot_aggregated_series(df, ["a", "b", "c"], index="year", aggregation="mean", title="t")
+
+    assert not fig.axes[3].axison
+
+
+def test_every_region_is_drawn_on_each_panel():
+    """One line per region per variable; a mis-scoped loop silently plots only the last region."""
+    df = pd.DataFrame(
+        {
+            "year": [1990, 1991] * len(REGIONS),
+            "Region": [region for region in REGIONS for _ in range(2)],
+            "a": range(2 * len(REGIONS)),
+            "b": range(2 * len(REGIONS)),
+        }
+    )
+
+    fig = plot_aggregated_series_by_region(df, ["a", "b"], index="year", aggregation="mean", title="t")
+
+    panels = [axis for axis in fig.axes if axis.get_title()]
+    assert [axis.get_title() for axis in panels] == ["a", "b"]
+    assert all(len(axis.get_lines()) == len(REGIONS) for axis in panels)
