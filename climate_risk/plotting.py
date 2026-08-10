@@ -163,7 +163,8 @@ def plot_descriptive(
 
     if n_plots == 1:
         fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
-        return _plot_single_kde(df, axis=ax, bins=bins, color=color, add_sum_box=add_sum_box)
+        only = df if isinstance(df, pd.Series) else df.iloc[:, 0]
+        return _plot_single_kde(only, axis=ax, bins=bins, color=color, add_sum_box=add_sum_box)
 
     fig = plt.figure(figsize=figsize, dpi=dpi, **figure_kwargs)
 

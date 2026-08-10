@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytest
@@ -9,6 +10,7 @@ from climate_risk.plotting import (
     attach_damage_predictions,
     plot_aggregated_series,
     plot_aggregated_series_by_region,
+    plot_descriptive,
     plot_predicted_counts,
     plot_predicted_damages,
 )
@@ -128,3 +130,14 @@ def test_every_region_is_drawn_on_each_panel():
     panels = [axis for axis in fig.axes if axis.get_title()]
     assert [axis.get_title() for axis in panels] == ["a", "b"]
     assert all(len(axis.get_lines()) == len(REGIONS) for axis in panels)
+
+
+def test_a_single_column_frame_plots_without_unwrapping_it_first():
+    """A one-column DataFrame took the single-panel branch and reached `data.name`, which a frame
+    does not have, so every caller with one variable raised AttributeError."""
+    df = pd.DataFrame({"only": np.linspace(0.0, 1.0, 40)})
+
+    axis = plot_descriptive(df, add_sum_box=False)
+
+    assert isinstance(axis, plt.Axes), "one column returns the axis, not the figure"
+    assert axis.get_title() == "only"
