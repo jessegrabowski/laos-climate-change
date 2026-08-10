@@ -1,6 +1,28 @@
 import pandas as pd
 
+from statsmodels.tsa.seasonal import STL
 from statsmodels.tsa.stattools import adfuller
+
+
+def stl_deviation(series: pd.Series, period: int = 3) -> pd.Series:
+    """
+    Return what is left of a series once its STL trend is removed.
+
+    Parameters
+    ----------
+    series : Series
+        The series to detrend, indexed by time.
+    period : int, optional
+        Periodicity of the seasonal component, in observations. Default 3.
+
+    Returns
+    -------
+    Series
+        The series minus its trend, on the same index.
+    """
+    trend = pd.Series(STL(series, period=period).fit().trend, index=series.index)
+
+    return series - trend
 
 
 def make_var_names(var: str, n_lags: int, reg: str) -> list[str]:

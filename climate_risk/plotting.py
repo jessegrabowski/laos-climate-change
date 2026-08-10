@@ -1,4 +1,4 @@
-import math
+from typing import Any, Literal
 
 import arviz as az
 import matplotlib.pyplot as plt
@@ -11,45 +11,43 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.offsetbox import AnchoredText
 from scipy import stats
 
-REGIONS = ["Asia", "Europe", "Africa", "Oceania", "Americas"]
+REGIONS = ("Asia", "Europe", "Africa", "Oceania", "Americas")
 
 
-def configure_plot_style(add_grid=False):
-    config = {
-        "figure.figsize": (14, 4),
-        "figure.constrained_layout.use": True,
-        "figure.facecolor": "w",
-        "axes.grid": add_grid,
-        "grid.linewidth": 0.5,
-        "grid.linestyle": "--",
-        "axes.spines.top": False,
-        "axes.spines.bottom": False,
-        "axes.spines.left": False,
-        "axes.spines.right": False,
-    }
-
+def configure_plot_style(add_grid: bool = False) -> None:
     pd.set_option("display.float_format", "{:.2f}".format)
-    plt.rcParams.update(config)
+
+    plt.rcParams["figure.figsize"] = (14, 4)
+    plt.rcParams["figure.constrained_layout.use"] = True
+    plt.rcParams["figure.facecolor"] = "w"
+    plt.rcParams["axes.grid"] = add_grid
+    plt.rcParams["grid.linewidth"] = 0.5
+    plt.rcParams["grid.linestyle"] = "--"
+    plt.rcParams["axes.spines.top"] = False
+    plt.rcParams["axes.spines.bottom"] = False
+    plt.rcParams["axes.spines.left"] = False
+    plt.rcParams["axes.spines.right"] = False
 
 
 def prepare_gridspec_figure(n_cols: int, n_plots: int, figure: plt.Figure | None = None) -> tuple[GridSpec, list]:
-    """Prepare a figure with a grid of subplots. Centers the last row of plots if the number of plots is not square.
+    """
+    Lay out a grid of subplots, insetting the last row when it is not full.
 
     Parameters
     ----------
-     n_cols : int
-         The number of columns in the grid.
-     n_plots : int
-         The number of subplots in the grid.
-    figure: plt.Figure, optional
-        Figure on which to plot, passed to GridSpec constructor.
+    n_cols : int
+        Columns in the grid.
+    n_plots : int
+        Subplots to make room for.
+    figure : Figure, optional
+        Figure to attach the layout to. Default None, which leaves it unattached.
 
     Returns
     -------
-     GridSpec
-         A matplotlib GridSpec object representing the layout of the grid.
-    list of tuple(slice, slice)
-         A list of tuples of slices representing the indices of the grid cells to be used for each subplot.
+    gridspec : GridSpec
+        The layout the subplots are cut from.
+    locations : list of tuple of slice
+        Row and column slice for each subplot, in order.
     """
     remainder = n_plots % n_cols
     has_remainder = remainder > 0
@@ -74,30 +72,37 @@ def prepare_gridspec_figure(n_cols: int, n_plots: int, figure: plt.Figure | None
 
 def _plot_single_kde(
     data: pd.Series,
-    axis=None,
-    bins=30,
-    color="tab:blue",
-    leg_loc="upper left",
+    axis: plt.Axes | None = None,
+    bins: int = 30,
+    color: str = "tab:blue",
+    leg_loc: str = "upper left",
     set_title: bool = True,
     add_sum_box: bool = True,
-):
-    """Plot a single KDE plot on a given axis.
+) -> plt.Axes:
+    """
+    Plot one series as a histogram with a kernel density estimate over it.
 
     Parameters
     ----------
-    data : array_like
-         The data to plot.
-    axis : matplotlib.axes.Axes, optional
-         The axis to plot on. If None, a new figure and axis are created.
+    data : Series
+        Values to plot. Missing values are dropped.
+    axis : Axes, optional
+        Axis to draw on. Default None, which creates a figure and axis.
     bins : int, optional
-        Number of bins to use in the histogram.
+        Histogram bins. Default 30.
     color : str, optional
-        The color of the histogram bars
+        Fill colour of the histogram. Default ``"tab:blue"``.
+    leg_loc : str, optional
+        Where to anchor the summary box. Default ``"upper left"``.
+    set_title : bool, optional
+        Whether to title the axis with the series name. Default True.
+    add_sum_box : bool, optional
+        Whether to annotate with descriptive statistics and a Jarque-Bera statistic. Default True.
 
     Returns
     -------
-     matplotlib.axes.Axes
-         The axis the plot was created on.
+    Axes
+        The axis drawn on.
     """
     data = data.dropna()
     if axis is None:
@@ -108,20 +113,21 @@ def _plot_single_kde(
     sns.kdeplot(data, ax=axis, lw=2, c="k", ls="--")
 
     if add_sum_box:
-        n, minmax, mean, var, skew, kurt = stats.describe(data.values.squeeze())
-        jb = stats.jarque_bera(data.values.squeeze())
+        observations = np.asarray(data.values).squeeze()
+        n, minmax, mean, var, skew, kurt = stats.describe(observations)
+        jb = stats.jarque_bera(observations)
 
         names = ["N", "Min", "Max", "Mean", "Std", "Skew", "Kurt", "JB"]
         values = [n, minmax[0], minmax[1], mean, np.sqrt(var), skew, kurt, jb.statistic]
 
         text = "\n".join(
-            f"{name:<5} = {' ' if value > 0 else ''}{value:<3.3f}" for name, value in zip(names, values, strict=False)
+            f"{name:<5} = {' ' if value > 0 else ''}{value:<3.3f}" for name, value in zip(names, values, strict=True)
         )
         box = AnchoredText(text, loc=leg_loc, prop={"fontfamily": "monospace"})
         box.patch.set_alpha(0.5)
         axis.add_artist(box)
     if set_title:
-        axis.set_title(data.name)
+        axis.set_title(str(data.name))
 
     return axis
 
@@ -131,30 +137,37 @@ def plot_descriptive(
     n_cols: int = 3,
     bins: int = 30,
     color: str = "tab:blue",
-    leg_loc="upper left",
+    leg_loc: str = "upper left",
     labels_size: int = 14,
     add_sum_box: bool = True,
-    **figure_kwargs,
-):
-    """Plot a grid of KDE plots for each column in a DataFrame.
+    **figure_kwargs: Any,
+) -> plt.Figure | plt.Axes:
+    """
+    Plot one histogram and kernel density estimate per column.
 
     Parameters
     ----------
-    df : pd.DataFrame or pd.Series
-        The data to plot.
+    df : DataFrame or Series
+        Values to plot, one panel per column.
     n_cols : int, optional
-        The number of columns in the grid of plots.
+        Columns in the grid, capped at the number of panels. Default 3.
     bins : int, optional
-        Number of bins to use in the histogram.
+        Histogram bins. Default 30.
     color : str, optional
-        The color of the histogram bars
-    figure_kwargs : dict
-        Additional keyword arguments to pass to plt.figure().
+        Fill colour of the histograms. Default ``"tab:blue"``.
+    leg_loc : str, optional
+        Where to anchor each summary box. Default ``"upper left"``.
+    labels_size : int, optional
+        Point size of the y-axis labels. Default 14.
+    add_sum_box : bool, optional
+        Whether to annotate each panel with descriptive statistics. Default True.
+    **figure_kwargs
+        Passed to :func:`matplotlib.pyplot.figure`.
 
     Returns
     -------
-    fig: matplotlib.figure.Figure
-        The figure the plots were created on.
+    Figure or Axes
+        The figure the panels were drawn on, or the single axis when there is only one column.
     """
     figsize = figure_kwargs.pop("figsize", (14, 4))
     dpi = figure_kwargs.pop("dpi", 144)
@@ -163,14 +176,15 @@ def plot_descriptive(
 
     if n_plots == 1:
         fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
-        return _plot_single_kde(df, axis=ax, bins=bins, color=color, add_sum_box=add_sum_box)
+        only = df if isinstance(df, pd.Series) else df.iloc[:, 0]
+        return _plot_single_kde(only, axis=ax, bins=bins, color=color, add_sum_box=add_sum_box)
 
     fig = plt.figure(figsize=figsize, dpi=dpi, **figure_kwargs)
 
     n_cols = min(n_cols, n_plots)
     gs, locs = prepare_gridspec_figure(n_cols=n_cols, n_plots=n_plots)
 
-    for name, loc in zip(df.columns, locs, strict=False):
+    for name, loc in zip(df.columns, locs, strict=True):
         axis = fig.add_subplot(gs[loc])
         axis.set_ylabel("Density", fontsize=labels_size)
         _plot_single_kde(
@@ -185,79 +199,141 @@ def plot_descriptive(
     return fig
 
 
-# Aggregated plotting function
-def subplots_function(
-    df,
-    var_list,
-    index,
-    aggregation_funct,
-    title,
-    graph_rows=2,
-    figure_size=(20, 18),
-    subplot_title_fontsize=14,
-):
-    fig, axs = plt.subplots(graph_rows, 2, figsize=figure_size)
+AGGREGATE_COLUMNS = 2
 
-    for x in var_list:
-        a = math.floor(var_list.index(x) / 2)
-        b = var_list.index(x) % 2
-        axs[a, b].plot(df.pivot_table(values=x, index=index, aggfunc=aggregation_funct)[x])
-        axs[a, b].set_title(x, fontsize=subplot_title_fontsize)
+Aggregation = Literal["count", "first", "last", "max", "mean", "median", "min", "nunique", "std", "sum", "var"]
 
-    if (len(var_list) % 2) != 0:
-        axs[graph_rows - 1, 1].set_axis_off()
+
+def plot_aggregated_series(
+    df: pd.DataFrame,
+    variables: list[str],
+    index: str,
+    aggregation: Aggregation,
+    title: str,
+    graph_rows: int = 2,
+    figure_size: tuple[float, float] = (20, 18),
+    subplot_title_fontsize: int = 14,
+) -> plt.Figure:
+    """
+    Plot one variable per panel, each aggregated over ``index``.
+
+    Parameters
+    ----------
+    df : DataFrame
+        The observations to aggregate.
+    variables : list of str
+        Columns to plot, one panel each, filling the grid left to right.
+    index : str
+        Column to aggregate over, which becomes the x axis.
+    aggregation : str
+        How to combine rows sharing an index value, as named in ``Aggregation``.
+    title : str
+        Heading for the figure.
+    graph_rows : int, optional
+        Rows in the grid, which is two columns wide. Default 2.
+    figure_size : tuple of float, optional
+        Figure width and height in inches. Default (20, 18).
+    subplot_title_fontsize : int, optional
+        Point size for each panel's title; the figure heading is ten points larger. Default 14.
+
+    Returns
+    -------
+    Figure
+        The figure the panels were drawn on.
+    """
+    fig, axes = plt.subplots(graph_rows, AGGREGATE_COLUMNS, figsize=figure_size)
+
+    for position, variable in enumerate(variables):
+        axis = axes[position // AGGREGATE_COLUMNS, position % AGGREGATE_COLUMNS]
+        axis.plot(df.pivot_table(values=variable, index=index, aggfunc=aggregation)[variable])
+        axis.set_title(variable, fontsize=subplot_title_fontsize)
+
+    if len(variables) % AGGREGATE_COLUMNS:
+        axes[graph_rows - 1, 1].set_axis_off()
 
     plt.suptitle(title, fontsize=subplot_title_fontsize + 10)
     fig.tight_layout()
 
-
-# Aggregated plotting function for regions
-def subplots_function_regions(
-    df,
-    var_list,
-    index,
-    aggregation_funct,
-    title,
-    graph_rows=2,
-    figure_size=(20, 18),
-    subplot_title_fontsize=14,
-):
-    fig, axs = plt.subplots(graph_rows, 2, figsize=figure_size)
-
-    for x in var_list:
-        a = math.floor(var_list.index(x) / 2)
-        b = var_list.index(x) % 2
-        for y in REGIONS:
-            axs[a, b].plot(
-                df.query(f'Region == "{y}"').pivot_table(values=x, index=index, aggfunc=aggregation_funct),
-                label=y,
-            )
-            axs[a, b].set_title(x, fontsize=subplot_title_fontsize)
-        # axs[a,b].legend()
-
-    if (len(var_list) % 2) != 0:
-        axs[graph_rows - 1, 1].set_axis_off()
-    fig.legend(REGIONS, loc="lower right", ncol=5, fontsize=16)
-    plt.suptitle(title, fontsize=subplot_title_fontsize + 10)
-    fig.tight_layout(rect=[0, 0, 1, 0.95])
+    return fig
 
 
-def plot_ppc_loopit(idata: xr.DataTree, target_name: str, title: str | None = None, **ppc_kwargs) -> list[plt.Axes]:
-    """Plot the posterior predictive check (PPC) and the leave-one-out predictive interval (LOO-PIT) for a given target variable.
+def plot_aggregated_series_by_region(
+    df: pd.DataFrame,
+    variables: list[str],
+    index: str,
+    aggregation: Aggregation,
+    title: str,
+    graph_rows: int = 2,
+    figure_size: tuple[float, float] = (20, 18),
+    subplot_title_fontsize: int = 14,
+) -> plt.Figure:
+    """
+    Plot one variable per panel, aggregated over ``index`` and drawn once per region.
 
     Parameters
     ----------
-    idata : arviz.InferenceData
-        The inference data object containing the posterior samples.
+    df : DataFrame
+        The observations to aggregate, carrying a ``Region`` column.
+    variables : list of str
+        Columns to plot, one panel each, filling the grid left to right.
+    index : str
+        Column to aggregate over, which becomes the x axis.
+    aggregation : str
+        How to combine rows sharing an index value, as named in ``Aggregation``.
     title : str
-        The title for the plot.
-    target_name : str, optional
-        The name of the target variable. If None, the first variable in the posterior predictive data is used.
+        Heading for the figure.
+    graph_rows : int, optional
+        Rows in the grid, which is two columns wide. Default 2.
+    figure_size : tuple of float, optional
+        Figure width and height in inches. Default (20, 18).
+    subplot_title_fontsize : int, optional
+        Point size for each panel's title; the figure heading is ten points larger. Default 14.
 
     Returns
     -------
-    list
-        A list of matplotlib axes objects representing the plot.
+    Figure
+        The figure the panels were drawn on.
+    """
+    fig, axes = plt.subplots(graph_rows, AGGREGATE_COLUMNS, figsize=figure_size)
+
+    for position, variable in enumerate(variables):
+        axis = axes[position // AGGREGATE_COLUMNS, position % AGGREGATE_COLUMNS]
+        for region in REGIONS:
+            in_region = df[df["Region"] == region]
+            axis.plot(in_region.pivot_table(values=variable, index=index, aggfunc=aggregation), label=region)
+        axis.set_title(variable, fontsize=subplot_title_fontsize)
+
+    if len(variables) % AGGREGATE_COLUMNS:
+        axes[graph_rows - 1, 1].set_axis_off()
+
+    fig.legend(list(REGIONS), loc="lower right", ncol=len(REGIONS), fontsize=16)
+    plt.suptitle(title, fontsize=subplot_title_fontsize + 10)
+    fig.tight_layout(rect=(0, 0, 1, 0.95))
+
+    return fig
+
+
+def plot_ppc_loopit(
+    idata: xr.DataTree, target_name: str, title: str | None = None, **ppc_kwargs: Any
+) -> list[plt.Axes]:
+    """
+    Plot a posterior predictive check above its LOO-PIT diagnostics, as one figure.
+
+    Parameters
+    ----------
+    idata : DataTree
+        Inference data carrying the posterior predictive samples.
+    target_name : str
+        Variable to check.
+    title : str, optional
+        Heading for the posterior predictive panel. Default None, which uses ``target_name``.
+    **ppc_kwargs
+        Passed to :func:`arviz.plot_ppc`.
+
+    Returns
+    -------
+    list of Axes
+        The posterior predictive panel and the two LOO-PIT panels.
     """
     fig = plt.figure(figsize=(12, 9))
     gs = plt.GridSpec(2, 2, figure=fig)
@@ -266,7 +342,7 @@ def plot_ppc_loopit(idata: xr.DataTree, target_name: str, title: str | None = No
     ax_ecdf = fig.add_subplot(gs[1, 1])
 
     az.plot_ppc(idata, ax=ax_ppc, var_names=[target_name], **ppc_kwargs)
-    for ax, ecdf in zip([ax_loo, ax_ecdf], [False, True], strict=False):
+    for ax, ecdf in zip([ax_loo, ax_ecdf], [False, True], strict=True):
         az.plot_loo_pit(idata, y=target_name, ecdf=ecdf, ax=ax)
 
     if title is None:
@@ -279,7 +355,7 @@ def plot_ppc_loopit(idata: xr.DataTree, target_name: str, title: str | None = No
 SAMPLE_DIMS = ("chain", "draw")
 
 
-def _aligned_prediction_mean(draws, df):
+def _aligned_prediction_mean(draws: xr.DataArray, df: pd.DataFrame) -> np.ndarray:
     """Return the posterior-predictive mean, checked against the frame it will be attached to."""
     predictions = draws.mean(dim=SAMPLE_DIMS)
     if predictions.size != len(df):
@@ -287,10 +363,10 @@ def _aligned_prediction_mean(draws, df):
             f"posterior_predictive holds {predictions.size} observations but df has {len(df)} rows; "
             f"they must be the observations the model saw, in the same order."
         )
-    return predictions.values
+    return np.asarray(predictions.values)
 
 
-def generate_plot_inputs(idata, df):
+def attach_count_predictions(idata: xr.DataTree, df: pd.DataFrame) -> pd.DataFrame:
     """Attach posterior-predictive means and HDI bounds to the observed frame.
 
     Parameters
@@ -320,10 +396,26 @@ def generate_plot_inputs(idata, df):
     )
 
 
-def plotting_function(idata, df, country: str) -> plt.Figure:
-    df_predictions = generate_plot_inputs(idata=idata, df=df)
+def plot_predicted_counts(idata: xr.DataTree, df: pd.DataFrame, country: str) -> plt.Figure:
+    """
+    Plot one country's predicted disaster counts against what was observed.
 
-    # Filter country
+    Parameters
+    ----------
+    idata : DataTree
+        Inference data carrying a ``posterior_predictive`` group with a ``y_hat`` variable.
+    df : DataFrame
+        The observed frame, in the order the model saw it.
+    country : str
+        ISO 3166-1 alpha-3 code of the country to draw.
+
+    Returns
+    -------
+    Figure
+        Predicted mean, observed counts, and the 50% and 95% HDI bands.
+    """
+    df_predictions = attach_count_predictions(idata=idata, df=df)
+
     data = df_predictions.query("ISO == @country")
 
     fig, ax = plt.subplots()
@@ -359,8 +451,7 @@ def plotting_function(idata, df, country: str) -> plt.Figure:
     return fig
 
 
-############################################ Functions for the damage model  #############################################
-def generate_plot_inputs_damages(idata, df):
+def attach_damage_predictions(idata: xr.DataTree, df: pd.DataFrame) -> pd.DataFrame:
     """Attach posterior-predictive damage means and HDI bounds to the observed frame.
 
     Parameters
@@ -390,10 +481,28 @@ def generate_plot_inputs_damages(idata, df):
     )
 
 
-def plotting_function_damages(idata, df: pd.DataFrame, country: str, target_variable: str) -> plt.Figure:
-    df_predictions = generate_plot_inputs_damages(idata=idata, df=df)
+def plot_predicted_damages(idata: xr.DataTree, df: pd.DataFrame, country: str, target_variable: str) -> plt.Figure:
+    """
+    Plot one country's predicted damages against what was observed.
 
-    # Filter country
+    Parameters
+    ----------
+    idata : DataTree
+        Inference data carrying a ``posterior_predictive`` group with a ``damage_millions`` variable.
+    df : DataFrame
+        The observed frame, in the order the model saw it.
+    country : str
+        ISO 3166-1 alpha-3 code of the country to draw.
+    target_variable : str
+        Column holding the observed damages to plot against.
+
+    Returns
+    -------
+    Figure
+        Predicted mean, observed damages, and the 50% and 75% HDI bands.
+    """
+    df_predictions = attach_damage_predictions(idata=idata, df=df)
+
     data = df_predictions.query("ISO == @country")
 
     fig, ax = plt.subplots()

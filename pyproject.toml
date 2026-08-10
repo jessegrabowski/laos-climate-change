@@ -171,6 +171,7 @@ files = [
     "climate_risk/exceptions.py",
     "climate_risk/geo",
     "climate_risk/models",
+    "climate_risk/plotting.py",
     "climate_risk/replication_data.py",
     "climate_risk/sample.py",
     "climate_risk/stats",
@@ -187,9 +188,10 @@ warn_unreachable = true
 warn_unused_ignores = true
 strict_equality = true
 
-# None of these four ships stubs, and none exists on the index.
+# These ship no stubs in the package itself. scipy-stubs and types-seaborn exist on the index and
+# would replace two of these entries.
 [[tool.mypy.overrides]]
-module = ["pymc.*", "pytensor.*", "sklearn.*", "statsmodels.*"]
+module = ["arviz.*", "pymc.*", "pytensor.*", "scipy.*", "seaborn.*", "sklearn.*", "statsmodels.*"]
 ignore_missing_imports = true
 
 # Test functions carry no annotations, so their bodies need checking on their own terms.
