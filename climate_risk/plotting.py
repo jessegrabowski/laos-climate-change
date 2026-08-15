@@ -1,3 +1,4 @@
+from collections.abc import Mapping, Sequence
 from typing import Any, Literal
 
 import arviz as az
@@ -68,6 +69,106 @@ def prepare_gridspec_figure(n_cols: int, n_plots: int, figure: plt.Figure | None
             plot_locs.append((last_row, col_slice))
 
     return gs, plot_locs
+
+
+def panel_grid(
+    *,
+    names: Sequence[str],
+    labels: Mapping[str, str] | None = None,
+    units: Mapping[str, str] | None = None,
+    n_cols: int = 4,
+    height: float = 2.9,
+    width: float = 4.6,
+) -> tuple[plt.Figure, list[plt.Axes]]:
+    """
+    Return a figure and one titled axis per name, laid out on a shared grid.
+
+    Parameters
+    ----------
+    names : sequence of str
+        One axis per entry, in order. Doubles as the lookup key into ``labels`` and ``units``.
+    labels : mapping of str to str, optional
+        Axis titles, keyed by name. A name absent from the mapping titles itself. Default None.
+    units : mapping of str to str, optional
+        Y-axis labels, keyed by name. A name absent from the mapping gets none. Default None.
+    n_cols : int, optional
+        Columns in the grid, capped at the number of names. Default 4.
+    height : float, optional
+        Inches per row. Default 2.9.
+    width : float, optional
+        Inches per column. Default 4.6.
+
+    Returns
+    -------
+    figure : Figure
+        The figure the axes belong to.
+    axes : list of Axes
+        One axis per name, in the order given.
+    """
+    labels = labels or {}
+    units = units or {}
+    columns = min(len(names), n_cols)
+
+    figure = plt.figure(figsize=(width * columns, height * int(np.ceil(len(names) / n_cols))), dpi=200)
+    grid, locations = prepare_gridspec_figure(n_cols=columns, n_plots=len(names), figure=figure)
+    axes = [figure.add_subplot(grid[location]) for location in locations]
+
+    for axis, name in zip(axes, names, strict=True):
+        axis.set_title(labels.get(name, name), size=11, pad=5)
+        axis.set_ylabel(units.get(name, ""), size=8)
+        axis.tick_params(axis="both", labelsize=8)
+
+    return figure, axes
+
+
+def plot_fan(
+    *,
+    draws: xr.DataArray,
+    axis: plt.Axes,
+    observed: pd.Series | None = None,
+    probs: Sequence[float] = (0.50, 0.89),
+    color: str = "tab:blue",
+    divider: Any = None,
+    shades: tuple[float, float] = (0.16, 0.34),
+) -> None:
+    """
+    Draw a posterior median with nested credible bands, optionally over an observed series.
+
+    Wider intervals are drawn first and shaded lightest, so a narrow band stays legible on top of a
+    wide one.
+
+    Parameters
+    ----------
+    draws : DataArray
+        Carrying ``chain``, ``draw`` and ``time``, with ``time`` convertible to dates.
+    axis : Axes
+        Where to draw.
+    observed : Series, optional
+        Realised values, drawn as a dashed dark line over the bands. Default None.
+    probs : sequence of float, optional
+        Credible masses, one band each. Default (0.50, 0.89).
+    color : str, optional
+        Colour of the bands and the median line. Default 'tab:blue'.
+    divider : optional
+        X position for a vertical rule, typically the last observation. Default None, drawing none.
+    shades : tuple of float, optional
+        Alpha for the widest and narrowest band, interpolated across the rest. Default (0.16, 0.34).
+    """
+    time = pd.to_datetime(draws.coords["time"].values)
+
+    for prob, shade in zip(sorted(probs, reverse=True), np.linspace(*shades, len(probs)), strict=True):
+        band = az.hdi(draws, prob=prob).transpose("ci_bound", ...).values
+        axis.fill_between(time, *band, color=color, alpha=shade, lw=0)
+
+    axis.plot(time, draws.median(dim=["chain", "draw"]), color=color, lw=1.6)
+
+    if observed is not None:
+        axis.plot(observed.index, observed.to_numpy(), color="0.15", lw=1.0, ls="--")
+
+    if divider is not None:
+        axis.axvline(divider, color="0.35", ls=":", lw=0.9)
+
+    axis.margins(x=0)
 
 
 def _plot_single_kde(
