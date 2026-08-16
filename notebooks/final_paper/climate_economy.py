@@ -163,8 +163,7 @@ class ClimateEconomy(PyMCStateSpace):
         # How strongly warming chases the carbon stock.
         transition = pt.set_subtensor(transition[WARMING, CO2], (1.0 - self.thermal_persistence) * climate_response)
 
-        # The capital-output ratio pursues a target that falls with population growth. Linearising
-        # the steady state gives a slope of `1 / (g + n + delta)`, which the prior is centred on.
+        # The capital-output target falls with population growth at `1 / (g + n + delta)`.
         reversion = 1.0 - rho[2]
         transition = pt.set_subtensor(transition[KY_DEV, POP_GROWTH], -reversion * ky_slope)
         self.ssm["transition", :, :] = assume(transition, upper_triangular=True)
@@ -177,8 +176,8 @@ class ClimateEconomy(PyMCStateSpace):
         state_intercept = pt.set_subtensor(state_intercept[KY_DEV], reversion * ky_slope * self.population_growth_mean)
         self.ssm["state_intercept", :] = state_intercept
 
-        # Realised temperature is the forced path plus its deviation, and both reach ocean heat and
-        # output the same way. Precipitation responds to the forced path alone.
+        # Ocean heat and output see forced warming plus its deviation; precipitation sees only the
+        # forced path.
         design = pt.as_tensor_variable(self._design_base)
         design = pt.set_subtensor(
             design[:, WARMING],
@@ -193,9 +192,7 @@ class ClimateEconomy(PyMCStateSpace):
         )
         self.ssm["design", :, :] = design
 
-        # `gdp_intercept` is the unit of the output series. Without it the identity has to reach a
-        # level of eleven log points from centred inputs, and only the labour share is free enough
-        # to do it.
+        # `gdp_intercept` is the unit of the output series; without it the labour share carries it.
         intercept = pt.zeros(len(OBSERVED))
         intercept = pt.set_subtensor(intercept[0], np.log(PREINDUSTRIAL_CO2_PPM))
         intercept = pt.set_subtensor(intercept[[3, 4]], obs_intercept)

@@ -22,11 +22,8 @@ PWT = ManualSource(
 
 SHEET = "Data"
 
-# The `na` suffix marks the national-accounts family, which is the one comparable over time within
-# a country. Mixing it with the purchasing-power family gives a growth rate neither one reports.
-# `ctfp` is the exception, and the reason it is here: it is a level at current PPPs with the United
-# States at 1, which is the only comparison of productivity levels across countries the table
-# supports. The `na` series are indices on a national base and cannot give one.
+# The `na` family is comparable over time within a country; `ctfp` is a level at current PPPs with
+# the USA at 1, and is the only cross-country comparison the table supports.
 PWT_COLUMNS = {
     "rgdpna": "pwt_real_gdp",
     "rkna": "capital",
