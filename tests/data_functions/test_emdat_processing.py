@@ -58,6 +58,23 @@ def test_empty_workbook_is_rejected(write_emdat_cache):
         load_emdat_events(write_emdat_cache([]))
 
 
+def test_a_cost_written_as_text_reads_back_as_a_number(write_emdat_cache):
+    """EM-DAT stores these columns as text, empties included, so an undeclared reader types the
+    whole column as string and the totals built on it concatenate instead of adding.
+    """
+    cache_dir = write_emdat_cache(
+        [
+            emdat_event({"DisNo.": "unquantified", "Reconstruction Costs ('000 US$)": ""}),
+            emdat_event({"DisNo.": "quantified", "Reconstruction Costs ('000 US$)": "1234.5"}),
+        ]
+    )
+
+    costs = load_emdat_events(cache_dir)["Reconstruction_Costs"]
+
+    assert costs.dtype.is_numeric(), costs.dtype
+    assert costs.drop_nulls().to_list() == [1234.5]
+
+
 def test_workbook_missing_a_column_names_it(write_emdat_cache):
     """Nothing else detects upstream schema drift, so the loader has to."""
     event = emdat_event()
