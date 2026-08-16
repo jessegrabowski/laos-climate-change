@@ -9,6 +9,7 @@ from climate_risk.data import world_bank
 from climate_risk.data.world_bank import (
     COUNTRIES_FILE,
     COUNTRY_CODE_BY_NAME,
+    INDICATOR_NAMES,
     REQUESTED_COUNTRY_CODES,
     WB_INDICATORS,
     load_wb_data,
@@ -76,6 +77,19 @@ def test_indicator_codes_become_readable_names():
         "surface_area_km2",
     }
     assert frame["gdp_per_cap"].to_list() == [1000.0]
+
+
+def test_the_gdp_series_are_both_constant_price():
+    """`downloaded` builds its columns from WB_INDICATORS, so a renaming test agrees with whatever
+    code is listed and cannot see a wrong one. The codes carry the units: KD is constant 2015 US$,
+    CD is current US$ and moves with domestic inflation and the exchange rate. Mixing them makes
+    `real_gdp / Population` disagree with the published `gdp_per_cap`.
+    """
+    assert INDICATOR_NAMES["NY.GDP.MKTP.KD"] == "real_gdp"
+    assert INDICATOR_NAMES["NY.GDP.PCAP.KD"] == "gdp_per_cap"
+
+    priced = [code for code in WB_INDICATORS if code.startswith("NY.GDP")]
+    assert all(code.endswith(".KD") for code in priced), priced
 
 
 def test_a_country_with_no_iso_code_is_dropped():
