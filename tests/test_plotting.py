@@ -159,7 +159,7 @@ def test_the_bands_are_the_credible_intervals_they_claim(fan_draws):
     plot_fan(draws=fan_draws, axis=axis, probs=(0.5, 0.89))
 
     expected = {prob: az.hdi(fan_draws, prob=prob).transpose("ci_bound", ...).values for prob in (0.5, 0.89)}
-    drawn = [collection.get_paths()[0].vertices for collection in axis.collections]
+    drawn = [np.asarray(collection.get_paths()[0].vertices) for collection in axis.collections]
     assert len(drawn) == 2
 
     widest = drawn[0][:, 1]
@@ -176,7 +176,8 @@ def test_the_widest_band_is_drawn_faintest(fan_draws):
     plot_fan(draws=fan_draws, axis=axis, probs=(0.5, 0.89), shades=(0.16, 0.34))
 
     spans = [
-        (collection.get_alpha(), np.ptp(collection.get_paths()[0].vertices[:, 1])) for collection in axis.collections
+        (collection.get_alpha(), np.ptp(np.asarray(collection.get_paths()[0].vertices)[:, 1]))
+        for collection in axis.collections
     ]
     faintest = min(spans)
     widest = max(spans, key=lambda entry: entry[1])
@@ -203,7 +204,7 @@ def test_the_observed_series_is_drawn_over_the_bands(fan_draws):
     plot_fan(draws=fan_draws, axis=axis, observed=observed)
 
     observed_line = axis.lines[1]
-    assert list(pd.to_datetime(observed_line.get_xdata())) == list(observed.index)
+    assert list(pd.to_datetime(np.asarray(observed_line.get_xdata()))) == list(observed.index)
     assert np.allclose(observed_line.get_ydata(), observed.to_numpy())
     plt.close(figure)
 
