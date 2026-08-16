@@ -27,21 +27,16 @@ def _read_countries() -> tuple[dict[str, str], list[str]]:
 
 COUNTRY_CODE_BY_NAME, REQUESTED_COUNTRY_CODES = _read_countries()
 
-WB_INDICATORS = [
-    "EN.POP.DNST",
-    "NY.GDP.PCAP.KD",
-    "SP.POP.TOTL",
-    "NY.GDP.MKTP.CD",
-    "AG.SRF.TOTL.K2",
-]
-
+# KD is constant 2015 US$. The CD variant carries inflation and the exchange rate.
 INDICATOR_NAMES = {
     "EN.POP.DNST": "population_density",
     "NY.GDP.PCAP.KD": "gdp_per_cap",
     "SP.POP.TOTL": "Population",
-    "NY.GDP.MKTP.CD": "real_gdp",
+    "NY.GDP.MKTP.KD": "real_gdp",
     "AG.SRF.TOTL.K2": "surface_area_km2",
 }
+
+WB_INDICATORS = list(INDICATOR_NAMES)
 
 # Earlier than any indicator's coverage, so the series starts wherever the data does.
 FIRST_YEAR = 1900

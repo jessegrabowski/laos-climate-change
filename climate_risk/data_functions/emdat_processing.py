@@ -80,6 +80,16 @@ DISASTER_TYPES = tuple(c for c in PROB_COLS if c not in {"Country", "ISO", "Star
 # earliest point a changed export becomes a named error rather than a missing attribute.
 REQUIRED_EMDAT_COLUMNS = {"ISO", "Region", "Subregion", "Disaster Type", "GADM Admin Units"} | set(EM_DAT_COL_DICT)
 
+# EM-DAT writes empty strings, not blank cells: undeclared, a cost column reads as text and an
+# all-empty text column warns.
+EMDAT_DTYPES = {
+    "AID Contribution ('000 US$)": "float",
+    "Reconstruction Costs ('000 US$)": "float",
+    "Reconstruction Costs, Adjusted ('000 US$)": "float",
+    "Admin Units": "string",
+    "GADM Admin Units": "string",
+}
+
 # Misspelled on the wire. Correcting it would invalidate every cached CSV on every machine, so the
 # literal stays and the constants are how code should refer to it.
 HYDROMETEOROLOGICAL = "Hydrometereological"
@@ -111,7 +121,12 @@ COUNT_DTYPE = pl.Float64
 
 def _read_workbook(emdat_path: Path) -> pl.DataFrame:
     """Read the EM-DAT sheet, raising a named error rather than letting a changed export surface later."""
-    workbook = pl.read_excel(emdat_path, sheet_name="EM-DAT Data", raise_if_empty=False)
+    workbook = pl.read_excel(
+        emdat_path,
+        sheet_name="EM-DAT Data",
+        raise_if_empty=False,
+        read_options={"dtypes": EMDAT_DTYPES},
+    )
 
     if workbook.is_empty():
         raise ValueError(f"The `EM-DAT Data` sheet in `{emdat_path}` has no rows.")
