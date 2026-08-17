@@ -54,6 +54,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/dbus-1.16.2-h24cb091_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/double-conversion-3.4.0-hecca717_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/epoxy-1.5.10-hb03c661_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/exactextract-0.3.0-py312ha2fa81c_5.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/fastexcel-0.20.2-py312h0ccc70a_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/fontconfig-2.18.2-h27c8c51_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/fonttools-4.63.0-py312h8a5da7c_0.conda
@@ -556,6 +557,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/contourpy-1.3.3-py312h3093aea_4.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/coverage-7.15.3-py312h04c11ed_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/epoxy-1.5.10-hc919400_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/exactextract-0.3.0-py312hdf1b305_5.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/fastexcel-0.20.2-py312h232e7c1_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/fontconfig-2.18.2-h2b252f5_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/fonttools-4.63.0-py312h04c11ed_0.conda
@@ -791,6 +793,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/debugpy-1.8.21-py312h8285ef7_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/double-conversion-3.4.0-hecca717_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/epoxy-1.5.10-hb03c661_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/exactextract-0.3.0-py312ha2fa81c_5.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/fastexcel-0.20.2-py312h0ccc70a_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/fontconfig-2.18.2-h27c8c51_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/fonttools-4.63.0-py312h8a5da7c_0.conda
@@ -1468,6 +1471,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/coverage-7.15.3-py312h04c11ed_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/debugpy-1.8.21-py312h6510ced_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/epoxy-1.5.10-hc919400_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/exactextract-0.3.0-py312hdf1b305_5.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/fastexcel-0.20.2-py312h232e7c1_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/fontconfig-2.18.2-h2b252f5_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/fonttools-4.63.0-py312h04c11ed_0.conda
@@ -2451,6 +2455,25 @@ packages:
     - epoxy >=1.5.10,<1.6.0a0
   size: 411735
   timestamp: 1758743520805
+- conda: https://conda.anaconda.org/conda-forge/linux-64/exactextract-0.3.0-py312ha2fa81c_5.conda
+  sha256: 9e594828b4a944080b4d526b81e30c295b0b578bf910cd5fb9921a69d1ba1ab4
+  md5: 1f1fb51932530781133ea23a837b5c24
+  depends:
+  - __glibc >=2.17,<3.0.a0
+  - geos >=3.14.1,<3.14.2.0a0
+  - libgcc >=14
+  - libgdal-core >=3.13.1,<3.14.0a0
+  - libstdcxx >=14
+  - numpy
+  - python >=3.12,<3.13.0a0
+  - python_abi 3.12.* *_cp312
+  license: Apache-2.0
+  license_family: APACHE
+  purls:
+  - pkg:pypi/exactextract?source=hash-mapping
+  run_exports: {}
+  size: 454107
+  timestamp: 1783485581851
 - conda: https://conda.anaconda.org/conda-forge/linux-64/fastexcel-0.20.2-py312h0ccc70a_0.conda
   sha256: d2c59dd2f7486a4edc2cccfa1b68e28da65ca3bf022f8caab3926c4cc97fd9c3
   md5: 7aea6d37a8edb19174f2a00272753e83
@@ -10043,6 +10066,25 @@ packages:
     - epoxy >=1.5.10,<1.6.0a0
   size: 296347
   timestamp: 1758743805063
+- conda: https://conda.anaconda.org/conda-forge/osx-arm64/exactextract-0.3.0-py312hdf1b305_5.conda
+  sha256: 5fc23ce3881ad26e3599d8394fa59fed4b56f74cd257f04a1b660a938d05bacd
+  md5: f4d26d057f6cacbfb9120336aa5bba95
+  depends:
+  - __osx >=11.0
+  - geos >=3.14.1,<3.14.2.0a0
+  - libcxx >=19
+  - libgdal-core >=3.13.1,<3.14.0a0
+  - numpy
+  - python >=3.12,<3.13.0a0
+  - python >=3.12,<3.13.0a0 *_cpython
+  - python_abi 3.12.* *_cp312
+  license: Apache-2.0
+  license_family: APACHE
+  purls:
+  - pkg:pypi/exactextract?source=hash-mapping
+  run_exports: {}
+  size: 328236
+  timestamp: 1783486211540
 - conda: https://conda.anaconda.org/conda-forge/osx-arm64/fastexcel-0.20.2-py312h232e7c1_0.conda
   sha256: e0856ad50525172fb9a8d76764c897c1c10fdac87177dbebc7ae587be6b03e08
   md5: ea5361c46d1c4166303ddc19bac8d8c4
@@ -13101,6 +13143,7 @@ packages:
   name: climate-risk
   requires_dist:
   - arviz>=1.2,<2
+  - exactextract>=0.3,<1
   - fastexcel>=0.20,<1
   - geopandas>=1.1,<2
   - h5netcdf>=1.6,<2
