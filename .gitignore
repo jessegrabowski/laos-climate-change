@@ -181,7 +181,7 @@ notebooks/final_paper/data/
 *.ncdf
 *.nc
 *idata
-models/
+/models/
 
 # Ignore archive
 notebooks/geo_damage_model/archive
