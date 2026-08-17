@@ -1,3 +1,4 @@
+from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass
 
@@ -122,8 +123,8 @@ def build_aggregation(
         Each cell's weight in its unit, one per entry of ``unit_of_cell``. Cell area gives an
         integral over the polygon; population gives an exposure-weighted one.
     units : sequence of str, optional
-        Row order of the operator. Every assigned label must appear. Default None, which orders the
-        labels that appear in ``unit_of_cell``, sorted.
+        Row order of the operator. Every assigned label must appear, and no label twice. Default
+        None, which orders the labels that appear in ``unit_of_cell``, sorted.
 
     Returns
     -------
@@ -147,6 +148,11 @@ def build_aggregation(
 
     if units is None:
         units = sorted(set(labels))
+
+    counts = Counter(units)
+    repeated = sorted(unit for unit, count in counts.items() if count > 1)
+    if repeated:
+        raise DataValidationError(f"The row order repeats units, so their rows would not be reachable: {repeated}.")
 
     row_of_unit = {unit: row for row, unit in enumerate(units)}
     unknown = sorted(set(labels) - row_of_unit.keys())
