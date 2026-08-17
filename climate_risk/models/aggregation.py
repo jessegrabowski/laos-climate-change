@@ -87,16 +87,24 @@ class Aggregation:
         Parameters
         ----------
         cell_values : TensorVariable
-            Shape ``(n_cells,)``.
+            Shape ``(n_cells,)`` for one field, or ``(n_cells, k)`` to aggregate ``k`` of them at
+            once, each column independently.
 
         Returns
         -------
         TensorVariable
-            Shape ``(n_units,)``, in the row order of ``units``.
+            Shape ``(n_units,)`` or ``(n_units, k)``, in the row order of ``units``.
         """
-        contributions = pt.as_tensor_variable(self.weights) * cell_values[self.columns]
+        weights = pt.as_tensor_variable(self.weights)
+        if cell_values.ndim == 2:
+            weights = weights[:, None]
+            base = pt.zeros((self.n_units, cell_values.shape[1]))
+        else:
+            base = pt.zeros((self.n_units,))
 
-        totals: TensorVariable = pt.inc_subtensor(pt.zeros((self.n_units,))[self.rows], contributions)
+        contributions = weights * cell_values[self.columns]
+
+        totals: TensorVariable = pt.inc_subtensor(base[self.rows], contributions)
 
         return totals
 

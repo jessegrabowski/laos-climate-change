@@ -155,6 +155,21 @@ def test_the_symbolic_path_handles_repeats_gaps_and_empty_units():
     assert totals == pytest.approx([16.0, 0.0, 3.0])
 
 
+@pytest.mark.parametrize("n_columns", [1, 3])
+def test_the_symbolic_path_aggregates_a_stack_of_fields_columnwise(n_columns):
+    """Draws and covariance factors arrive as (n_cells, k) blocks. Each column is its own field,
+    so a base array of the wrong rank would sum them together and return one column.
+    """
+    weights = np.array([2.0, 3.0, 4.0])
+    aggregation = build_aggregation(unit_of_cell=["a", "a", "b"], weights=weights)
+    block = np.arange(3 * n_columns, dtype=float).reshape(3, n_columns)
+
+    cells = pt.matrix("cells")
+    totals = pytensor.function([cells], aggregation.aggregate_symbolic(cells))(block)
+
+    np.testing.assert_allclose(totals, np.stack([weights[:2] @ block[:2], weights[2] * block[2]]))
+
+
 def test_the_symbolic_gradient_is_the_operator_transpose():
     """The model differentiates through this, and a gather paired with the wrong scatter can give
     the right totals with the wrong sensitivities. The operator is linear, so its Jacobian is the
