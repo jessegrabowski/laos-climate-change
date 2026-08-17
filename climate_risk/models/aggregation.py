@@ -146,6 +146,13 @@ def build_aggregation(
     assigned = np.array([label is not None for label in unit_of_cell], dtype=bool)
     labels = [label for label in unit_of_cell if label is not None]
 
+    non_strings = sorted({type(label).__name__ for label in labels if not isinstance(label, str)})
+    if non_strings:
+        raise DataValidationError(
+            f"Cell assignments carry non-string labels ({', '.join(non_strings)}). A spatial join marks a cell it "
+            f"matched to nothing with NaN; mark it with None instead, which is what drops it."
+        )
+
     if units is None:
         units = sorted(set(labels))
 

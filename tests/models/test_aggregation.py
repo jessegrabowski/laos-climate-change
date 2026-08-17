@@ -217,6 +217,14 @@ def test_a_unit_absent_from_the_row_order_is_named():
         build_aggregation(unit_of_cell=["a", "ghost"], weights=np.ones(2), units=["a"])
 
 
+def test_a_nan_assignment_is_rejected_by_name():
+    """A spatial join marks a cell it matched to nothing with NaN rather than None, and NaN is not
+    None, so it would otherwise be taken for a real unit label.
+    """
+    with pytest.raises(DataValidationError, match="None"):
+        build_aggregation(unit_of_cell=["a", np.nan, "b"], weights=np.ones(3))  # type: ignore[list-item]
+
+
 def test_a_repeated_unit_in_the_row_order_is_rejected():
     """A duplicated label makes the row lookup last-wins, which leaves the earlier row permanently
     zero and shifts that unit's total onto a row the caller thinks belongs to something else. A
