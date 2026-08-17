@@ -101,10 +101,6 @@ def sample_log_intensity(
     through :math:`f = m + B \varepsilon + \sqrt{d}\,\eta`, which is exact for the factored
     covariance and puts the sampling noise outside the gradient.
 
-    The draw matrices are fixed rather than resampled, so the objective is deterministic and a
-    quasi-Newton optimizer can be used on it. That trades the estimator's variance for a bias that
-    falls as the number of draws grows.
-
     Parameters
     ----------
     aggregation : Aggregation
@@ -147,19 +143,20 @@ def aggregated_poisson_elbo(
     cell_features: TensorVariable,
     unit_counts: TensorVariable,
     aggregation: Aggregation,
+    *,
     n_draws: int = 16,
     seed: int = 0,
 ) -> TensorVariable:
     r"""
     The variational objective for counts observed as polygon totals of a cell-level intensity.
 
-    ptgp's own ELBO pairs observation :math:`i` with latent point :math:`i` and scales by the
-    number of latent points, neither of which holds when an observation is a sum over cells, so
-    this replaces it rather than supplying a ``Likelihood``.
+    Replaces ptgp's own ELBO rather than supplying a ``Likelihood``: that interface pairs
+    observation :math:`i` with latent point :math:`i` and scales by the number of latent points,
+    and an aggregated observation satisfies neither.
 
-    :math:`\mathbb{E}_q[\Lambda_A]` is taken in closed form and only :math:`\mathbb{E}_q[\log
-    \Lambda_A]` is sampled, which removes the estimator's variance from the term that dominates
-    the gradient.
+    :math:`\mathbb{E}_q[\Lambda_A]` is closed form and only :math:`\mathbb{E}_q[\log \Lambda_A]` is
+    sampled, on draws fixed once so the objective stays deterministic and a quasi-Newton optimizer
+    can be used on it.
 
     Parameters
     ----------
@@ -186,7 +183,7 @@ def aggregated_poisson_elbo(
     rng = np.random.default_rng(seed)
     # Shared rather than constant: at raster scale the cell draws are far too large to fold into
     # the graph, and numba refuses to cache a function carrying one.
-    inducing_draws = shared(rng.standard_normal((svgp.q_sqrt.type.shape[1] or 1, n_draws)), name="inducing_draws")
+    inducing_draws = shared(rng.standard_normal((svgp.inducing_variable.num_inducing, n_draws)), name="inducing_draws")
     cell_draws = shared(rng.standard_normal((aggregation.n_cells, n_draws)), name="cell_draws")
 
     expected = expected_intensity(aggregation, mean, independent_variance, factor)
