@@ -90,6 +90,23 @@ def test_a_cell_outside_every_unit_contributes_to_nothing():
     assert aggregation.matrix.sum() == pytest.approx(2.0)
 
 
+def test_a_grid_that_misses_every_unit_gives_an_empty_operator():
+    """A bounding box can miss the geometries altogether: an all-sea tile, or a place whose
+    polygons failed to load. Both paths have to return no rows rather than raise, so the caller
+    sees an empty result instead of a traceback from inside the operator. The field is still the
+    full width, so aggregating one of the right length must not trip the width check.
+    """
+    aggregation = build_aggregation(unit_of_cell=[None, None], weights=np.ones(2))
+    field = np.array([1.0, 2.0])
+
+    cells = pt.vector("cells")
+    symbolic = pytensor.function([cells], aggregation.aggregate_symbolic(cells))
+
+    assert aggregation.units == ()
+    assert aggregation.aggregate(field).shape == (0,)
+    assert symbolic(field).shape == (0,)
+
+
 def test_draws_aggregate_columnwise():
     """Posterior draws come through as (n_cells, n_draws), and each column is its own field."""
     aggregation = build_aggregation(unit_of_cell=["a", "a", "b"], weights=np.ones(3))
