@@ -31,6 +31,7 @@ dependencies = [
     "arviz>=1.2,<2",
     "nutpie>=0.16,<1",
     "pymc-extras>=0.14.0,<1",
+    "ptgp>=0.1.2,<1",
     "preliz>=0.27.1,<1",
     "scikit-learn>=1.9,<2",
     "statsmodels>=0.14,<1",
@@ -140,6 +141,7 @@ dependency-overrides = { pytensor = ">=3.3,<4", pymc = ">=6.3,<7" }
 [tool.pixi.pypi-dependencies]
 climate-risk = { path = ".", editable = true }
 pymc-extras = ">=0.14.0,<1"
+ptgp = ">=0.1.2,<1"
 
 [tool.pixi.environments]
 default = { features = ["dev"], solve-group = "default" }

@@ -395,6 +395,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/5f/97/2aab507d3d00ca626e8e57c1eac6a79e4e5fbcc63eb99733ff55d1717f65/pydantic_core-2.46.4-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/67/81/4add07e5172b7ac40d8ed5ff580409a7801a4fe26d529bdd915401dabfbe/typing_inspection-0.4.4-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/99/91/8acff4f5e50511b911bbccb72b8628a49c68ce14148cd9f6431094859a90/annotated_types-0.8.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/ce/a6/2a4426d03f78bfb2f0d205dfa07a81728f9a03c2d7cc3ee1bfad5c238646/ptgp-0.1.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/e1/be/cb8b5a47fa80cfc7ab98e32c46422d6f1269e2a3a2c1ca37e3f97ad4cb98/better_optimize-0.4.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/f4/56/ff1348a6965a603e854059574b36d9f3466ce201b0cecf6b52d4f957d86e/kuznets-1.0.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/fd/7b/122376b1fd3c62c1ed9dc80c931ace4844b3c55407b6fb2d199377c9736f/pydantic-2.13.4-py3-none-any.whl
@@ -733,6 +734,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/67/81/4add07e5172b7ac40d8ed5ff580409a7801a4fe26d529bdd915401dabfbe/typing_inspection-0.4.4-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/6a/6e/c4add832b6fc1e887125b96f880d7b9b70aae5248718e046b1704bcac4b9/lxml-6.1.1-cp312-cp312-macosx_10_13_universal2.whl
       - pypi: https://files.pythonhosted.org/packages/99/91/8acff4f5e50511b911bbccb72b8628a49c68ce14148cd9f6431094859a90/annotated_types-0.8.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/ce/a6/2a4426d03f78bfb2f0d205dfa07a81728f9a03c2d7cc3ee1bfad5c238646/ptgp-0.1.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/e1/be/cb8b5a47fa80cfc7ab98e32c46422d6f1269e2a3a2c1ca37e3f97ad4cb98/better_optimize-0.4.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/f4/56/ff1348a6965a603e854059574b36d9f3466ce201b0cecf6b52d4f957d86e/kuznets-1.0.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/fd/7b/122376b1fd3c62c1ed9dc80c931ace4844b3c55407b6fb2d199377c9736f/pydantic-2.13.4-py3-none-any.whl
@@ -1221,6 +1223,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/99/91/8acff4f5e50511b911bbccb72b8628a49c68ce14148cd9f6431094859a90/annotated_types-0.8.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/a2/09/77d55d46fd61b4a135c444fc97158ef34a095e5681d0a6c10b75bf356191/sympy-1.14.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/a8/d2/4839422241aa12860ce597b20068727094ba0bc480723c74924ca5bad483/jiter-0.16.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+      - pypi: https://files.pythonhosted.org/packages/ce/a6/2a4426d03f78bfb2f0d205dfa07a81728f9a03c2d7cc3ee1bfad5c238646/ptgp-0.1.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/e1/be/cb8b5a47fa80cfc7ab98e32c46422d6f1269e2a3a2c1ca37e3f97ad4cb98/better_optimize-0.4.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/e8/31/a2cf4619eb6863cb7d7b28c1e7641a3f6c222cb7cee881decf32815bc17d/nbclassic_mcp_bridge-1.1.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/f4/56/ff1348a6965a603e854059574b36d9f3466ce201b0cecf6b52d4f957d86e/kuznets-1.0.1-py3-none-any.whl
@@ -1656,6 +1659,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/94/2e/34957c2c1b661c252ba9bcc60ae0bddc27e0f7202c6073326a13c5390eec/jiter-0.16.0-cp312-cp312-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/99/91/8acff4f5e50511b911bbccb72b8628a49c68ce14148cd9f6431094859a90/annotated_types-0.8.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/a2/09/77d55d46fd61b4a135c444fc97158ef34a095e5681d0a6c10b75bf356191/sympy-1.14.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/ce/a6/2a4426d03f78bfb2f0d205dfa07a81728f9a03c2d7cc3ee1bfad5c238646/ptgp-0.1.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/e1/be/cb8b5a47fa80cfc7ab98e32c46422d6f1269e2a3a2c1ca37e3f97ad4cb98/better_optimize-0.4.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/e8/31/a2cf4619eb6863cb7d7b28c1e7641a3f6c222cb7cee881decf32815bc17d/nbclassic_mcp_bridge-1.1.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/f4/56/ff1348a6965a603e854059574b36d9f3466ce201b0cecf6b52d4f957d86e/kuznets-1.0.1-py3-none-any.whl
@@ -13107,6 +13111,7 @@ packages:
   - openpyxl>=3.1,<4
   - pandas>=3.0,<4
   - preliz>=0.27.1,<1
+  - ptgp>=0.1.2,<1
   - pymc-extras>=0.14.0,<1
   - pymc>=6.3,<7
   - pytensor>=3.3,<4
@@ -13338,6 +13343,19 @@ packages:
   version: 0.16.0
   sha256: 46add52f4ad47a08bfb1219f3e673da972191489a33016edefdb5ea55bfa8c48
   requires_python: '>=3.9'
+- pypi: https://files.pythonhosted.org/packages/ce/a6/2a4426d03f78bfb2f0d205dfa07a81728f9a03c2d7cc3ee1bfad5c238646/ptgp-0.1.2-py3-none-any.whl
+  name: ptgp
+  version: 0.1.2
+  sha256: 35c3ce44bc8ec9393e7d633f093505a713d5d4dc7c29a9019b627a24ed2e3491
+  requires_dist:
+  - numpy
+  - pymc>=6.2.0,<6.3
+  - pytensor>=3.2.3,<3.3
+  - mypy ; extra == 'dev'
+  - polars ; extra == 'dev'
+  - pre-commit ; extra == 'dev'
+  - pytest ; extra == 'dev'
+  requires_python: '>=3.12'
 - pypi: https://files.pythonhosted.org/packages/e1/be/cb8b5a47fa80cfc7ab98e32c46422d6f1269e2a3a2c1ca37e3f97ad4cb98/better_optimize-0.4.2-py3-none-any.whl
   name: better-optimize
   version: 0.4.2
