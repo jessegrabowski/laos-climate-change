@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import numpy as np
 import pytensor.tensor as pt
 
+from pytensor.tensor import TensorVariable
 from scipy import sparse
 
 from climate_risk.exceptions import DataValidationError
@@ -11,18 +12,15 @@ from climate_risk.exceptions import DataValidationError
 
 @dataclass(frozen=True, slots=True)
 class Aggregation:
-    """
+    r"""
     The linear operator taking a cell-level field to the polygon totals it is observed through.
 
-    A polygon's total is :math:`\\sum_{i \\in A} w_i \\lambda_i`, so aggregation is a sparse matrix
-    product. It is stored as its coordinate triplet rather than as a matrix because the symbolic
-    path is a scatter-add over those indices: a scipy matrix cannot multiply a pytensor variable,
-    and expressing the sum with :func:`pytensor.tensor.inc_subtensor` avoids depending on how well
-    any given compilation backend covers sparse ops.
+    .. math::
 
-    Holding the operator and its row labels together is the point of the class: the model reads
-    totals by position, and a row order that silently disagrees with the observation order
-    attributes every polygon's events to the wrong place.
+        y_A = \sum_{i \in A} w_i \lambda_i
+
+    ``units`` fixes the row order, which the model reads by position: it must agree with the order
+    the observations arrive in.
 
     Parameters
     ----------
@@ -38,6 +36,7 @@ class Aggregation:
         Width of the operator, counting cells that contribute to no unit.
     """
 
+    # The triplet is primary because a scipy matrix cannot multiply a pytensor variable.
     units: tuple[str, ...]
     rows: np.ndarray
     columns: np.ndarray
@@ -78,12 +77,11 @@ class Aggregation:
 
         return np.asarray(self.matrix @ cell_values)
 
-    def aggregate_symbolic(self, cell_values: pt.TensorVariable) -> pt.TensorVariable:
+    def aggregate_symbolic(self, cell_values: TensorVariable) -> TensorVariable:
         """
         Sum a cell-level field to unit totals, as a graph.
 
-        The scatter-add accumulates over repeated row indices, so a unit collects every cell
-        assigned to it, and the gradient with respect to ``cell_values`` is the cell's weight.
+        Cells sharing a unit accumulate, and the reverse pass is the operator's transpose.
 
         Parameters
         ----------
@@ -97,7 +95,7 @@ class Aggregation:
         """
         contributions = pt.as_tensor_variable(self.weights) * cell_values[self.columns]
 
-        totals: pt.TensorVariable = pt.inc_subtensor(pt.zeros((self.n_units,))[self.rows], contributions)
+        totals: TensorVariable = pt.inc_subtensor(pt.zeros((self.n_units,))[self.rows], contributions)
 
         return totals
 
