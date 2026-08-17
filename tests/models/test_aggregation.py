@@ -355,3 +355,17 @@ def test_mismatched_overlap_columns_are_rejected():
         build_aggregation_from_overlaps(
             unit_of_overlap=["a", "b"], cell_of_overlap=np.array([0]), weights=np.array([1.0]), n_cells=2
         )
+
+
+def test_units_that_miss_the_grid_entirely_give_an_empty_operator():
+    """The raster layer hands over whatever overlaps it found, and a place whose units all miss the
+    grid finds none. That has to come back as an operator with no rows rather than raise, and it
+    still has to be as wide as the field the model evaluates.
+    """
+    aggregation = build_aggregation_from_overlaps(
+        unit_of_overlap=[], cell_of_overlap=np.array([], dtype=int), weights=np.array([]), n_cells=4
+    )
+
+    assert aggregation.units == ()
+    assert aggregation.n_cells == 4
+    assert aggregation.aggregate(np.arange(4.0)).shape == (0,)

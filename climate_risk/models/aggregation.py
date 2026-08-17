@@ -220,15 +220,16 @@ def _validated_weights(weights: np.ndarray) -> np.ndarray:
     validated = np.asarray(weights, dtype=float)
 
     if not np.all(np.isfinite(validated)):
-        raise DataValidationError("Cell weights carry a non-finite value, which would poison every total it enters.")
+        raise DataValidationError("A weight is non-finite, which would poison every total it enters.")
 
     if np.any(validated < 0.0):
-        raise DataValidationError("Cell weights are negative, so a polygon's total would not be a sum of parts.")
+        raise DataValidationError("A weight is negative, so a polygon's total would not be a sum of parts.")
 
     return validated
 
 
 def _rows_for_units(labels: list[str], units: Sequence[str] | None) -> tuple[tuple[str, ...], np.ndarray]:
+    """The row order, and the row each label occupies in it."""
     non_strings = sorted({type(label).__name__ for label in labels if not isinstance(label, str)})
     if non_strings:
         raise DataValidationError(
