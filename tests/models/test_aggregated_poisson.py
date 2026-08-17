@@ -3,8 +3,18 @@ import pytensor
 import pytensor.tensor as pt
 import pytest
 
+from ptgp.gp import SVGP, init_variational_params
+from ptgp.inducing import Points
+from ptgp.kernels import ExpQuad
+from ptgp.likelihoods import Poisson
+from pytensor.graph.traversal import explicit_graph_inputs
+from pytensor.tensor.special import gammaln
+
+from climate_risk.exceptions import DataValidationError
 from climate_risk.models.aggregated_poisson import (
+    aggregated_poisson_elbo,
     expected_intensity,
+    latent_moments,
     sample_log_intensity,
 )
 from climate_risk.models.aggregation import build_aggregation
@@ -119,11 +129,106 @@ def test_an_unwhitened_svgp_is_refused():
     """The moment expressions are derived from the whitened conditional. Running them against the
     unwhitened parameterization would silently use the wrong covariance factor.
     """
-    from climate_risk.exceptions import DataValidationError
-    from climate_risk.models.aggregated_poisson import latent_moments
 
     class Unwhitened:
         whiten = False
 
     with pytest.raises(DataValidationError, match="whitened"):
         latent_moments(Unwhitened(), pt.matrix("X"))
+
+
+def small_svgp(features):
+    """A whitened SVGP whose variational parameters are still symbolic, as ptgp leaves them."""
+    rng = np.random.default_rng(7)
+
+    return SVGP(
+        kernel=ExpQuad(input_dim=features.shape[1], ls=0.5),
+        likelihood=Poisson(),
+        inducing_variable=Points(Z=rng.uniform(0.0, 1.0, size=(N_INDUCING, features.shape[1]))),
+        variational_params=init_variational_params(N_INDUCING),
+        whiten=True,
+    )
+
+
+def evaluate_elbo(seed: int, counts=(3.0, 5.0)):
+    """The objective and its gradient at one point in the variational parameters."""
+    rng = np.random.default_rng(8)
+    features = rng.uniform(0.0, 1.0, size=(N_CELLS, 2))
+    aggregation = build_aggregation(unit_of_cell=["a"] * 5 + ["b"] * 7, weights=np.ones(N_CELLS))
+
+    elbo = aggregated_poisson_elbo(
+        small_svgp(features),
+        pt.as_tensor_variable(features),
+        pt.as_tensor_variable(np.asarray(counts)),
+        aggregation,
+        n_draws=8,
+        seed=seed,
+    )
+    parameters = list(explicit_graph_inputs([elbo]))
+    # The claim is about the graph, not the backend. Compiling it is the expensive part, and
+    # numba spends seconds on a graph this size for no extra coverage.
+    gradients = pt.grad(elbo, parameters)
+    assert isinstance(gradients, list), "a list of wrt variables gives a list of gradients"
+    compiled = pytensor.function(parameters, [elbo, *gradients], mode="FAST_COMPILE")
+
+    return compiled(*[rng.normal(0.0, 0.2, size=parameter.type.shape) for parameter in parameters])
+
+
+def test_the_objective_and_its_gradient_are_finite_and_informative():
+    """An optimizer is handed this, so a detached graph or a NaN is the failure that matters:
+    L-BFGS reads a zero gradient as a converged fit rather than as an error, and the run ends
+    looking successful.
+    """
+    value, *gradients = evaluate_elbo(seed=0)
+
+    assert np.isfinite(value)
+    assert all(np.all(np.isfinite(gradient)) for gradient in gradients)
+    assert all(np.any(gradient != 0.0) for gradient in gradients), "every variational parameter moves the objective"
+
+
+def test_the_same_seed_gives_the_same_objective():
+    """The draws are fixed so the objective is a deterministic function of the parameters. Drawing
+    afresh per evaluation would make it jitter and a quasi-Newton line search would fail on it.
+    """
+    first, *_ = evaluate_elbo(seed=0)
+    again, *_ = evaluate_elbo(seed=0)
+    other, *_ = evaluate_elbo(seed=1)
+
+    assert first == again
+    assert first != other, "a different seed draws a different estimate"
+
+
+def test_the_objective_is_the_poisson_likelihood_less_the_divergence():
+    """The three pieces are checked separately above; this pins how they are combined. Dropping
+    the counts, or the divergence, still leaves a finite differentiable scalar that an optimizer
+    would minimize happily into the wrong answer.
+    """
+    rng = np.random.default_rng(8)
+    features = rng.uniform(0.0, 1.0, size=(N_CELLS, 2))
+    aggregation = build_aggregation(unit_of_cell=["a"] * 5 + ["b"] * 7, weights=np.ones(N_CELLS))
+    counts = np.array([3.0, 5.0])
+    n_draws, seed = 8, 0
+
+    svgp = small_svgp(features)
+    cell_features = pt.as_tensor_variable(features)
+    elbo = aggregated_poisson_elbo(
+        svgp, cell_features, pt.as_tensor_variable(counts), aggregation, n_draws=n_draws, seed=seed
+    )
+
+    # The objective seeds its own draws; the same seed and the same order reproduces them.
+    draws = np.random.default_rng(seed)
+    inducing_draws = draws.standard_normal((N_INDUCING, n_draws))
+    cell_draws = draws.standard_normal((aggregation.n_cells, n_draws))
+
+    mean, independent_variance, factor = latent_moments(svgp, cell_features)
+    expected = expected_intensity(aggregation, mean, independent_variance, factor)
+    log_intensity = pt.mean(
+        sample_log_intensity(aggregation, mean, independent_variance, factor, inducing_draws, cell_draws), axis=1
+    )
+    assembled = pt.sum(counts * log_intensity - expected - gammaln(counts + 1.0)) - svgp.prior_kl()
+
+    parameters = list(explicit_graph_inputs([elbo, assembled]))
+    compiled = pytensor.function(parameters, [elbo, assembled], mode="FAST_COMPILE")
+    from_objective, from_pieces = compiled(*[rng.normal(0.0, 0.2, size=p.type.shape) for p in parameters])
+
+    assert from_objective == pytest.approx(from_pieces)
