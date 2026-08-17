@@ -4,7 +4,7 @@ import pytensor.tensor as pt
 import pytest
 
 from climate_risk.exceptions import DataValidationError
-from climate_risk.models.aggregation import build_aggregation
+from climate_risk.models.aggregation import build_aggregation, build_aggregation_from_overlaps
 
 # A unit square split into a left and a right half, so both units have a known analytic integral.
 SPLIT = 0.5
@@ -275,3 +275,97 @@ def test_a_field_of_the_wrong_length_is_rejected():
 
     with pytest.raises(DataValidationError, match="built for 2"):
         aggregation.aggregate(np.ones(3))
+
+
+def test_a_cell_split_between_units_contributes_to_both():
+    """The reason this constructor exists. A cell on a border is one piece of ground shared between
+    two units, and each must receive the part that falls inside it. The per-cell constructor cannot
+    express that at all, since it takes one label per cell.
+    """
+    aggregation = build_aggregation_from_overlaps(
+        unit_of_overlap=["a", "a", "b", "b"],
+        cell_of_overlap=np.array([0, 1, 1, 2]),
+        weights=np.array([1.0, 0.25, 0.75, 1.0]),
+        n_cells=3,
+    )
+
+    totals = aggregation.aggregate(np.array([10.0, 100.0, 1000.0]))
+
+    assert aggregation.units == ("a", "b")
+    assert totals == pytest.approx([10.0 + 25.0, 75.0 + 1000.0])
+
+
+def test_the_two_constructors_agree_when_no_cell_is_shared():
+    """One overlap per cell is the case the per-cell constructor already covers, so the operators
+    must be identical there. A divergence means the shared validation has drifted.
+    """
+    per_cell = build_aggregation(unit_of_cell=["b", None, "a", "b"], weights=np.array([1.0, 9.0, 2.0, 3.0]))
+    from_overlaps = build_aggregation_from_overlaps(
+        unit_of_overlap=["b", "a", "b"],
+        cell_of_overlap=np.array([0, 2, 3]),
+        weights=np.array([1.0, 2.0, 3.0]),
+        n_cells=4,
+    )
+
+    field = np.array([1.0, 2.0, 4.0, 8.0])
+
+    assert from_overlaps.units == per_cell.units
+    assert from_overlaps.n_cells == per_cell.n_cells
+    np.testing.assert_allclose(from_overlaps.aggregate(field), per_cell.aggregate(field))
+
+
+def test_a_cell_named_in_no_overlap_keeps_its_column():
+    """Cells outside every unit still sit in the grid, so the operator has to stay as wide as the
+    field the model evaluates. A narrower operator would silently misalign against it.
+    """
+    aggregation = build_aggregation_from_overlaps(
+        unit_of_overlap=["a"], cell_of_overlap=np.array([0]), weights=np.array([1.0]), n_cells=4
+    )
+
+    assert aggregation.n_cells == 4
+    assert aggregation.aggregate(np.arange(4.0)) == pytest.approx([0.0])
+
+
+def test_the_same_unit_and_cell_twice_is_rejected():
+    """A duplicated pair is summed silently by the sparse matrix, so a double-counted overlap would
+    inflate one unit's total with nothing to show for it.
+    """
+    with pytest.raises(DataValidationError, match="more than one overlap"):
+        build_aggregation_from_overlaps(
+            unit_of_overlap=["a", "a"],
+            cell_of_overlap=np.array([1, 1]),
+            weights=np.array([0.5, 0.5]),
+            n_cells=2,
+        )
+
+
+@pytest.mark.parametrize("cell", [-1, 5])
+def test_an_overlap_naming_a_cell_outside_the_grid_is_rejected(cell):
+    """The cell index comes from a raster pass that knows the whole lattice, while the operator is
+    built for the clipped field. An index past the end would raise far away from the mismatch.
+    """
+    with pytest.raises(DataValidationError, match="outside the grid"):
+        build_aggregation_from_overlaps(
+            unit_of_overlap=["a"], cell_of_overlap=np.array([cell]), weights=np.array([1.0]), n_cells=3
+        )
+
+
+def test_mismatched_overlap_columns_are_rejected():
+    with pytest.raises(DataValidationError, match="one of each"):
+        build_aggregation_from_overlaps(
+            unit_of_overlap=["a", "b"], cell_of_overlap=np.array([0]), weights=np.array([1.0]), n_cells=2
+        )
+
+
+def test_units_that_miss_the_grid_entirely_give_an_empty_operator():
+    """The raster layer hands over whatever overlaps it found, and a place whose units all miss the
+    grid finds none. That has to come back as an operator with no rows rather than raise, and it
+    still has to be as wide as the field the model evaluates.
+    """
+    aggregation = build_aggregation_from_overlaps(
+        unit_of_overlap=[], cell_of_overlap=np.array([], dtype=int), weights=np.array([]), n_cells=4
+    )
+
+    assert aggregation.units == ()
+    assert aggregation.n_cells == 4
+    assert aggregation.aggregate(np.arange(4.0)).shape == (0,)

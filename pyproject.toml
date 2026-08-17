@@ -26,6 +26,7 @@ dependencies = [
     "fastexcel>=0.20,<1",
     "kuznets[polars]>=1.0.1,<2",
     "geopandas>=1.1,<2",
+    "exactextract>=0.3,<1",
     "pymc>=6.3,<7",
     "pytensor>=3.3,<4",
     "arviz>=1.2,<2",
@@ -89,6 +90,7 @@ h5netcdf = ">=1.6,<2"
 openpyxl = ">=3.1,<4"
 xlrd = ">=2.0,<3"
 geopandas = ">=1.1,<2"
+exactextract = ">=0.3,<1"
 pymc = ">=6.3,<7"
 pytensor = ">=3.3,<4"
 arviz = ">=1.2,<2"
@@ -212,7 +214,7 @@ strict_equality = true
 
 # No stubs exist for these, on the index or in the packages themselves.
 [[tool.mypy.overrides]]
-module = ["arviz.*", "pymc.*", "pytensor.*", "ptgp.*", "sklearn.*", "statsmodels.*"]
+module = ["arviz.*", "pymc.*", "pytensor.*", "ptgp.*", "exactextract.*", "sklearn.*", "statsmodels.*"]
 ignore_missing_imports = true
 
 # Test functions carry no annotations, so their bodies need checking on their own terms.
