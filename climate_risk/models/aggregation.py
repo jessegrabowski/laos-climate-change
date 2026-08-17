@@ -158,6 +158,64 @@ def build_aggregation(
     )
 
 
+def build_aggregation_from_overlaps(
+    *,
+    unit_of_overlap: Sequence[str],
+    cell_of_overlap: np.ndarray,
+    weights: np.ndarray,
+    n_cells: int,
+    units: Sequence[str] | None = None,
+) -> Aggregation:
+    """
+    Build the operator from cell-unit overlaps, where a cell may belong to several units.
+
+    Parameters
+    ----------
+    unit_of_overlap : sequence of str
+        The unit each overlap belongs to, one entry per overlap.
+    cell_of_overlap : ndarray
+        The cell each overlap belongs to, indexing the grid, one entry per overlap.
+    weights : ndarray
+        The weight each overlap contributes, one entry per overlap. Overlapping area gives an
+        integral over the polygon; overlapping population gives an exposure-weighted one.
+    n_cells : int
+        Width of the operator. Cells named in no overlap contribute to no total.
+    units : sequence of str, optional
+        Row order of the operator. Every named unit must appear, and no unit twice. Default None,
+        which orders the units that appear in ``unit_of_overlap``, sorted.
+
+    Returns
+    -------
+    Aggregation
+        The operator and its row labels.
+    """
+    weights = _validated_weights(weights)
+    cells = np.asarray(cell_of_overlap, dtype=int)
+    lengths = {len(unit_of_overlap), cells.shape[0], weights.shape[0]}
+    if len(lengths) != 1:
+        raise DataValidationError(
+            f"{len(unit_of_overlap)} units, {cells.shape[0]} cells and {weights.shape[0]} weights; one of each "
+            f"describes one overlap."
+        )
+
+    out_of_range = cells[(cells < 0) | (cells >= n_cells)]
+    if out_of_range.size:
+        raise DataValidationError(
+            f"Overlaps name cells outside the grid of {n_cells}: {sorted(set(out_of_range.tolist()))[:5]}."
+        )
+
+    row_order, rows = _rows_for_units(list(unit_of_overlap), units)
+
+    # A repeated pair is summed silently by the sparse matrix, so the same overlap listed twice
+    # would double the ground it stands for.
+    pairs, counts = np.unique(np.column_stack([rows, cells]), axis=0, return_counts=True)
+    if np.any(counts > 1):
+        repeated = [(row_order[row], int(cell)) for row, cell in pairs[counts > 1][:5]]
+        raise DataValidationError(f"The same unit and cell appear in more than one overlap: {repeated}.")
+
+    return Aggregation(units=row_order, rows=rows, columns=cells, weights=weights, n_cells=n_cells)
+
+
 def _validated_weights(weights: np.ndarray) -> np.ndarray:
     validated = np.asarray(weights, dtype=float)
 
