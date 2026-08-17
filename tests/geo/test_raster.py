@@ -10,6 +10,7 @@ from climate_risk.geo.crs import GEOGRAPHIC_CRS
 from climate_risk.geo.raster import (
     KM_PER_DEGREE_LATITUDE,
     MIN_CELLS_PER_AXIS,
+    assign_cells_to_units,
     build_cell_grid,
     dissolve_place_boundary,
     grid_axes,
@@ -300,6 +301,82 @@ def test_the_lattice_rows_run_north_to_south():
     assert northernmost == pytest.approx(grid.latitudes[0])
 
 
+def test_a_cell_on_a_border_is_shared_between_units():
+    """The reason for area weighting. A column of cells straddling the border belongs half to each
+    unit, and the operator carries both rows. Assigning by centre would give one unit the lot.
+    """
+    boundary = dissolve_place_boundary(tiles([(0, 0, 4, 4)], ISO_A3=["LAO"]))
+    grid = build_cell_grid(boundary, resolution_km=KM_PER_DEGREE_LATITUDE)
+    units = gpd.GeoDataFrame(
+        {"gid": ["west", "east"], "geometry": [box(0, 0, 1.5, 4), box(1.5, 0, 4, 4)]}, crs=GEOGRAPHIC_CRS
+    )
+
+    overlaps = assign_cells_to_units(grid, units)
+    shared = overlaps["cell_id"].value_counts()
+
+    assert set(overlaps["gid"]) == {"west", "east"}
+    assert (shared == 2).sum() == 4, "one straddling cell per row of the grid"
+    np.testing.assert_allclose(overlaps.loc[overlaps["cell_id"] == 1, "coverage"].to_numpy(), [0.5, 0.5])
+
+
+def test_each_cell_is_fully_accounted_for_by_the_units_covering_it():
+    """Units that tile the place must claim every cell exactly once between them. Coverage summing
+    to less would lose ground from the totals and more would double-count it.
+    """
+    boundary = dissolve_place_boundary(tiles([(0, 0, 4, 4)], ISO_A3=["LAO"]))
+    grid = build_cell_grid(boundary, resolution_km=KM_PER_DEGREE_LATITUDE)
+    units = gpd.GeoDataFrame(
+        {"gid": ["west", "east"], "geometry": [box(0, 0, 1.5, 4), box(1.5, 0, 4, 4)]}, crs=GEOGRAPHIC_CRS
+    )
+
+    overlaps = assign_cells_to_units(grid, units)
+    per_cell = overlaps.groupby("cell_id")["coverage"].sum()
+
+    np.testing.assert_allclose(per_cell.to_numpy(), 1.0, atol=1e-6)
+    assert overlaps["overlap_km2"].sum() == pytest.approx(grid.cells["cell_area_km2"].sum(), rel=1e-6)
+
+
+def test_a_cell_outside_every_unit_gets_no_row():
+    """Units rarely tile a country exactly, and a cell in the gap contributes to no total. Keeping
+    it with zero coverage would put a column in the operator that nothing reads.
+    """
+    boundary = dissolve_place_boundary(tiles([(0, 0, 4, 4)], ISO_A3=["LAO"]))
+    grid = build_cell_grid(boundary, resolution_km=KM_PER_DEGREE_LATITUDE)
+    units = gpd.GeoDataFrame({"gid": ["corner"], "geometry": [box(0, 0, 1, 1)]}, crs=GEOGRAPHIC_CRS)
+
+    overlaps = assign_cells_to_units(grid, units)
+
+    assert len(overlaps) < len(grid.cells)
+    assert overlaps["gid"].eq("corner").all()
+
+
+def test_units_are_reprojected_before_they_meet_the_grid():
+    """Units arrive from GADM in whatever CRS it publishes. Overlaying a projected unit on a
+    lat/lon grid would find no overlap at all and return an empty operator.
+    """
+    # Away from the origin, so a polygon left in metres lands nowhere near the lattice rather than
+    # swallowing it. At the origin the projected coordinates still cover the degree-scale grid and
+    # the test would pass whether or not anything was reprojected.
+    boundary = dissolve_place_boundary(tiles([(100, 13, 104, 17)], ISO_A3=["LAO"]))
+    grid = build_cell_grid(boundary, resolution_km=KM_PER_DEGREE_LATITUDE)
+    units = gpd.GeoDataFrame({"gid": ["all"], "geometry": [box(100, 13, 104, 17)]}, crs=GEOGRAPHIC_CRS).to_crs(
+        "EPSG:3395"
+    )
+
+    overlaps = assign_cells_to_units(grid, units)
+
+    assert len(overlaps) == len(grid.cells) > 0
+
+
+def test_units_without_the_key_column_are_rejected():
+    boundary = dissolve_place_boundary(tiles([(0, 0, 4, 4)], ISO_A3=["LAO"]))
+    grid = build_cell_grid(boundary, resolution_km=KM_PER_DEGREE_LATITUDE)
+    units = gpd.GeoDataFrame({"name": ["all"], "geometry": [box(0, 0, 4, 4)]}, crs=GEOGRAPHIC_CRS)
+
+    with pytest.raises(DataValidationError, match="'gid'"):
+        assign_cells_to_units(grid, units)
+
+
 def test_a_footprint_covers_the_ground_its_area_claims():
     """The footprint and `cell_area_km2` describe the same rectangle, so measuring one must give
     the other. A half-step error in the corners would show up as a factor of four here and is
@@ -337,6 +414,7 @@ def test_a_one_cell_place_still_reports_its_geometry():
     assert grid.steps == pytest.approx((0.4, 0.3))
     assert grid.bounds == pytest.approx((103.6, 1.2, 104.0, 1.5))
     assert grid.footprints.iloc[0].bounds == pytest.approx((103.6, 1.2, 104.0, 1.5))
+    assert len(assign_cells_to_units(grid, tiny.rename(columns={"ISO_A3": "gid"}))) == 1
 
 
 def test_a_cell_on_an_internal_frontier_takes_the_larger_country():
@@ -359,3 +437,60 @@ def test_a_cell_on_an_internal_frontier_takes_the_larger_country():
     np.testing.assert_allclose(
         straddling["place_area_km2"].to_numpy(), straddling["cell_area_km2"].to_numpy(), rtol=1e-6
     )
+
+
+def test_a_unit_smaller_than_a_cell_still_gets_its_share():
+    """Small units are the ones with the fewest events, so losing them to the grid resolution drops
+    exactly the observations that most need the field. The unit's own area comes back out of the
+    cell it sits inside.
+    """
+    boundary = dissolve_place_boundary(tiles([(0, 0, 2, 2)], ISO_A3=["LAO"]))
+    grid = build_cell_grid(boundary, resolution_km=50.0)
+    speck = box(0.5, 0.5, 0.55, 0.55)
+    units = gpd.GeoDataFrame({"gid": ["speck"], "geometry": [speck]}, crs=GEOGRAPHIC_CRS)
+    exact = abs(Geod(ellps="WGS84").geometry_area_perimeter(speck)[0]) / 1e6
+
+    overlaps = assign_cells_to_units(grid, units)
+
+    assert overlaps["gid"].eq("speck").all()
+    assert 0.0 < overlaps["coverage"].sum() < 1.0, "the speck is a fraction of one cell"
+    assert overlaps["overlap_km2"].sum() == pytest.approx(exact, rel=1e-3)
+
+
+def test_the_operator_column_is_the_position_among_surviving_cells():
+    """`cell_id` numbers the lattice and the operator numbers what survived clipping, so the two
+    diverge from the first dropped cell. Feeding lattice ids straight to the operator would index
+    the wrong cells and still produce plausible totals.
+    """
+    boundary = dissolve_place_boundary(tiles([(0, 0, 2, 1), (0, 1, 1, 2)], ISO_A3=["LAO", "LAO"]))
+    grid = build_cell_grid(boundary, resolution_km=40.0)
+
+    columns = grid.column_of_cell(grid.cells["cell_id"].to_numpy())
+
+    assert (grid.cells["cell_id"].to_numpy() != columns).any(), "clipping should have shifted the spaces apart"
+    np.testing.assert_array_equal(columns, np.arange(len(grid.cells)))
+
+
+def test_a_repeated_cell_maps_to_the_same_column():
+    """An overlap table names a shared cell once per unit, so the translation has to be a lookup
+    rather than a renumbering of whatever it was handed.
+    """
+    boundary = dissolve_place_boundary(tiles([(0, 0, 2, 2)], ISO_A3=["LAO"]))
+    grid = build_cell_grid(boundary, resolution_km=40.0)
+    shared = grid.cells["cell_id"].to_numpy()[[3, 1, 3, 1]]
+
+    columns = grid.column_of_cell(shared)
+
+    assert columns[0] == columns[2] == 3
+    assert columns[1] == columns[3] == 1
+
+
+def test_a_cell_outside_the_grid_is_named_rather_than_translated():
+    """A cell id from a different lattice, or from this one before clipping, would otherwise become
+    a silently wrong column.
+    """
+    boundary = dissolve_place_boundary(tiles([(0, 0, 1, 1)], ISO_A3=["LAO"]))
+    grid = build_cell_grid(boundary, resolution_km=40.0)
+
+    with pytest.raises(DataValidationError, match="not in the grid"):
+        grid.column_of_cell(np.array([0, 10_000]))

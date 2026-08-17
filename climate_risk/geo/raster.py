@@ -218,6 +218,36 @@ class CellGrid:
             crs=GEOGRAPHIC_CRS,
         )
 
+    def column_of_cell(self, cell_ids: np.ndarray) -> np.ndarray:
+        """
+        Operator column of each lattice cell.
+
+        ``cell_id`` numbers the whole lattice while the operator's columns number the cells that
+        survived clipping, so the two spaces diverge from the first dropped cell onward. An
+        overlap table is keyed on the first and has to be translated to the second.
+
+        Parameters
+        ----------
+        cell_ids : ndarray
+            Lattice cell ids, as ``assign_cells_to_units`` reports them. Repeats are fine.
+
+        Returns
+        -------
+        ndarray
+            Column index of each, positions into ``cells``.
+        """
+        wanted = np.asarray(cell_ids)
+        column_of = pd.Series(np.arange(len(self.cells)), index=self.cells["cell_id"].to_numpy())
+
+        missing = np.setdiff1d(wanted, column_of.index.to_numpy())
+        if missing.size:
+            raise DataValidationError(
+                f"{missing.size} cells are not in the grid, starting {sorted(missing.tolist())[:5]}. They belong to "
+                f"a different lattice, or to this one before it was clipped."
+            )
+
+        return np.asarray(column_of.loc[wanted].to_numpy())
+
     @property
     def bounds(self) -> tuple[float, float, float, float]:
         """Outer edges of the lattice, half a cell beyond the outermost centres."""
@@ -355,3 +385,40 @@ def build_cell_grid(boundary: gpd.GeoDataFrame, *, resolution_km: float) -> Cell
             crs=GEOGRAPHIC_CRS,
         ),
     )
+
+
+def assign_cells_to_units(grid: CellGrid, units: gpd.GeoDataFrame, *, unit_column: str = "gid") -> pd.DataFrame:
+    """
+    Overlap between grid cells and administrative units, weighted by area.
+
+    A cell on a border appears once per unit it touches, carrying the ground it contributes to
+    each. Cells outside every unit produce no rows; a unit smaller than a cell still gets its share
+    of the cell it sits in.
+
+    Parameters
+    ----------
+    grid : CellGrid
+        The lattice and its cells.
+    units : GeoDataFrame
+        Administrative units, in any CRS, carrying ``unit_column``.
+    unit_column : str, optional
+        Column naming each unit. Default 'gid', which is what ``event_geography`` keys on.
+
+    Returns
+    -------
+    DataFrame
+        One row per overlapping cell and unit, with the unit key, ``cell_id``, the fraction of the
+        cell inside the unit, and the overlapping area in square kilometres.
+    """
+    if unit_column not in units.columns:
+        raise DataValidationError(f"The units carry no {unit_column!r} column to key the operator's rows on.")
+
+    if units.crs is None:
+        raise DataValidationError("The units carry no CRS, so they cannot be placed against the grid.")
+
+    overlaps = cell_coverage(grid.shape, grid.bounds, units, unit_column)
+
+    areas = grid.cells.set_index("cell_id")["cell_area_km2"]
+    within_place = overlaps[overlaps["cell_id"].isin(areas.index)].reset_index(drop=True)
+
+    return within_place.assign(overlap_km2=lambda frame: frame["coverage"] * areas.loc[frame["cell_id"]].to_numpy())
