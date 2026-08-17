@@ -212,7 +212,7 @@ strict_equality = true
 
 # No stubs exist for these, on the index or in the packages themselves.
 [[tool.mypy.overrides]]
-module = ["arviz.*", "pymc.*", "pytensor.*", "sklearn.*", "statsmodels.*"]
+module = ["arviz.*", "pymc.*", "pytensor.*", "ptgp.*", "sklearn.*", "statsmodels.*"]
 ignore_missing_imports = true
 
 # Test functions carry no annotations, so their bodies need checking on their own terms.
