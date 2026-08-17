@@ -139,21 +139,38 @@ def build_aggregation(
     Aggregation
         The operator and its row labels.
     """
-    weights = np.asarray(weights, dtype=float)
+    weights = _validated_weights(weights)
     if len(unit_of_cell) != weights.shape[0]:
         raise DataValidationError(
             f"{len(unit_of_cell)} cell assignments against {weights.shape[0]} weights; they index the same cells."
         )
 
-    if not np.all(np.isfinite(weights)):
-        raise DataValidationError("Cell weights carry a non-finite value, which would poison every total it enters.")
-
-    if np.any(weights < 0.0):
-        raise DataValidationError("Cell weights are negative, so a polygon's total would not be a sum of parts.")
-
     assigned = np.array([label is not None for label in unit_of_cell], dtype=bool)
     labels = [label for label in unit_of_cell if label is not None]
+    row_order, rows = _rows_for_units(labels, units)
 
+    return Aggregation(
+        units=row_order,
+        rows=rows,
+        columns=np.flatnonzero(assigned),
+        weights=weights[assigned],
+        n_cells=weights.shape[0],
+    )
+
+
+def _validated_weights(weights: np.ndarray) -> np.ndarray:
+    validated = np.asarray(weights, dtype=float)
+
+    if not np.all(np.isfinite(validated)):
+        raise DataValidationError("Cell weights carry a non-finite value, which would poison every total it enters.")
+
+    if np.any(validated < 0.0):
+        raise DataValidationError("Cell weights are negative, so a polygon's total would not be a sum of parts.")
+
+    return validated
+
+
+def _rows_for_units(labels: list[str], units: Sequence[str] | None) -> tuple[tuple[str, ...], np.ndarray]:
     non_strings = sorted({type(label).__name__ for label in labels if not isinstance(label, str)})
     if non_strings:
         raise DataValidationError(
@@ -164,8 +181,7 @@ def build_aggregation(
     if units is None:
         units = sorted(set(labels))
 
-    counts = Counter(units)
-    repeated = sorted(unit for unit, count in counts.items() if count > 1)
+    repeated = sorted(unit for unit, count in Counter(units).items() if count > 1)
     if repeated:
         raise DataValidationError(f"The row order repeats units, so their rows would not be reachable: {repeated}.")
 
@@ -174,10 +190,4 @@ def build_aggregation(
     if unknown:
         raise DataValidationError(f"Cells are assigned to units absent from the row order: {unknown}.")
 
-    return Aggregation(
-        units=tuple(units),
-        rows=np.array([row_of_unit[label] for label in labels], dtype=int),
-        columns=np.flatnonzero(assigned),
-        weights=weights[assigned],
-        n_cells=weights.shape[0],
-    )
+    return tuple(units), np.array([row_of_unit[label] for label in labels], dtype=int)
