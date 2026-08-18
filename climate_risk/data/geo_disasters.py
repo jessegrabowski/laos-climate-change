@@ -306,25 +306,6 @@ def normalise_unit_name(name: str) -> str:
     return "".join(character for character in decomposed if character.isalnum()).casefold()
 
 
-def event_unit_names(locations: pd.DataFrame) -> dict[str, set[str]]:
-    """
-    Collect the unit names Geo-Disasters records, keyed on the EM-DAT event id.
-
-    Parameters
-    ----------
-    locations : DataFrame
-        Rows as :func:`load_event_locations` returns them.
-
-    Returns
-    -------
-    dict mapping str to set of str
-        One entry per event, holding every unit it was geocoded to, named as published.
-    """
-    named = locations.assign(unit=unit_names(locations))
-
-    return {str(disno): set(group) for disno, group in named.groupby("DisNo.")["unit"]}
-
-
 def event_unit_ids(units: pd.DataFrame) -> dict[str, set[str]]:
     """
     Collect the GADM units an event was placed in, keyed on the EM-DAT event id.

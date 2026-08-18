@@ -15,7 +15,6 @@ from climate_risk.data.geo_disasters import (
     RESOLVED_DTYPES,
     compare_event_units,
     event_unit_ids,
-    event_unit_names,
     geo_disasters_dir,
     geo_disasters_path,
     load_event_footprints,
@@ -144,14 +143,6 @@ def test_unit_ids_are_collected_per_event():
         "2018-0339-LAO": {"LAO.1.1_1"},
         "2020-0001-LAO": set(),
     }
-
-
-def test_geo_disasters_names_are_collected_per_event(write_geo_disasters_cache):
-    cache_dir = write_geo_disasters_cache()
-
-    names = event_unit_names(load_event_locations(cache_dir, iso="LAO"))
-
-    assert names == {"1991-0761-LAO": {"Savannakhet", "Khammouan"}, "2018-0339-LAO": {"Sanamxay"}}
 
 
 @pytest.mark.parametrize(
