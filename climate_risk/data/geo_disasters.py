@@ -325,6 +325,26 @@ def event_unit_names(locations: pd.DataFrame) -> dict[str, set[str]]:
     return {str(disno): set(group) for disno, group in named.groupby("DisNo.")["unit"]}
 
 
+def event_unit_ids(units: pd.DataFrame) -> dict[str, set[str]]:
+    """
+    Collect the GADM units an event was placed in, keyed on the EM-DAT event id.
+
+    Both sides of the comparison arrive in this shape: EM-DAT's own unit table, and the resolved
+    footprints :func:`resolve_to_gadm` returns.
+
+    Parameters
+    ----------
+    units : DataFrame
+        Any frame carrying ``DisNo.`` and ``gid``, one row per event-unit.
+
+    Returns
+    -------
+    dict mapping str to set of str
+        One entry per event, holding every GADM identifier it was placed in.
+    """
+    return {str(disno): set(group.dropna()) for disno, group in units.groupby("DisNo.")["gid"]}
+
+
 AGREEMENT_LEVELS = ("exact", "partial", "disjoint", "gained", "unmatched")
 
 AGREEMENT_COLUMNS = ["DisNo.", "agreement", "em_dat_units", "geo_disasters_units", "shared_units"]
@@ -345,9 +365,12 @@ def compare_event_units(em_dat: Mapping[str, set[str]], geo_disasters: Mapping[s
     """
     Report how EM-DAT's own geocoding and Geo-Disasters' agree, event by event.
 
-    The two are keyed on ``DisNo.`` and nothing else: EM-DAT names GADM units and Geo-Disasters names
-    GAUL ones, and the two gazetteers share no identifier, so units are matched on their names, put
-    through :func:`normalise_unit_name` here rather than by either caller.
+    Both sides are GADM identifiers, matched literally. The signature cannot tell an identifier from
+    a unit name and the two gazetteers' names do not compare, so Geo-Disasters' side comes through
+    :func:`resolve_to_gadm` first.
+
+    An identifier names a level as well as a place, so a province and a district inside it never
+    match, and an event the two sources describe at different resolutions reads as ``disjoint``.
 
     Each event is classified as ``exact`` when both name the same units, ``partial`` when they
     overlap, ``disjoint`` when both name units and none is shared, ``gained`` when only
@@ -356,9 +379,9 @@ def compare_event_units(em_dat: Mapping[str, set[str]], geo_disasters: Mapping[s
     Parameters
     ----------
     em_dat : mapping of str to set of str
-        Unit names EM-DAT records, keyed on event id.
+        GADM identifiers EM-DAT records, keyed on event id.
     geo_disasters : mapping of str to set of str
-        The same from Geo-Disasters, as :func:`event_unit_names` returns it.
+        The same from Geo-Disasters, as :func:`event_unit_ids` returns it.
 
     Returns
     -------
@@ -369,8 +392,8 @@ def compare_event_units(em_dat: Mapping[str, set[str]], geo_disasters: Mapping[s
     rows = []
 
     for disno in sorted(em_dat.keys() | geo_disasters.keys()):
-        recorded = {normalise_unit_name(name) for name in em_dat.get(disno, ()) if name}
-        published = {normalise_unit_name(name) for name in geo_disasters.get(disno, ()) if name}
+        recorded = {gid for gid in em_dat.get(disno, ()) if gid}
+        published = {gid for gid in geo_disasters.get(disno, ()) if gid}
         if not recorded and not published:
             continue
 

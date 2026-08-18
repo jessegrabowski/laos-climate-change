@@ -14,6 +14,7 @@ from climate_risk.data.geo_disasters import (
     RESOLVED_COLUMNS,
     RESOLVED_DTYPES,
     compare_event_units,
+    event_unit_ids,
     event_unit_names,
     geo_disasters_dir,
     geo_disasters_path,
@@ -122,9 +123,27 @@ def test_units_that_are_genuinely_different_stay_different():
 
 def test_a_different_romanisation_is_not_reconciled():
     """Normalisation handles typography, not spelling. `Xiangkhouang` and `Xiangkhoang` are one
-    province under two romanisations, and they compare as different units — so a `partial` in the
-    report is an upper bound on real disagreement, not a measurement of it."""
+    province under two romanisations, and normalising leaves them different — which is why the
+    agreement report matches identifiers and this function is not in its path."""
     assert normalise_unit_name("Xiangkhouang") != normalise_unit_name("Xiangkhoang")
+
+
+def test_unit_ids_are_collected_per_event():
+    """Both sides of the comparison come through here, and an event spans several units. The point
+    and country tiers of `event_geography` carry no unit at all, and those events contribute an
+    empty set rather than a set holding a null that would match nothing."""
+    units = pd.DataFrame(
+        {
+            "DisNo.": ["1991-0761-LAO", "1991-0761-LAO", "2018-0339-LAO", "2020-0001-LAO"],
+            "gid": ["LAO.15_1", "LAO.6_1", "LAO.1.1_1", None],
+        }
+    )
+
+    assert event_unit_ids(units) == {
+        "1991-0761-LAO": {"LAO.15_1", "LAO.6_1"},
+        "2018-0339-LAO": {"LAO.1.1_1"},
+        "2020-0001-LAO": set(),
+    }
 
 
 def test_geo_disasters_names_are_collected_per_event(write_geo_disasters_cache):
@@ -138,11 +157,11 @@ def test_geo_disasters_names_are_collected_per_event(write_geo_disasters_cache):
 @pytest.mark.parametrize(
     ("em_dat", "geo_disasters", "expected"),
     [
-        ({"Savannakhet", "Khammouan"}, {"Savannakhet", "Khammouan"}, "exact"),
-        ({"Vientiane", "Xaisomboun"}, {"Vientiane"}, "partial"),
-        ({"Vientiane"}, {"Attapu"}, "disjoint"),
-        (set(), {"Xekong", "Attapu"}, "gained"),
-        ({"Bokeo"}, set(), "unmatched"),
+        ({"LAO.6_1", "LAO.7_1"}, {"LAO.6_1", "LAO.7_1"}, "exact"),
+        ({"LAO.15_1", "LAO.17_1"}, {"LAO.15_1"}, "partial"),
+        ({"LAO.15_1"}, {"LAO.1_1"}, "disjoint"),
+        (set(), {"LAO.16_1", "LAO.1_1"}, "gained"),
+        ({"LAO.2_1"}, set(), "unmatched"),
     ],
     ids=["exact", "partial", "disjoint", "gained", "unmatched"],
 )
@@ -160,16 +179,28 @@ def test_an_event_neither_source_geocoded_is_left_out():
     assert list(report.columns) == ["DisNo.", "agreement", "em_dat_units", "geo_disasters_units", "shared_units"]
 
 
-def test_agreement_is_judged_after_normalisation():
-    """The whole point of normalising: Xekong and Xékong are one province, not a disjoint pair."""
-    report = compare_event_units({"E": {"Xékong"}}, {"E": {"Xekong"}})
+def test_identifiers_are_compared_literally():
+    """`normalise_unit_name` strips the punctuation that separates a GADM identifier's levels, so
+    the district `LAO.1.1_1` and the province `LAO.11_1` both reduce to `lao111`. Putting the
+    identifiers through it would merge two different units into an exact agreement."""
+    report = compare_event_units({"E": {"LAO.11_1"}}, {"E": {"LAO.1.1_1"}})
 
-    assert report["agreement"].tolist() == ["exact"]
-    assert report["shared_units"].tolist() == [1]
+    assert normalise_unit_name("LAO.11_1") == normalise_unit_name("LAO.1.1_1"), "the collision is real"
+    assert report["agreement"].tolist() == ["disjoint"]
+
+
+def test_a_province_and_a_district_inside_it_do_not_match():
+    """An identifier names a level as well as a place. Every event the two sources describe at
+    different resolutions lands here, and it reads as `disjoint` — the same verdict as two genuinely
+    different provinces, which is a limit of the report rather than a claim about the event."""
+    report = compare_event_units({"E": {"PHL.19_1"}}, {"E": {"PHL.19.5_1"}})
+
+    assert report["agreement"].tolist() == ["disjoint"]
+    assert report["shared_units"].tolist() == [0]
 
 
 def test_the_counts_describe_each_side_and_the_overlap():
-    report = compare_event_units({"E": {"Vientiane", "Xaisomboun"}}, {"E": {"Vientiane", "Attapu"}})
+    report = compare_event_units({"E": {"LAO.15_1", "LAO.17_1"}}, {"E": {"LAO.15_1", "LAO.1_1"}})
 
     assert report.loc[0, "em_dat_units"] == 2
     assert report.loc[0, "geo_disasters_units"] == 2
@@ -178,7 +209,10 @@ def test_the_counts_describe_each_side_and_the_overlap():
 
 def test_every_event_either_source_geocoded_appears_once():
     """A join done the wrong way round silently drops whichever side is absent."""
-    report = compare_event_units({"A": {"x"}, "B": {"y"}}, {"B": {"y"}, "C": {"z"}})
+    report = compare_event_units(
+        {"A": {"LAO.1_1"}, "B": {"LAO.2_1"}},
+        {"B": {"LAO.2_1"}, "C": {"LAO.9_1"}},
+    )
 
     assert report["DisNo."].tolist() == ["A", "B", "C"]
 
@@ -222,8 +256,13 @@ def test_every_classification_is_one_of_the_declared_levels():
     """`AGREEMENT_LEVELS` is the published vocabulary; a verdict outside it is one no caller can
     branch on."""
     report = compare_event_units(
-        {"exact": {"a"}, "partial": {"a", "b"}, "disjoint": {"a"}, "unmatched": {"a"}},
-        {"exact": {"a"}, "partial": {"a"}, "disjoint": {"z"}, "gained": {"a"}},
+        {
+            "exact": {"LAO.1_1"},
+            "partial": {"LAO.1_1", "LAO.2_1"},
+            "disjoint": {"LAO.1_1"},
+            "unmatched": {"LAO.1_1"},
+        },
+        {"exact": {"LAO.1_1"}, "partial": {"LAO.1_1"}, "disjoint": {"LAO.9_1"}, "gained": {"LAO.1_1"}},
     )
 
     assert set(report["agreement"]) == set(AGREEMENT_LEVELS)
