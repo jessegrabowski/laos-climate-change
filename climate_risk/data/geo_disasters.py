@@ -361,7 +361,7 @@ def _classify(em_dat: set[str], geo_disasters: set[str]) -> str:
     return "partial" if em_dat & geo_disasters else "disjoint"
 
 
-def compare_event_units(em_dat: Mapping[str, set[str]], geo_disasters: Mapping[str, set[str]]) -> pd.DataFrame:
+def compare_event_units(*, em_dat: Mapping[str, set[str]], geo_disasters: Mapping[str, set[str]]) -> pd.DataFrame:
     """
     Report how EM-DAT's own geocoding and Geo-Disasters' agree, event by event.
 
