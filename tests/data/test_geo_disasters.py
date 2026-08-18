@@ -19,6 +19,7 @@ from climate_risk.data.geo_disasters import (
     geo_disasters_path,
     load_event_footprints,
     load_event_locations,
+    load_resolved_units,
     normalise_unit_name,
     resolve_to_gadm,
     unit_names,
@@ -270,6 +271,65 @@ def test_a_footprint_that_only_borders_a_unit_is_not_placed_in_it(write_gadm_cac
     resolved = resolve_to_gadm(beside_houayxay, cache_dir)
 
     assert resolved.empty, "a footprint sharing only an edge covers no unit"
+
+
+def test_resolved_units_span_every_country_asked_for(write_gadm_cache, write_geo_disasters_cache):
+    write_gadm_cache()
+    cache_dir = write_geo_disasters_cache()
+
+    resolved = load_resolved_units(["ZMB", "LAO"], cache_dir)
+
+    assert set(resolved["ISO"]) == {"LAO", "ZMB"}
+    assert (resolved["gid"].str[:3] == resolved["ISO"]).all(), "a unit belongs to the country it was read for"
+
+
+def test_a_country_is_resolved_once_and_read_back(write_gadm_cache, write_geo_disasters_cache):
+    """The overlay runs against every GADM unit in the country and takes a hundred seconds over a
+    region. A second read that touches the GeoPackages has not cached anything."""
+    write_gadm_cache()
+    cache_dir = write_geo_disasters_cache()
+    first = load_resolved_units(["LAO"], cache_dir)
+
+    (cache_dir / "geo_disasters" / "disaster_subnational_90_23.gpkg").unlink()
+    (cache_dir / "gadm" / "gadm_410.gpkg").unlink()
+
+    pd.testing.assert_frame_equal(load_resolved_units(["LAO"], cache_dir), first)
+
+
+def test_each_country_caches_under_its_own_key(write_gadm_cache, write_geo_disasters_cache):
+    """One entry per region would make `sea` and a global run rebuild each other's members, and a
+    shared key would serve Laos' units for a request about Zambia."""
+    write_gadm_cache()
+    cache_dir = write_geo_disasters_cache()
+
+    load_resolved_units(["LAO"], cache_dir)
+
+    assert set(load_resolved_units(["ZMB"], cache_dir)["gid"]) == {"ZMB.1_1"}
+
+
+def test_a_country_named_twice_is_read_once(write_gadm_cache, write_geo_disasters_cache):
+    """The argument is a set of countries, not a list of reads. A region listing a member twice —
+    or two overlapping regions concatenated — would otherwise duplicate every one of that country's
+    rows, and the event counts built on them come out twice as large."""
+    write_gadm_cache()
+    cache_dir = write_geo_disasters_cache()
+
+    once = load_resolved_units(["LAO", "ZMB"], cache_dir)
+    repeated_and_reordered = load_resolved_units(["ZMB", "LAO", "LAO"], cache_dir)
+
+    pd.testing.assert_frame_equal(once, repeated_and_reordered)
+    # Set iteration order over strings varies between processes, so row order would too.
+    assert once["ISO"].is_monotonic_increasing, "countries concatenate in a fixed order"
+
+
+def test_asking_for_no_countries_gives_the_empty_frame(tmp_path):
+    """A place whose members are all absent from Geo-Disasters reaches here as an empty list, and
+    the caller concatenates whatever comes back."""
+    resolved = load_resolved_units([], tmp_path)
+
+    assert resolved.empty
+    assert list(resolved.columns) == RESOLVED_COLUMNS
+    assert dict(resolved.dtypes.astype(str)) == RESOLVED_DTYPES
 
 
 REAL_GADM = REAL_CACHE_DIR / "gadm" / "gadm_410.gpkg"

@@ -1,12 +1,14 @@
 import logging
 import unicodedata
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
+from functools import partial
 from pathlib import Path
 
 import geopandas as gpd
 import pandas as pd
 
+from climate_risk.data.cache import cached, pandas_parquet
 from climate_risk.data.gadm import load_units_in_country
 from climate_risk.data.source import ManualSource
 from climate_risk.exceptions import DataValidationError
@@ -237,6 +239,50 @@ def resolve_to_gadm(footprints: gpd.GeoDataFrame, cache_dir: Path) -> pd.DataFra
         .reset_index(drop=True)
         .astype(RESOLVED_DTYPES)
     )
+
+
+def _resolve_country(iso: str, cache_dir: Path) -> pd.DataFrame:
+    return resolve_to_gadm(load_event_footprints(cache_dir, iso=iso), cache_dir)
+
+
+def load_resolved_units(isos: Sequence[str], cache_dir: Path, *, force_reload: bool = False) -> pd.DataFrame:
+    """
+    Read the GADM units Geo-Disasters places, for several countries at once.
+
+    Resolving is a polygon overlay against every GADM unit in the country, so it is cached, one
+    entry per country.
+
+    Parameters
+    ----------
+    isos : sequence of str
+        ISO 3166-1 alpha-3 codes to read. Duplicates and ordering do not matter; the result is
+        ordered by code.
+    cache_dir : Path
+        Directory the caches live under.
+    force_reload : bool, optional
+        Resolve again and overwrite the cached entries. Default False.
+
+    Returns
+    -------
+    DataFrame
+        The columns of :func:`resolve_to_gadm`, one row per placed footprint, across every country
+        asked for.
+    """
+    frames = [
+        cached(
+            cache_dir,
+            "geo_disasters_units",
+            partial(_resolve_country, iso, cache_dir),
+            pandas_parquet(),
+            params={"iso": iso},
+            force=force_reload,
+        )
+        for iso in sorted(set(isos))
+    ]
+    if not frames:
+        return pd.DataFrame(columns=RESOLVED_COLUMNS).astype(RESOLVED_DTYPES)
+
+    return pd.concat(frames, ignore_index=True)
 
 
 def normalise_unit_name(name: str) -> str:
