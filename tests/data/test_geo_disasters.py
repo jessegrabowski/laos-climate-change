@@ -3,6 +3,7 @@ import re
 from pathlib import Path
 
 import geopandas as gpd
+import pandas as pd
 import pytest
 
 from shapely.geometry import box
@@ -11,6 +12,7 @@ from climate_risk.data.geo_disasters import (
     AGREEMENT_LEVELS,
     GEO_DISASTERS,
     RESOLVED_COLUMNS,
+    RESOLVED_DTYPES,
     compare_event_units,
     event_unit_names,
     geo_disasters_dir,
@@ -193,13 +195,16 @@ def test_footprints_spanning_two_countries_are_refused(tmp_path):
 
 
 def test_no_footprints_resolve_to_an_empty_frame_of_the_right_shape(tmp_path):
-    """A country Geo-Disasters never geocoded is ordinary, and the caller concatenates the result."""
+    """A country Geo-Disasters never geocoded is ordinary, and the caller concatenates the result —
+    so the empty frame needs the dtypes a populated one has, or it drags every column it is
+    concatenated with back to object."""
     empty = toy_geo_disasters().iloc[:0]
 
     resolved = resolve_to_gadm(empty, tmp_path)
 
     assert resolved.empty
     assert list(resolved.columns) == RESOLVED_COLUMNS
+    assert dict(resolved.dtypes.astype(str)) == RESOLVED_DTYPES
 
 
 def test_footprints_come_back_with_their_geometry(write_geo_disasters_cache):
@@ -221,6 +226,21 @@ def test_every_classification_is_one_of_the_declared_levels():
     )
 
     assert set(report["agreement"]) == set(AGREEMENT_LEVELS)
+
+
+def test_the_resolved_dtypes_do_not_depend_on_which_levels_matched(write_gadm_cache):
+    """An admin level that places nothing contributes an all-object empty frame to the concatenation,
+    which would leave `admin_level` an object column for one country and an integer for the next —
+    a schema that varies with the data, and only where a level happened to come back empty."""
+    cache_dir = write_gadm_cache()
+    lao = toy_geo_disasters().query("ISO == 'LAO'")
+
+    both_levels = resolve_to_gadm(lao, cache_dir)
+    provinces_only = resolve_to_gadm(lao[lao["admin_level"] == 1], cache_dir)
+
+    assert not both_levels.empty and not provinces_only.empty, "both cases must place something"
+    pd.testing.assert_series_equal(both_levels.dtypes, provinces_only.dtypes)
+    assert both_levels["admin_level"].dtype == "Int64", "an admin level is a number the model compares"
 
 
 def test_a_footprint_that_only_borders_a_unit_is_not_placed_in_it(write_gadm_cache):

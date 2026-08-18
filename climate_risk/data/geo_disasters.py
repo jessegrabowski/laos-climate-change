@@ -146,7 +146,18 @@ def load_event_footprints(cache_dir: Path, *, iso: str, layer: str = GEO_DISASTE
 
 EQUAL_AREA_CRS = "ESRI:54009"
 
-RESOLVED_COLUMNS = ["DisNo.", "ISO", "geometry_source", "gid", "name", "admin_level", "geocoding_q", "overlap"]
+RESOLVED_DTYPES = {
+    "DisNo.": "string",
+    "ISO": "string",
+    "geometry_source": "string",
+    "gid": "string",
+    "name": "string",
+    "admin_level": "Int64",
+    "geocoding_q": "Int64",
+    "overlap": "float64",
+}
+
+RESOLVED_COLUMNS = list(RESOLVED_DTYPES)
 
 
 def _best_unit_per_footprint(footprints: gpd.GeoDataFrame, units: gpd.GeoDataFrame) -> pd.DataFrame:
@@ -193,7 +204,7 @@ def resolve_to_gadm(footprints: gpd.GeoDataFrame, cache_dir: Path) -> pd.DataFra
         ``geocoding_q``, and ``overlap``, the share of the footprint the unit covers.
     """
     if footprints.empty:
-        return pd.DataFrame(columns=RESOLVED_COLUMNS)
+        return pd.DataFrame(columns=RESOLVED_COLUMNS).astype(RESOLVED_DTYPES)
 
     countries = set(footprints["ISO"])
     if len(countries) > 1:
@@ -224,6 +235,7 @@ def resolve_to_gadm(footprints: gpd.GeoDataFrame, cache_dir: Path) -> pd.DataFra
         .assign(geometry_source="geo_disasters")[RESOLVED_COLUMNS]
         .sort_values(["DisNo.", "gid"])
         .reset_index(drop=True)
+        .astype(RESOLVED_DTYPES)
     )
 
 
