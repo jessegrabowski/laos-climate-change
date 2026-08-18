@@ -2,7 +2,10 @@ import re
 
 from pathlib import Path
 
+import geopandas as gpd
 import pytest
+
+from shapely.geometry import box
 
 from climate_risk.data.geo_disasters import (
     AGREEMENT_LEVELS,
@@ -19,7 +22,7 @@ from climate_risk.data.geo_disasters import (
     unit_names,
 )
 from climate_risk.exceptions import DataValidationError
-from tests.conftest import toy_geo_disasters
+from tests.conftest import toy_gadm, toy_geo_disasters
 
 
 def test_the_geopackage_is_looked_for_under_the_cache(tmp_path):
@@ -218,6 +221,35 @@ def test_every_classification_is_one_of_the_declared_levels():
     )
 
     assert set(report["agreement"]) == set(AGREEMENT_LEVELS)
+
+
+def test_a_footprint_that_only_borders_a_unit_is_not_placed_in_it(write_gadm_cache):
+    """Two polygons meeting along an edge intersect in a line of zero area. Taking the largest
+    overlap regardless would answer with a unit the footprint lies wholly outside, and answer it as
+    confidently as a real match."""
+    cache_dir = write_gadm_cache()
+    units = toy_gadm()
+    houayxay = units[units["GID_2"] == "LAO.2.1_1"].geometry.iloc[0]
+    beside_houayxay = gpd.GeoDataFrame(
+        {
+            "DisNo.": ["1999-0001-LAO"],
+            "ISO": ["LAO"],
+            "admin_level": [2],
+            "geocoding_q": [1],
+            "ADM1_NAME": ["Bokeo"],
+            "ADM2_NAME": ["Houayxay"],
+            "geometry": [box(2, 0, 3, 1)],
+        },
+        crs="EPSG:4326",
+    )
+    footprint = beside_houayxay.geometry.iloc[0]
+    assert footprint.touches(houayxay) and footprint.intersection(houayxay).area == 0.0, (
+        "the footprint must share an edge and no area, or this is the ordinary disjoint case"
+    )
+
+    resolved = resolve_to_gadm(beside_houayxay, cache_dir)
+
+    assert resolved.empty, "a footprint sharing only an edge covers no unit"
 
 
 REAL_GADM = REAL_CACHE_DIR / "gadm" / "gadm_410.gpkg"

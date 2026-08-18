@@ -153,10 +153,14 @@ def _best_unit_per_footprint(footprints: gpd.GeoDataFrame, units: gpd.GeoDataFra
     """Pair each footprint with the single unit covering most of it, dropping any that meet none."""
     located = footprints[["DisNo.", "ISO", "geocoding_q", "geometry"]].reset_index(names="footprint")
     pieces = gpd.overlay(located, units, how="intersection", keep_geom_type=False)
+
+    # Two polygons meeting along an edge intersect in a line, which `keep_geom_type=False` keeps and
+    # which covers none of the footprint. Taking the largest would place it in a unit it only borders.
+    pieces = pieces.assign(covered=pieces.geometry.area)
+    pieces = pieces[pieces["covered"] > 0.0]
     if pieces.empty:
         return pd.DataFrame(columns=RESOLVED_COLUMNS)
 
-    pieces = pieces.assign(covered=pieces.geometry.area)
     best = pieces.sort_values("covered").groupby("footprint").tail(1).set_index("footprint")
     shares = best["covered"] / footprints.geometry.area.reindex(best.index)
 
