@@ -12,7 +12,7 @@ from climate_risk.data_functions.emdat_processing import event_filter, load_emda
 from climate_risk.data_functions.rivers_data_loader import load_rivers_data
 from climate_risk.data_functions.shapefiles_data_loader import load_shapefile
 from climate_risk.geo.crs import to_km
-from climate_risk.geo.distance import get_distance_to_rivers
+from climate_risk.geo.distance import get_distance_to
 
 DAMAGE_COLUMNS = ("ISO", "End Year", "Latitude", "Longitude", "River Basin", "Total_Damage", "Total_Affected", "Deaths")
 
@@ -81,7 +81,9 @@ def _create_rivers_damage(
             crs=world.crs,
         )
 
-        closest_river = get_distance_to_rivers(big_rivers, damage_df)
+        closest_river = get_distance_to(big_rivers, points=damage_df, return_columns=["ORD_FLOW", "HYRIV_ID"]).rename(
+            columns={"distance_to_closest": "closest_river"}
+        )
         closest_river["closest_river"] = to_km(closest_river["closest_river"])
 
         damage_df = damage_df.join(closest_river).rename(columns=totals)
