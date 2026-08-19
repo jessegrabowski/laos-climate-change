@@ -144,3 +144,19 @@ def test_a_unit_that_parents_itself_still_terminates(write_gadm_cache):
 
     assert gazetteer.parent_of["?"] == "?", "the archive really does produce this"
     assert gazetteer.ancestry("?") == {"?"}
+
+
+@pytest.mark.parametrize(
+    ("written", "published"),
+    [
+        ("Bengkulu area", "Bengkulu"),
+        ("Cagayan Prov.", "Cagayan"),
+        ("City of Bandung", "Bandung"),
+        ("Near Villavicencio", "Villavicencio"),
+        ("Coast of Zamboanga", "Zamboanga"),
+    ],
+    ids=["area", "abbreviated province", "city of", "near", "coast of"],
+)
+def test_a_decorated_mention_reaches_the_published_name(written, published):
+    """A fifth of the names nothing matches are a published name with a word like this attached."""
+    assert match_key(written) == match_key(published)

@@ -14,8 +14,9 @@ from climate_risk.data.gadm import GADM_LAYER, gadm_path
 # Words naming what a unit is rather than which one it is. EM-DAT writes them inconsistently and
 # GADM does not carry them, so `Kalin-Aapayo province` has to reach `Kalin-Aapayo`.
 UNIT_NOUNS = re.compile(
-    r"\b(provinces?|districts?|regencies|regency|regions?|cities|city|states?|towns?|"
-    r"municipalit(?:y|ies)|islands?|isl|departments?|counties|county|governorates?|prefectures?)\b",
+    r"\b(provinces?|prov|districts?|regencies|regency|regions?|cities|city of|city|states?|towns?|"
+    r"municipalit(?:y|ies)|islands?|isl|departments?|counties|county|governorates?|prefectures?|"
+    r"areas?|near|around|outskirts of|vicinity of|coast of)\b\.?",
     re.IGNORECASE,
 )
 
