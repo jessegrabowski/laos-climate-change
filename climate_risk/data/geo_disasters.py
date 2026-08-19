@@ -259,6 +259,15 @@ def resolve_to_gadm(footprints: gpd.GeoDataFrame, cache_dir: Path) -> pd.DataFra
     )
 
 
+def _placement_rule() -> str:
+    """Name the procedure that placed a cached entry, so the entry cannot outlive it.
+
+    Rename this whenever the procedure changes; the threshold follows :data:`MIN_CONTAINMENT`.
+    """
+    # A cache key may not carry a dot, so the threshold is written without one.
+    return f"dissolved-containment{MIN_CONTAINMENT}".replace(".", "-")
+
+
 def _resolve_country(iso: str, cache_dir: Path) -> pd.DataFrame:
     return resolve_to_gadm(load_event_footprints(cache_dir, iso=iso), cache_dir)
 
@@ -292,7 +301,7 @@ def load_resolved_units(isos: Sequence[str], cache_dir: Path, *, force_reload: b
             "geo_disasters_units",
             partial(_resolve_country, iso, cache_dir),
             pandas_parquet(),
-            params={"iso": iso},
+            params={"iso": iso, "placement": _placement_rule()},
             force=force_reload,
         )
         for iso in sorted(set(isos))

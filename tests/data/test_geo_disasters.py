@@ -446,6 +446,23 @@ def test_a_country_is_resolved_once_and_read_back(write_gadm_cache, write_geo_di
     pd.testing.assert_frame_equal(load_resolved_units(["LAO"], cache_dir), first)
 
 
+def test_changing_the_placement_rule_rebuilds_rather_than_serving_the_old_units(
+    monkeypatch, write_gadm_cache, write_geo_disasters_cache
+):
+    """A cached entry outlives the rule that placed it. Keyed on the country alone, every warm cache
+    would keep answering with units the current rule would not have chosen, and nothing would say so."""
+    write_gadm_cache()
+    cache_dir = write_geo_disasters_cache()
+    load_resolved_units(["LAO"], cache_dir)
+    (cache_dir / "geo_disasters" / "disaster_subnational_90_23.gpkg").unlink()
+
+    monkeypatch.setattr("climate_risk.data.geo_disasters.MIN_CONTAINMENT", 0.9)
+
+    # Reading the archive again is the point: under a rule it was not built with, the entry is unusable.
+    with pytest.raises(NotImplementedError):
+        load_resolved_units(["LAO"], cache_dir)
+
+
 def test_each_country_caches_under_its_own_key(write_gadm_cache, write_geo_disasters_cache):
     """One entry per region would make `sea` and a global run rebuild each other's members, and a
     shared key would serve Laos' units for a request about Zambia."""
