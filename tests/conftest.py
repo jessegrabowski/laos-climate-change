@@ -617,3 +617,57 @@ def pytest_collection_modifyitems(config, items):
     for item in items:
         if "network" in item.keywords:
             item.add_marker(skip_network)
+
+
+def toy_geonames() -> str:
+    """Rows shaped like a GeoNames country dump: headerless, tab-separated, nineteen fields.
+
+    Bacolod is published under three spellings and shares its name with a far smaller barangay,
+    which is the collision that decides whether a written mention reaches the city or the hamlet.
+    """
+    rows = [
+        (
+            "1",
+            "Bacolod",
+            "Bacolod",
+            "Bacolod City,Bakolod",
+            "10.667",
+            "122.95",
+            "P",
+            "PPL",
+            "PH",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "561875",
+        ),
+        ("2", "Bacolod", "Bacolod", "", "8.5", "124.1", "P", "PPL", "PH", "", "", "", "", "", "0"),
+        ("3", "Iloilo", "Iloilo", "Ilo-ilo", "10.7", "122.567", "P", "PPLA", "PH", "", "", "", "", "", "457626"),
+        ("4", "Sulu Sea", "Sulu Sea", "", "8.0", "120.0", "H", "SEA", "PH", "", "", "", "", "", "0"),
+    ]
+    padding = ("", "", "", "")
+
+    return "\n".join("\t".join(row + padding) for row in rows) + "\n"
+
+
+COUNTRY_INFO_HEADER = "#ISO\tISO3\tISO-Numeric\tfips\tCountry\n"
+
+
+@pytest.fixture
+def write_geonames_cache(tmp_path):
+    """Return a callable writing a GeoNames-shaped dump into the cache, and giving back the root."""
+
+    def write(rows=None, *, alpha2="PH", alpha3="PHL"):
+        directory = tmp_path / "geonames"
+        directory.mkdir(exist_ok=True)
+        (directory / "countryInfo.txt").write_text(
+            COUNTRY_INFO_HEADER + f"{alpha2}\t{alpha3}\t608\tRP\tPhilippines\n", encoding="utf-8"
+        )
+        with zipfile.ZipFile(directory / f"{alpha2}.zip", "w") as archive:
+            archive.writestr(f"{alpha2}.txt", toy_geonames() if rows is None else rows)
+
+        return tmp_path
+
+    return write

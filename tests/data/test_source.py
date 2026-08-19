@@ -8,6 +8,7 @@ from climate_risk.config.schema import CountryConfig
 from climate_risk.data.co2 import CO2
 from climate_risk.data.fetch import USER_AGENT
 from climate_risk.data.gadm import GADM
+from climate_risk.data.geonames import COUNTRY_INFO, country_dump
 from climate_risk.data.gpcc import FULL_DATA, MONITORING
 from climate_risk.data.hadcrut import HADCRUT
 from climate_risk.data.ocean_heat import OCEAN_HEAT
@@ -137,6 +138,9 @@ SOURCES = (
         "WORLD": WORLD,
         "COASTLINE": COASTLINE,
         "RIVERS": RIVERS,
+        "GEONAMES_COUNTRY_INFO": COUNTRY_INFO,
+        # Every country dump shares one URL pattern, so one stands for all of them.
+        "GEONAMES_DUMP": country_dump("PH"),
     }
     | {archive.filename: archive for archive in FULL_DATA.sources}
     | {archive.filename: archive for archive in (MONITORING.sources[0], MONITORING.sources[-1])}
