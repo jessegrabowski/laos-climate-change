@@ -30,8 +30,30 @@ CONJUNCTION = re.compile(r"\s+(?:and|&)\s+", re.IGNORECASE)
 RELATIONAL = re.compile(r"^\s*(?:between|off|offshore|au large)\b", re.IGNORECASE)
 
 
+# How a written place reached the units it did.
+NAMED = "named"
+CONTAINED_BY = "container"
+
+
 # GADM publishes a level 5, for Belgium and Rwanda only.
 INDEXABLE_LEVELS = (1, 2, 3, 4)
+
+
+class Placement(NamedTuple):
+    """Where one written place put an event.
+
+    Parameters
+    ----------
+    gids : set of str
+        The GADM identifiers reached, empty where the place reached none.
+    how : str
+        ``NAMED`` where the written place itself resolved, ``CONTAINED_BY`` where only the container
+        it was written in did, which is coarser than the prose supports. ``NAMED`` where ``gids`` is
+        empty and nothing was reached at all.
+    """
+
+    gids: set[str]
+    how: str
 
 
 class Unit(NamedTuple):
@@ -158,6 +180,14 @@ def read_gazetteer(iso: str, cache_dir: Path, *, layer: str = GADM_LAYER) -> Gaz
     return Gazetteer(dict(names), parent_of)
 
 
+def _narrowed(gids: set[str], pinned: set[str], gazetteer: Gazetteer) -> set[str]:
+    """Keep the candidates inside something the event already pinned, or all of them if none are."""
+    if len(gids) < 2:
+        return gids
+
+    return {gid for gid in gids if gazetteer.ancestry(gid) & pinned} or gids
+
+
 def _outermost(gids: set[str], gazetteer: Gazetteer) -> set[str]:
     """Drop every unit another candidate already contains, leaving what the name can mean at its coarsest."""
     return {gid for gid in gids if not (gazetteer.ancestry(gid) - {gid}) & gids}
@@ -216,13 +246,17 @@ def resolve_place(name: str, parent: str | None, gazetteer: Gazetteer) -> set[st
     return set()
 
 
-def resolve_event_places(places: Iterable[tuple[str, str | None]], gazetteer: Gazetteer) -> list[set[str]]:
+def resolve_event_places(places: Iterable[tuple[str, str | None]], gazetteer: Gazetteer) -> list[Placement]:
     """
     Resolve the places one event names together, letting the unambiguous ones narrow the rest.
 
     An event's places share a footprint, so a mention that lands on exactly one unit tells the
     ambiguous mentions beside it where to look. Candidates outside everything the event has already
     pinned are dropped, and a mention narrowed to nothing keeps its candidates.
+
+    A place naming nothing falls back to the container the prose wrote it in — ``Pesisir Selaten
+    (West Sumatra province)`` becomes the province — which is coarser than the prose supports, so
+    the result records that it was reached that way.
 
     Parameters
     ----------
@@ -233,19 +267,24 @@ def resolve_event_places(places: Iterable[tuple[str, str | None]], gazetteer: Ga
 
     Returns
     -------
-    list of set of str
-        The GADM identifiers each place reaches, in the order the places were given.
+    list of Placement
+        Where each place put the event, in the order the places were given.
     """
-    resolved = [resolve_place(name, parent, gazetteer) for name, parent in places]
+    written = list(places)
+    resolved = [resolve_place(name, parent, gazetteer) for name, parent in written]
 
     pinned: set[str] = set()
     for gids in resolved:
         if len(gids) == 1:
             pinned |= gazetteer.ancestry(next(iter(gids)))
 
-    narrowed = []
-    for gids in resolved:
-        inside = {gid for gid in gids if gazetteer.ancestry(gid) & pinned} if len(gids) > 1 else gids
-        narrowed.append(inside or gids)
+    placed = []
+    for (_, parent), gids in zip(written, resolved, strict=True):
+        if gids:
+            placed.append(Placement(_narrowed(gids, pinned, gazetteer), NAMED))
+            continue
+        container = resolve_place(parent, None, gazetteer) if parent else set()
+        how = CONTAINED_BY if container else NAMED
+        placed.append(Placement(_narrowed(container, pinned, gazetteer), how))
 
-    return narrowed
+    return placed

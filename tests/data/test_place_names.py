@@ -1,6 +1,15 @@
 import pytest
 
-from climate_risk.data.place_names import Unit, match_key, read_gazetteer, resolve_event_places, resolve_place
+from climate_risk.data.place_names import (
+    CONTAINED_BY,
+    NAMED,
+    Placement,
+    Unit,
+    match_key,
+    read_gazetteer,
+    resolve_event_places,
+    resolve_place,
+)
 
 
 @pytest.mark.parametrize(
@@ -112,8 +121,8 @@ def test_an_unambiguous_place_narrows_the_ambiguous_ones_beside_it(write_gadm_ca
     gazetteer = read_gazetteer("LAO", write_gadm_cache())
 
     assert resolve_event_places([("Houayxay", None), ("Attapu", None)], gazetteer) == [
-        {"LAO.2.1_1"},
-        {"LAO.2.2_1"},
+        Placement({"LAO.2.1_1"}, NAMED),
+        Placement({"LAO.2.2_1"}, NAMED),
     ]
 
 
@@ -123,8 +132,8 @@ def test_an_event_pinning_nothing_leaves_its_places_alone(write_gadm_cache):
     gazetteer = read_gazetteer("LAO", write_gadm_cache())
 
     assert resolve_event_places([("Attapu", None), ("Calabarzon", None)], gazetteer) == [
-        {"LAO.1_1", "LAO.2.2_1"},
-        set(),
+        Placement({"LAO.1_1", "LAO.2.2_1"}, NAMED),
+        Placement(set(), NAMED),
     ]
 
 
@@ -192,3 +201,31 @@ def test_a_place_named_between_two_others_is_in_neither(write_gadm_cache):
     gazetteer = read_gazetteer("LAO", write_gadm_cache())
 
     assert resolve_place("Between Bokeo and Sanamxay", None, gazetteer) == set()
+
+
+def test_a_place_naming_nothing_falls_back_to_the_container_it_was_written_in(write_gadm_cache):
+    """A third of the events still unplaced name a container that resolves — `Pesisir Selaten (West
+    Sumatra province)` gives the province even where the district is unrecognisable."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    assert resolve_event_places([("Nowhere At All", "Bokeo")], gazetteer) == [Placement({"LAO.2_1"}, CONTAINED_BY)]
+
+
+def test_a_container_standing_in_for_a_place_is_marked_as_coarser(write_gadm_cache):
+    """The province is not what the prose named, and a caller aggregating footprints has to be able
+    to tell a district it asked for from the province it settled for."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    named, fallen_back = resolve_event_places([("Sanamxay", None), ("Nowhere At All", "Bokeo")], gazetteer)
+
+    assert (named.how, fallen_back.how) == (NAMED, CONTAINED_BY)
+
+
+def test_a_container_standing_in_for_a_place_is_narrowed_like_any_other(write_gadm_cache):
+    """`Attapu` names a province and a district elsewhere. Falling back to it without the narrowing
+    a named place gets would hand back both, when the event has already pinned which one."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    _, fallen_back = resolve_event_places([("Houayxay", None), ("Nowhere At All", "Attapu")], gazetteer)
+
+    assert fallen_back == Placement({"LAO.2.2_1"}, CONTAINED_BY), "the district inside the pinned province"
