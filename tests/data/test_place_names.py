@@ -146,12 +146,12 @@ def test_a_country_the_archive_does_not_cover_reads_back_empty(write_gadm_cache)
     assert resolve_place("Beograd", None, gazetteer) == set()
 
 
-def test_a_unit_that_parents_itself_still_terminates(write_gadm_cache):
-    """GADM writes an unnamed Ukrainian unit as `?` at two levels, making it its own container.
-    Walking upwards without a visited set never returns, and nothing upstream rejects the row."""
+def test_a_unit_the_archive_nests_inside_itself_is_read_as_containing_nothing(write_gadm_cache):
+    """GADM writes an unnamed Ukrainian unit as `?` at two levels, which reads as its own container
+    and makes every walk over parentage non-terminating. The reader is where that has to stop."""
     gazetteer = read_gazetteer("UKR", write_gadm_cache())
 
-    assert gazetteer.parent_of["?"] == "?", "the archive really does produce this"
+    assert gazetteer.parent_of["?"] is None
     assert gazetteer.ancestry("?") == {"?"}
 
 

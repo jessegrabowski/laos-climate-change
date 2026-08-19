@@ -178,7 +178,9 @@ def read_gazetteer(iso: str, cache_dir: Path, *, layer: str = GADM_LAYER) -> Gaz
         for row in connection.execute(query, (iso,)):
             parent = None
             for level, (gid, name, variants) in zip(levels, batched(row, len(_NAME_FIELDS)), strict=True):
-                if not gid:
+                # GADM writes an unnamed unit as `?` at every level it spans, and a unit cannot
+                # contain itself: the chain ends where the identifier stops changing.
+                if not gid or gid == parent:
                     break
                 parent_of[gid] = parent
                 for field in (name, variants):
