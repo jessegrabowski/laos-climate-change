@@ -6,7 +6,7 @@ import geopandas as gpd
 import pandas as pd
 import pytest
 
-from shapely.geometry import box
+from shapely.geometry import Polygon, box
 
 from climate_risk.data.geo_disasters import (
     AGREEMENT_LEVELS,
@@ -274,6 +274,126 @@ def test_the_resolved_dtypes_do_not_depend_on_which_levels_matched(write_gadm_ca
     assert both_levels["admin_level"].dtype == "Int64", "an admin level is a number the model compares"
 
 
+def footprints_over(*rectangles, level=2, disno="1999-0001-LAO", quality=None):
+    """One event's Geo-Disasters footprints, covering arbitrary rectangles of the toy GADM country."""
+    return gpd.GeoDataFrame(
+        {
+            "DisNo.": [disno] * len(rectangles),
+            "ISO": ["LAO"] * len(rectangles),
+            "admin_level": [level] * len(rectangles),
+            "geocoding_q": list(quality or [1] * len(rectangles)),
+            "ADM1_NAME": ["Attapu"] * len(rectangles),
+            "ADM2_NAME": ["Sanamxay"] * len(rectangles),
+            "geometry": [box(*rectangle) for rectangle in rectangles],
+        },
+        crs="EPSG:4326",
+    )
+
+
+def test_a_footprint_spanning_two_units_is_placed_in_both(write_gadm_cache):
+    """One GAUL unit routinely covers several GADM ones — where GAUL's admin-1 is a region and
+    GADM's is a province, a single footprint holds five or six. Naming only the largest credits the
+    whole event to one unit and records a zero for the others."""
+    cache_dir = write_gadm_cache()
+
+    resolved = resolve_to_gadm(footprints_over((0, 0, 2, 1)), cache_dir)
+
+    assert set(resolved["gid"]) == {"LAO.1.1_1", "LAO.1.2_1"}, "both districts lie inside the footprint"
+
+
+@pytest.mark.parametrize(
+    ("east_edge", "expected"),
+    [(1.6, {"LAO.1.1_1", "LAO.1.2_1"}), (1.4, {"LAO.1.1_1"})],
+    ids=["60% of the second district", "40% of the second district"],
+)
+def test_a_unit_joins_when_most_of_it_lies_inside(write_gadm_cache, east_edge, expected):
+    """Membership is the share of the unit inside the footprint, not the share of the footprint the
+    unit covers. The second district is the same size either way; what changes is how much of it the
+    footprint holds."""
+    cache_dir = write_gadm_cache()
+
+    resolved = resolve_to_gadm(footprints_over((0, 0, east_edge, 1)), cache_dir)
+
+    assert set(resolved["gid"]) == expected
+
+
+def test_a_unit_straddling_two_footprints_of_one_event_is_placed(write_gadm_cache):
+    """The two halves belong to one event, so the unit is measured against their union. Testing each
+    footprint alone finds 40% twice and places the unit nowhere, losing geography the event has."""
+    cache_dir = write_gadm_cache()
+    # Two slices of LAO.1.2_1, box(1, 0, 2, 1), covering 40% of it each and 80% together.
+    straddling = footprints_over((1.0, 0, 1.4, 1), (1.6, 0, 2.0, 1))
+
+    resolved = resolve_to_gadm(straddling, cache_dir)
+
+    assert set(resolved["gid"]) == {"LAO.1.2_1"}
+
+
+def test_a_unit_inside_two_footprints_of_one_event_is_named_once(write_gadm_cache):
+    """`build_aggregation_from_overlaps` refuses a repeated unit outright, because the same overlap
+    listed twice doubles the ground it stands for."""
+    cache_dir = write_gadm_cache()
+    covered_twice = footprints_over((0, 0, 1, 1), (0, 0, 0.9, 1))
+
+    resolved = resolve_to_gadm(covered_twice, cache_dir)
+
+    assert resolved["gid"].tolist() == ["LAO.1.1_1"]
+    assert not resolved.duplicated(subset=["DisNo.", "gid"]).any()
+
+
+def test_a_footprint_that_projects_to_an_invalid_polygon_is_repaired(write_gadm_cache):
+    """A footprint crossing the antimeridian is valid in lat/lon and self-intersecting once
+    projected, and 19 of Fiji's 108 are. Unioning one raises out of GEOS rather than returning a
+    poor answer, so a whole country's geography is lost to a topology error."""
+    cache_dir = write_gadm_cache()
+    # One event, two footprints, the first tracing the districts' extent twice over so its ring
+    # doubles back on itself. Unioning it with the second is what GEOS refuses.
+    self_overlapping = footprints_over((0, 0, 2, 1), (0, 0, 1, 1))
+    self_overlapping.geometry = [
+        Polygon([(0, 0), (2, 0), (2, 1), (0, 1), (0, 0.5), (2, 0.5), (2, 1), (0, 1)]),
+        box(0, 0, 1, 1),
+    ]
+    assert not self_overlapping.geometry.is_valid.all(), "the fixture has to be invalid to test anything"
+
+    resolved = resolve_to_gadm(self_overlapping, cache_dir)
+
+    assert set(resolved["gid"]) == {"LAO.1.1_1", "LAO.1.2_1"}
+
+
+def test_an_event_geocoded_at_both_levels_keeps_both(write_gadm_cache):
+    """Footprints are dissolved per level, not per event. Dissolving across levels would union a
+    province with a district somewhere else and place the pair against whichever level ran first."""
+    cache_dir = write_gadm_cache()
+    at_both = pd.concat([footprints_over((3, 0, 4, 1), level=1), footprints_over((0, 0, 1, 1), level=2)])
+
+    resolved = resolve_to_gadm(gpd.GeoDataFrame(at_both, crs="EPSG:4326"), cache_dir)
+
+    assert dict(zip(resolved["gid"], resolved["admin_level"], strict=True)) == {"LAO.2_1": 1, "LAO.1.1_1": 2}
+
+
+def test_the_worse_quality_flag_survives_the_dissolve(write_gadm_cache):
+    """Geo-Disasters propagates its per-location flag worst-case to the event, and collapsing the
+    footprints must not quietly improve it."""
+    cache_dir = write_gadm_cache()
+    mixed = footprints_over((0, 0, 1, 1), (0, 0, 0.9, 1), quality=[1, 3])
+
+    resolved = resolve_to_gadm(mixed, cache_dir)
+
+    assert resolved["geocoding_q"].tolist() == [3]
+
+
+def test_overlap_is_the_share_of_the_footprint_each_unit_covers(write_gadm_cache):
+    """The two ratios answer different questions and only one is membership. `overlap` reports how
+    much of the event this unit accounts for; how much of the unit the event reached decides whether
+    it is named at all."""
+    cache_dir = write_gadm_cache()
+
+    resolved = resolve_to_gadm(footprints_over((0, 0, 2, 1)), cache_dir).set_index("gid")
+
+    assert resolved["overlap"].sum() == pytest.approx(1.0), "two equal halves of the footprint"
+    assert resolved.loc["LAO.1.1_1", "overlap"] == pytest.approx(0.5)
+
+
 def test_a_footprint_that_only_borders_a_unit_is_not_placed_in_it(write_gadm_cache):
     """Two polygons meeting along an edge intersect in a line of zero area. Taking the largest
     overlap regardless would answer with a unit the footprint lies wholly outside, and answer it as
@@ -324,6 +444,23 @@ def test_a_country_is_resolved_once_and_read_back(write_gadm_cache, write_geo_di
     (cache_dir / "gadm" / "gadm_410.gpkg").unlink()
 
     pd.testing.assert_frame_equal(load_resolved_units(["LAO"], cache_dir), first)
+
+
+def test_changing_the_placement_rule_rebuilds_rather_than_serving_the_old_units(
+    monkeypatch, write_gadm_cache, write_geo_disasters_cache
+):
+    """A cached entry outlives the rule that placed it. Keyed on the country alone, every warm cache
+    would keep answering with units the current rule would not have chosen, and nothing would say so."""
+    write_gadm_cache()
+    cache_dir = write_geo_disasters_cache()
+    load_resolved_units(["LAO"], cache_dir)
+    (cache_dir / "geo_disasters" / "disaster_subnational_90_23.gpkg").unlink()
+
+    monkeypatch.setattr("climate_risk.data.geo_disasters.MIN_CONTAINMENT", 0.9)
+
+    # Reading the archive again is the point: under a rule it was not built with, the entry is unusable.
+    with pytest.raises(NotImplementedError):
+        load_resolved_units(["LAO"], cache_dir)
 
 
 def test_each_country_caches_under_its_own_key(write_gadm_cache, write_geo_disasters_cache):
@@ -379,7 +516,8 @@ def test_a_footprint_resolves_to_the_gadm_unit_it_covers():
 
     resolved = resolve_to_gadm(footprints, REAL_CACHE_DIR)
 
-    assert len(resolved) == len(footprints), "every Laos footprint sits on a GADM unit"
+    assert set(resolved["DisNo."]) == set(footprints["DisNo."]), "every Laos event keeps its geography"
+    assert len(resolved) >= len(footprints), "a footprint spanning several units contributes several rows"
     assert set(resolved["geometry_source"]) == {"geo_disasters"}
     assert resolved["gid"].str.startswith("LAO").all()
 
