@@ -21,6 +21,15 @@ UNIT_NOUNS = re.compile(
 )
 
 
+# EM-DAT writes `Aceh and West Sumatra Provinces` for two units and `Newfoundland and Labrador` for
+# one, so the whole string has to be tried before its parts.
+CONJUNCTION = re.compile(r"\s+(?:and|&)\s+", re.IGNORECASE)
+
+# `Between Java and Bali` names a stretch of sea by its shores. Splitting it puts the event on
+# whichever shore happens to resolve.
+RELATIONAL = re.compile(r"^\s*(?:between|off|offshore|au large)\b", re.IGNORECASE)
+
+
 # GADM publishes a level 5, for Belgium and Rwanda only.
 INDEXABLE_LEVELS = (1, 2, 3, 4)
 
@@ -154,6 +163,18 @@ def _outermost(gids: set[str], gazetteer: Gazetteer) -> set[str]:
     return {gid for gid in gids if not (gazetteer.ancestry(gid) - {gid}) & gids}
 
 
+def _units_named(name: str, parent: str | None, gazetteer: Gazetteer) -> set[str]:
+    """Name the units one written place reaches, narrowed by its stated container where it has one."""
+    gids = {unit.gid for unit in gazetteer.names.get(match_key(name), set())}
+    if not gids or parent is None:
+        return gids
+
+    containers = {unit.gid for unit in gazetteer.names.get(match_key(parent), set())}
+    inside = {gid for gid in gids if (gazetteer.ancestry(gid) - {gid}) & containers}
+
+    return inside or gids
+
+
 def resolve_place(name: str, parent: str | None, gazetteer: Gazetteer) -> set[str]:
     """
     Name the GADM units a written place refers to, using its stated container to choose between them.
@@ -162,6 +183,11 @@ def resolve_place(name: str, parent: str | None, gazetteer: Gazetteer) -> set[st
     separates one ``Pitogo`` from the other without a similarity threshold. A container that names
     nothing, or that holds none of the candidates, is ignored rather than treated as a
     contradiction: the prose routinely names a region GADM does not model.
+
+    A name joined by ``and`` is split only where the whole fails, so ``Newfoundland and Labrador``
+    stays one unit while ``Aceh and West Sumatra`` becomes two. Every part that names something is
+    kept, except where the name opens with a word placing the event between its parts rather than
+    in them.
 
     Parameters
     ----------
@@ -177,13 +203,17 @@ def resolve_place(name: str, parent: str | None, gazetteer: Gazetteer) -> set[st
     set of str
         The GADM identifiers the name reaches, empty where it reaches none.
     """
-    gids = {unit.gid for unit in gazetteer.names.get(match_key(name), set())}
-    if gids and parent is not None:
-        containers = {unit.gid for unit in gazetteer.names.get(match_key(parent), set())}
-        inside = {gid for gid in gids if (gazetteer.ancestry(gid) - {gid}) & containers}
-        gids = inside or gids
+    gids = _units_named(name, parent, gazetteer)
+    if gids:
+        return _outermost(gids, gazetteer)
 
-    return _outermost(gids, gazetteer)
+    parts = [part.strip() for part in CONJUNCTION.split(name) if part.strip()]
+    if len(parts) > 1 and not RELATIONAL.match(name):
+        reached = [found for part in parts if (found := _units_named(part, parent, gazetteer))]
+        if reached:
+            return _outermost(set().union(*reached), gazetteer)
+
+    return set()
 
 
 def resolve_event_places(places: Iterable[tuple[str, str | None]], gazetteer: Gazetteer) -> list[set[str]]:

@@ -160,3 +160,35 @@ def test_a_unit_that_parents_itself_still_terminates(write_gadm_cache):
 def test_a_decorated_mention_reaches_the_published_name(written, published):
     """A fifth of the names nothing matches are a published name with a word like this attached."""
     assert match_key(written) == match_key(published)
+
+
+def test_a_conjunction_reaches_both_places_it_joins(write_gadm_cache):
+    """EM-DAT writes a run of provinces joined by `and`, and refusing to split leaves every one of
+    them unplaced."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    assert resolve_place("Sanamxay and Samakhixay", None, gazetteer) == {"LAO.1.1_1", "LAO.1.2_1"}
+
+
+def test_a_unit_whose_own_name_carries_a_conjunction_survives(write_gadm_cache):
+    """Splitting `Newfoundland and Labrador` destroys the province it names, so the whole string
+    has to be tried before its parts."""
+    gazetteer = read_gazetteer("CAN", write_gadm_cache())
+
+    assert resolve_place("Newfoundland and Labrador", None, gazetteer) == {"CAN.5_1"}
+
+
+def test_a_conjunction_keeps_whichever_parts_name_something(write_gadm_cache):
+    """EM-DAT joins a place it spelled well to one it spelled badly. Discarding both because one
+    failed throws away geography the prose plainly gives."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    assert resolve_place("Nowhere At All and Sanamxay", None, gazetteer) == {"LAO.1.1_1"}
+
+
+def test_a_place_named_between_two_others_is_in_neither(write_gadm_cache):
+    """`Between Java and Bali` is a stretch of sea named by its shores. Splitting it puts the event
+    on whichever shore resolves, which is a coastline away from where it happened."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    assert resolve_place("Between Bokeo and Sanamxay", None, gazetteer) == set()

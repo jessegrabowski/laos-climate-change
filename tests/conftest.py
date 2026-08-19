@@ -384,6 +384,8 @@ def toy_gadm() -> gpd.GeoDataFrame:
     `LAO.1.2.1_1` is the seat named after the district holding it, which is what most ambiguous
     mentions turn out to be: candidates on one nesting chain rather than places in two locations.
 
+    Canada carries a unit whose own name joins two places with `and`.
+
     Ukraine carries GADM's placeholder identifier, which is the string `?` at both levels and
     therefore parents itself. Walking a unit's containers without a visited set never terminates.
 
@@ -437,6 +439,21 @@ def toy_gadm() -> gpd.GeoDataFrame:
         # 111 ambiguous mentions in the workbook are a province and a same-named district.
         ("LAO", "LAO.2_1", "Bokeo", "", "LAO.2.2_1", "Attapu", "", "", "", "", "", box(4, 0, 5, 1)),
         ("ZMB", "ZMB.1_1", "Central", "", "ZMB.1.1_1", "Kabwe", "", "", "", "", "", box(6, 0, 7, 1)),
+        # 75 GADM units carry a conjunction in their own name, which a split on `and` destroys.
+        (
+            "CAN",
+            "CAN.5_1",
+            "Newfoundland and Labrador",
+            "",
+            "CAN.5.1_1",
+            "Division No. 1",
+            "",
+            "",
+            "",
+            "",
+            "",
+            box(12, 0, 13, 1),
+        ),
         # GADM writes an unnamed Ukrainian unit as `?` at both levels, so it comes out its own parent.
         ("UKR", "?", "?", "", "?", "?", "", "", "", "", "", box(10, 0, 11, 1)),
         ("GHA", "GHA11_2", "Savannah", "", "GHA7.13_2", "Ga Central", "", "", "", "", "", box(8, 0, 9, 1)),
