@@ -2,7 +2,7 @@ import re
 import sqlite3
 
 from collections import defaultdict
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from itertools import batched
 from pathlib import Path
 from typing import NamedTuple
@@ -88,16 +88,26 @@ class Gazetteer(NamedTuple):
     names: dict[str, set[Unit]]
     parent_of: dict[str, str | None]
 
-    def ancestry(self, gid: str) -> set[str]:
-        """Name the unit and every unit containing it."""
-        chain: set[str] = set()
+    def _upwards(self, gid: str) -> Iterator[str]:
+        """Yield the unit and each container above it, outwards."""
+        seen: set[str] = set()
         current: str | None = gid
-        # GADM's placeholder identifier appears at two levels and so parents itself.
-        while current and current not in chain:
-            chain.add(current)
+        # A Gazetteer can be built by hand as well as read, so the walk does not assume acyclic
+        # parentage even though :func:`read_gazetteer` refuses to record it.
+        while current and current not in seen:
+            seen.add(current)
+            yield current
             current = self.parent_of.get(current)
 
-        return chain
+    def ancestry(self, gid: str) -> set[str]:
+        """Name the unit and every unit containing it."""
+        return set(self._upwards(gid))
+
+    def top_container(self, gid: str) -> str:
+        """Name the outermost unit holding this one, which is the unit itself where it has no parent."""
+        *_, outermost = self._upwards(gid)
+
+        return outermost
 
 
 _NAME_FIELDS = ("GID", "NAME", "VARNAME")

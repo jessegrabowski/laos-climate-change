@@ -229,3 +229,16 @@ def test_a_container_standing_in_for_a_place_is_narrowed_like_any_other(write_ga
     _, fallen_back = resolve_event_places([("Houayxay", None), ("Nowhere At All", "Attapu")], gazetteer)
 
     assert fallen_back == Placement({"LAO.2.2_1"}, CONTAINED_BY), "the district inside the pinned province"
+
+
+def test_a_unit_below_a_province_names_the_province_as_its_outermost(write_gadm_cache):
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    assert gazetteer.top_container("LAO.1.1.1_1") == "LAO.1_1"
+
+
+def test_the_outermost_container_of_the_placeholder_unit_is_itself(write_gadm_cache):
+    """Walking outwards from a unit the archive nests inside itself must still reach a top."""
+    gazetteer = read_gazetteer("UKR", write_gadm_cache())
+
+    assert gazetteer.top_container("?") == "?"
