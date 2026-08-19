@@ -106,12 +106,21 @@ def test_geometry_is_left_on_disk(write_geo_disasters_cache):
 
 @pytest.mark.parametrize(
     ("published", "other"),
-    [("Attapu", "attapu"), ("Bolikhamxai", "Bolikhamxai "), ("Xekong", "Xékong"), ("Xai-somboun", "Xaisomboun")],
-    ids=["casing", "whitespace", "accent", "hyphen"],
+    [
+        ("Attapu", "attapu"),
+        ("Bolikhamxai", "Bolikhamxai "),
+        ("Xekong", "Xékong"),
+        ("Xai-somboun", "Xaisomboun"),
+        ("Da Nang", "Đà Nẵng"),
+        ("Lodz", "Łódź"),
+    ],
+    ids=["casing", "whitespace", "accent", "hyphen", "d-with-stroke", "l-with-stroke"],
 )
 def test_the_same_unit_spelled_two_ways_normalises_alike(published, other):
     """GADM and GAUL differ in casing, spacing, accents and hyphens for units that are the same one,
-    and a literal comparison would report every one of these as the sources disagreeing."""
+    and a literal comparison would report every one of these as the sources disagreeing. A stroked
+    letter carries no combining mark, so stripping accents leaves `Đ` and `ł` standing and `Đà Nẵng`
+    never meets `Da Nang`. GADM holds both, in different scripts, so one language's fix is not enough."""
     assert normalise_unit_name(published) == normalise_unit_name(other)
 
 
