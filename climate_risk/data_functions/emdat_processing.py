@@ -1,7 +1,9 @@
 import datetime as dt
 import json
+import re
 
 from pathlib import Path
+from typing import NamedTuple
 
 import polars as pl
 
@@ -268,6 +270,103 @@ def load_emdat_events(cache_dir: Path) -> pl.DataFrame:
     cache_dir.mkdir(parents=True, exist_ok=True)
 
     return _read_workbook(EMDAT.require(cache_dir))
+
+
+LOCATION_SEPARATORS = ",;"
+
+# `X, and Y` splits on the comma and strands the conjunction on the second span. No GADM unit is
+# named with a leading `and`, so a span that starts with one is an artifact of the split.
+STRANDED_CONJUNCTION = re.compile(r"^(?:and|&)\b\s*", re.IGNORECASE)
+
+
+class NamedPlace(NamedTuple):
+    """A place an event's location text names, and the place the text says contains it.
+
+    Parameters
+    ----------
+    name : str
+        The place as written, whitespace collapsed and nothing else changed.
+    parent : str or None
+        The containing place the prose gave in parentheses, or None where it gave none.
+    """
+
+    name: str
+    parent: str | None
+
+
+def named_places(location: str | None) -> list[NamedPlace]:
+    """
+    Explode an event's location text into the places it names.
+
+    EM-DAT writes a list of places, optionally followed by a parenthesised container that applies
+    to every place since the last one — ``Muang Nakhon Si Thammarat, Hua Sai, Pak Phanang, Ron
+    Phibun districts (Nakhon Si Thammarat province)`` names four districts of one province. The
+    parent is what tells a repeated district name which province it belongs to, so it is carried
+    rather than flattened into a sibling.
+
+    Separators are commas and semicolons outside parentheses. ``and`` is not one: 75 GADM units are
+    named like ``Newfoundland and Labrador``, and splitting on it would destroy them. Where the
+    prose writes ``X, and Y`` the comma splits and the conjunction is left stranded, so a leading
+    one is dropped from each place.
+
+    Parameters
+    ----------
+    location : str or None
+        The ``Location`` column as EM-DAT writes it.
+
+    Returns
+    -------
+    list of NamedPlace
+        One entry per place named, in the order written, without repeats. Empty when the text names
+        nothing.
+    """
+    spans: list[str] = []
+    places: list[NamedPlace] = []
+    written: list[str] = []
+    container: list[str] = []
+    depth = 0
+
+    def close_span() -> None:
+        collapsed = " ".join("".join(written).split())
+        if trimmed := STRANDED_CONJUNCTION.sub("", collapsed).strip():
+            spans.append(trimmed)
+        written.clear()
+
+    def close_group() -> None:
+        # Nested parentheses gloss the container rather than nesting inside it — `Region I (Ilocos
+        # region)` is one place under two names — so the inner text is dropped, not treated as a
+        # further parent.
+        parent = " ".join(re.sub(r"\([^()]*\)", " ", "".join(container)).split()) or None
+        places.extend(NamedPlace(span, parent) for span in spans)
+        spans.clear()
+        container.clear()
+
+    for character in str(location or ""):
+        if character == "(":
+            depth += 1
+            if depth == 1:
+                close_span()
+                continue
+        elif character == ")":
+            if depth == 0:
+                continue
+            depth -= 1
+            if depth == 0:
+                close_group()
+                continue
+
+        if depth:
+            container.append(character)
+        elif character in LOCATION_SEPARATORS:
+            close_span()
+        else:
+            written.append(character)
+
+    close_span()
+    # An unclosed parenthesis still names a container; the text was truncated, not unstructured.
+    close_group()
+
+    return list(dict.fromkeys(places))
 
 
 GADM_UNITS_COLUMN = "GADM Admin Units"
