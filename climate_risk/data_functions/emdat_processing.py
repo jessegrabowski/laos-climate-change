@@ -371,6 +371,54 @@ def named_places(location: str | None) -> list[NamedPlace]:
 
 GADM_UNITS_COLUMN = "GADM Admin Units"
 
+
+class UncodedEvent(NamedTuple):
+    """An event EM-DAT recorded a location for without coding any administrative unit.
+
+    Parameters
+    ----------
+    disno : str
+        The EM-DAT event identifier.
+    iso : str
+        ISO 3166-1 alpha-3 code of the country the event is filed under.
+    places : list of NamedPlace
+        The places its location text names, never empty.
+    """
+
+    disno: str
+    iso: str
+    places: list[NamedPlace]
+
+
+def events_missing_units(events: pl.DataFrame) -> list[UncodedEvent]:
+    """
+    Collect the events whose geography has to be recovered from their location text.
+
+    Two thirds of the workbook carries no administrative units, and an event whose text names
+    nothing is left out: there is nothing to resolve and no reason to fetch a gazetteer for it.
+
+    Parameters
+    ----------
+    events : DataFrame
+        The workbook, from :func:`load_emdat_events`.
+
+    Returns
+    -------
+    list of UncodedEvent
+        One entry per event with places to place, in workbook order.
+    """
+    uncoded = []
+    for disno, iso, location, units in zip(
+        events["DisNo."], events["ISO"], events["Location"], events[GADM_UNITS_COLUMN], strict=True
+    ):
+        if str(units or "").strip() and json.loads(units):
+            continue
+        if places := named_places(location):
+            uncoded.append(UncodedEvent(str(disno), str(iso), places))
+
+    return uncoded
+
+
 # One row per affected administrative unit. `name` and `migration_method` are absent on some units:
 # EM-DAT omits the name where GADM has none, and the method where the unit was never migrated.
 EVENT_UNIT_SCHEMA = {

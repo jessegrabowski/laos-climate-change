@@ -18,6 +18,7 @@ from climate_risk.data_functions.emdat_processing import (
     event_filter,
     event_geography,
     event_units,
+    events_missing_units,
     load_emdat_events,
     named_places,
     total_damage,
@@ -299,6 +300,38 @@ def test_every_disaster_type_gets_a_column_in_a_stable_order(write_emdat_cache):
 REAL_CACHE_DIR = Path(__file__).parents[2] / "data"
 
 SHIPPED_PLACE_KEYS = sorted(path.stem for path in (CONFIG_ROOT / "places").glob("*.toml"))
+
+
+def test_an_event_carrying_units_is_not_offered_for_resolution(write_emdat_cache):
+    """Two thirds of the workbook has no units, and re-resolving the third that does would override
+    EM-DAT's own coding with a name match."""
+    events = load_emdat_events(
+        write_emdat_cache(
+            [
+                emdat_event(
+                    {"DisNo.": "2018-0001-LAO", "Location": "Attapu", "GADM Admin Units": '[{"gid_1": "LAO.1_1"}]'}
+                ),
+                emdat_event({"DisNo.": "2018-0002-LAO", "Location": "Bokeo", "GADM Admin Units": ""}),
+            ]
+        )
+    )
+
+    assert [event.disno for event in events_missing_units(events)] == ["2018-0002-LAO"]
+
+
+def test_an_event_whose_text_names_nothing_is_left_out(write_emdat_cache):
+    """`Countrywide` and `N.A. on the source` reach no gazetteer, and carrying them makes a caller
+    fetch an archive for a country it can place nothing in."""
+    events = load_emdat_events(
+        write_emdat_cache(
+            [
+                emdat_event({"DisNo.": "2018-0003-LAO", "Location": "()", "GADM Admin Units": ""}),
+                emdat_event({"DisNo.": "2018-0004-LAO", "Location": "Bokeo", "GADM Admin Units": ""}),
+            ]
+        )
+    )
+
+    assert [event.disno for event in events_missing_units(events)] == ["2018-0004-LAO"]
 
 
 @pytest.mark.requires_emdat
