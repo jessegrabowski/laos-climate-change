@@ -39,6 +39,7 @@ dependencies = [
     "matplotlib>=3.11,<4",
     "seaborn>=0.13,<1",
     "tqdm>=4.70,<5",
+    "anyascii>=0.3.3,<1",
     "requests>=2.34,<3",
 ]
 
@@ -100,6 +101,7 @@ statsmodels = ">=0.14,<1"
 matplotlib = ">=3.11,<4"
 seaborn = ">=0.13,<1"
 tqdm = ">=4.70,<5"
+anyascii = ">=0.3.3,<1"
 requests = ">=2.34.2,<3"
 polars = ">=1.43,<2"
 pyarrow = ">=25.0,<26"

@@ -1,5 +1,4 @@
 import logging
-import unicodedata
 
 from collections.abc import Mapping, Sequence
 from functools import partial
@@ -7,6 +6,8 @@ from pathlib import Path
 
 import geopandas as gpd
 import pandas as pd
+
+from anyascii import anyascii
 
 from climate_risk.data.cache import cached, pandas_parquet
 from climate_risk.data.gadm import load_units_in_country
@@ -317,7 +318,8 @@ def normalise_unit_name(name: str) -> str:
     Reduce an administrative unit's name to what two gazetteers can be expected to agree on.
 
     GADM and GAUL romanise the same unit differently — accents, hyphens and casing all drift — so a
-    literal comparison reports spelling as disagreement.
+    literal comparison reports spelling as disagreement. The name is transliterated rather than
+    decomposed, because a letter like ``Đ`` or ``ł`` carries no combining mark to strip.
 
     Parameters
     ----------
@@ -327,10 +329,9 @@ def normalise_unit_name(name: str) -> str:
     Returns
     -------
     str
-        Casefolded, stripped of accents and of everything that is not a letter or digit.
+        Casefolded, transliterated to ASCII, and stripped of everything that is not a letter or digit.
     """
-    decomposed = unicodedata.normalize("NFKD", name)
-    return "".join(character for character in decomposed if character.isalnum()).casefold()
+    return "".join(character for character in anyascii(name) if character.isalnum()).casefold()
 
 
 def event_unit_ids(units: pd.DataFrame) -> dict[str, set[str]]:
