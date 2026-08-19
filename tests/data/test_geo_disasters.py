@@ -2,24 +2,30 @@ import re
 
 from pathlib import Path
 
+import geopandas as gpd
+import pandas as pd
 import pytest
+
+from shapely.geometry import box
 
 from climate_risk.data.geo_disasters import (
     AGREEMENT_LEVELS,
     GEO_DISASTERS,
     RESOLVED_COLUMNS,
+    RESOLVED_DTYPES,
     compare_event_units,
-    event_unit_names,
+    event_unit_ids,
     geo_disasters_dir,
     geo_disasters_path,
     load_event_footprints,
     load_event_locations,
+    load_resolved_units,
     normalise_unit_name,
     resolve_to_gadm,
     unit_names,
 )
 from climate_risk.exceptions import DataValidationError
-from tests.conftest import toy_geo_disasters
+from tests.conftest import toy_gadm, toy_geo_disasters
 
 
 def test_the_geopackage_is_looked_for_under_the_cache(tmp_path):
@@ -116,54 +122,76 @@ def test_units_that_are_genuinely_different_stay_different():
 
 def test_a_different_romanisation_is_not_reconciled():
     """Normalisation handles typography, not spelling. `Xiangkhouang` and `Xiangkhoang` are one
-    province under two romanisations, and they compare as different units — so a `partial` in the
-    report is an upper bound on real disagreement, not a measurement of it."""
+    province under two romanisations, and normalising leaves them different — which is why the
+    agreement report matches identifiers and this function is not in its path."""
     assert normalise_unit_name("Xiangkhouang") != normalise_unit_name("Xiangkhoang")
 
 
-def test_geo_disasters_names_are_collected_per_event(write_geo_disasters_cache):
-    cache_dir = write_geo_disasters_cache()
+def test_unit_ids_are_collected_per_event():
+    """Both sides of the comparison come through here, and an event spans several units. The point
+    and country tiers of `event_geography` carry no unit at all, and those events contribute an
+    empty set rather than a set holding a null that would match nothing."""
+    units = pd.DataFrame(
+        {
+            "DisNo.": ["1991-0761-LAO", "1991-0761-LAO", "2018-0339-LAO", "2020-0001-LAO"],
+            "gid": ["LAO.15_1", "LAO.6_1", "LAO.1.1_1", None],
+        }
+    )
 
-    names = event_unit_names(load_event_locations(cache_dir, iso="LAO"))
-
-    assert names == {"1991-0761-LAO": {"Savannakhet", "Khammouan"}, "2018-0339-LAO": {"Sanamxay"}}
+    assert event_unit_ids(units) == {
+        "1991-0761-LAO": {"LAO.15_1", "LAO.6_1"},
+        "2018-0339-LAO": {"LAO.1.1_1"},
+        "2020-0001-LAO": set(),
+    }
 
 
 @pytest.mark.parametrize(
     ("em_dat", "geo_disasters", "expected"),
     [
-        ({"Savannakhet", "Khammouan"}, {"Savannakhet", "Khammouan"}, "exact"),
-        ({"Vientiane", "Xaisomboun"}, {"Vientiane"}, "partial"),
-        ({"Vientiane"}, {"Attapu"}, "disjoint"),
-        (set(), {"Xekong", "Attapu"}, "gained"),
-        ({"Bokeo"}, set(), "unmatched"),
+        ({"LAO.6_1", "LAO.7_1"}, {"LAO.6_1", "LAO.7_1"}, "exact"),
+        ({"LAO.15_1", "LAO.17_1"}, {"LAO.15_1"}, "partial"),
+        ({"LAO.15_1"}, {"LAO.1_1"}, "disjoint"),
+        (set(), {"LAO.16_1", "LAO.1_1"}, "gained"),
+        ({"LAO.2_1"}, set(), "unmatched"),
     ],
     ids=["exact", "partial", "disjoint", "gained", "unmatched"],
 )
 def test_an_event_is_classified_by_how_the_two_geocodings_overlap(em_dat, geo_disasters, expected):
-    report = compare_event_units({"E": em_dat}, {"E": geo_disasters})
+    report = compare_event_units(em_dat={"E": em_dat}, geo_disasters={"E": geo_disasters})
 
     assert report["agreement"].tolist() == [expected]
 
 
 def test_an_event_neither_source_geocoded_is_left_out():
     """Two thirds of EM-DAT carries no units at all; reporting them would bury the comparison."""
-    report = compare_event_units({"E": set()}, {"E": set()})
+    report = compare_event_units(em_dat={"E": set()}, geo_disasters={"E": set()})
 
     assert report.empty
     assert list(report.columns) == ["DisNo.", "agreement", "em_dat_units", "geo_disasters_units", "shared_units"]
 
 
-def test_agreement_is_judged_after_normalisation():
-    """The whole point of normalising: Xekong and Xékong are one province, not a disjoint pair."""
-    report = compare_event_units({"E": {"Xékong"}}, {"E": {"Xekong"}})
+def test_identifiers_are_compared_literally():
+    """`normalise_unit_name` strips the punctuation that separates a GADM identifier's levels, so
+    the district `LAO.1.1_1` and the province `LAO.11_1` both reduce to `lao111`. Putting the
+    identifiers through it would merge two different units into an exact agreement."""
+    report = compare_event_units(em_dat={"E": {"LAO.11_1"}}, geo_disasters={"E": {"LAO.1.1_1"}})
 
-    assert report["agreement"].tolist() == ["exact"]
-    assert report["shared_units"].tolist() == [1]
+    assert normalise_unit_name("LAO.11_1") == normalise_unit_name("LAO.1.1_1"), "the collision is real"
+    assert report["agreement"].tolist() == ["disjoint"]
+
+
+def test_a_province_and_a_district_inside_it_do_not_match():
+    """An identifier names a level as well as a place. Every event the two sources describe at
+    different resolutions lands here, and it reads as `disjoint` — the same verdict as two genuinely
+    different provinces, which is a limit of the report rather than a claim about the event."""
+    report = compare_event_units(em_dat={"E": {"PHL.19_1"}}, geo_disasters={"E": {"PHL.19.5_1"}})
+
+    assert report["agreement"].tolist() == ["disjoint"]
+    assert report["shared_units"].tolist() == [0]
 
 
 def test_the_counts_describe_each_side_and_the_overlap():
-    report = compare_event_units({"E": {"Vientiane", "Xaisomboun"}}, {"E": {"Vientiane", "Attapu"}})
+    report = compare_event_units(em_dat={"E": {"LAO.15_1", "LAO.17_1"}}, geo_disasters={"E": {"LAO.15_1", "LAO.1_1"}})
 
     assert report.loc[0, "em_dat_units"] == 2
     assert report.loc[0, "geo_disasters_units"] == 2
@@ -172,7 +200,10 @@ def test_the_counts_describe_each_side_and_the_overlap():
 
 def test_every_event_either_source_geocoded_appears_once():
     """A join done the wrong way round silently drops whichever side is absent."""
-    report = compare_event_units({"A": {"x"}, "B": {"y"}}, {"B": {"y"}, "C": {"z"}})
+    report = compare_event_units(
+        em_dat={"A": {"LAO.1_1"}, "B": {"LAO.2_1"}},
+        geo_disasters={"B": {"LAO.2_1"}, "C": {"LAO.9_1"}},
+    )
 
     assert report["DisNo."].tolist() == ["A", "B", "C"]
 
@@ -190,13 +221,16 @@ def test_footprints_spanning_two_countries_are_refused(tmp_path):
 
 
 def test_no_footprints_resolve_to_an_empty_frame_of_the_right_shape(tmp_path):
-    """A country Geo-Disasters never geocoded is ordinary, and the caller concatenates the result."""
+    """A country Geo-Disasters never geocoded is ordinary, and the caller concatenates the result —
+    so the empty frame needs the dtypes a populated one has, or it drags every column it is
+    concatenated with back to object."""
     empty = toy_geo_disasters().iloc[:0]
 
     resolved = resolve_to_gadm(empty, tmp_path)
 
     assert resolved.empty
     assert list(resolved.columns) == RESOLVED_COLUMNS
+    assert dict(resolved.dtypes.astype(str)) == RESOLVED_DTYPES
 
 
 def test_footprints_come_back_with_their_geometry(write_geo_disasters_cache):
@@ -213,11 +247,119 @@ def test_every_classification_is_one_of_the_declared_levels():
     """`AGREEMENT_LEVELS` is the published vocabulary; a verdict outside it is one no caller can
     branch on."""
     report = compare_event_units(
-        {"exact": {"a"}, "partial": {"a", "b"}, "disjoint": {"a"}, "unmatched": {"a"}},
-        {"exact": {"a"}, "partial": {"a"}, "disjoint": {"z"}, "gained": {"a"}},
+        em_dat={
+            "exact": {"LAO.1_1"},
+            "partial": {"LAO.1_1", "LAO.2_1"},
+            "disjoint": {"LAO.1_1"},
+            "unmatched": {"LAO.1_1"},
+        },
+        geo_disasters={"exact": {"LAO.1_1"}, "partial": {"LAO.1_1"}, "disjoint": {"LAO.9_1"}, "gained": {"LAO.1_1"}},
     )
 
     assert set(report["agreement"]) == set(AGREEMENT_LEVELS)
+
+
+def test_the_resolved_dtypes_do_not_depend_on_which_levels_matched(write_gadm_cache):
+    """An admin level that places nothing contributes an all-object empty frame to the concatenation,
+    which would leave `admin_level` an object column for one country and an integer for the next —
+    a schema that varies with the data, and only where a level happened to come back empty."""
+    cache_dir = write_gadm_cache()
+    lao = toy_geo_disasters().query("ISO == 'LAO'")
+
+    both_levels = resolve_to_gadm(lao, cache_dir)
+    provinces_only = resolve_to_gadm(lao[lao["admin_level"] == 1], cache_dir)
+
+    assert not both_levels.empty and not provinces_only.empty, "both cases must place something"
+    pd.testing.assert_series_equal(both_levels.dtypes, provinces_only.dtypes)
+    assert both_levels["admin_level"].dtype == "Int64", "an admin level is a number the model compares"
+
+
+def test_a_footprint_that_only_borders_a_unit_is_not_placed_in_it(write_gadm_cache):
+    """Two polygons meeting along an edge intersect in a line of zero area. Taking the largest
+    overlap regardless would answer with a unit the footprint lies wholly outside, and answer it as
+    confidently as a real match."""
+    cache_dir = write_gadm_cache()
+    units = toy_gadm()
+    houayxay = units[units["GID_2"] == "LAO.2.1_1"].geometry.iloc[0]
+    beside_houayxay = gpd.GeoDataFrame(
+        {
+            "DisNo.": ["1999-0001-LAO"],
+            "ISO": ["LAO"],
+            "admin_level": [2],
+            "geocoding_q": [1],
+            "ADM1_NAME": ["Bokeo"],
+            "ADM2_NAME": ["Houayxay"],
+            "geometry": [box(2, 0, 3, 1)],
+        },
+        crs="EPSG:4326",
+    )
+    footprint = beside_houayxay.geometry.iloc[0]
+    assert footprint.touches(houayxay) and footprint.intersection(houayxay).area == 0.0, (
+        "the footprint must share an edge and no area, or this is the ordinary disjoint case"
+    )
+
+    resolved = resolve_to_gadm(beside_houayxay, cache_dir)
+
+    assert resolved.empty, "a footprint sharing only an edge covers no unit"
+
+
+def test_resolved_units_span_every_country_asked_for(write_gadm_cache, write_geo_disasters_cache):
+    write_gadm_cache()
+    cache_dir = write_geo_disasters_cache()
+
+    resolved = load_resolved_units(["ZMB", "LAO"], cache_dir)
+
+    assert set(resolved["ISO"]) == {"LAO", "ZMB"}
+    assert (resolved["gid"].str[:3] == resolved["ISO"]).all(), "a unit belongs to the country it was read for"
+
+
+def test_a_country_is_resolved_once_and_read_back(write_gadm_cache, write_geo_disasters_cache):
+    """The overlay runs against every GADM unit in the country and takes a hundred seconds over a
+    region. A second read that touches the GeoPackages has not cached anything."""
+    write_gadm_cache()
+    cache_dir = write_geo_disasters_cache()
+    first = load_resolved_units(["LAO"], cache_dir)
+
+    (cache_dir / "geo_disasters" / "disaster_subnational_90_23.gpkg").unlink()
+    (cache_dir / "gadm" / "gadm_410.gpkg").unlink()
+
+    pd.testing.assert_frame_equal(load_resolved_units(["LAO"], cache_dir), first)
+
+
+def test_each_country_caches_under_its_own_key(write_gadm_cache, write_geo_disasters_cache):
+    """One entry per region would make `sea` and a global run rebuild each other's members, and a
+    shared key would serve Laos' units for a request about Zambia."""
+    write_gadm_cache()
+    cache_dir = write_geo_disasters_cache()
+
+    load_resolved_units(["LAO"], cache_dir)
+
+    assert set(load_resolved_units(["ZMB"], cache_dir)["gid"]) == {"ZMB.1_1"}
+
+
+def test_a_country_named_twice_is_read_once(write_gadm_cache, write_geo_disasters_cache):
+    """The argument is a set of countries, not a list of reads. A region listing a member twice —
+    or two overlapping regions concatenated — would otherwise duplicate every one of that country's
+    rows, and the event counts built on them come out twice as large."""
+    write_gadm_cache()
+    cache_dir = write_geo_disasters_cache()
+
+    once = load_resolved_units(["LAO", "ZMB"], cache_dir)
+    repeated_and_reordered = load_resolved_units(["ZMB", "LAO", "LAO"], cache_dir)
+
+    pd.testing.assert_frame_equal(once, repeated_and_reordered)
+    # Set iteration order over strings varies between processes, so row order would too.
+    assert once["ISO"].is_monotonic_increasing, "countries concatenate in a fixed order"
+
+
+def test_asking_for_no_countries_gives_the_empty_frame(tmp_path):
+    """A place whose members are all absent from Geo-Disasters reaches here as an empty list, and
+    the caller concatenates whatever comes back."""
+    resolved = load_resolved_units([], tmp_path)
+
+    assert resolved.empty
+    assert list(resolved.columns) == RESOLVED_COLUMNS
+    assert dict(resolved.dtypes.astype(str)) == RESOLVED_DTYPES
 
 
 REAL_GADM = REAL_CACHE_DIR / "gadm" / "gadm_410.gpkg"

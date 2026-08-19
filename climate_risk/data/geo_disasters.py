@@ -1,12 +1,14 @@
 import logging
 import unicodedata
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
+from functools import partial
 from pathlib import Path
 
 import geopandas as gpd
 import pandas as pd
 
+from climate_risk.data.cache import cached, pandas_parquet
 from climate_risk.data.gadm import load_units_in_country
 from climate_risk.data.source import ManualSource
 from climate_risk.exceptions import DataValidationError
@@ -146,17 +148,32 @@ def load_event_footprints(cache_dir: Path, *, iso: str, layer: str = GEO_DISASTE
 
 EQUAL_AREA_CRS = "ESRI:54009"
 
-RESOLVED_COLUMNS = ["DisNo.", "ISO", "geometry_source", "gid", "name", "admin_level", "geocoding_q", "overlap"]
+RESOLVED_DTYPES = {
+    "DisNo.": "string",
+    "ISO": "string",
+    "geometry_source": "string",
+    "gid": "string",
+    "name": "string",
+    "admin_level": "Int64",
+    "geocoding_q": "Int64",
+    "overlap": "float64",
+}
+
+RESOLVED_COLUMNS = list(RESOLVED_DTYPES)
 
 
 def _best_unit_per_footprint(footprints: gpd.GeoDataFrame, units: gpd.GeoDataFrame) -> pd.DataFrame:
     """Pair each footprint with the single unit covering most of it, dropping any that meet none."""
     located = footprints[["DisNo.", "ISO", "geocoding_q", "geometry"]].reset_index(names="footprint")
     pieces = gpd.overlay(located, units, how="intersection", keep_geom_type=False)
+
+    # Two polygons meeting along an edge intersect in a line, which `keep_geom_type=False` keeps and
+    # which covers none of the footprint. Taking the largest would place it in a unit it only borders.
+    pieces = pieces.assign(covered=pieces.geometry.area)
+    pieces = pieces[pieces["covered"] > 0.0]
     if pieces.empty:
         return pd.DataFrame(columns=RESOLVED_COLUMNS)
 
-    pieces = pieces.assign(covered=pieces.geometry.area)
     best = pieces.sort_values("covered").groupby("footprint").tail(1).set_index("footprint")
     shares = best["covered"] / footprints.geometry.area.reindex(best.index)
 
@@ -189,7 +206,7 @@ def resolve_to_gadm(footprints: gpd.GeoDataFrame, cache_dir: Path) -> pd.DataFra
         ``geocoding_q``, and ``overlap``, the share of the footprint the unit covers.
     """
     if footprints.empty:
-        return pd.DataFrame(columns=RESOLVED_COLUMNS)
+        return pd.DataFrame(columns=RESOLVED_COLUMNS).astype(RESOLVED_DTYPES)
 
     countries = set(footprints["ISO"])
     if len(countries) > 1:
@@ -220,7 +237,52 @@ def resolve_to_gadm(footprints: gpd.GeoDataFrame, cache_dir: Path) -> pd.DataFra
         .assign(geometry_source="geo_disasters")[RESOLVED_COLUMNS]
         .sort_values(["DisNo.", "gid"])
         .reset_index(drop=True)
+        .astype(RESOLVED_DTYPES)
     )
+
+
+def _resolve_country(iso: str, cache_dir: Path) -> pd.DataFrame:
+    return resolve_to_gadm(load_event_footprints(cache_dir, iso=iso), cache_dir)
+
+
+def load_resolved_units(isos: Sequence[str], cache_dir: Path, *, force_reload: bool = False) -> pd.DataFrame:
+    """
+    Read the GADM units Geo-Disasters places, for several countries at once.
+
+    Resolving is a polygon overlay against every GADM unit in the country, so it is cached, one
+    entry per country.
+
+    Parameters
+    ----------
+    isos : sequence of str
+        ISO 3166-1 alpha-3 codes to read. Duplicates and ordering do not matter; the result is
+        ordered by code.
+    cache_dir : Path
+        Directory the caches live under.
+    force_reload : bool, optional
+        Resolve again and overwrite the cached entries. Default False.
+
+    Returns
+    -------
+    DataFrame
+        The columns of :func:`resolve_to_gadm`, one row per placed footprint, across every country
+        asked for.
+    """
+    frames = [
+        cached(
+            cache_dir,
+            "geo_disasters_units",
+            partial(_resolve_country, iso, cache_dir),
+            pandas_parquet(),
+            params={"iso": iso},
+            force=force_reload,
+        )
+        for iso in sorted(set(isos))
+    ]
+    if not frames:
+        return pd.DataFrame(columns=RESOLVED_COLUMNS).astype(RESOLVED_DTYPES)
+
+    return pd.concat(frames, ignore_index=True)
 
 
 def normalise_unit_name(name: str) -> str:
@@ -244,23 +306,24 @@ def normalise_unit_name(name: str) -> str:
     return "".join(character for character in decomposed if character.isalnum()).casefold()
 
 
-def event_unit_names(locations: pd.DataFrame) -> dict[str, set[str]]:
+def event_unit_ids(units: pd.DataFrame) -> dict[str, set[str]]:
     """
-    Collect the unit names Geo-Disasters records, keyed on the EM-DAT event id.
+    Collect the GADM units an event was placed in, keyed on the EM-DAT event id.
+
+    Both sides of the comparison arrive in this shape: EM-DAT's own unit table, and the resolved
+    footprints :func:`resolve_to_gadm` returns.
 
     Parameters
     ----------
-    locations : DataFrame
-        Rows as :func:`load_event_locations` returns them.
+    units : DataFrame
+        Any frame carrying ``DisNo.`` and ``gid``, one row per event-unit.
 
     Returns
     -------
     dict mapping str to set of str
-        One entry per event, holding every unit it was geocoded to, named as published.
+        One entry per event, holding every GADM identifier it was placed in.
     """
-    named = locations.assign(unit=unit_names(locations))
-
-    return {str(disno): set(group) for disno, group in named.groupby("DisNo.")["unit"]}
+    return {str(disno): set(group.dropna()) for disno, group in units.groupby("DisNo.")["gid"]}
 
 
 AGREEMENT_LEVELS = ("exact", "partial", "disjoint", "gained", "unmatched")
@@ -279,13 +342,16 @@ def _classify(em_dat: set[str], geo_disasters: set[str]) -> str:
     return "partial" if em_dat & geo_disasters else "disjoint"
 
 
-def compare_event_units(em_dat: Mapping[str, set[str]], geo_disasters: Mapping[str, set[str]]) -> pd.DataFrame:
+def compare_event_units(*, em_dat: Mapping[str, set[str]], geo_disasters: Mapping[str, set[str]]) -> pd.DataFrame:
     """
     Report how EM-DAT's own geocoding and Geo-Disasters' agree, event by event.
 
-    The two are keyed on ``DisNo.`` and nothing else: EM-DAT names GADM units and Geo-Disasters names
-    GAUL ones, and the two gazetteers share no identifier, so units are matched on their names, put
-    through :func:`normalise_unit_name` here rather than by either caller.
+    Both sides are GADM identifiers, matched literally. The signature cannot tell an identifier from
+    a unit name and the two gazetteers' names do not compare, so Geo-Disasters' side comes through
+    :func:`resolve_to_gadm` first.
+
+    An identifier names a level as well as a place, so a province and a district inside it never
+    match, and an event the two sources describe at different resolutions reads as ``disjoint``.
 
     Each event is classified as ``exact`` when both name the same units, ``partial`` when they
     overlap, ``disjoint`` when both name units and none is shared, ``gained`` when only
@@ -294,9 +360,9 @@ def compare_event_units(em_dat: Mapping[str, set[str]], geo_disasters: Mapping[s
     Parameters
     ----------
     em_dat : mapping of str to set of str
-        Unit names EM-DAT records, keyed on event id.
+        GADM identifiers EM-DAT records, keyed on event id.
     geo_disasters : mapping of str to set of str
-        The same from Geo-Disasters, as :func:`event_unit_names` returns it.
+        The same from Geo-Disasters, as :func:`event_unit_ids` returns it.
 
     Returns
     -------
@@ -307,8 +373,8 @@ def compare_event_units(em_dat: Mapping[str, set[str]], geo_disasters: Mapping[s
     rows = []
 
     for disno in sorted(em_dat.keys() | geo_disasters.keys()):
-        recorded = {normalise_unit_name(name) for name in em_dat.get(disno, ()) if name}
-        published = {normalise_unit_name(name) for name in geo_disasters.get(disno, ()) if name}
+        recorded = {gid for gid in em_dat.get(disno, ()) if gid}
+        published = {gid for gid in geo_disasters.get(disno, ()) if gid}
         if not recorded and not published:
             continue
 
