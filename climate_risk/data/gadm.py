@@ -23,7 +23,7 @@ GADM = ManualSource(
 # One table holds every country at its finest level, so a unit above that is the union of its rows.
 GADM_LAYER = "gadm_410"
 
-GID_COLUMNS = {1: ("GID_1", "NAME_1"), 2: ("GID_2", "NAME_2")}
+GID_COLUMNS = {level: (f"GID_{level}", f"NAME_{level}") for level in (1, 2, 3, 4)}
 
 # A WHERE clause naming every id at once grows past what the driver will parse, and costs more to
 # plan than the extra passes cost to run.
@@ -68,7 +68,7 @@ def load_units_in_country(iso: str, level: int, cache_dir: Path, *, layer: str =
     iso : str
         ISO 3166-1 alpha-3 code of the country to read.
     level : int
-        Administrative level, 1 or 2.
+        Administrative level, 1 through 4.
     cache_dir : Path
         Directory the caches live under.
     layer : str, optional
@@ -77,13 +77,15 @@ def load_units_in_country(iso: str, level: int, cache_dir: Path, *, layer: str =
     Returns
     -------
     GeoDataFrame
-        Columns ``gid``, ``name``, ``admin_level`` and ``geometry``, one row per unit.
+        Columns ``gid``, ``name``, ``admin_level`` and ``geometry``, one row per unit. Empty where
+        the country is not divided at that level.
     """
     if level not in GID_COLUMNS:
         raise DataValidationError(f"Units are read at levels {sorted(GID_COLUMNS)}, not {level}")
 
     gid_column, name_column = GID_COLUMNS[level]
     rows = gpd.read_file(gadm_path(cache_dir), layer=layer, columns=[gid_column, name_column], where=f"GID_0 = '{iso}'")
+    rows = rows[rows[gid_column].astype(str) != ""]
     if rows.empty:
         return _no_units(gadm_path(cache_dir), layer)
 
@@ -141,7 +143,7 @@ def load_admin_units(
     Parameters
     ----------
     units : collection of tuple of (str, int)
-        Each a GADM identifier and its administrative level, 1 or 2. Duplicates are read once.
+        Each a GADM identifier and its administrative level, 1 through 4. Duplicates are read once.
     cache_dir : Path
         Directory the caches live under.
     layer : str, optional

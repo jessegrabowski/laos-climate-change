@@ -391,7 +391,20 @@ def toy_gadm() -> gpd.GeoDataFrame:
     most units. A name lookup that reads only `NAME` misses whichever spelling the mention used.
     """
     rows = [
-        ("LAO", "LAO.1_1", "Attapu", "Attopeu", "LAO.1.1_1", "Sanamxay", "", "LAO.1.1.1_1", "Ban Mai", box(0, 0, 1, 1)),
+        (
+            "LAO",
+            "LAO.1_1",
+            "Attapu",
+            "Attopeu",
+            "LAO.1.1_1",
+            "Sanamxay",
+            "",
+            "LAO.1.1.1_1",
+            "Ban Mai",
+            "",
+            "",
+            box(0, 0, 1, 1),
+        ),
         (
             "LAO",
             "LAO.1_1",
@@ -402,6 +415,8 @@ def toy_gadm() -> gpd.GeoDataFrame:
             "",
             "LAO.1.2.1_1",
             "Samakhixay",
+            "",
+            "",
             box(1, 0, 2, 1),
         ),
         (
@@ -414,15 +429,17 @@ def toy_gadm() -> gpd.GeoDataFrame:
             "Ban Houayxay|Houei Sai",
             "LAO.2.1.1_1",
             "Ban Mai",
+            "",
+            "",
             box(3, 0, 4, 1),
         ),
         # A district sharing its name with a province elsewhere, which is the common homonym: 94 of
         # 111 ambiguous mentions in the workbook are a province and a same-named district.
-        ("LAO", "LAO.2_1", "Bokeo", "", "LAO.2.2_1", "Attapu", "", "", "", box(4, 0, 5, 1)),
-        ("ZMB", "ZMB.1_1", "Central", "", "ZMB.1.1_1", "Kabwe", "", "", "", box(6, 0, 7, 1)),
+        ("LAO", "LAO.2_1", "Bokeo", "", "LAO.2.2_1", "Attapu", "", "", "", "", "", box(4, 0, 5, 1)),
+        ("ZMB", "ZMB.1_1", "Central", "", "ZMB.1.1_1", "Kabwe", "", "", "", "", "", box(6, 0, 7, 1)),
         # GADM writes an unnamed Ukrainian unit as `?` at both levels, so it comes out its own parent.
-        ("UKR", "?", "?", "", "?", "?", "", "", "", box(10, 0, 11, 1)),
-        ("GHA", "GHA11_2", "Savannah", "", "GHA7.13_2", "Ga Central", "", "", "", box(8, 0, 9, 1)),
+        ("UKR", "?", "?", "", "?", "?", "", "", "", "", "", box(10, 0, 11, 1)),
+        ("GHA", "GHA11_2", "Savannah", "", "GHA7.13_2", "Ga Central", "", "", "", "", "", box(8, 0, 9, 1)),
     ]
     columns = (
         "GID_0",
@@ -434,6 +451,8 @@ def toy_gadm() -> gpd.GeoDataFrame:
         "VARNAME_2",
         "GID_3",
         "NAME_3",
+        "GID_4",
+        "NAME_4",
         "geometry",
     )
 

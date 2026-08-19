@@ -77,7 +77,7 @@ def test_an_id_gadm_does_not_hold_is_an_error_not_a_dropped_row(write_gadm_cache
 
 
 def test_a_level_gadm_is_not_read_at_is_rejected(write_gadm_cache):
-    """Units are read at level 1 and 2; anything else would silently match nothing."""
+    """Units are read at levels 1 through 4; anything else would silently match nothing."""
     cache_dir = write_gadm_cache()
 
     with pytest.raises(DataValidationError, match="read at levels"):
@@ -100,6 +100,32 @@ def test_a_country_reads_back_every_unit_it_holds_at_a_level(write_gadm_cache):
 
     assert sorted(provinces["gid"]) == ["LAO.1_1", "LAO.2_1"]
     assert set(provinces["admin_level"]) == {1}
+
+
+def test_a_country_reads_back_the_villages_below_its_districts(write_gadm_cache):
+    """Written locations name units below adm2 — 18% of the places that resolve are adm3 or adm4 —
+    and scoring a point against one needs its polygon."""
+    cache_dir = write_gadm_cache()
+
+    villages = load_units_in_country("LAO", 3, cache_dir)
+
+    assert sorted(villages["gid"]) == ["LAO.1.1.1_1", "LAO.1.2.1_1", "LAO.2.1.1_1"]
+
+
+def test_a_country_not_divided_at_a_level_reads_back_empty(write_gadm_cache):
+    """GADM stores a blank identifier rather than omitting the row, so dissolving without dropping
+    those yields one phantom unit whose id is the empty string and whose polygon is the country."""
+    cache_dir = write_gadm_cache()
+
+    assert load_units_in_country("LAO", 4, cache_dir).empty
+
+
+def test_a_unit_below_adm2_resolves_to_its_polygon(write_gadm_cache):
+    cache_dir = write_gadm_cache()
+
+    units = load_admin_units([("LAO.1.1.1_1", 3)], cache_dir)
+
+    assert list(units["name"]) == ["Ban Mai"]
 
 
 def test_a_country_reads_back_its_districts(write_gadm_cache):
