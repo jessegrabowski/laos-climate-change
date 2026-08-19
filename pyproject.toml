@@ -153,6 +153,7 @@ lint = "ruff check . && ruff format --check ."
 typecheck = "mypy"
 fmt = "ruff format ."
 verify-placement = "python tools/verify_placement_against_emdat.py"
+verify-geocoder = "python tools/verify_geocoder_against_gadm.py"
 
 [tool.pytest.ini_options]
 minversion = "8.0"
