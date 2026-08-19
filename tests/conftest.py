@@ -380,15 +380,62 @@ def toy_gadm() -> gpd.GeoDataFrame:
     Ghana is included because GADM numbers it unlike everywhere else — `GHA11_2` for a province and
     `GHA7.13_2` for a district, with no dot after the country code. Any code inferring the level
     from the shape of the id gets Ghana wrong.
+
+    `LAO.1.2.1_1` is the seat named after the district holding it, which is what most ambiguous
+    mentions turn out to be: candidates on one nesting chain rather than places in two locations.
+
+    Ukraine carries GADM's placeholder identifier, which is the string `?` at both levels and
+    therefore parents itself. Walking a unit's containers without a visited set never terminates.
+
+    `VARNAME` carries the alternative spellings GADM publishes, pipe-separated, and is empty for
+    most units. A name lookup that reads only `NAME` misses whichever spelling the mention used.
     """
     rows = [
-        ("LAO", "LAO.1_1", "Attapu", "LAO.1.1_1", "Sanamxay", box(0, 0, 1, 1)),
-        ("LAO", "LAO.1_1", "Attapu", "LAO.1.2_1", "Samakhixay", box(1, 0, 2, 1)),
-        ("LAO", "LAO.2_1", "Bokeo", "LAO.2.1_1", "Houayxay", box(3, 0, 4, 1)),
-        ("ZMB", "ZMB.1_1", "Central", "ZMB.1.1_1", "Kabwe", box(6, 0, 7, 1)),
-        ("GHA", "GHA11_2", "Savannah", "GHA7.13_2", "Ga Central", box(8, 0, 9, 1)),
+        ("LAO", "LAO.1_1", "Attapu", "Attopeu", "LAO.1.1_1", "Sanamxay", "", "LAO.1.1.1_1", "Ban Mai", box(0, 0, 1, 1)),
+        (
+            "LAO",
+            "LAO.1_1",
+            "Attapu",
+            "Attopeu",
+            "LAO.1.2_1",
+            "Samakhixay",
+            "",
+            "LAO.1.2.1_1",
+            "Samakhixay",
+            box(1, 0, 2, 1),
+        ),
+        (
+            "LAO",
+            "LAO.2_1",
+            "Bokeo",
+            "",
+            "LAO.2.1_1",
+            "Houayxay",
+            "Ban Houayxay|Houei Sai",
+            "LAO.2.1.1_1",
+            "Ban Mai",
+            box(3, 0, 4, 1),
+        ),
+        # A district sharing its name with a province elsewhere, which is the common homonym: 94 of
+        # 111 ambiguous mentions in the workbook are a province and a same-named district.
+        ("LAO", "LAO.2_1", "Bokeo", "", "LAO.2.2_1", "Attapu", "", "", "", box(4, 0, 5, 1)),
+        ("ZMB", "ZMB.1_1", "Central", "", "ZMB.1.1_1", "Kabwe", "", "", "", box(6, 0, 7, 1)),
+        # GADM writes an unnamed Ukrainian unit as `?` at both levels, so it comes out its own parent.
+        ("UKR", "?", "?", "", "?", "?", "", "", "", box(10, 0, 11, 1)),
+        ("GHA", "GHA11_2", "Savannah", "", "GHA7.13_2", "Ga Central", "", "", "", box(8, 0, 9, 1)),
     ]
-    columns = ("GID_0", "GID_1", "NAME_1", "GID_2", "NAME_2", "geometry")
+    columns = (
+        "GID_0",
+        "GID_1",
+        "NAME_1",
+        "VARNAME_1",
+        "GID_2",
+        "NAME_2",
+        "VARNAME_2",
+        "GID_3",
+        "NAME_3",
+        "geometry",
+    )
 
     return gpd.GeoDataFrame(dict(zip(columns, zip(*rows, strict=True), strict=True)), crs="EPSG:4326")
 
