@@ -162,22 +162,34 @@ RESOLVED_DTYPES = {
 RESOLVED_COLUMNS = list(RESOLVED_DTYPES)
 
 
-def _best_unit_per_footprint(footprints: gpd.GeoDataFrame, units: gpd.GeoDataFrame) -> pd.DataFrame:
-    """Pair each footprint with the single unit covering most of it, dropping any that meet none."""
-    located = footprints[["DisNo.", "ISO", "geocoding_q", "geometry"]].reset_index(names="footprint")
-    pieces = gpd.overlay(located, units, how="intersection", keep_geom_type=False)
+# A unit belongs to an event when most of the unit lies inside the event's footprint.
+MIN_CONTAINMENT = 0.5
 
-    # Two polygons meeting along an edge intersect in a line, which `keep_geom_type=False` keeps and
-    # which covers none of the footprint. Taking the largest would place it in a unit it only borders.
+
+def _units_within_events(footprints: gpd.GeoDataFrame, units: gpd.GeoDataFrame) -> pd.DataFrame:
+    """Pair each event with every unit lying mostly inside its footprint, dropping those with none."""
+    # Repaired before the union: a footprint crossing the antimeridian is valid in lat/lon and
+    # self-intersecting once projected, and unioning one raises rather than returning a bad answer.
+    repaired = footprints.assign(geometry=footprints.geometry.make_valid())
+
+    # One geometry per event, so a unit straddling two of its footprints is measured against the
+    # whole and cannot arrive twice. The quality flag takes the worse of the footprints it came
+    # from, which is how Geo-Disasters propagates it.
+    merged = repaired.dissolve(by="DisNo.", aggfunc={"ISO": "first", "geocoding_q": "max"}).reset_index()
+    measured = units.assign(unit_area=units.geometry.area)
+    pieces = gpd.overlay(merged, measured, how="intersection", keep_geom_type=False)
     pieces = pieces.assign(covered=pieces.geometry.area)
-    pieces = pieces[pieces["covered"] > 0.0]
-    if pieces.empty:
+
+    # Membership is the share of the unit inside the footprint, which means the same thing whatever
+    # the unit's size; the share of the footprint the unit covers does not, and is the weight below.
+    inside = pieces[pieces["covered"] / pieces["unit_area"] > MIN_CONTAINMENT]
+    if inside.empty:
         return pd.DataFrame(columns=RESOLVED_COLUMNS)
 
-    best = pieces.sort_values("covered").groupby("footprint").tail(1).set_index("footprint")
-    shares = best["covered"] / footprints.geometry.area.reindex(best.index)
+    footprint_area = merged.set_index("DisNo.").geometry.area
+    shares = inside["covered"].to_numpy() / footprint_area.reindex(inside["DisNo."]).to_numpy()
 
-    return best.assign(overlap=shares).drop(columns=["geometry", "covered"])
+    return inside.assign(overlap=shares).drop(columns=["geometry", "covered", "unit_area"])
 
 
 def resolve_to_gadm(footprints: gpd.GeoDataFrame, cache_dir: Path) -> pd.DataFrame:
@@ -185,12 +197,15 @@ def resolve_to_gadm(footprints: gpd.GeoDataFrame, cache_dir: Path) -> pd.DataFra
     Name each Geo-Disasters footprint as the GADM unit it covers, so it can join EM-DAT's own units.
 
     The two gazetteers share no identifier and spell the same unit differently, so a footprint is
-    placed by where it is rather than what it is called, and the largest overlap wins outright. No
-    minimum share applies: the published polygons are simplified to 0.005°, roughly 550 m, which
-    costs a small municipality a third of its area and a province almost none, so the same share
-    means different things at different sizes.
+    placed by where it is rather than what it is called. Every GADM unit more than
+    ``MIN_CONTAINMENT`` of the way inside the footprint is named, because one GAUL unit routinely
+    covers several GADM ones — where GAUL's admin-1 is a region and GADM's is a province, one
+    footprint holds five or six.
 
-    A footprint covering no unit at all is dropped and logged.
+    An event's footprints are dissolved per administrative level before the overlay, so a unit
+    straddling two of them is measured against the whole and named once.
+
+    An event holding no unit at all is dropped and logged.
 
     Parameters
     ----------
@@ -202,8 +217,9 @@ def resolve_to_gadm(footprints: gpd.GeoDataFrame, cache_dir: Path) -> pd.DataFra
     Returns
     -------
     DataFrame
-        ``DisNo.``, ``ISO``, ``geometry_source``, the GADM unit that was matched, the location's
-        ``geocoding_q``, and ``overlap``, the share of the footprint the unit covers.
+        ``DisNo.``, ``ISO``, ``geometry_source``, a GADM unit, the location's ``geocoding_q``, and
+        ``overlap``, the share of the event's footprint that unit covers. One row per event and
+        unit, so an event spanning several units contributes several.
     """
     if footprints.empty:
         return pd.DataFrame(columns=RESOLVED_COLUMNS).astype(RESOLVED_DTYPES)
@@ -225,12 +241,14 @@ def resolve_to_gadm(footprints: gpd.GeoDataFrame, cache_dir: Path) -> pd.DataFra
             _log.warning("GADM holds no level-%d unit for %s, so %d footprints go unplaced", level, iso, len(at_level))
             continue
 
-        matched.append(_best_unit_per_footprint(at_level, units))
+        matched.append(_units_within_events(at_level, units))
 
     resolved = pd.concat(matched) if matched else pd.DataFrame(columns=RESOLVED_COLUMNS)
-    unplaced = len(footprints) - len(resolved)
-    if unplaced:
-        _log.warning("%d of %d %s footprints cover no GADM unit and were dropped", unplaced, len(footprints), iso)
+    # Counted on events rather than rows: one event names as many units as its footprint holds.
+    events = footprints["DisNo."].nunique()
+    placed = resolved["DisNo."].nunique()
+    if events > placed:
+        _log.warning("%d of %d %s events hold no GADM unit and were dropped", events - placed, events, iso)
 
     return (
         pd.DataFrame(resolved)
@@ -265,7 +283,7 @@ def load_resolved_units(isos: Sequence[str], cache_dir: Path, *, force_reload: b
     Returns
     -------
     DataFrame
-        The columns of :func:`resolve_to_gadm`, one row per placed footprint, across every country
+        The columns of :func:`resolve_to_gadm`, one row per event and unit, across every country
         asked for.
     """
     frames = [
