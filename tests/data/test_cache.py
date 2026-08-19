@@ -95,11 +95,18 @@ def test_a_bare_name_needs_no_parameters():
 
 @pytest.mark.parametrize(
     "params",
-    [{"region": "la/os"}, {"region": "la__os"}, {"region": "la=os"}, {"gr/id": 4}],
-    ids=["slash", "parameter-separator", "value-separator", "in-the-name"],
+    [
+        {"region": "la/os"},
+        {"region": "la__os"},
+        {"region": "la=os"},
+        {"gr/id": 4},
+        {"version": "4.1"},
+    ],
+    ids=["slash", "parameter-separator", "value-separator", "in-the-name", "dot"],
 )
 def test_a_value_that_would_corrupt_the_filename_is_rejected(params):
-    """A separator in a value makes two different parameter sets collide on one cache entry."""
+    """A separator in a value makes two different parameter sets collide on one cache entry. So does
+    a dot: the artefact's suffix is taken from the last one, so `4.1` and `4.2` name the same file."""
     with pytest.raises(ValueError, match="must not contain"):
         cache_key("points", params)
 

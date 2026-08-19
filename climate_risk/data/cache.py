@@ -15,8 +15,9 @@ PARAMETER_SEPARATOR = "__"
 VALUE_SEPARATOR = "="
 
 # A key becomes a filename, so a value carrying a path separator would write outside the cache, and
-# one carrying a key separator would make two different parameter sets collide on a single entry.
-FORBIDDEN_IN_KEY = ("/", "\\", PARAMETER_SEPARATOR, VALUE_SEPARATOR)
+# one carrying a key separator would make two different parameter sets collide on a single entry. A
+# dot collides the same way: the suffix is taken from the last one, so `4.1` and `4.2` name one file.
+FORBIDDEN_IN_KEY = ("/", "\\", ".", PARAMETER_SEPARATOR, VALUE_SEPARATOR)
 
 
 @dataclass(frozen=True, slots=True)
