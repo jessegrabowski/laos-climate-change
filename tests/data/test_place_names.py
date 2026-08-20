@@ -10,10 +10,12 @@ from climate_risk.data.place_names import (
     LOCATED,
     NAME_CORRECTIONS,
     NAMED,
+    NAMES_NO_UNIT,
     Placement,
     Unit,
     match_key,
     name_shapes,
+    names_no_unit,
     nearest_name,
     read_gazetteer,
     read_name_corrections,
@@ -255,25 +257,6 @@ def test_the_outermost_container_of_the_placeholder_unit_is_itself(write_gadm_ca
     assert gazetteer.top_container("?") == "?"
 
 
-def test_a_point_is_preferred_to_the_container_a_place_was_written_in(write_gadm_cache):
-    """The container claims every unit inside it. A point names one, so it wins wherever it exists:
-    over half the places that fall back to a container have one."""
-    gazetteer = read_gazetteer("LAO", write_gadm_cache())
-
-    (placed,) = resolve_event_places([("Nowhere At All", "Bokeo")], gazetteer, located={"Nowhere At All": "LAO.2.1_1"})
-
-    assert placed == Placement({"LAO.2.1_1"}, LOCATED), "the district, not the whole of Bokeo"
-
-
-def test_a_place_its_own_name_reaches_ignores_the_point_offered_for_it(write_gadm_cache):
-    """A name GADM publishes is better evidence than a coordinate somebody geocoded from it."""
-    gazetteer = read_gazetteer("LAO", write_gadm_cache())
-
-    (placed,) = resolve_event_places([("Sanamxay", None)], gazetteer, located={"Sanamxay": "LAO.2.1_1"})
-
-    assert placed == Placement({"LAO.1.1_1"}, NAMED)
-
-
 def test_a_misspelling_reaches_the_name_it_misspells(write_gadm_cache):
     """Misspellings are the largest thing left that no gazetteer places: `Barrranquilla`,
     `Marizales`, `Santa Rose de Cabal`."""
@@ -316,14 +299,6 @@ def test_a_name_that_already_matches_is_not_approximated(write_gadm_cache):
     assert nearest_name("Sanamxay", gazetteer, name_shapes(gazetteer)) is None
 
 
-def test_a_name_two_edits_away_is_not_a_misspelling_of_it(write_gadm_cache):
-    """One slip is a misspelling. At two, `Sanamxay` and a different district are equally far, and
-    the match is a guess dressed as a correction."""
-    gazetteer = read_gazetteer("LAO", write_gadm_cache())
-
-    assert nearest_name("Sanamxii", gazetteer, name_shapes(gazetteer)) is None
-
-
 def test_a_checked_misspelling_reaches_the_unit_it_stands_for(write_gadm_cache):
     """Approximate matching proposes corrections; only the ones written into the table are applied."""
     gazetteer = read_gazetteer("LAO", write_gadm_cache())._replace(corrections={"sanamxai": "sanamxay"})
@@ -347,6 +322,33 @@ def test_a_container_is_preferred_to_a_checked_misspelling(write_gadm_cache):
     (placed,) = resolve_event_places([("Sanamxai", "Bokeo")], gazetteer)
 
     assert placed == Placement({"LAO.2_1"}, CONTAINED_BY)
+
+
+def test_a_name_two_edits_away_is_not_a_misspelling_of_it(write_gadm_cache):
+    """One slip is a misspelling. At two, `Sanamxay` and a different district are equally far, and
+    the match is a guess dressed as a correction."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    assert nearest_name("Sanamxii", gazetteer, name_shapes(gazetteer)) is None
+
+
+def test_a_point_is_preferred_to_the_container_a_place_was_written_in(write_gadm_cache):
+    """The container claims every unit inside it. A point names one, so it wins wherever it exists:
+    over half the places that fall back to a container have one."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    (placed,) = resolve_event_places([("Nowhere At All", "Bokeo")], gazetteer, located={"Nowhere At All": "LAO.2.1_1"})
+
+    assert placed == Placement({"LAO.2.1_1"}, LOCATED), "the district, not the whole of Bokeo"
+
+
+def test_a_place_its_own_name_reaches_ignores_the_point_offered_for_it(write_gadm_cache):
+    """A name GADM publishes is better evidence than a coordinate somebody geocoded from it."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    (placed,) = resolve_event_places([("Sanamxay", None)], gazetteer, located={"Sanamxay": "LAO.2.1_1"})
+
+    assert placed == Placement({"LAO.1.1_1"}, NAMED)
 
 
 def test_a_correction_is_read_only_for_the_country_that_declares_it(write_gadm_cache, tmp_path):
@@ -421,3 +423,54 @@ def test_a_gazetteer_covers_the_territory_its_country_administers(write_gadm_cac
 
     assert resolve_place("Srinagar", None, gazetteer) == {"Z01.1.1_1"}
     assert resolve_place("Kochi", None, gazetteer) == {"IND.1.1_1"}
+
+
+@pytest.mark.parametrize(
+    "written",
+    [
+        "North",
+        "Countrywide",
+        "N.A. on the source",
+        "Between Java and Bali",
+        "Off the coast of Luzon",
+        "Java Sea",
+        "Congo river",
+        ".",
+    ],
+    ids=["direction", "countrywide", "not available", "between", "offshore", "sea", "river", "punctuation"],
+)
+def test_a_place_that_names_no_unit_is_told_apart(written):
+    """A fifth of what stays unplaced is like this. Counting it as a coverage failure understates
+    what the resolver reaches, because no gazetteer could ever hold it."""
+    assert names_no_unit(written)
+
+
+@pytest.mark.parametrize(
+    "written",
+    ["Sanamxay", "Attapu", "Bokeo", "Central Java"],
+    ids=["district", "province", "short province", "a direction inside a real name"],
+)
+def test_a_real_place_is_not_mistaken_for_noise(written):
+    """`Central` is a Zambian province and `Coast` a Kenyan one, so the test is on the whole string
+    rather than on any word appearing in it."""
+    assert not names_no_unit(written)
+
+
+def test_an_unplaceable_place_is_recorded_as_naming_no_unit(write_gadm_cache):
+    """A caller measuring coverage has to be able to leave these out of the denominator without
+    guessing which of the unplaced rows were ever placeable."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    unplaceable, missing = resolve_event_places([("Java Sea", None), ("Nowhere At All", None)], gazetteer)
+
+    assert (unplaceable.how, missing.how) == (NAMES_NO_UNIT, NAMED)
+
+
+def test_a_stretch_of_water_written_inside_a_province_still_reaches_the_province(write_gadm_cache):
+    """`Java Sea (West Java province)` names no unit and a container that does. The container is
+    what the prose gives, so the event is placed there rather than discarded as noise."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    (placed,) = resolve_event_places([("Java Sea", "Bokeo")], gazetteer)
+
+    assert placed == Placement({"LAO.2_1"}, CONTAINED_BY)

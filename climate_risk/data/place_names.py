@@ -31,51 +31,24 @@ CONJUNCTION = re.compile(r"\s+(?:and|&)\s+", re.IGNORECASE)
 RELATIONAL = re.compile(r"^\s*(?:between|off|offshore|au large)\b", re.IGNORECASE)
 
 
+# A sea, a river or a mountain range is not an administrative unit, whatever it is one edit from.
+# Units named after a feature — `River Nile State`, `Bay of Plenty` — still match exactly; only the
+# approximate lookup refuses them.
+FEATURE = re.compile(
+    r"\b(seas?|oceans?|rivers?|lakes?|gulfs?|straits?|detroit|bays?|mountains?|mts?|mount|peaks?|"
+    r"valleys?|deltas?|peninsulas?|channels?|canals?|reservoirs?|dams?|volcanoe?s?|glaciers?|"
+    r"basins?|capes?|sounds?|fjords?|lagoons?|swamps?|forests?|deserts?)\b",
+    re.IGNORECASE,
+)
+
+# Below this a single edit is a large share of the name and the match stops meaning anything:
+# `Arora` sits one edit from both `Aurora` and `Arora` in half the countries that have either.
+MIN_APPROXIMATE_LENGTH = 6
+
 # Corrections a person or a model has checked one at a time. Approximate matching proposes them;
 # only what is written here is ever applied, so an unreviewed near miss leaves a place unplaced
 # rather than renaming it.
 NAME_CORRECTIONS = Path(__file__).parent / "name_corrections.csv"
-
-# EM-DAT files an event under the country that existed at the time, and GADM only models the ones
-# that exist now. Where a state left one successor the mapping is settled; where it left several
-# the location text has to choose between them.
-SUCCEEDED_BY = {
-    "AZO": ("PRT",),
-    "CSK": ("CZE", "SVK"),
-    "DDR": ("DEU",),
-    "DFR": ("DEU",),
-    "SUN": (
-        "ARM",
-        "AZE",
-        "BLR",
-        "EST",
-        "GEO",
-        "KAZ",
-        "KGZ",
-        "LTU",
-        "LVA",
-        "MDA",
-        "RUS",
-        "TJK",
-        "TKM",
-        "UKR",
-        "UZB",
-    ),
-    "YMD": ("YEM",),
-    "YMN": ("YEM",),
-    "YUG": ("BIH", "HRV", "MKD", "MNE", "SRB", "SVN", "XKO"),
-}
-
-# Written places that name no administrative unit and never will: a compass point covering the
-# whole country, a position between two others, a stretch of water, or nothing at all. They are
-# recorded rather than counted as failures, because no source can place them.
-QUALIFIER = re.compile(
-    r"^(?:north|south|east|west|central|centre|center|northern|southern|eastern|western|"
-    r"north[- ]?(?:east|west)|south[- ]?(?:east|west)|countrywide|nationwide|whole country|"
-    r"all country|widespread|unknown|not available|no information|n\.?a\.?(?: on the source)?)$",
-    re.IGNORECASE,
-)
-NOTHING_LEGIBLE = re.compile(r"^[\W\d\s]*$")
 
 # EM-DAT files an event under the country that existed at the time, and GADM only models the ones
 # that exist now. Where a state left one successor the mapping is settled; where it left several
@@ -123,21 +96,8 @@ NAMED = "named"
 LOCATED = "located"
 CONTAINED_BY = "container"
 CORRECTED = "corrected"
+NAMES_NO_UNIT = "names no unit"
 
-
-# A sea, a river or a mountain range is not an administrative unit, whatever it is one edit from.
-# Units named after a feature — `River Nile State`, `Bay of Plenty` — still match exactly; only the
-# approximate lookup refuses them.
-FEATURE = re.compile(
-    r"\b(seas?|oceans?|rivers?|lakes?|gulfs?|straits?|detroit|bays?|mountains?|mts?|mount|peaks?|"
-    r"valleys?|deltas?|peninsulas?|channels?|canals?|reservoirs?|dams?|volcanoe?s?|glaciers?|"
-    r"basins?|capes?|sounds?|fjords?|lagoons?|swamps?|forests?|deserts?)\b",
-    re.IGNORECASE,
-)
-
-# Below this a single edit is a large share of the name and the match stops meaning anything:
-# `Arora` sits one edit from both `Aurora` and `Arora` in half the countries that have either.
-MIN_APPROXIMATE_LENGTH = 6
 
 # GADM publishes a level 5, for Belgium and Rwanda only.
 INDEXABLE_LEVELS = (1, 2, 3, 4)
@@ -477,8 +437,8 @@ def resolve_event_places(
     A place naming nothing takes the unit a point put it in where one is offered. Failing that it
     falls back to the container the prose wrote it in — ``Pesisir Selaten (West Sumatra province)``
     becomes the province, which spans fourteen districts at the median — so the result records
-    which of the two it was reached by. A place with no container that the corrections table names
-    is read as the misspelling it was checked to be.
+    which of the two it was reached by. A place with no container that is one edit from
+    exactly one published name is taken as a misspelling of it, recorded as such.
 
     Parameters
     ----------
@@ -517,8 +477,11 @@ def resolve_event_places(
             placed.append(Placement(_narrowed(container, pinned, gazetteer), CONTAINED_BY))
             continue
         published = gazetteer.corrections.get(match_key(name))
-        corrected = _outermost({unit.gid for unit in gazetteer.names[published]}, gazetteer) if published else set()
-        placed.append(Placement(_narrowed(corrected, pinned, gazetteer), CORRECTED if corrected else NAMED))
+        if published:
+            corrected = _outermost({unit.gid for unit in gazetteer.names[published]}, gazetteer)
+            placed.append(Placement(_narrowed(corrected, pinned, gazetteer), CORRECTED))
+            continue
+        placed.append(Placement(set(), NAMES_NO_UNIT if names_no_unit(name) else NAMED))
 
     return placed
 
