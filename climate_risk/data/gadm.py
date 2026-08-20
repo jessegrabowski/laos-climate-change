@@ -1,3 +1,5 @@
+import sqlite3
+
 from collections.abc import Collection, Iterator
 from pathlib import Path
 
@@ -54,6 +56,40 @@ def gadm_path(cache_dir: Path) -> Path:
 def _chunks(values: list[str], size: int) -> Iterator[list[str]]:
     for start in range(0, len(values), size):
         yield values[start : start + size]
+
+
+def administered_territories(iso: str, cache_dir: Path, *, layer: str = GADM_LAYER) -> tuple[str, ...]:
+    """
+    Name the disputed territories GADM files apart from the country administering them.
+
+    Kashmir is not filed under ``IND`` or ``PAK`` but under codes of its own, so an event named
+    there belongs to a country whose own code does not contain it. GADM records the administering
+    country on each territory, and that is what this reads.
+
+    Parameters
+    ----------
+    iso : str
+        ISO 3166-1 alpha-3 code of the country to read.
+    cache_dir : Path
+        Directory the caches live under.
+    layer : str, optional
+        Layer to read inside the GeoPackage. Default ``GADM_LAYER``.
+
+    Returns
+    -------
+    tuple of str
+        The territory codes, empty for a country administering none.
+    """
+    with sqlite3.connect(gadm_path(cache_dir)) as connection:
+        named = connection.execute(f'SELECT COUNTRY FROM "{layer}" WHERE GID_0 = ? LIMIT 1', (iso,)).fetchone()
+        if named is None:
+            return ()
+        held = connection.execute(
+            f'SELECT DISTINCT GID_0 FROM "{layer}" WHERE COUNTRY = ? AND GID_0 <> ? ORDER BY GID_0',
+            (named[0], iso),
+        )
+
+        return tuple(row[0] for row in held)
 
 
 def load_units_in_country(iso: str, level: int, cache_dir: Path, *, layer: str = GADM_LAYER) -> gpd.GeoDataFrame:

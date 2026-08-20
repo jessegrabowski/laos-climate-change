@@ -10,7 +10,7 @@ from typing import NamedTuple
 
 from anyascii import anyascii
 
-from climate_risk.data.gadm import GADM_LAYER, gadm_path
+from climate_risk.data.gadm import GADM_LAYER, administered_territories, gadm_path
 
 # Words naming what a unit is rather than which one it is. EM-DAT writes them inconsistently and
 # GADM does not carry them, so `Kalin-Aapayo province` has to reach `Kalin-Aapayo`.
@@ -280,9 +280,12 @@ def read_gazetteer(iso: str, cache_dir: Path, *, layer: str = GADM_LAYER) -> Gaz
         # A variant-name column is optional; an identifier and a name are what make a level readable.
         levels = [level for level in INDEXABLE_LEVELS if {f"GID_{level}", f"NAME_{level}"} <= available]
         columns = ", ".join(_name_columns(level, available) for level in levels)
-        query = f'SELECT DISTINCT {columns} FROM "{layer}" WHERE GID_0 = ?'
+        # Kashmir is filed under codes of its own, not under the country administering it.
+        held = (iso, *administered_territories(iso, cache_dir, layer=layer))
+        placeholders = ", ".join("?" * len(held))
+        query = f'SELECT DISTINCT {columns} FROM "{layer}" WHERE GID_0 IN ({placeholders})'
 
-        for row in connection.execute(query, (iso,)):
+        for row in connection.execute(query, held):
             parent = None
             for level, (gid, name, variants) in zip(levels, batched(row, len(_NAME_FIELDS)), strict=True):
                 # GADM writes an unnamed unit as `?` at every level it spans, and a unit cannot

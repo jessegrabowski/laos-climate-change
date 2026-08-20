@@ -7,7 +7,14 @@ from pathlib import Path
 import polars as pl
 import pytest
 
-from climate_risk.data.gadm import GADM, gadm_dir, gadm_path, load_admin_units, load_units_in_country
+from climate_risk.data.gadm import (
+    GADM,
+    administered_territories,
+    gadm_dir,
+    gadm_path,
+    load_admin_units,
+    load_units_in_country,
+)
 from climate_risk.data_functions.emdat_processing import load_emdat_events
 from climate_risk.exceptions import DataValidationError
 
@@ -249,3 +256,13 @@ def test_an_empty_request_still_carries_the_crs(write_gadm_cache):
     assert units.empty
     assert units.crs == "EPSG:4326"
     assert list(units.columns) == ["gid", "name", "admin_level", "geometry"]
+
+
+def test_a_country_names_the_disputed_territory_it_administers(write_gadm_cache):
+    """Kashmir is filed under a code of its own, so an Indian event named there reaches nothing
+    unless the country's own code is read together with what it administers."""
+    assert administered_territories("IND", write_gadm_cache()) == ("Z01",)
+
+
+def test_a_country_administering_nothing_names_nothing(write_gadm_cache):
+    assert administered_territories("LAO", write_gadm_cache()) == ()

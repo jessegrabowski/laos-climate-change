@@ -412,3 +412,12 @@ def test_a_state_whose_successors_place_nothing_stays_unplaced(write_gadm_cache)
 def test_a_country_that_still_exists_has_no_successor(write_gadm_cache):
     """The mapping covers dissolved states only; anything else is read from its own gazetteer."""
     assert successor_state([("Sanamxay", None)], "LAO", write_gadm_cache()) is None
+
+
+def test_a_gazetteer_covers_the_territory_its_country_administers(write_gadm_cache):
+    """Fifty-five Indian and twenty-nine Pakistani events name places in Kashmir, which GADM holds
+    at the right coordinates under a code neither country's own gazetteer reads."""
+    gazetteer = read_gazetteer("IND", write_gadm_cache())
+
+    assert resolve_place("Srinagar", None, gazetteer) == {"Z01.1.1_1"}
+    assert resolve_place("Kochi", None, gazetteer) == {"IND.1.1_1"}

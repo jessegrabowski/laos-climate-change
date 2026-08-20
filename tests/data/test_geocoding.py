@@ -122,3 +122,13 @@ def test_nothing_to_place_reads_the_archive_not_at_all(write_gadm_cache):
     """Most countries have no unresolved names left by the time a point is wanted, and reading a
     country's polygons to place nothing is the expensive half of the run."""
     assert units_containing_points({}, "LAO", write_gadm_cache()) == {}
+
+
+def test_a_point_in_a_disputed_territory_is_placed_for_the_country_administering_it(write_gadm_cache):
+    """GADM files Kashmir under codes of its own, so a point there falls in no Indian unit and is
+    discarded — eighty-four rows, on coordinates that were right all along."""
+    cache_dir = write_gadm_cache()
+
+    placed = units_containing_points({"somewhere": (22.5, 0.5)}, "IND", cache_dir)
+
+    assert placed == {"somewhere": "Z01.1.1_1"}

@@ -3,10 +3,11 @@ from pathlib import Path
 from typing import NamedTuple
 
 import geopandas as gpd
+import pandas as pd
 
 from shapely.geometry import Point
 
-from climate_risk.data.gadm import GADM_LAYER, load_admin_units, load_units_in_country
+from climate_risk.data.gadm import GADM_LAYER, administered_territories, load_admin_units, load_units_in_country
 from climate_risk.data.place_names import Gazetteer, resolve_place
 from climate_risk.geo.crs import GEOGRAPHIC_CRS
 
@@ -175,12 +176,16 @@ def units_containing_points(
     placed: dict[str, str] = {}
     outstanding = dict(points)
 
+    held = (iso, *administered_territories(iso, cache_dir, layer=layer))
     for level in levels:
         if not outstanding:
             break
-        units = load_units_in_country(iso, level, cache_dir, layer=layer)
-        if units.empty:
+        reachable = [
+            frame for code in held if not (frame := load_units_in_country(code, level, cache_dir, layer=layer)).empty
+        ]
+        if not reachable:
             continue
+        units = gpd.GeoDataFrame(pd.concat(reachable, ignore_index=True), crs=reachable[0].crs)
 
         located = gpd.GeoDataFrame(
             {"name": list(outstanding)},

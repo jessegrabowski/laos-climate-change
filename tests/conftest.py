@@ -396,6 +396,7 @@ def toy_gadm() -> gpd.GeoDataFrame:
     rows = [
         (
             "LAO",
+            "Laos",
             "LAO.1_1",
             "Attapu",
             "Attopeu",
@@ -410,6 +411,7 @@ def toy_gadm() -> gpd.GeoDataFrame:
         ),
         (
             "LAO",
+            "Laos",
             "LAO.1_1",
             "Attapu",
             "Attopeu",
@@ -424,6 +426,7 @@ def toy_gadm() -> gpd.GeoDataFrame:
         ),
         (
             "LAO",
+            "Laos",
             "LAO.2_1",
             "Bokeo",
             "",
@@ -438,14 +441,15 @@ def toy_gadm() -> gpd.GeoDataFrame:
         ),
         # A district sharing its name with a province elsewhere, which is the common homonym: 94 of
         # 111 ambiguous mentions in the workbook are a province and a same-named district.
-        ("LAO", "LAO.2_1", "Bokeo", "", "LAO.2.2_1", "Attapu", "", "", "", "", "", box(4, 0, 5, 1)),
-        ("ZMB", "ZMB.1_1", "Central", "", "ZMB.1.1_1", "Kabwe", "", "", "", "", "", box(6, 0, 7, 1)),
+        ("LAO", "Laos", "LAO.2_1", "Bokeo", "", "LAO.2.2_1", "Attapu", "", "", "", "", "", box(4, 0, 5, 1)),
+        ("ZMB", "Zambia", "ZMB.1_1", "Central", "", "ZMB.1.1_1", "Kabwe", "", "", "", "", "", box(6, 0, 7, 1)),
         # `Nam Bay` is one edit from this district and names a bay, which is the collision an
         # approximate match has to refuse: `Manila Bay` reaches a barangay called Manlabay.
-        ("LAO", "LAO.2_1", "Bokeo", "", "LAO.2.3_1", "Nambak", "", "", "", "", "", box(5, 0, 6, 1)),
+        ("LAO", "Laos", "LAO.2_1", "Bokeo", "", "LAO.2.3_1", "Nambak", "", "", "", "", "", box(5, 0, 6, 1)),
         # 75 GADM units carry a conjunction in their own name, which a split on `and` destroys.
         (
             "CAN",
+            "Canada",
             "CAN.5_1",
             "Newfoundland and Labrador",
             "",
@@ -459,19 +463,65 @@ def toy_gadm() -> gpd.GeoDataFrame:
             box(12, 0, 13, 1),
         ),
         # Two successors of a dissolved state, so a historical event has something to choose between.
-        ("CZE", "CZE.1_1", "Praha", "", "CZE.1.1_1", "Praha 1", "", "", "", "", "", box(14, 0, 15, 1)),
-        ("SVK", "SVK.1_1", "Bratislavsky", "", "SVK.1.1_1", "Bratislava I", "", "", "", "", "", box(16, 0, 17, 1)),
+        ("CZE", "Czechia", "CZE.1_1", "Praha", "", "CZE.1.1_1", "Praha 1", "", "", "", "", "", box(14, 0, 15, 1)),
+        (
+            "SVK",
+            "Slovakia",
+            "SVK.1_1",
+            "Bratislavsky",
+            "",
+            "SVK.1.1_1",
+            "Bratislava I",
+            "",
+            "",
+            "",
+            "",
+            "",
+            box(16, 0, 17, 1),
+        ),
         # A name both successors publish, which is a tie rather than an answer.
-        ("CZE", "CZE.1_1", "Praha", "", "CZE.1.2_1", "Nove Mesto", "", "", "", "", "", box(14, 1, 15, 2)),
-        ("SVK", "SVK.1_1", "Bratislavsky", "", "SVK.1.2_1", "Nove Mesto", "", "", "", "", "", box(16, 1, 17, 2)),
+        ("CZE", "Czechia", "CZE.1_1", "Praha", "", "CZE.1.2_1", "Nove Mesto", "", "", "", "", "", box(14, 1, 15, 2)),
+        (
+            "SVK",
+            "Slovakia",
+            "SVK.1_1",
+            "Bratislavsky",
+            "",
+            "SVK.1.2_1",
+            "Nove Mesto",
+            "",
+            "",
+            "",
+            "",
+            "",
+            box(16, 1, 17, 2),
+        ),
         # One successor of a second dissolved state, so a lone candidate placing nothing is still no answer.
-        ("HRV", "HRV.1_1", "Zagreb", "", "HRV.1.1_1", "Zagreb", "", "", "", "", "", box(18, 0, 19, 1)),
+        ("HRV", "Croatia", "HRV.1_1", "Zagreb", "", "HRV.1.1_1", "Zagreb", "", "", "", "", "", box(18, 0, 19, 1)),
+        # Kashmir is filed under a code of its own, with GADM naming the country administering it.
+        ("IND", "India", "IND.1_1", "Kerala", "", "IND.1.1_1", "Kochi", "", "", "", "", "", box(20, 0, 21, 1)),
+        (
+            "Z01",
+            "India",
+            "Z01.1_1",
+            "Jammu and Kashmir",
+            "",
+            "Z01.1.1_1",
+            "Srinagar",
+            "",
+            "",
+            "",
+            "",
+            "",
+            box(22, 0, 23, 1),
+        ),
         # GADM writes an unnamed Ukrainian unit as `?` at both levels, so it comes out its own parent.
-        ("UKR", "?", "?", "", "?", "?", "", "", "", "", "", box(10, 0, 11, 1)),
-        ("GHA", "GHA11_2", "Savannah", "", "GHA7.13_2", "Ga Central", "", "", "", "", "", box(8, 0, 9, 1)),
+        ("UKR", "Ukraine", "?", "?", "", "?", "?", "", "", "", "", "", box(10, 0, 11, 1)),
+        ("GHA", "Ghana", "GHA11_2", "Savannah", "", "GHA7.13_2", "Ga Central", "", "", "", "", "", box(8, 0, 9, 1)),
     ]
     columns = (
         "GID_0",
+        "COUNTRY",
         "GID_1",
         "NAME_1",
         "VARNAME_1",
