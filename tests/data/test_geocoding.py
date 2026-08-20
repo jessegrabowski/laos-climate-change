@@ -5,6 +5,7 @@ from climate_risk.data.geocoding import (
     NO_POINT,
     score_geocoder,
     unambiguous_units,
+    units_containing_points,
 )
 from climate_risk.data.place_names import read_gazetteer
 
@@ -87,3 +88,37 @@ def test_nothing_to_check_against_reads_back_empty(write_gadm_cache):
     gazetteer = read_gazetteer("LAO", cache_dir)
 
     assert score_geocoder(lambda _, __: (0.5, 0.5), "LAO", [("Calabarzon", None)], gazetteer, cache_dir) == []
+
+
+def test_a_point_is_placed_in_the_finest_unit_holding_it(write_gadm_cache):
+    """A province spans fourteen districts at the median, so taking the first level that matches
+    would throw away most of what the point knows."""
+    cache_dir = write_gadm_cache()
+
+    placed = units_containing_points({"somewhere": (0.5, 0.5)}, "LAO", cache_dir)
+
+    assert placed == {"somewhere": "LAO.1.1.1_1"}, "the village, not the district or the province"
+
+
+def test_a_point_outside_the_finest_level_still_reaches_a_coarser_unit(write_gadm_cache):
+    """Most countries are not divided all the way down, and a point in one of them is still worth
+    the unit that does hold it."""
+    cache_dir = write_gadm_cache()
+
+    placed = units_containing_points({"somewhere": (4.5, 0.5)}, "LAO", cache_dir)
+
+    assert placed == {"somewhere": "LAO.2.2_1"}, "no village covers this, the district does"
+
+
+def test_a_point_outside_the_country_is_placed_nowhere(write_gadm_cache):
+    """EM-DAT names places in neighbouring countries and at sea, and a point nothing holds is not
+    an answer."""
+    cache_dir = write_gadm_cache()
+
+    assert units_containing_points({"somewhere": (99.0, 99.0)}, "LAO", cache_dir) == {}
+
+
+def test_nothing_to_place_reads_the_archive_not_at_all(write_gadm_cache):
+    """Most countries have no unresolved names left by the time a point is wanted, and reading a
+    country's polygons to place nothing is the expensive half of the run."""
+    assert units_containing_points({}, "LAO", write_gadm_cache()) == {}

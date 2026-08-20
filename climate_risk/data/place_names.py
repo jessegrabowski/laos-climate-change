@@ -2,7 +2,7 @@ import re
 import sqlite3
 
 from collections import defaultdict
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Mapping
 from itertools import batched
 from pathlib import Path
 from typing import NamedTuple
@@ -32,6 +32,7 @@ RELATIONAL = re.compile(r"^\s*(?:between|off|offshore|au large)\b", re.IGNORECAS
 
 # How a written place reached the units it did.
 NAMED = "named"
+LOCATED = "located"
 CONTAINED_BY = "container"
 
 
@@ -258,7 +259,12 @@ def resolve_place(name: str, parent: str | None, gazetteer: Gazetteer) -> set[st
     return set()
 
 
-def resolve_event_places(places: Iterable[tuple[str, str | None]], gazetteer: Gazetteer) -> list[Placement]:
+def resolve_event_places(
+    places: Iterable[tuple[str, str | None]],
+    gazetteer: Gazetteer,
+    *,
+    located: Mapping[str, str] | None = None,
+) -> list[Placement]:
     """
     Resolve the places one event names together, letting the unambiguous ones narrow the rest.
 
@@ -266,9 +272,10 @@ def resolve_event_places(places: Iterable[tuple[str, str | None]], gazetteer: Ga
     ambiguous mentions beside it where to look. Candidates outside everything the event has already
     pinned are dropped, and a mention narrowed to nothing keeps its candidates.
 
-    A place naming nothing falls back to the container the prose wrote it in — ``Pesisir Selaten
-    (West Sumatra province)`` becomes the province — which is coarser than the prose supports, so
-    the result records that it was reached that way.
+    A place naming nothing takes the unit a point put it in where one is offered. Failing that it
+    falls back to the container the prose wrote it in — ``Pesisir Selaten (West Sumatra province)``
+    becomes the province, which spans fourteen districts at the median — so the result records
+    which of the two it was reached by.
 
     Parameters
     ----------
@@ -276,6 +283,9 @@ def resolve_event_places(places: Iterable[tuple[str, str | None]], gazetteer: Ga
         Each a name as written and the container the prose gave, or None.
     gazetteer : Gazetteer
         The country's units, from :func:`read_gazetteer`.
+    located : mapping of str to str, optional
+        The unit a point put a written place in, keyed on the name. Default None. A point beats the
+        container because it names one unit where the container names everything inside it.
 
     Returns
     -------
@@ -291,9 +301,13 @@ def resolve_event_places(places: Iterable[tuple[str, str | None]], gazetteer: Ga
             pinned |= gazetteer.ancestry(next(iter(gids)))
 
     placed = []
-    for (_, parent), gids in zip(written, resolved, strict=True):
+    for (name, parent), gids in zip(written, resolved, strict=True):
         if gids:
             placed.append(Placement(_narrowed(gids, pinned, gazetteer), NAMED))
+            continue
+        by_point = (located or {}).get(name)
+        if by_point:
+            placed.append(Placement({by_point}, LOCATED))
             continue
         container = resolve_place(parent, None, gazetteer) if parent else set()
         how = CONTAINED_BY if container else NAMED

@@ -1,14 +1,20 @@
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
 from typing import NamedTuple
 
+import geopandas as gpd
+
 from shapely.geometry import Point
 
-from climate_risk.data.gadm import GADM_LAYER, load_admin_units
+from climate_risk.data.gadm import GADM_LAYER, load_admin_units, load_units_in_country
 from climate_risk.data.place_names import Gazetteer, resolve_place
+from climate_risk.geo.crs import GEOGRAPHIC_CRS
 
 # A geocoder answers with longitude and latitude, or with nothing where it does not know the place.
 Geocoder = Callable[[str, str], tuple[float, float] | None]
+
+# Finest first: a point says where an event was, and the smallest unit holding it says it best.
+PLACEABLE_LEVELS = (4, 3, 2, 1)
 
 IN_THE_UNIT = "in the unit"
 IN_ITS_PROVINCE = "in its province"
@@ -128,3 +134,61 @@ def score_geocoder(
         scored.append(ScoredName(name, gid, outcome))
 
     return scored
+
+
+def units_containing_points(
+    points: Mapping[str, tuple[float, float]],
+    iso: str,
+    cache_dir: Path,
+    *,
+    levels: Iterable[int] = PLACEABLE_LEVELS,
+    layer: str = GADM_LAYER,
+) -> dict[str, str]:
+    """
+    Name the finest GADM unit holding each point.
+
+    Falling back to the container a place was written in claims every unit inside it — a province
+    spans fourteen districts at the median — so a point is worth reaching for first wherever one
+    exists.
+
+    Parameters
+    ----------
+    points : mapping of str to tuple of float
+        Longitude and latitude, keyed on the written name they came from.
+    iso : str
+        ISO 3166-1 alpha-3 code of the country the points are in.
+    cache_dir : Path
+        Directory the caches live under.
+    levels : iterable of int, optional
+        Administrative levels to try, in order. Default finest to coarsest.
+    layer : str, optional
+        Layer to read inside the GeoPackage. Default ``GADM_LAYER``.
+
+    Returns
+    -------
+    dict mapping str to str
+        The GADM identifier each name's point falls in, absent where no level holds it.
+    """
+    if not points:
+        return {}
+
+    placed: dict[str, str] = {}
+    outstanding = dict(points)
+
+    for level in levels:
+        if not outstanding:
+            break
+        units = load_units_in_country(iso, level, cache_dir, layer=layer)
+        if units.empty:
+            continue
+
+        located = gpd.GeoDataFrame(
+            {"name": list(outstanding)},
+            geometry=gpd.points_from_xy(*zip(*outstanding.values(), strict=True)),
+            crs=GEOGRAPHIC_CRS,
+        )
+        inside = gpd.sjoin(located, units[["gid", "geometry"]], how="inner", predicate="within")
+        placed |= dict(zip(inside["name"], inside["gid"], strict=True))
+        outstanding = {name: point for name, point in outstanding.items() if name not in placed}
+
+    return placed

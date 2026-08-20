@@ -2,6 +2,7 @@ import pytest
 
 from climate_risk.data.place_names import (
     CONTAINED_BY,
+    LOCATED,
     NAMED,
     Placement,
     Unit,
@@ -242,3 +243,22 @@ def test_the_outermost_container_of_the_placeholder_unit_is_itself(write_gadm_ca
     gazetteer = read_gazetteer("UKR", write_gadm_cache())
 
     assert gazetteer.top_container("?") == "?"
+
+
+def test_a_point_is_preferred_to_the_container_a_place_was_written_in(write_gadm_cache):
+    """The container claims every unit inside it. A point names one, so it wins wherever it exists:
+    over half the places that fall back to a container have one."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    (placed,) = resolve_event_places([("Nowhere At All", "Bokeo")], gazetteer, located={"Nowhere At All": "LAO.2.1_1"})
+
+    assert placed == Placement({"LAO.2.1_1"}, LOCATED), "the district, not the whole of Bokeo"
+
+
+def test_a_place_its_own_name_reaches_ignores_the_point_offered_for_it(write_gadm_cache):
+    """A name GADM publishes is better evidence than a coordinate somebody geocoded from it."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    (placed,) = resolve_event_places([("Sanamxay", None)], gazetteer, located={"Sanamxay": "LAO.2.1_1"})
+
+    assert placed == Placement({"LAO.1.1_1"}, NAMED)
