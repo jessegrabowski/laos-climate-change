@@ -474,3 +474,14 @@ def test_a_stretch_of_water_written_inside_a_province_still_reaches_the_province
     (placed,) = resolve_event_places([("Java Sea", "Bokeo")], gazetteer)
 
     assert placed == Placement({"LAO.2_1"}, CONTAINED_BY)
+
+
+def test_a_gazetteer_read_twice_reads_the_same_units(write_gadm_cache):
+    """The index is cached to disk between calls, so a rebuild and a cache hit have to agree — the
+    cached form is a flat table and the units are rebuilt from it."""
+    cache_dir = write_gadm_cache()
+
+    built = read_gazetteer("LAO", cache_dir, force_reload=True)
+    from_cache = read_gazetteer("LAO", cache_dir)
+
+    assert (from_cache.names, from_cache.parent_of) == (built.names, built.parent_of)

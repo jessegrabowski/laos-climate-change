@@ -8,9 +8,12 @@ from itertools import batched
 from pathlib import Path
 from typing import NamedTuple
 
+import polars as pl
+
 from anyascii import anyascii
 
-from climate_risk.data.gadm import GADM_LAYER, administered_territories, gadm_path
+from climate_risk.data.cache import cached, polars_parquet
+from climate_risk.data.gadm import GADM_LAYER, administered_territories, gadm_dir, gadm_path
 
 # Words naming what a unit is rather than which one it is. EM-DAT writes them inconsistently and
 # GADM does not carry them, so `Kalin-Aapayo province` has to reach `Kalin-Aapayo`.
@@ -101,6 +104,9 @@ NAMES_NO_UNIT = "names no unit"
 
 # GADM publishes a level 5, for Belgium and Rwanda only.
 INDEXABLE_LEVELS = (1, 2, 3, 4)
+
+# The flattened index, as it is cached: one row per name a unit is published under.
+INDEX_COLUMNS = {"key": pl.String, "gid": pl.String, "level": pl.Int8, "parent": pl.String}
 
 
 class Placement(NamedTuple):
@@ -205,7 +211,7 @@ def match_key(name: str) -> str:
     return "".join(character for character in anyascii(UNIT_NOUNS.sub(" ", name)) if character.isalnum()).casefold()
 
 
-def read_gazetteer(iso: str, cache_dir: Path, *, layer: str = GADM_LAYER) -> Gazetteer:
+def read_gazetteer(iso: str, cache_dir: Path, *, layer: str = GADM_LAYER, force_reload: bool = False) -> Gazetteer:
     """
     Read one country's GADM units into a gazetteer.
 
@@ -226,38 +232,61 @@ def read_gazetteer(iso: str, cache_dir: Path, *, layer: str = GADM_LAYER) -> Gaz
         Directory the caches live under.
     layer : str, optional
         Layer to read inside the GeoPackage. Default ``GADM_LAYER``.
+    force_reload : bool, optional
+        Rebuild even when the index is already cached. Default False.
 
     Returns
     -------
     Gazetteer
         The country's units.
     """
+
+    def build() -> pl.DataFrame:
+        indexed: list[tuple[str, str, int, str | None]] = []
+        with sqlite3.connect(gadm_path(cache_dir)) as connection:
+            available = {row[1] for row in connection.execute(f'PRAGMA table_info("{layer}")')}
+            # A variant-name column is optional; an identifier and a name are what make a level readable.
+            levels = [level for level in INDEXABLE_LEVELS if {f"GID_{level}", f"NAME_{level}"} <= available]
+            columns = ", ".join(_name_columns(level, available) for level in levels)
+            # Kashmir is filed under codes of its own, not under the country administering it.
+            held = (iso, *administered_territories(iso, cache_dir, layer=layer))
+            placeholders = ", ".join("?" * len(held))
+            query = f'SELECT DISTINCT {columns} FROM "{layer}" WHERE GID_0 IN ({placeholders})'
+
+            for row in connection.execute(query, held):
+                parent = None
+                for level, (gid, name, variants) in zip(levels, batched(row, len(_NAME_FIELDS)), strict=True):
+                    # GADM writes an unnamed unit as `?` at every level it spans, and a unit cannot
+                    # contain itself: the chain ends where the identifier stops changing.
+                    if not gid or gid == parent:
+                        break
+                    # A row without a key still records the unit's parentage: GADM leaves some
+                    # units unnamed, and a walk upwards passes through them.
+                    indexed.append(("", gid, level, parent))
+                    for field in (name, variants):
+                        for alternative in str(field or "").split("|"):
+                            if key := match_key(alternative):
+                                indexed.append((key, gid, level, parent))
+                    parent = gid
+
+        return pl.DataFrame(indexed, schema=INDEX_COLUMNS, orient="row")
+
+    indexed = cached(
+        gadm_dir(cache_dir),
+        "gazetteer",
+        build,
+        polars_parquet(),
+        # The index is keyed by `match_key`, so the cache turns over when those rules change.
+        params={"iso": iso},
+        force=force_reload,
+    )
+
     names: dict[str, set[Unit]] = defaultdict(set)
     parent_of: dict[str, str | None] = {}
-
-    with sqlite3.connect(gadm_path(cache_dir)) as connection:
-        available = {row[1] for row in connection.execute(f'PRAGMA table_info("{layer}")')}
-        # A variant-name column is optional; an identifier and a name are what make a level readable.
-        levels = [level for level in INDEXABLE_LEVELS if {f"GID_{level}", f"NAME_{level}"} <= available]
-        columns = ", ".join(_name_columns(level, available) for level in levels)
-        # Kashmir is filed under codes of its own, not under the country administering it.
-        held = (iso, *administered_territories(iso, cache_dir, layer=layer))
-        placeholders = ", ".join("?" * len(held))
-        query = f'SELECT DISTINCT {columns} FROM "{layer}" WHERE GID_0 IN ({placeholders})'
-
-        for row in connection.execute(query, held):
-            parent = None
-            for level, (gid, name, variants) in zip(levels, batched(row, len(_NAME_FIELDS)), strict=True):
-                # GADM writes an unnamed unit as `?` at every level it spans, and a unit cannot
-                # contain itself: the chain ends where the identifier stops changing.
-                if not gid or gid == parent:
-                    break
-                parent_of[gid] = parent
-                for field in (name, variants):
-                    for alternative in str(field or "").split("|"):
-                        if key := match_key(alternative):
-                            names[key].add(Unit(gid, level, parent))
-                parent = gid
+    for key, gid, level, parent in indexed.iter_rows():
+        if key:
+            names[key].add(Unit(gid, level, parent))
+        parent_of[gid] = parent
 
     return Gazetteer(dict(names), parent_of, read_name_corrections(iso))
 
