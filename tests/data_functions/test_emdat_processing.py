@@ -503,6 +503,15 @@ def test_a_preposition_joining_a_place_to_its_container_is_dropped():
     ]
 
 
+def test_a_leaked_spreadsheet_label_is_dropped_from_the_name():
+    """EM-DAT writes `Level 1 = Uttar Pradesh` in the location column, and the label reaches the
+    matcher as part of the place name."""
+    assert named_places("Level 1 = Uttar Pradesh; Bihar") == [
+        NamedPlace("Uttar Pradesh", None),
+        NamedPlace("Bihar", None),
+    ]
+
+
 def test_a_place_named_twice_appears_once():
     """`Savannakhet, Kham Muane, Savannakhet` would otherwise weight one province double in
     whatever counts the places."""

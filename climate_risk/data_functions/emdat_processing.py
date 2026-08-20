@@ -278,6 +278,9 @@ LOCATION_SEPARATORS = ",;"
 # named with a leading `and`, so a span that starts with one is an artifact of the split.
 STRANDED_CONJUNCTION = re.compile(r"^(?:and|&)\b\s*", re.IGNORECASE)
 
+# A spreadsheet label EM-DAT leaks into the location field, as `Level 1 = Uttar Pradesh`.
+FIELD_LABEL = re.compile(r"^\s*level\s*\d+\s*=\s*", re.IGNORECASE)
+
 # `Montgomery County in (Tennessee state)` joins a place to its container with a preposition, which
 # the split leaves dangling on the end of the name.
 DANGLING_PREPOSITION = re.compile(r"\s+(?:in|of|at|on)$", re.IGNORECASE)
@@ -311,7 +314,8 @@ def named_places(location: str | None) -> list[NamedPlace]:
     Separators are commas and semicolons outside parentheses. ``and`` is not one: 75 GADM units are
     named like ``Newfoundland and Labrador``, and splitting on it would destroy them. Where the
     prose writes ``X, and Y`` the comma splits and the conjunction is left stranded, so a leading
-    one is dropped from each place, as is a preposition left dangling on the end by ``X in (Y)``.
+    one is dropped from each place, as is a preposition left dangling on the end by ``X in (Y)`` and
+    the ``Level 1 =`` label the workbook leaks into the column.
 
     Parameters
     ----------
@@ -332,7 +336,7 @@ def named_places(location: str | None) -> list[NamedPlace]:
 
     def close_span() -> None:
         collapsed = " ".join("".join(written).split())
-        without_conjunction = STRANDED_CONJUNCTION.sub("", collapsed)
+        without_conjunction = STRANDED_CONJUNCTION.sub("", FIELD_LABEL.sub("", collapsed))
         if trimmed := DANGLING_PREPOSITION.sub("", without_conjunction).strip():
             spans.append(trimmed)
         written.clear()
