@@ -30,6 +30,10 @@ UNIT_NOUNS = re.compile(
 # one, so the whole string has to be tried before its parts.
 CONJUNCTION = re.compile(r"\s+(?:and|&)\s+", re.IGNORECASE)
 
+# `Wayanad district, Kerala state` names the same place twice over, finest first. Read whole it
+# matches nothing; read in parts each one matches a unit.
+CONTAINER_PARTS = re.compile(r"\s*[,;]\s*")
+
 # `Between Java and Bali` names a stretch of sea by its shores. Splitting it puts the event on
 # whichever shore happens to resolve.
 RELATIONAL = re.compile(r"^\s*(?:between|off|offshore|au large)\b", re.IGNORECASE)
@@ -393,6 +397,32 @@ def nearest_name(name: str, gazetteer: Gazetteer, shapes: dict[tuple[str, int], 
     return next(iter(nearby)) if len(nearby) == 1 else None
 
 
+def container_parts(parent: str) -> list[str]:
+    """
+    Split a container into the places it names, finest first.
+
+    Parameters
+    ----------
+    parent : str
+        The container as the prose wrote it.
+
+    Returns
+    -------
+    list of str
+        Each place it names, in the order written.
+    """
+    return [part for part in CONTAINER_PARTS.split(parent) if part.strip()]
+
+
+def _innermost_container(parent: str | None, gazetteer: Gazetteer) -> set[str]:
+    """Name the units the finest resolving part of a container reaches, so a district beats the state beside it."""
+    for part in container_parts(parent or ""):
+        if found := resolve_place(part, None, gazetteer):
+            return found
+
+    return set()
+
+
 def _narrowed(gids: set[str], pinned: set[str], gazetteer: Gazetteer) -> set[str]:
     """Keep the candidates inside something the event already pinned, or all of them if none are."""
     if len(gids) < 2:
@@ -412,7 +442,7 @@ def _units_named(name: str, parent: str | None, gazetteer: Gazetteer) -> set[str
     if not gids or parent is None:
         return gids
 
-    containers = {unit.gid for unit in gazetteer.names.get(match_key(parent), set())}
+    containers = {unit.gid for part in container_parts(parent) for unit in gazetteer.names.get(match_key(part), set())}
     inside = {gid for gid in gids if (gazetteer.ancestry(gid) - {gid}) & containers}
 
     return inside or gids
@@ -475,7 +505,8 @@ def resolve_event_places(
     A place naming nothing takes the unit a point put it in where one is offered. Failing that it
     falls back to the container the prose wrote it in — ``Pesisir Selaten (West Sumatra province)``
     becomes the province, which spans fourteen districts at the median — so the result records
-    which of the two it was reached by. A place with no container that is one edit from
+    which of the two it was reached by. A container naming several places, as ``Wayanad district,
+    Kerala state`` does, gives the finest of them that resolves. A place with no container that is one edit from
     exactly one published name is taken as a misspelling of it, recorded as such.
 
     Parameters
@@ -510,7 +541,7 @@ def resolve_event_places(
         if by_point:
             placed.append(Placement({by_point}, LOCATED))
             continue
-        container = resolve_place(parent, None, gazetteer) if parent else set()
+        container = _innermost_container(parent, gazetteer)
         if container:
             placed.append(Placement(_narrowed(container, pinned, gazetteer), CONTAINED_BY))
             continue

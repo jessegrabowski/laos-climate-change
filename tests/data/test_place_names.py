@@ -499,3 +499,31 @@ def test_changing_how_a_name_is_keyed_turns_the_cached_index_over(write_gadm_cac
     rekeyed = read_gazetteer("LAO", cache_dir)
 
     assert "sanamxay" not in rekeyed.names, "the stripped word cannot survive as a key"
+
+
+def test_a_container_naming_several_places_gives_the_finest_that_resolves(write_gadm_cache):
+    """EM-DAT writes `Wayanad district, Kerala state` finest first. Read whole it matches nothing,
+    and the village inside it goes unplaced — 1,173 places carry a container like this."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    (placed,) = resolve_event_places([("Nowhere At All", "Sanamxay district, Attapu province")], gazetteer)
+
+    assert placed == Placement({"LAO.1.1_1"}, CONTAINED_BY), "the district, not the province beside it"
+
+
+def test_a_compound_container_narrows_an_ambiguous_name(write_gadm_cache):
+    """The container is used to choose between same-named units as well as to stand in for them, and
+    both readings have to see every place it names."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    assert resolve_place("Attapu", "Houayxay district, Bokeo province", gazetteer) == {"LAO.2.2_1"}
+
+
+def test_a_container_whose_first_place_is_unknown_falls_through_to_the_next(write_gadm_cache):
+    """The finest place named is often a village GADM does not carry, and the state beside it is
+    the whole reason the container is worth reading."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    (placed,) = resolve_event_places([("Nowhere At All", "Nowhere district, Bokeo province")], gazetteer)
+
+    assert placed == Placement({"LAO.2_1"}, CONTAINED_BY)
