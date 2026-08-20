@@ -494,6 +494,15 @@ def test_unbalanced_parentheses_still_yield_the_container(location, expected):
     assert named_places(location) == [NamedPlace(*pair) for pair in expected]
 
 
+def test_a_preposition_joining_a_place_to_its_container_is_dropped():
+    """EM-DAT writes `Montgomery County in (Tennessee state)`, and the split leaves the preposition
+    on the end of a name that would otherwise match."""
+    assert named_places("Clarksville City, Montgomery County in (Tennesee state)") == [
+        NamedPlace("Clarksville City", "Tennesee state"),
+        NamedPlace("Montgomery County", "Tennesee state"),
+    ]
+
+
 def test_a_place_named_twice_appears_once():
     """`Savannakhet, Kham Muane, Savannakhet` would otherwise weight one province double in
     whatever counts the places."""
