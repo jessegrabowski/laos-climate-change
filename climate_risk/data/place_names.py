@@ -107,7 +107,11 @@ RELATIONAL = re.compile(r"^\s*(?:between|off|offshore|au large)\b", re.IGNORECAS
 FEATURE = re.compile(
     r"\b(seas?|oceans?|rivers?|lakes?|gulfs?|straits?|detroit|bays?|mountains?|mts?|mount|peaks?|"
     r"valleys?|deltas?|peninsulas?|channels?|canals?|reservoirs?|dams?|volcanoe?s?|glaciers?|"
-    r"basins?|capes?|sounds?|fjords?|lagoons?|swamps?|forests?|deserts?)\b",
+    r"basins?|capes?|sounds?|fjords?|lagoons?|swamps?|forests?|deserts?|"
+    # EM-DAT carries a good deal of French, and some Spanish and Portuguese.
+    r"mers?|oc[ée]ans?|fleuves?|rivi[èe]res?|golfes?|golfos?|estrechos?|baies?|bah[ía]as?|"
+    r"montagnes?|monta[ñn]as?|vall[ée]es?|massifs?|presqu.[îi]les?|"
+    r"bights?|collines?|quebradas?|himalayas?|andes|atlantique|pacifique|m[ée]diterran[ée]e|alps)\b",
     re.IGNORECASE,
 )
 
@@ -153,10 +157,14 @@ SUCCEEDED_BY = {
 # Written places that name no administrative unit and never will: a compass point covering the
 # whole country, a position between two others, a stretch of water, or nothing at all. They are
 # recorded rather than counted as failures, because no source can place them.
+_COMPASS = r"(?:north|south|east|west|central|centre|center)(?:ern)?"
+
 QUALIFIER = re.compile(
-    r"^(?:north|south|east|west|central|centre|center|northern|southern|eastern|western|"
-    r"north[- ]?(?:east|west)|south[- ]?(?:east|west)|countrywide|nationwide|whole country|"
-    r"all country|widespread|unknown|not available|no information|n\.?a\.?(?: on the source)?)$",
+    rf"^(?:{_COMPASS}(?:[-\s]*{_COMPASS})?"
+    r"(?:\s+(?:coast|coastal|regions?|areas?|parts?|provinces?|districts?|states?|counties))?"
+    r"|country[- ]?wide|nation[- ]?wide|entire (?:country|nation).*|whole country|all country"
+    r"|much of (?:the )?(?:country|nation)|widespread|unknown|not available|no information"
+    r"|n\.?a\.?(?: on the source)?)$",
     re.IGNORECASE,
 )
 NOTHING_LEGIBLE = re.compile(r"^[\W\d\s]*$")

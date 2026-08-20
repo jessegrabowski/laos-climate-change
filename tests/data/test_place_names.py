@@ -437,9 +437,34 @@ def test_a_gazetteer_covers_the_territory_its_country_administers(write_gadm_cac
         "Off the coast of Luzon",
         "Java Sea",
         "Congo river",
+        "Mer d'Adaman",
+        "Golfe du Lion",
+        "Northeastern",
+        "Northwestern provinces",
+        "East Coast",
+        "Alps",
+        "Atlantique",
+        "Bight of Bangkok",
         ".",
     ],
-    ids=["direction", "countrywide", "not available", "between", "offshore", "sea", "river", "punctuation"],
+    ids=[
+        "direction",
+        "countrywide",
+        "not available",
+        "between",
+        "offshore",
+        "sea",
+        "river",
+        "french sea",
+        "french gulf",
+        "adjectival direction",
+        "adjectival direction with a unit word",
+        "direction and a coast",
+        "mountain range",
+        "french ocean",
+        "bight",
+        "punctuation",
+    ],
 )
 def test_a_place_that_names_no_unit_is_told_apart(written):
     """A fifth of what stays unplaced is like this. Counting it as a coverage failure understates
@@ -449,12 +474,37 @@ def test_a_place_that_names_no_unit_is_told_apart(written):
 
 @pytest.mark.parametrize(
     "written",
-    ["Sanamxay", "Attapu", "Bokeo", "Central Java"],
-    ids=["district", "province", "short province", "a direction inside a real name"],
+    [
+        "Sanamxay",
+        "Attapu",
+        "Bokeo",
+        "Central Java",
+        "Rio de Janeiro",
+        "Valle del Cauca",
+        "Mar del Plata",
+        "Sierra Leone",
+        "Alpes-Maritimes",
+        "Cerro Largo",
+        "Northern Territory",
+    ],
+    ids=[
+        "district",
+        "province",
+        "short province",
+        "a direction inside a real name",
+        "a river word heading a city",
+        "a valley word heading a department",
+        "a sea word heading a city",
+        "a range word heading a country",
+        "the french range word heading a department",
+        "a hill word heading a department",
+        "a direction heading a real territory",
+    ],
 )
 def test_a_real_place_is_not_mistaken_for_noise(written):
-    """`Central` is a Zambian province and `Coast` a Kenyan one, so the test is on the whole string
-    rather than on any word appearing in it."""
+    """`Central` is a Zambian province and `Coast` a Kenyan one, so the direction test is on the
+    whole string. The feature words are searched anywhere, so the ones heading real units — `Rio`,
+    `Valle`, `Mar`, `Costa`, `Sierra`, `Lago` — are left out of that list entirely."""
     assert not names_no_unit(written)
 
 
