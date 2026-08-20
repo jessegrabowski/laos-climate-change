@@ -667,6 +667,45 @@ def resolve_place(name: str, parent: str | None, gazetteer: Gazetteer) -> set[st
     return set()
 
 
+def _place_one(
+    name: str,
+    parent: str | None,
+    named: set[str],
+    located: Mapping[str, str],
+    pinned: set[str],
+    gazetteer: Gazetteer,
+) -> Placement:
+    """
+    Place one written place, taking the first reading that holds.
+
+    The order is what the readings are worth: the name itself, then a point, then a correction
+    someone checked, then a slip the event vouches for, then the unit a direction qualified, and
+    last the container, which claims everything inside it.
+    """
+    if named:
+        return Placement(_narrowed(named, pinned, gazetteer), NAMED)
+
+    if by_point := located.get(name):
+        return Placement({by_point}, LOCATED)
+
+    published = gazetteer.corrections.get(match_key(name), ())
+    stands_for = {unit.gid for stood_for in published for unit in gazetteer.names.get(stood_for, set())}
+    if stands_for:
+        return Placement(_narrowed(_outermost(stands_for, gazetteer), pinned, gazetteer), CORRECTED)
+
+    container = _innermost_container(parent, gazetteer)
+    if inferred := _corroborated_slip(name, container, pinned, gazetteer):
+        return Placement(inferred, INFERRED)
+
+    if qualified := _qualified_unit(name, gazetteer):
+        return Placement(qualified, QUALIFIED)
+
+    if container:
+        return Placement(_narrowed(container, pinned, gazetteer), CONTAINED_BY)
+
+    return Placement(set(), NAMES_NO_UNIT if names_no_unit(name) else NAMED)
+
+
 def resolve_event_places(
     places: Iterable[tuple[str, str | None]],
     gazetteer: Gazetteer,
@@ -711,33 +750,10 @@ def resolve_event_places(
         if len(gids) == 1:
             pinned |= gazetteer.ancestry(next(iter(gids)))
 
-    placed = []
-    for (name, parent), gids in zip(written, resolved, strict=True):
-        if gids:
-            placed.append(Placement(_narrowed(gids, pinned, gazetteer), NAMED))
-            continue
-        by_point = (located or {}).get(name)
-        if by_point:
-            placed.append(Placement({by_point}, LOCATED))
-            continue
-        published = gazetteer.corrections.get(match_key(name), ())
-        stands_for = {unit.gid for stood_for in published for unit in gazetteer.names.get(stood_for, set())}
-        if stands_for:
-            placed.append(Placement(_narrowed(_outermost(stands_for, gazetteer), pinned, gazetteer), CORRECTED))
-            continue
-        container = _innermost_container(parent, gazetteer)
-        if inferred := _corroborated_slip(name, container, pinned, gazetteer):
-            placed.append(Placement(inferred, INFERRED))
-            continue
-        if qualified := _qualified_unit(name, gazetteer):
-            placed.append(Placement(qualified, QUALIFIED))
-            continue
-        if container:
-            placed.append(Placement(_narrowed(container, pinned, gazetteer), CONTAINED_BY))
-            continue
-        placed.append(Placement(set(), NAMES_NO_UNIT if names_no_unit(name) else NAMED))
-
-    return placed
+    return [
+        _place_one(name, parent, gids, located or {}, pinned, gazetteer)
+        for (name, parent), gids in zip(written, resolved, strict=True)
+    ]
 
 
 def successor_state(
