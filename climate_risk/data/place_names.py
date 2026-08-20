@@ -1,4 +1,5 @@
 import csv
+import hashlib
 import re
 import sqlite3
 
@@ -211,6 +212,13 @@ def match_key(name: str) -> str:
     return "".join(character for character in anyascii(UNIT_NOUNS.sub(" ", name)) if character.isalnum()).casefold()
 
 
+def _keying_fingerprint() -> str:
+    """Fingerprint the rules that turn a name into a key, so a change to them invalidates the cache."""
+    rules = "|".join((UNIT_NOUNS.pattern, str(INDEXABLE_LEVELS)))
+
+    return hashlib.sha256(rules.encode()).hexdigest()[:12]
+
+
 def read_gazetteer(iso: str, cache_dir: Path, *, layer: str = GADM_LAYER, force_reload: bool = False) -> Gazetteer:
     """
     Read one country's GADM units into a gazetteer.
@@ -277,7 +285,8 @@ def read_gazetteer(iso: str, cache_dir: Path, *, layer: str = GADM_LAYER, force_
         build,
         polars_parquet(),
         # The index is keyed by `match_key`, so the cache turns over when those rules change.
-        params={"iso": iso},
+        # The index is keyed by `match_key`, so the cache turns over when those rules change.
+        params={"iso": iso, "keying": _keying_fingerprint()},
         force=force_reload,
     )
 

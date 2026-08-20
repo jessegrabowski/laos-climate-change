@@ -1,9 +1,11 @@
 import csv
+import re
 
 from collections import defaultdict
 
 import pytest
 
+from climate_risk.data import place_names
 from climate_risk.data.place_names import (
     CONTAINED_BY,
     CORRECTED,
@@ -485,3 +487,15 @@ def test_a_gazetteer_read_twice_reads_the_same_units(write_gadm_cache):
     from_cache = read_gazetteer("LAO", cache_dir)
 
     assert (from_cache.names, from_cache.parent_of) == (built.names, built.parent_of)
+
+
+def test_changing_how_a_name_is_keyed_turns_the_cached_index_over(write_gadm_cache, monkeypatch):
+    """The index is built with `match_key`, so a cache keyed on the country alone serves an index
+    built under rules that no longer apply — every unit word added would be invisible."""
+    cache_dir = write_gadm_cache()
+    read_gazetteer("LAO", cache_dir)
+
+    monkeypatch.setattr(place_names, "UNIT_NOUNS", re.compile(r"\b(sanamxay)\b", re.IGNORECASE))
+    rekeyed = read_gazetteer("LAO", cache_dir)
+
+    assert "sanamxay" not in rekeyed.names, "the stripped word cannot survive as a key"
