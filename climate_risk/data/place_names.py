@@ -87,11 +87,6 @@ UNIT_NOUNS = re.compile(
 CONJUNCTION = re.compile(r"\s+(?:and|et)\s+|\s*[&+/]\s*", re.IGNORECASE)
 
 
-# EM-DAT joins places with `and`, its French `et`, and the bare `&`, `+` and `/`. GADM writes
-# `Newfoundland and Labrador` and `Komenda/Edina/Eguafo/Abirem`, so the whole string has to be tried
-# before its parts.
-CONJUNCTION = re.compile(r"\s+(?:and|et)\s+|\s*[&+/]\s*", re.IGNORECASE)
-
 # `Wayanad district, Kerala state` names the same place twice over, finest first. Read whole it
 # matches nothing; read in parts each one matches a unit.
 CONTAINER_PARTS = re.compile(r"\s*[,;]\s*")
@@ -178,15 +173,6 @@ FORMERLY_INCLUDED = {
     "SDN": ("SSD",),
     "SRB": ("MNE", "XKO"),
 }
-
-# `South Bihar` and `Ontario Central` qualify a unit rather than naming one. The words are part of
-# plenty of real names — Lower Shabelle, West Bengal, Northern Territory — so the qualifier only
-# comes off once the name as written has failed.
-DIRECTIONAL_QUALIFIER = re.compile(
-    r"^(?:north|south|east|west|central|centre|upper|lower|greater)(?:ern)?(?:\s+of)?\s+"
-    r"|\s+(?:north|south|east|west|central|centre|upper|lower)(?:ern)?$",
-    re.IGNORECASE,
-)
 
 # `South Bihar` and `Ontario Central` qualify a unit rather than naming one. The words are part of
 # plenty of real names — Lower Shabelle, West Bengal, Northern Territory — so the qualifier only
@@ -412,12 +398,7 @@ def read_gazetteer(iso: str, cache_dir: Path, *, layer: str = GADM_LAYER, force_
             names[key].add(Unit(gid, level, parent))
         parent_of[gid] = parent
 
-    shapes: dict[tuple[str, int], set[str]] = defaultdict(set)
-    for key in names:
-        for letter in {key[0], key[1] if len(key) > 1 else key[0]}:
-            shapes[(letter, len(key))].add(key)
-
-    return Gazetteer(dict(names), parent_of, dict(shapes), read_name_corrections(iso))
+    return Gazetteer(dict(names), parent_of, _shape_index(names), read_name_corrections(iso))
 
 
 def read_name_corrections(iso: str, *, path: Path = NAME_CORRECTIONS) -> dict[str, tuple[str, ...]]:
@@ -448,6 +429,16 @@ def read_name_corrections(iso: str, *, path: Path = NAME_CORRECTIONS) -> dict[st
         }
 
 
+def _shape_index(keys: Iterable[str]) -> dict[tuple[str, int], set[str]]:
+    """File each key under its length and each of its first two letters."""
+    shapes: dict[tuple[str, int], set[str]] = defaultdict(set)
+    for key in keys:
+        for letter in {key[0], key[1] if len(key) > 1 else key[0]}:
+            shapes[(letter, len(key))].add(key)
+
+    return dict(shapes)
+
+
 def name_shapes(gazetteer: Gazetteer) -> dict[tuple[str, int], set[str]]:
     """
     Group a country's names for approximate lookup, by length and by each of their first two letters.
@@ -455,12 +446,7 @@ def name_shapes(gazetteer: Gazetteer) -> dict[tuple[str, int], set[str]]:
     Filing a name under its second letter as well as its first is what makes a slip in the first one
     reachable: ``llinois`` has lost the letter its bucket would otherwise be chosen by.
     """
-    shapes: dict[tuple[str, int], set[str]] = defaultdict(set)
-    for key in gazetteer.names:
-        for letter in {key[0], key[1] if len(key) > 1 else key[0]}:
-            shapes[(letter, len(key))].add(key)
-
-    return dict(shapes)
+    return _shape_index(gazetteer.names)
 
 
 def _one_slip_apart(written: str, published: str) -> bool:

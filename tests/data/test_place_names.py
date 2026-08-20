@@ -760,3 +760,10 @@ def test_a_slip_vouched_for_at_two_places_at_once_is_refused(write_gadm_cache):
     *_, ambiguous = resolve_event_places([("Sanamxay", None), ("Houayxay", None), ("Attapy", None)], gazetteer)
 
     assert ambiguous == Placement(set(), NAMED)
+
+
+def test_a_place_whose_name_ends_in_a_unit_word_survives():
+    """`Rhode Island` and `Coast` are real units. The words are stripped from both the mention and
+    the published name, so the two still meet — but a name reduced to nothing would be lost."""
+    assert match_key("Rhode Island") == match_key("Rhode Island")
+    assert match_key("Kelantan") == "kelantan"
