@@ -188,12 +188,22 @@ DIRECTIONAL_QUALIFIER = re.compile(
     re.IGNORECASE,
 )
 
+# `South Bihar` and `Ontario Central` qualify a unit rather than naming one. The words are part of
+# plenty of real names — Lower Shabelle, West Bengal, Northern Territory — so the qualifier only
+# comes off once the name as written has failed.
+DIRECTIONAL_QUALIFIER = re.compile(
+    r"^(?:north|south|east|west|central|centre|upper|lower|greater)(?:ern)?(?:\s+of)?\s+"
+    r"|\s+(?:north|south|east|west|central|centre|upper|lower)(?:ern)?$",
+    re.IGNORECASE,
+)
+
 # How a written place reached the units it did.
 NAMED = "named"
 LOCATED = "located"
 CONTAINED_BY = "container"
 CORRECTED = "corrected"
 INFERRED = "inferred"
+QUALIFIED = "qualified"
 NAMES_NO_UNIT = "names no unit"
 
 
@@ -543,6 +553,23 @@ def container_parts(parent: str) -> list[str]:
     return [part for part in CONTAINER_PARTS.split(parent) if part.strip()]
 
 
+def _qualified_unit(name: str, gazetteer: Gazetteer) -> set[str]:
+    """
+    Name the unit a directional qualifier was applied to, where it names exactly one.
+
+    ``South Bihar`` is part of Bihar and reaches it once the qualifier comes off, which is coarser
+    than the prose but the only reading GADM can hold. A base naming several units is not a reading,
+    so it is refused.
+    """
+    base = DIRECTIONAL_QUALIFIER.sub(" ", name).strip()
+    if not base or base == name.strip():
+        return set()
+
+    qualified = _outermost(_units_named(base, None, gazetteer), gazetteer)
+
+    return qualified if len(qualified) == 1 else set()
+
+
 def _corroborated_slip(name: str, container: set[str], pinned: set[str], gazetteer: Gazetteer) -> set[str]:
     """
     Take a one-slip match only where the rest of the event agrees with it.
@@ -658,7 +685,8 @@ def resolve_event_places(
     becomes the province, which spans fourteen districts at the median — so the result records
     which of the two it was reached by. A container naming several places, as ``Wayanad district,
     Kerala state`` does, gives the finest of them that resolves. A name one edit from a published one
-    is taken only where the container or an unambiguous sibling holds exactly one candidate.
+    is taken only where the container or an unambiguous sibling holds exactly one candidate, and a
+    name that only qualifies a unit by direction reaches the whole of it.
 
     Parameters
     ----------
@@ -700,6 +728,9 @@ def resolve_event_places(
         container = _innermost_container(parent, gazetteer)
         if inferred := _corroborated_slip(name, container, pinned, gazetteer):
             placed.append(Placement(inferred, INFERRED))
+            continue
+        if qualified := _qualified_unit(name, gazetteer):
+            placed.append(Placement(qualified, QUALIFIED))
             continue
         if container:
             placed.append(Placement(_narrowed(container, pinned, gazetteer), CONTAINED_BY))
