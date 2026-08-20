@@ -77,6 +77,47 @@ QUALIFIER = re.compile(
 )
 NOTHING_LEGIBLE = re.compile(r"^[\W\d\s]*$")
 
+# EM-DAT files an event under the country that existed at the time, and GADM only models the ones
+# that exist now. Where a state left one successor the mapping is settled; where it left several
+# the location text has to choose between them.
+SUCCEEDED_BY = {
+    "AZO": ("PRT",),
+    "CSK": ("CZE", "SVK"),
+    "DDR": ("DEU",),
+    "DFR": ("DEU",),
+    "SUN": (
+        "ARM",
+        "AZE",
+        "BLR",
+        "EST",
+        "GEO",
+        "KAZ",
+        "KGZ",
+        "LTU",
+        "LVA",
+        "MDA",
+        "RUS",
+        "TJK",
+        "TKM",
+        "UKR",
+        "UZB",
+    ),
+    "YMD": ("YEM",),
+    "YMN": ("YEM",),
+    "YUG": ("BIH", "HRV", "MKD", "MNE", "SRB", "SVN", "XKO"),
+}
+
+# Written places that name no administrative unit and never will: a compass point covering the
+# whole country, a position between two others, a stretch of water, or nothing at all. They are
+# recorded rather than counted as failures, because no source can place them.
+QUALIFIER = re.compile(
+    r"^(?:north|south|east|west|central|centre|center|northern|southern|eastern|western|"
+    r"north[- ]?(?:east|west)|south[- ]?(?:east|west)|countrywide|nationwide|whole country|"
+    r"all country|widespread|unknown|not available|no information|n\.?a\.?(?: on the source)?)$",
+    re.IGNORECASE,
+)
+NOTHING_LEGIBLE = re.compile(r"^[\W\d\s]*$")
+
 # How a written place reached the units it did.
 NAMED = "named"
 LOCATED = "located"
@@ -477,3 +518,85 @@ def resolve_event_places(
         placed.append(Placement(_narrowed(corrected, pinned, gazetteer), CORRECTED if corrected else NAMED))
 
     return placed
+
+
+def successor_state(
+    places: Iterable[tuple[str, str | None]],
+    iso: str,
+    cache_dir: Path,
+    *,
+    layer: str = GADM_LAYER,
+) -> str | None:
+    """
+    Name the modern country whose gazetteer an event's places belong to.
+
+    A state that left one successor needs no evidence. Where it left several, the successor placing
+    strictly more of the written places than any other takes the event: a Soviet flood naming
+    Tashkent is Uzbek, and one naming nothing recognisable stays unplaced rather than being assigned
+    to the largest successor.
+
+    Parameters
+    ----------
+    places : iterable of tuple
+        Each a name as written and the container the prose gave, or None.
+    iso : str
+        ISO 3166-1 alpha-3 code EM-DAT filed the event under.
+    cache_dir : Path
+        Directory the caches live under.
+    layer : str, optional
+        Layer to read inside the GeoPackage. Default ``GADM_LAYER``.
+
+    Returns
+    -------
+    str or None
+        The successor's ISO code, or None where the state has no successor recorded or its
+        successors cannot be told apart.
+    """
+    successors = SUCCEEDED_BY.get(iso)
+    if not successors:
+        return None
+    if len(successors) == 1:
+        return successors[0]
+
+    written = list(places)
+    placed: dict[str, int] = {}
+    for successor in successors:
+        gazetteer = read_gazetteer(successor, cache_dir, layer=layer)
+        if gazetteer.names:
+            placed[successor] = sum(bool(resolve_place(name, parent, gazetteer)) for name, parent in written)
+
+    best = max(placed.values(), default=0)
+    if best == 0:
+        return None
+
+    winners = [successor for successor, count in placed.items() if count == best]
+
+    return winners[0] if len(winners) == 1 else None
+
+
+def names_no_unit(name: str) -> bool:
+    """
+    Whether a written place can never name an administrative unit.
+
+    A compass point standing in for the whole country, a position between two other places, a sea
+    or a river, and a string with no letters in it are all beyond any gazetteer. Counting them as
+    coverage failures understates what the resolver reaches, so they are told apart.
+
+    Parameters
+    ----------
+    name : str
+        The place as written.
+
+    Returns
+    -------
+    bool
+        True where no administrative unit could answer to this name.
+    """
+    written = name.strip()
+
+    return bool(
+        NOTHING_LEGIBLE.match(written)
+        or QUALIFIER.match(written)
+        or RELATIONAL.match(written)
+        or FEATURE.search(written)
+    )

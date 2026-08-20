@@ -19,6 +19,7 @@ from climate_risk.data.place_names import (
     read_name_corrections,
     resolve_event_places,
     resolve_place,
+    successor_state,
 )
 
 
@@ -376,3 +377,38 @@ def test_no_country_corrects_one_name_to_two_different_units(write_gadm_cache):
     conflicting = {key: sorted(published) for key, published in targets.items() if len(published) > 1}
 
     assert not conflicting, f"one name corrected two ways: {sorted(conflicting.items())[:5]}"
+
+
+def test_a_state_with_one_successor_needs_no_evidence(write_gadm_cache):
+    """East and West Germany both became Germany, so their events need no disambiguating at all."""
+    assert successor_state([], "DFR", write_gadm_cache()) == "DEU"
+
+
+def test_the_successor_holding_the_places_takes_the_event(write_gadm_cache):
+    """A Czechoslovak flood naming Prague is Czech. EM-DAT files 417 events under states GADM no
+    longer models, and the location text is the only thing that says where they happened."""
+    cache_dir = write_gadm_cache()
+
+    assert successor_state([("Praha", None)], "CSK", cache_dir) == "CZE"
+    assert successor_state([("Bratislavsky", None)], "CSK", cache_dir) == "SVK"
+
+
+def test_a_name_both_successors_publish_settles_nothing(write_gadm_cache):
+    """Czechia and Slovakia both have a Nové Město. Taking whichever was read first would put the
+    event in a country on alphabetical order alone."""
+    assert successor_state([("Nove Mesto", None)], "CSK", write_gadm_cache()) is None
+
+
+def test_the_only_successor_in_the_archive_still_has_to_place_something(write_gadm_cache):
+    """Being the sole candidate is not evidence. Assigning the event to the largest successor would
+    put every Soviet flood in Russia by default."""
+    assert successor_state([("Nowhere At All", None)], "YUG", write_gadm_cache()) is None
+
+
+def test_a_state_whose_successors_place_nothing_stays_unplaced(write_gadm_cache):
+    assert successor_state([("Nowhere At All", None)], "CSK", write_gadm_cache()) is None
+
+
+def test_a_country_that_still_exists_has_no_successor(write_gadm_cache):
+    """The mapping covers dissolved states only; anything else is read from its own gazetteer."""
+    assert successor_state([("Sanamxay", None)], "LAO", write_gadm_cache()) is None

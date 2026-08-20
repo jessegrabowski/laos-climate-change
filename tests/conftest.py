@@ -384,7 +384,8 @@ def toy_gadm() -> gpd.GeoDataFrame:
     `LAO.1.2.1_1` is the seat named after the district holding it, which is what most ambiguous
     mentions turn out to be: candidates on one nesting chain rather than places in two locations.
 
-    Canada carries a unit whose own name joins two places with `and`.
+    Canada carries a unit whose own name joins two places with `and`, and Czechia and Slovakia
+    stand in for the successors of a state GADM no longer models.
 
     Ukraine carries GADM's placeholder identifier, which is the string `?` at both levels and
     therefore parents itself. Walking a unit's containers without a visited set never terminates.
@@ -457,6 +458,14 @@ def toy_gadm() -> gpd.GeoDataFrame:
             "",
             box(12, 0, 13, 1),
         ),
+        # Two successors of a dissolved state, so a historical event has something to choose between.
+        ("CZE", "CZE.1_1", "Praha", "", "CZE.1.1_1", "Praha 1", "", "", "", "", "", box(14, 0, 15, 1)),
+        ("SVK", "SVK.1_1", "Bratislavsky", "", "SVK.1.1_1", "Bratislava I", "", "", "", "", "", box(16, 0, 17, 1)),
+        # A name both successors publish, which is a tie rather than an answer.
+        ("CZE", "CZE.1_1", "Praha", "", "CZE.1.2_1", "Nove Mesto", "", "", "", "", "", box(14, 1, 15, 2)),
+        ("SVK", "SVK.1_1", "Bratislavsky", "", "SVK.1.2_1", "Nove Mesto", "", "", "", "", "", box(16, 1, 17, 2)),
+        # One successor of a second dissolved state, so a lone candidate placing nothing is still no answer.
+        ("HRV", "HRV.1_1", "Zagreb", "", "HRV.1.1_1", "Zagreb", "", "", "", "", "", box(18, 0, 19, 1)),
         # GADM writes an unnamed Ukrainian unit as `?` at both levels, so it comes out its own parent.
         ("UKR", "?", "?", "", "?", "?", "", "", "", "", "", box(10, 0, 11, 1)),
         ("GHA", "GHA11_2", "Savannah", "", "GHA7.13_2", "Ga Central", "", "", "", "", "", box(8, 0, 9, 1)),
