@@ -540,3 +540,46 @@ def test_a_place_joined_by_any_of_the_written_separators_is_split(written, publi
     joined = written.replace("Damavand", "Sanamxay").replace("Kwilu", "Sanamxay").replace("Seoul", "Sanamxay")
 
     assert resolve_place(joined, None, gazetteer) == {"LAO.1.1_1"}
+
+
+@pytest.mark.parametrize(
+    ("written", "published"),
+    [
+        ("Arr. Mechelen", "Mechelen"),
+        ("Barangay Rizal", "Rizal"),
+        ("towns of Kauswagan", "Kauswagan"),
+        ("woredas of Dale", "Dale"),
+        ("Oshai Darray village", "Oshai Darray"),
+        ("Lamu archipel", "Lamu"),
+        ("Kalehe territory", "Kalehe"),
+        ("Ayeyarwady divisions", "Ayeyarwady"),
+        ("Lancashire CC", "Lancashire"),
+        ("Tafawa alewa Local Government Area", "Tafawa alewa"),
+        ("Keumbu market", "Keumbu"),
+        ("Goalanda Upazilla", "Goalanda"),
+    ],
+    ids=[
+        "abbreviated prefix",
+        "barangay",
+        "town of",
+        "woreda of",
+        "village",
+        "archipel",
+        "territory",
+        "division",
+        "county council",
+        "local government area",
+        "market",
+        "upazila",
+    ],
+)
+def test_a_unit_word_before_the_name_is_stripped_like_one_after(written, published):
+    """EM-DAT writes the unit word on whichever side the local convention puts it, and a whole
+    Belgian event can carry `Arr.` on every name."""
+    assert match_key(written) == match_key(published)
+
+
+def test_a_unit_word_that_names_a_real_place_is_left_alone():
+    """GADM carries units called Canton, so stripping the word would reduce them to nothing and
+    drop them out of the index entirely."""
+    assert match_key("Canton") == "canton"

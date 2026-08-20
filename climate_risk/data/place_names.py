@@ -18,12 +18,73 @@ from climate_risk.data.gadm import GADM_LAYER, administered_territories, gadm_di
 
 # Words naming what a unit is rather than which one it is. EM-DAT writes them inconsistently and
 # GADM does not carry them, so `Kalin-Aapayo province` has to reach `Kalin-Aapayo`.
+# Nouns that can join to a name with `of`, as `towns of Kauswagan` does.
+_JOINED_BY_OF = (
+    "towns?",
+    "villages?",
+    "districts?",
+    "provinces?",
+    "regions?",
+    "states?",
+    "departments?",
+    "cities",
+    "city",
+    "municipalit(?:y|ies)",
+    "governorates?",
+    "prefectures?",
+    "woredas?",
+)
+
+# Nouns written on their own, before or after the name, and the abbreviations they appear as.
+_STANDS_ALONE = (
+    "sub[- ]?districts?",
+    "local government areas?",
+    "divisions?",
+    "territor(?:y|ies)",
+    "emirates?",
+    "upazillas?",
+    "upazilas?",
+    "communes?",
+    "markets?",
+    "cc",
+    "prov",
+    "regencies",
+    "regency",
+    "islands?",
+    "isl",
+    "archipel(?:ago)?",
+    "counties",
+    "county",
+    "areas?",
+    "near",
+    "around",
+    "arrond",
+    "arr",
+    "barangay",
+    "brgy",
+    "kel",
+    "kec",
+    "kab",
+    "desa",
+)
+
+# Prepositional phrases, which have no bare form.
+_LOCATES = ("outskirts of", "vicinity of", "coast of")
+
+# Alternation is leftmost-first, so the `of` forms have to precede the bare nouns they contain:
+# a bare `town` would otherwise match inside `towns of` and strand the preposition.
 UNIT_NOUNS = re.compile(
-    r"\b(provinces?|prov|districts?|regencies|regency|regions?|cities|city of|city|states?|towns?|"
-    r"municipalit(?:y|ies)|islands?|isl|departments?|counties|county|governorates?|prefectures?|"
-    r"areas?|near|around|outskirts of|vicinity of|coast of)\b\.?",
+    r"\b("
+    + "|".join((*(f"{noun}\\s+of" for noun in _JOINED_BY_OF), *_LOCATES, *_JOINED_BY_OF, *_STANDS_ALONE))
+    + r")\b\.?",
     re.IGNORECASE,
 )
+
+
+# EM-DAT joins places with `and`, its French `et`, and the bare `&`, `+` and `/`. GADM writes
+# `Newfoundland and Labrador` and `Komenda/Edina/Eguafo/Abirem`, so the whole string has to be tried
+# before its parts.
+CONJUNCTION = re.compile(r"\s+(?:and|et)\s+|\s*[&+/]\s*", re.IGNORECASE)
 
 
 # EM-DAT joins places with `and`, its French `et`, and the bare `&`, `+` and `/`. GADM writes
