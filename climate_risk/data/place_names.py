@@ -193,6 +193,7 @@ NAMED = "named"
 LOCATED = "located"
 CONTAINED_BY = "container"
 CORRECTED = "corrected"
+INFERRED = "inferred"
 NAMES_NO_UNIT = "names no unit"
 
 
@@ -247,6 +248,9 @@ class Gazetteer(NamedTuple):
         Units keyed on :func:`match_key` of every name they are published under.
     parent_of : dict mapping str to str or None
         The unit one level up from each identifier.
+    shapes : dict mapping tuple to set of str
+        The keys sharing a first character and a length, which is what an approximate lookup scans
+        instead of every name in the country.
     corrections : dict mapping str to tuple of str
         The published names each checked entry stands for, keyed on :func:`match_key`. A misspelling
         gives one; a name GADM never carried as a unit — a merged province since split, a
@@ -255,6 +259,7 @@ class Gazetteer(NamedTuple):
 
     names: dict[str, set[Unit]]
     parent_of: dict[str, str | None]
+    shapes: dict[tuple[str, int], set[str]]
     corrections: dict[str, tuple[str, ...]]
 
     def _upwards(self, gid: str) -> Iterator[str]:
@@ -397,7 +402,12 @@ def read_gazetteer(iso: str, cache_dir: Path, *, layer: str = GADM_LAYER, force_
             names[key].add(Unit(gid, level, parent))
         parent_of[gid] = parent
 
-    return Gazetteer(dict(names), parent_of, read_name_corrections(iso))
+    shapes: dict[tuple[str, int], set[str]] = defaultdict(set)
+    for key in names:
+        for letter in {key[0], key[1] if len(key) > 1 else key[0]}:
+            shapes[(letter, len(key))].add(key)
+
+    return Gazetteer(dict(names), parent_of, dict(shapes), read_name_corrections(iso))
 
 
 def read_name_corrections(iso: str, *, path: Path = NAME_CORRECTIONS) -> dict[str, tuple[str, ...]]:
@@ -533,6 +543,28 @@ def container_parts(parent: str) -> list[str]:
     return [part for part in CONTAINER_PARTS.split(parent) if part.strip()]
 
 
+def _corroborated_slip(name: str, container: set[str], pinned: set[str], gazetteer: Gazetteer) -> set[str]:
+    """
+    Take a one-slip match only where the rest of the event agrees with it.
+
+    One edit from a published name is a guess on its own — ``Lynmouth`` sits one edit from Lynemouth,
+    four hundred miles away. Where the container the prose gave, or a place the event named
+    unambiguously, holds exactly one of the candidates, the guess stops being one.
+    """
+    near = nearest_name(name, gazetteer, gazetteer.shapes)
+    if near is None:
+        return set()
+
+    vouching = pinned | {above for gid in container for above in gazetteer.ancestry(gid)}
+    if not vouching:
+        return set()
+
+    candidates = _outermost({unit.gid for unit in gazetteer.names[near]}, gazetteer)
+    inside = {gid for gid in candidates if gazetteer.ancestry(gid) & vouching}
+
+    return inside if len(inside) == 1 else set()
+
+
 def _innermost_container(parent: str | None, gazetteer: Gazetteer) -> set[str]:
     """Name the units the finest resolving part of a container reaches, so a district beats the state beside it."""
     for part in container_parts(parent or ""):
@@ -625,8 +657,8 @@ def resolve_event_places(
     falls back to the container the prose wrote it in — ``Pesisir Selaten (West Sumatra province)``
     becomes the province, which spans fourteen districts at the median — so the result records
     which of the two it was reached by. A container naming several places, as ``Wayanad district,
-    Kerala state`` does, gives the finest of them that resolves. A place with no container that is one edit from
-    exactly one published name is taken as a misspelling of it, recorded as such.
+    Kerala state`` does, gives the finest of them that resolves. A name one edit from a published one
+    is taken only where the container or an unambiguous sibling holds exactly one candidate.
 
     Parameters
     ----------
@@ -660,14 +692,17 @@ def resolve_event_places(
         if by_point:
             placed.append(Placement({by_point}, LOCATED))
             continue
-        container = _innermost_container(parent, gazetteer)
-        if container:
-            placed.append(Placement(_narrowed(container, pinned, gazetteer), CONTAINED_BY))
-            continue
         published = gazetteer.corrections.get(match_key(name), ())
         stands_for = {unit.gid for stood_for in published for unit in gazetteer.names.get(stood_for, set())}
         if stands_for:
             placed.append(Placement(_narrowed(_outermost(stands_for, gazetteer), pinned, gazetteer), CORRECTED))
+            continue
+        container = _innermost_container(parent, gazetteer)
+        if inferred := _corroborated_slip(name, container, pinned, gazetteer):
+            placed.append(Placement(inferred, INFERRED))
+            continue
+        if container:
+            placed.append(Placement(_narrowed(container, pinned, gazetteer), CONTAINED_BY))
             continue
         placed.append(Placement(set(), NAMES_NO_UNIT if names_no_unit(name) else NAMED))
 

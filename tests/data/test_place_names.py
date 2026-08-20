@@ -9,6 +9,7 @@ from climate_risk.data import place_names
 from climate_risk.data.place_names import (
     CONTAINED_BY,
     CORRECTED,
+    INFERRED,
     LOCATED,
     NAME_CORRECTIONS,
     NAMED,
@@ -314,16 +315,6 @@ def test_a_misspelling_nobody_checked_is_left_unplaced(write_gadm_cache):
     gazetteer = read_gazetteer("LAO", write_gadm_cache())
 
     assert resolve_event_places([("Sanamxai", None)], gazetteer) == [Placement(set(), NAMED)]
-
-
-def test_a_container_is_preferred_to_a_checked_misspelling(write_gadm_cache):
-    """The container is coarse but certain. A wrong district is worse for a damage estimate than a
-    correct province."""
-    gazetteer = read_gazetteer("LAO", write_gadm_cache())._replace(corrections={"sanamxai": ("sanamxay",)})
-
-    (placed,) = resolve_event_places([("Sanamxai", "Bokeo")], gazetteer)
-
-    assert placed == Placement({"LAO.2_1"}, CONTAINED_BY)
 
 
 def test_a_name_two_edits_away_is_not_a_misspelling_of_it(write_gadm_cache):
@@ -713,3 +704,59 @@ def test_a_country_that_lost_nothing_reads_only_itself(write_gadm_cache):
     gazetteer = read_gazetteer("ERI", write_gadm_cache())
 
     assert resolve_place("Mekele", None, gazetteer) == set()
+
+
+def test_a_checked_misspelling_is_preferred_to_the_container(write_gadm_cache):
+    """A correction someone checked is as certain as the container and names one unit where the
+    container names everything inside it."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())._replace(corrections={"sanamxai": ("sanamxay",)})
+
+    (placed,) = resolve_event_places([("Sanamxai", "Bokeo")], gazetteer)
+
+    assert placed == Placement({"LAO.1.1_1"}, CORRECTED)
+
+
+def test_an_unchecked_slip_the_container_vouches_for_is_taken(write_gadm_cache):
+    """`Zheijang` beside Guangdong, Hunan and Fujian is not a guess. Where the container holds
+    exactly one candidate, one edit from a published name is enough."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    (placed,) = resolve_event_places([("Sanamxai", "Attapu")], gazetteer)
+
+    assert placed == Placement({"LAO.1.1_1"}, INFERRED)
+
+
+def test_an_unchecked_slip_a_sibling_vouches_for_is_taken(write_gadm_cache):
+    """The event's other places do the vouching where the prose gave no container."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    _, inferred = resolve_event_places([("Samakhixay", None), ("Sanamxai", None)], gazetteer)
+
+    assert inferred == Placement({"LAO.1.1_1"}, INFERRED)
+
+
+def test_an_unchecked_slip_nothing_vouches_for_is_refused(write_gadm_cache):
+    """`Lynmouth` sits one edit from Lynemouth, four hundred miles away. With no container and no
+    sibling, one edit is a guess and the place stays unplaced."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    assert resolve_event_places([("Sanamxai", None)], gazetteer) == [Placement(set(), NAMED)]
+
+
+def test_a_slip_the_container_does_not_hold_is_refused(write_gadm_cache):
+    """A container that vouches for none of the candidates is not corroboration."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    (placed,) = resolve_event_places([("Sanamxai", "Bokeo")], gazetteer)
+
+    assert placed == Placement({"LAO.2_1"}, CONTAINED_BY), "falls back to the container, not the slip"
+
+
+def test_a_slip_vouched_for_at_two_places_at_once_is_refused(write_gadm_cache):
+    """`Attapu` is a province and, elsewhere, a district of Bokeo. An event naming places in both
+    vouches for both candidates, which is not corroboration — it is a coin toss."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    *_, ambiguous = resolve_event_places([("Sanamxay", None), ("Houayxay", None), ("Attapy", None)], gazetteer)
+
+    assert ambiguous == Placement(set(), NAMED)
