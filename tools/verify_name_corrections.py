@@ -171,7 +171,7 @@ if __name__ == "__main__":
     tally = Counter(settled.values())
 
     with PROPOSED.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.writer(handle)
+        writer = csv.writer(handle, lineterminator="\n")
         writer.writerow(("iso", "written", "corrected", "verdict"))
         for (iso, written), verdict in sorted(settled.items()):
             candidate = next(c for i, w, c in candidates if (i, w) == (iso, written))
