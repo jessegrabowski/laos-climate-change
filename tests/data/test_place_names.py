@@ -527,3 +527,16 @@ def test_a_container_whose_first_place_is_unknown_falls_through_to_the_next(writ
     (placed,) = resolve_event_places([("Nowhere At All", "Nowhere district, Bokeo province")], gazetteer)
 
     assert placed == Placement({"LAO.2_1"}, CONTAINED_BY)
+
+
+@pytest.mark.parametrize(
+    ("written", "published"),
+    [("Damavand/Rou Dehan", "Damavand"), ("Kwilu et Tshuapa", "Kwilu"), ("Seoul + Chungchong", "Seoul")],
+    ids=["slash", "french and", "plus"],
+)
+def test_a_place_joined_by_any_of_the_written_separators_is_split(written, published, write_gadm_cache):
+    """EM-DAT joins places with `/`, `+`, `&` and the French `et` as readily as with `and`."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+    joined = written.replace("Damavand", "Sanamxay").replace("Kwilu", "Sanamxay").replace("Seoul", "Sanamxay")
+
+    assert resolve_place(joined, None, gazetteer) == {"LAO.1.1_1"}

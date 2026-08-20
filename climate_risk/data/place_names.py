@@ -26,9 +26,10 @@ UNIT_NOUNS = re.compile(
 )
 
 
-# EM-DAT writes `Aceh and West Sumatra Provinces` for two units and `Newfoundland and Labrador` for
-# one, so the whole string has to be tried before its parts.
-CONJUNCTION = re.compile(r"\s+(?:and|&)\s+", re.IGNORECASE)
+# EM-DAT joins places with `and`, its French `et`, and the bare `&`, `+` and `/`. GADM writes
+# `Newfoundland and Labrador` and `Komenda/Edina/Eguafo/Abirem`, so the whole string has to be tried
+# before its parts.
+CONJUNCTION = re.compile(r"\s+(?:and|et)\s+|\s*[&+/]\s*", re.IGNORECASE)
 
 # `Wayanad district, Kerala state` names the same place twice over, finest first. Read whole it
 # matches nothing; read in parts each one matches a unit.
