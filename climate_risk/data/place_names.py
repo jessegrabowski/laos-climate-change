@@ -410,12 +410,24 @@ def name_shapes(gazetteer: Gazetteer) -> dict[tuple[str, int], set[str]]:
     return dict(shapes)
 
 
-def _one_edit_apart(written: str, published: str) -> bool:
-    """Whether one insertion, deletion or substitution turns one key into the other."""
+def _one_slip_apart(written: str, published: str) -> bool:
+    """Whether one insertion, deletion, substitution or transposition turns one key into the other."""
     if abs(len(written) - len(published)) > 1:
         return False
     if len(written) == len(published):
-        return sum(a != b for a, b in zip(written, published, strict=True)) <= 1
+        differing = [
+            position for position, pair in enumerate(zip(written, published, strict=True)) if pair[0] != pair[1]
+        ]
+        if len(differing) <= 1:
+            return True
+        first, second = differing[0], differing[-1]
+
+        return (
+            len(differing) == 2
+            and second == first + 1
+            and written[first] == published[second]
+            and written[second] == published[first]
+        )
 
     longer, shorter = (written, published) if len(written) > len(published) else (published, written)
     skipped = next(
@@ -431,7 +443,8 @@ def nearest_name(name: str, gazetteer: Gazetteer, shapes: dict[tuple[str, int], 
     Find the one published name a written place is a misspelling of.
 
     A match is only offered where the written name is long enough for a single edit to be a small
-    part of it, does not name a physical feature, and is one edit from exactly one published name. Two names equally close is not a near miss, it is a
+    part of it, does not name a physical feature, and is one slip — an insertion, deletion,
+    substitution or transposition — from exactly one published name. Two names equally close is not a near miss, it is a
     choice, and this makes none.
 
     Parameters
@@ -461,7 +474,7 @@ def nearest_name(name: str, gazetteer: Gazetteer, shapes: dict[tuple[str, int], 
         candidate
         for length in range(len(key) - 1, len(key) + 2)
         for candidate in shapes.get((key[0], length), ())
-        if _one_edit_apart(key, candidate)
+        if _one_slip_apart(key, candidate)
     }
 
     return next(iter(nearby)) if len(nearby) == 1 else None

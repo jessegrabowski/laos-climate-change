@@ -633,3 +633,11 @@ def test_a_unit_word_that_names_a_real_place_is_left_alone():
     """GADM carries units called Canton, so stripping the word would reduce them to nothing and
     drop them out of the index entirely."""
     assert match_key("Canton") == "canton"
+
+
+def test_a_transposition_is_one_slip_from_the_name_it_garbles(write_gadm_cache):
+    """`Heart` for Herat and `Tapei` for Taipei are single transpositions, which a substitution-only
+    rule cannot see. Approximate matching proposes them; the table still decides."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    assert nearest_name("Snaamxay", gazetteer, name_shapes(gazetteer)) == "sanamxay"
