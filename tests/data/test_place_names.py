@@ -697,3 +697,19 @@ def test_an_entry_naming_several_units_is_read_as_several(write_gadm_cache, tmp_
     table.write_text("iso,written,corrected\nVNM,Nghe Tinh,nghean|hatinh\n", encoding="utf-8")
 
     assert read_name_corrections("VNM", path=table) == {"nghetinh": ("nghean", "hatinh")}
+
+
+def test_a_country_reads_the_territory_it_no_longer_contains(write_gadm_cache):
+    """An event recorded before a secession names a place its country then held. `Malakal` under
+    SDN is South Sudanese now, and reaches nothing unless the successor is read alongside."""
+    gazetteer = read_gazetteer("ETH", write_gadm_cache())
+
+    assert resolve_place("Asmara", None, gazetteer) == {"ERI.1.1_1"}
+    assert resolve_place("Mekele", None, gazetteer) == {"ETH.1.1_1"}
+
+
+def test_a_country_that_lost_nothing_reads_only_itself(write_gadm_cache):
+    """The table covers secessions only; every other country is read from its own code alone."""
+    gazetteer = read_gazetteer("ERI", write_gadm_cache())
+
+    assert resolve_place("Mekele", None, gazetteer) == set()

@@ -169,6 +169,25 @@ QUALIFIER = re.compile(
 )
 NOTHING_LEGIBLE = re.compile(r"^[\W\d\s]*$")
 
+# A country that still exists but no longer contains what it did when the event was recorded. The
+# text names a real place; GADM files it under the state that holds it now.
+FORMERLY_INCLUDED = {
+    "ETH": ("ERI",),
+    "IDN": ("TLS",),
+    "PAK": ("BGD",),
+    "SDN": ("SSD",),
+    "SRB": ("MNE", "XKO"),
+}
+
+# `South Bihar` and `Ontario Central` qualify a unit rather than naming one. The words are part of
+# plenty of real names — Lower Shabelle, West Bengal, Northern Territory — so the qualifier only
+# comes off once the name as written has failed.
+DIRECTIONAL_QUALIFIER = re.compile(
+    r"^(?:north|south|east|west|central|centre|upper|lower|greater)(?:ern)?(?:\s+of)?\s+"
+    r"|\s+(?:north|south|east|west|central|centre|upper|lower)(?:ern)?$",
+    re.IGNORECASE,
+)
+
 # How a written place reached the units it did.
 NAMED = "named"
 LOCATED = "located"
@@ -332,8 +351,13 @@ def read_gazetteer(iso: str, cache_dir: Path, *, layer: str = GADM_LAYER, force_
             # A variant-name column is optional; an identifier and a name are what make a level readable.
             levels = [level for level in INDEXABLE_LEVELS if {f"GID_{level}", f"NAME_{level}"} <= available]
             columns = ", ".join(_name_columns(level, available) for level in levels)
-            # Kashmir is filed under codes of its own, not under the country administering it.
-            held = (iso, *administered_territories(iso, cache_dir, layer=layer))
+            # Kashmir is filed under codes of its own rather than under the country administering
+            # it, and a pre-secession event names places the country no longer contains.
+            held = (
+                iso,
+                *administered_territories(iso, cache_dir, layer=layer),
+                *FORMERLY_INCLUDED.get(iso, ()),
+            )
             placeholders = ", ".join("?" * len(held))
             query = f'SELECT DISTINCT {columns} FROM "{layer}" WHERE GID_0 IN ({placeholders})'
 

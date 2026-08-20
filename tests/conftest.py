@@ -384,6 +384,8 @@ def toy_gadm() -> gpd.GeoDataFrame:
     `LAO.1.2.1_1` is the seat named after the district holding it, which is what most ambiguous
     mentions turn out to be: candidates on one nesting chain rather than places in two locations.
 
+    Ethiopia and Eritrea stand in for a country that lost territory and the state that holds it now.
+
     Canada carries a unit whose own name joins two places with `and`, and Czechia and Slovakia
     stand in for the successors of a state GADM no longer models.
 
@@ -515,6 +517,9 @@ def toy_gadm() -> gpd.GeoDataFrame:
             "",
             box(22, 0, 23, 1),
         ),
+        # A country that lost territory, and the state that holds it now.
+        ("ETH", "Ethiopia", "ETH.1_1", "Tigray", "", "ETH.1.1_1", "Mekele", "", "", "", "", "", box(24, 0, 25, 1)),
+        ("ERI", "Eritrea", "ERI.1_1", "Maekel", "", "ERI.1.1_1", "Asmara", "", "", "", "", "", box(26, 0, 27, 1)),
         # GADM writes an unnamed Ukrainian unit as `?` at both levels, so it comes out its own parent.
         ("UKR", "Ukraine", "?", "?", "", "?", "?", "", "", "", "", "", box(10, 0, 11, 1)),
         ("GHA", "Ghana", "GHA11_2", "Savannah", "", "GHA7.13_2", "Ga Central", "", "", "", "", "", box(8, 0, 9, 1)),
