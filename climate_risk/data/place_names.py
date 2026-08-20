@@ -228,13 +228,15 @@ class Gazetteer(NamedTuple):
         Units keyed on :func:`match_key` of every name they are published under.
     parent_of : dict mapping str to str or None
         The unit one level up from each identifier.
-    corrections : dict mapping str to str
-        The published name each checked misspelling stands for, keyed on :func:`match_key`.
+    corrections : dict mapping str to tuple of str
+        The published names each checked entry stands for, keyed on :func:`match_key`. A misspelling
+        gives one; a name GADM never carried as a unit — a merged province since split, a
+        statistical region — gives the several it covers.
     """
 
     names: dict[str, set[Unit]]
     parent_of: dict[str, str | None]
-    corrections: dict[str, str]
+    corrections: dict[str, tuple[str, ...]]
 
     def _upwards(self, gid: str) -> Iterator[str]:
         """Yield the unit and each container above it, outwards."""
@@ -374,7 +376,7 @@ def read_gazetteer(iso: str, cache_dir: Path, *, layer: str = GADM_LAYER, force_
     return Gazetteer(dict(names), parent_of, read_name_corrections(iso))
 
 
-def read_name_corrections(iso: str, *, path: Path = NAME_CORRECTIONS) -> dict[str, str]:
+def read_name_corrections(iso: str, *, path: Path = NAME_CORRECTIONS) -> dict[str, tuple[str, ...]]:
     """
     Read the checked corrections for one country.
 
@@ -387,15 +389,16 @@ def read_name_corrections(iso: str, *, path: Path = NAME_CORRECTIONS) -> dict[st
 
     Returns
     -------
-    dict mapping str to str
-        The published name each misspelling stands for, both keyed by :func:`match_key`.
+    dict mapping str to tuple of str
+        The published names each entry stands for, keyed by :func:`match_key`. An entry naming
+        several units, as a merged province since split does, separates them with a pipe.
     """
     if not path.exists():
         return {}
 
     with path.open(encoding="utf-8", newline="") as handle:
         return {
-            match_key(row["written"]): row["corrected"]
+            match_key(row["written"]): tuple(row["corrected"].split("|"))
             for row in csv.DictReader(handle)
             if row["iso"] == iso and row["corrected"]
         }
@@ -637,10 +640,10 @@ def resolve_event_places(
         if container:
             placed.append(Placement(_narrowed(container, pinned, gazetteer), CONTAINED_BY))
             continue
-        published = gazetteer.corrections.get(match_key(name))
-        if published:
-            corrected = _outermost({unit.gid for unit in gazetteer.names[published]}, gazetteer)
-            placed.append(Placement(_narrowed(corrected, pinned, gazetteer), CORRECTED))
+        published = gazetteer.corrections.get(match_key(name), ())
+        stands_for = {unit.gid for stood_for in published for unit in gazetteer.names.get(stood_for, set())}
+        if stands_for:
+            placed.append(Placement(_narrowed(_outermost(stands_for, gazetteer), pinned, gazetteer), CORRECTED))
             continue
         placed.append(Placement(set(), NAMES_NO_UNIT if names_no_unit(name) else NAMED))
 

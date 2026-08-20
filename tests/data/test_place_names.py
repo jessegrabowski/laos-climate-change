@@ -303,7 +303,7 @@ def test_a_name_that_already_matches_is_not_approximated(write_gadm_cache):
 
 def test_a_checked_misspelling_reaches_the_unit_it_stands_for(write_gadm_cache):
     """Approximate matching proposes corrections; only the ones written into the table are applied."""
-    gazetteer = read_gazetteer("LAO", write_gadm_cache())._replace(corrections={"sanamxai": "sanamxay"})
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())._replace(corrections={"sanamxai": ("sanamxay",)})
 
     assert resolve_event_places([("Sanamxai", None)], gazetteer) == [Placement({"LAO.1.1_1"}, CORRECTED)]
 
@@ -319,7 +319,7 @@ def test_a_misspelling_nobody_checked_is_left_unplaced(write_gadm_cache):
 def test_a_container_is_preferred_to_a_checked_misspelling(write_gadm_cache):
     """The container is coarse but certain. A wrong district is worse for a damage estimate than a
     correct province."""
-    gazetteer = read_gazetteer("LAO", write_gadm_cache())._replace(corrections={"sanamxai": "sanamxay"})
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())._replace(corrections={"sanamxai": ("sanamxay",)})
 
     (placed,) = resolve_event_places([("Sanamxai", "Bokeo")], gazetteer)
 
@@ -359,7 +359,7 @@ def test_a_correction_is_read_only_for_the_country_that_declares_it(write_gadm_c
     table = tmp_path / "corrections.csv"
     table.write_text("iso,written,corrected\nLAO,Sanamxai,sanamxay\nZMB,Sanamxai,kabwe\n", encoding="utf-8")
 
-    assert read_name_corrections("LAO", path=table) == {"sanamxai": "sanamxay"}
+    assert read_name_corrections("LAO", path=table) == {"sanamxai": ("sanamxay",)}
 
 
 def test_a_correction_the_table_leaves_blank_is_not_applied(write_gadm_cache, tmp_path):
@@ -654,3 +654,46 @@ def test_a_slip_in_the_first_letter_still_finds_the_name(written, write_gadm_cac
     gazetteer = read_gazetteer("LAO", write_gadm_cache())
 
     assert nearest_name(written, gazetteer, name_shapes(gazetteer)) == "sanamxay"
+
+
+def test_one_entry_can_stand_for_several_units(write_gadm_cache):
+    """`Nghe Tinh` was a province until 1991 and is now two; `Western Visayas` is a statistical
+    region GADM never carried. Neither is a misspelling of any single unit."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())._replace(
+        corrections={"oldattapu": ("sanamxay", "samakhixay")}
+    )
+
+    (placed,) = resolve_event_places([("Old Attapu", None)], gazetteer)
+
+    assert placed == Placement({"LAO.1.1_1", "LAO.1.2_1"}, CORRECTED)
+
+
+def test_an_entry_naming_a_unit_gadm_dropped_reaches_the_rest(write_gadm_cache):
+    """A curated entry is written by hand against a GADM vintage that moves under it, so a name it
+    lists may no longer exist. The units that do still resolve."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())._replace(
+        corrections={"oldattapu": ("sanamxay", "gone from the archive")}
+    )
+
+    (placed,) = resolve_event_places([("Old Attapu", None)], gazetteer)
+
+    assert placed == Placement({"LAO.1.1_1"}, CORRECTED)
+
+
+def test_an_entry_naming_nothing_the_archive_holds_is_not_a_correction(write_gadm_cache):
+    """A curated entry outlives the GADM vintage it was written against. One that reaches no unit
+    at all is a miss, and recording it as a correction would claim geography we do not have."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())._replace(
+        corrections={"oldattapu": ("gone from the archive",)}
+    )
+
+    assert resolve_event_places([("Old Attapu", None)], gazetteer) == [Placement(set(), NAMED)]
+
+
+def test_an_entry_naming_several_units_is_read_as_several(write_gadm_cache, tmp_path):
+    """`Nghe Tinh` was one province until 1991 and is two now, so the table has to be able to say
+    so — the same shape a statistical region or an island group needs."""
+    table = tmp_path / "corrections.csv"
+    table.write_text("iso,written,corrected\nVNM,Nghe Tinh,nghean|hatinh\n", encoding="utf-8")
+
+    assert read_name_corrections("VNM", path=table) == {"nghetinh": ("nghean", "hatinh")}

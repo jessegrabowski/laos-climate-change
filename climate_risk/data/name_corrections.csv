@@ -315,7 +315,9 @@ KEN,West Poko,westpokot
 KGZ,Jala-Abad,jalalabad
 KHM,Kampong Spen,kampongspeu
 KOR,Gyeongiu,gyeongju
+KOR,Gyeongsang,gyeongsangbukdo|gyeongsangnamdo
 KOR,Gyeongu,gyeongju
+KOR,Jeolla,jeollabukdo|jeollanamdo
 KOR,Kangwon-Don,kangwondo
 KOR,Kanwon Do,kangwondo
 LAO,Atsaphon district,atsaphone
@@ -504,6 +506,7 @@ SLV,Usulatan,usulutan
 SOM,Belet Hawo,belethawa
 SOM,Boroma,borama
 SOM,Jalalaxsi,jalalaqsi
+SOM,Jubaland,gedo|jubbadahoose|jubbadadhexe
 SOM,Lower Shabelle,lowershabele
 SOM,Middle,middlej
 SOM,Nugall,nugaal
@@ -590,10 +593,13 @@ USA,South Dacota,southdakota
 USA,Virgina,virginia
 VEN,Langunillas,lagunillas
 VEN,Yaracury,yaracuy
+VNM,Binh Tri Thien,quangbinh|quangtri|thuathienhue
+VNM,Ha Nam Ninh,hanam|namdinh|ninhbinh
 VNM,Hoa They,hoathuy
 VNM,Hoi Nan,hoian
 VNM,Kien Gang,kiengiang
 VNM,Kon Tun provinces,kontum
+VNM,Nghe Tinh,nghean|hatinh
 YEM,Abyane province,abyan
 YEM,Al Bayada,albayda
 YEM,Al Dhale's,aldhalee
@@ -604,6 +610,7 @@ YEM,Hadramout,hadhramout
 YEM,Haijah,hajjah
 YEM,Near Dhoubab,dhubab
 ZAF,Stellenbosh,stellenbosch
+ZAF,Transvaal,gauteng|limpopo|mpumalanga|northwest
 ZMB,Chiegi Districts,chiengi
 ZMB,Kapiri Mphoshi,kapirimposhi
 ZMB,Linvingstone,livingstone
