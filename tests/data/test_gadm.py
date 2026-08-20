@@ -134,7 +134,7 @@ def test_a_country_reads_back_its_districts(write_gadm_cache):
 
     districts = load_units_in_country("LAO", 2, cache_dir)
 
-    assert sorted(districts["name"]) == ["Attapu", "Houayxay", "Samakhixay", "Sanamxay"]
+    assert sorted(districts["name"]) == ["Attapu", "Houayxay", "Nambak", "Samakhixay", "Sanamxay"]
 
 
 def test_a_province_spanning_several_districts_is_one_row(write_gadm_cache):

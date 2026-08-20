@@ -439,6 +439,9 @@ def toy_gadm() -> gpd.GeoDataFrame:
         # 111 ambiguous mentions in the workbook are a province and a same-named district.
         ("LAO", "LAO.2_1", "Bokeo", "", "LAO.2.2_1", "Attapu", "", "", "", "", "", box(4, 0, 5, 1)),
         ("ZMB", "ZMB.1_1", "Central", "", "ZMB.1.1_1", "Kabwe", "", "", "", "", "", box(6, 0, 7, 1)),
+        # `Nam Bay` is one edit from this district and names a bay, which is the collision an
+        # approximate match has to refuse: `Manila Bay` reaches a barangay called Manlabay.
+        ("LAO", "LAO.2_1", "Bokeo", "", "LAO.2.3_1", "Nambak", "", "", "", "", "", box(5, 0, 6, 1)),
         # 75 GADM units carry a conjunction in their own name, which a split on `and` destroys.
         (
             "CAN",

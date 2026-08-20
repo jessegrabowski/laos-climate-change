@@ -36,6 +36,20 @@ LOCATED = "located"
 CONTAINED_BY = "container"
 
 
+# A sea, a river or a mountain range is not an administrative unit, whatever it is one edit from.
+# Units named after a feature — `River Nile State`, `Bay of Plenty` — still match exactly; only the
+# approximate lookup refuses them.
+FEATURE = re.compile(
+    r"\b(seas?|oceans?|rivers?|lakes?|gulfs?|straits?|detroit|bays?|mountains?|mts?|mount|peaks?|"
+    r"valleys?|deltas?|peninsulas?|channels?|canals?|reservoirs?|dams?|volcanoe?s?|glaciers?|"
+    r"basins?|capes?|sounds?|fjords?|lagoons?|swamps?|forests?|deserts?)\b",
+    re.IGNORECASE,
+)
+
+# Below this a single edit is a large share of the name and the match stops meaning anything:
+# `Arora` sits one edit from both `Aurora` and `Arora` in half the countries that have either.
+MIN_APPROXIMATE_LENGTH = 6
+
 # GADM publishes a level 5, for Belgium and Rwanda only.
 INDEXABLE_LEVELS = (1, 2, 3, 4)
 
@@ -191,6 +205,72 @@ def read_gazetteer(iso: str, cache_dir: Path, *, layer: str = GADM_LAYER) -> Gaz
                 parent = gid
 
     return Gazetteer(dict(names), parent_of)
+
+
+def name_shapes(gazetteer: Gazetteer) -> dict[tuple[str, int], set[str]]:
+    """Group a country's names by first character and length, which is what :func:`nearest_name` scans."""
+    shapes: dict[tuple[str, int], set[str]] = defaultdict(set)
+    for key in gazetteer.names:
+        shapes[(key[0], len(key))].add(key)
+
+    return dict(shapes)
+
+
+def _one_edit_apart(written: str, published: str) -> bool:
+    """Whether one insertion, deletion or substitution turns one key into the other."""
+    if abs(len(written) - len(published)) > 1:
+        return False
+    if len(written) == len(published):
+        return sum(a != b for a, b in zip(written, published, strict=True)) <= 1
+
+    longer, shorter = (written, published) if len(written) > len(published) else (published, written)
+    skipped = next(
+        (position for position, pair in enumerate(zip(longer, shorter, strict=False)) if pair[0] != pair[1]),
+        len(shorter),
+    )
+
+    return longer[skipped + 1 :] == shorter[skipped:]
+
+
+def nearest_name(name: str, gazetteer: Gazetteer, shapes: dict[tuple[str, int], set[str]]) -> str | None:
+    """
+    Find the one published name a written place is a misspelling of.
+
+    A match is only offered where the written name is long enough for a single edit to be a small
+    part of it, does not name a physical feature, and is one edit from exactly one published name. Two names equally close is not a near miss, it is a
+    choice, and this makes none.
+
+    Parameters
+    ----------
+    name : str
+        The place as written.
+    gazetteer : Gazetteer
+        The country's units, from :func:`read_gazetteer`.
+    shapes : dict mapping tuple to set of str
+        The country's names grouped for searching, from :func:`name_shapes`.
+
+    Returns
+    -------
+    str or None
+        The matching key in ``gazetteer.names``, or None where the gates reject the name or no
+        single published name is close enough.
+    """
+    if FEATURE.search(name):
+        return None
+
+    key = match_key(name)
+    if len(key) < MIN_APPROXIMATE_LENGTH or key in gazetteer.names:
+        return None
+
+    # A typo rarely changes the first character, and scanning by it keeps the search local.
+    nearby = {
+        candidate
+        for length in range(len(key) - 1, len(key) + 2)
+        for candidate in shapes.get((key[0], length), ())
+        if _one_edit_apart(key, candidate)
+    }
+
+    return next(iter(nearby)) if len(nearby) == 1 else None
 
 
 def _narrowed(gids: set[str], pinned: set[str], gazetteer: Gazetteer) -> set[str]:
