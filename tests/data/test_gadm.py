@@ -266,3 +266,16 @@ def test_a_country_names_the_disputed_territory_it_administers(write_gadm_cache)
 
 def test_a_country_administering_nothing_names_nothing(write_gadm_cache):
     assert administered_territories("LAO", write_gadm_cache()) == ()
+
+
+def test_a_country_read_twice_reads_the_same_units(write_gadm_cache):
+    """Reading a country's polygons out of the GeoPackage takes seconds, so the result is cached;
+    a cache hit has to carry the same units and the same geometry as the build."""
+    cache_dir = write_gadm_cache()
+
+    built = load_units_in_country("LAO", 2, cache_dir, force_reload=True)
+    from_cache = load_units_in_country("LAO", 2, cache_dir)
+
+    assert list(from_cache["gid"]) == list(built["gid"])
+    assert from_cache.geometry.equals(built.geometry)
+    assert from_cache.crs == built.crs

@@ -6,6 +6,7 @@ from pathlib import Path
 import geopandas as gpd
 import pandas as pd
 
+from climate_risk.data.cache import cached, geo_parquet
 from climate_risk.data.source import ManualSource
 from climate_risk.exceptions import DataValidationError
 
@@ -92,7 +93,9 @@ def administered_territories(iso: str, cache_dir: Path, *, layer: str = GADM_LAY
         return tuple(row[0] for row in held)
 
 
-def load_units_in_country(iso: str, level: int, cache_dir: Path, *, layer: str = GADM_LAYER) -> gpd.GeoDataFrame:
+def load_units_in_country(
+    iso: str, level: int, cache_dir: Path, *, layer: str = GADM_LAYER, force_reload: bool = False
+) -> gpd.GeoDataFrame:
     """
     Read every GADM unit one country holds at one administrative level.
 
@@ -109,6 +112,8 @@ def load_units_in_country(iso: str, level: int, cache_dir: Path, *, layer: str =
         Directory the caches live under.
     layer : str, optional
         Layer to read inside the GeoPackage. Default ``GADM_LAYER``.
+    force_reload : bool, optional
+        Rebuild even when the units are already cached. Default False.
 
     Returns
     -------
@@ -119,18 +124,31 @@ def load_units_in_country(iso: str, level: int, cache_dir: Path, *, layer: str =
     if level not in GID_COLUMNS:
         raise DataValidationError(f"Units are read at levels {sorted(GID_COLUMNS)}, not {level}")
 
-    gid_column, name_column = GID_COLUMNS[level]
-    rows = gpd.read_file(gadm_path(cache_dir), layer=layer, columns=[gid_column, name_column], where=f"GID_0 = '{iso}'")
-    rows = rows[rows[gid_column].astype(str) != ""]
-    if rows.empty:
-        return _no_units(gadm_path(cache_dir), layer)
+    def build() -> gpd.GeoDataFrame:
+        gid_column, name_column = GID_COLUMNS[level]
+        rows = gpd.read_file(
+            gadm_path(cache_dir), layer=layer, columns=[gid_column, name_column], where=f"GID_0 = '{iso}'"
+        )
+        # A country not divided at this level stores a blank identifier on every row.
+        rows = rows[rows[gid_column].astype(str) != ""]
+        if rows.empty:
+            return _no_units(gadm_path(cache_dir), layer)
 
-    # The table stores the finest level, so a unit above it spans several rows.
-    units = rows.dissolve(by=gid_column, aggfunc="first", as_index=False)
+        # The table stores the finest level, so a unit above it spans several rows.
+        units = rows.dissolve(by=gid_column, aggfunc="first", as_index=False)
 
-    return units.rename(columns={gid_column: "gid", name_column: "name"}).assign(admin_level=level)[
-        ["gid", "name", "admin_level", "geometry"]
-    ]
+        return units.rename(columns={gid_column: "gid", name_column: "name"}).assign(admin_level=level)[
+            ["gid", "name", "admin_level", "geometry"]
+        ]
+
+    return cached(
+        gadm_dir(cache_dir),
+        "units",
+        build,
+        geo_parquet(),
+        params={"iso": iso, "level": level},
+        force=force_reload,
+    )
 
 
 def _units_at_level(gids: list[str], level: int, path: Path, layer: str) -> gpd.GeoDataFrame | None:
