@@ -641,3 +641,16 @@ def test_a_transposition_is_one_slip_from_the_name_it_garbles(write_gadm_cache):
     gazetteer = read_gazetteer("LAO", write_gadm_cache())
 
     assert nearest_name("Snaamxay", gazetteer, name_shapes(gazetteer)) == "sanamxay"
+
+
+@pytest.mark.parametrize(
+    "written",
+    ["anamxay", "Zanamxay", "Sanamxai", "Snaamxay"],
+    ids=["first letter lost", "first letter wrong", "last letter wrong", "transposed"],
+)
+def test_a_slip_in_the_first_letter_still_finds_the_name(written, write_gadm_cache):
+    """Names are filed for lookup under their opening letters, so a name that lost or changed its
+    first one is otherwise unreachable however close it is: `llinois` is one letter from Illinois."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    assert nearest_name(written, gazetteer, name_shapes(gazetteer)) == "sanamxay"

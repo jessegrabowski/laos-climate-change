@@ -402,10 +402,16 @@ def read_name_corrections(iso: str, *, path: Path = NAME_CORRECTIONS) -> dict[st
 
 
 def name_shapes(gazetteer: Gazetteer) -> dict[tuple[str, int], set[str]]:
-    """Group a country's names by first character and length, which is what :func:`nearest_name` scans."""
+    """
+    Group a country's names for approximate lookup, by length and by each of their first two letters.
+
+    Filing a name under its second letter as well as its first is what makes a slip in the first one
+    reachable: ``llinois`` has lost the letter its bucket would otherwise be chosen by.
+    """
     shapes: dict[tuple[str, int], set[str]] = defaultdict(set)
     for key in gazetteer.names:
-        shapes[(key[0], len(key))].add(key)
+        for letter in {key[0], key[1] if len(key) > 1 else key[0]}:
+            shapes[(letter, len(key))].add(key)
 
     return dict(shapes)
 
@@ -469,11 +475,14 @@ def nearest_name(name: str, gazetteer: Gazetteer, shapes: dict[tuple[str, int], 
     if len(key) < MIN_APPROXIMATE_LENGTH or key in gazetteer.names:
         return None
 
-    # A typo rarely changes the first character, and scanning by it keeps the search local.
+    # Names are filed under each of their first two letters, so a slip in either one still finds
+    # them while the search stays local.
+    opening = {key[0], key[1]} if len(key) > 1 else {key[0]}
     nearby = {
         candidate
+        for letter in opening
         for length in range(len(key) - 1, len(key) + 2)
-        for candidate in shapes.get((key[0], length), ())
+        for candidate in shapes.get((letter, length), ())
         if _one_slip_apart(key, candidate)
     }
 
