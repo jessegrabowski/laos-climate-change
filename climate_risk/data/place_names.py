@@ -1,3 +1,4 @@
+import csv
 import re
 import sqlite3
 
@@ -30,10 +31,57 @@ CONJUNCTION = re.compile(r"\s+(?:and|&)\s+", re.IGNORECASE)
 RELATIONAL = re.compile(r"^\s*(?:between|off|offshore|au large)\b", re.IGNORECASE)
 
 
+# Corrections a person or a model has checked one at a time. Approximate matching proposes them;
+# only what is written here is ever applied, so an unreviewed near miss leaves a place unplaced
+# rather than renaming it.
+NAME_CORRECTIONS = Path(__file__).parent / "name_corrections.csv"
+
+# EM-DAT files an event under the country that existed at the time, and GADM only models the ones
+# that exist now. Where a state left one successor the mapping is settled; where it left several
+# the location text has to choose between them.
+SUCCEEDED_BY = {
+    "AZO": ("PRT",),
+    "CSK": ("CZE", "SVK"),
+    "DDR": ("DEU",),
+    "DFR": ("DEU",),
+    "SUN": (
+        "ARM",
+        "AZE",
+        "BLR",
+        "EST",
+        "GEO",
+        "KAZ",
+        "KGZ",
+        "LTU",
+        "LVA",
+        "MDA",
+        "RUS",
+        "TJK",
+        "TKM",
+        "UKR",
+        "UZB",
+    ),
+    "YMD": ("YEM",),
+    "YMN": ("YEM",),
+    "YUG": ("BIH", "HRV", "MKD", "MNE", "SRB", "SVN", "XKO"),
+}
+
+# Written places that name no administrative unit and never will: a compass point covering the
+# whole country, a position between two others, a stretch of water, or nothing at all. They are
+# recorded rather than counted as failures, because no source can place them.
+QUALIFIER = re.compile(
+    r"^(?:north|south|east|west|central|centre|center|northern|southern|eastern|western|"
+    r"north[- ]?(?:east|west)|south[- ]?(?:east|west)|countrywide|nationwide|whole country|"
+    r"all country|widespread|unknown|not available|no information|n\.?a\.?(?: on the source)?)$",
+    re.IGNORECASE,
+)
+NOTHING_LEGIBLE = re.compile(r"^[\W\d\s]*$")
+
 # How a written place reached the units it did.
 NAMED = "named"
 LOCATED = "located"
 CONTAINED_BY = "container"
+CORRECTED = "corrected"
 
 
 # A sea, a river or a mountain range is not an administrative unit, whatever it is one edit from.
@@ -98,10 +146,13 @@ class Gazetteer(NamedTuple):
         Units keyed on :func:`match_key` of every name they are published under.
     parent_of : dict mapping str to str or None
         The unit one level up from each identifier.
+    corrections : dict mapping str to str
+        The published name each checked misspelling stands for, keyed on :func:`match_key`.
     """
 
     names: dict[str, set[Unit]]
     parent_of: dict[str, str | None]
+    corrections: dict[str, str]
 
     def _upwards(self, gid: str) -> Iterator[str]:
         """Yield the unit and each container above it, outwards."""
@@ -204,7 +255,34 @@ def read_gazetteer(iso: str, cache_dir: Path, *, layer: str = GADM_LAYER) -> Gaz
                             names[key].add(Unit(gid, level, parent))
                 parent = gid
 
-    return Gazetteer(dict(names), parent_of)
+    return Gazetteer(dict(names), parent_of, read_name_corrections(iso))
+
+
+def read_name_corrections(iso: str, *, path: Path = NAME_CORRECTIONS) -> dict[str, str]:
+    """
+    Read the checked corrections for one country.
+
+    Parameters
+    ----------
+    iso : str
+        ISO 3166-1 alpha-3 code of the country to read.
+    path : Path, optional
+        The corrections table. Default the one shipped with the package.
+
+    Returns
+    -------
+    dict mapping str to str
+        The published name each misspelling stands for, both keyed by :func:`match_key`.
+    """
+    if not path.exists():
+        return {}
+
+    with path.open(encoding="utf-8", newline="") as handle:
+        return {
+            match_key(row["written"]): row["corrected"]
+            for row in csv.DictReader(handle)
+            if row["iso"] == iso and row["corrected"]
+        }
 
 
 def name_shapes(gazetteer: Gazetteer) -> dict[tuple[str, int], set[str]]:
@@ -355,7 +433,8 @@ def resolve_event_places(
     A place naming nothing takes the unit a point put it in where one is offered. Failing that it
     falls back to the container the prose wrote it in — ``Pesisir Selaten (West Sumatra province)``
     becomes the province, which spans fourteen districts at the median — so the result records
-    which of the two it was reached by.
+    which of the two it was reached by. A place with no container that the corrections table names
+    is read as the misspelling it was checked to be.
 
     Parameters
     ----------
@@ -390,7 +469,11 @@ def resolve_event_places(
             placed.append(Placement({by_point}, LOCATED))
             continue
         container = resolve_place(parent, None, gazetteer) if parent else set()
-        how = CONTAINED_BY if container else NAMED
-        placed.append(Placement(_narrowed(container, pinned, gazetteer), how))
+        if container:
+            placed.append(Placement(_narrowed(container, pinned, gazetteer), CONTAINED_BY))
+            continue
+        published = gazetteer.corrections.get(match_key(name))
+        corrected = _outermost({unit.gid for unit in gazetteer.names[published]}, gazetteer) if published else set()
+        placed.append(Placement(_narrowed(corrected, pinned, gazetteer), CORRECTED if corrected else NAMED))
 
     return placed

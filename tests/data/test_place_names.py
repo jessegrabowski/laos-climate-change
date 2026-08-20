@@ -1,8 +1,14 @@
+import csv
+
+from collections import defaultdict
+
 import pytest
 
 from climate_risk.data.place_names import (
     CONTAINED_BY,
+    CORRECTED,
     LOCATED,
+    NAME_CORRECTIONS,
     NAMED,
     Placement,
     Unit,
@@ -10,6 +16,7 @@ from climate_risk.data.place_names import (
     name_shapes,
     nearest_name,
     read_gazetteer,
+    read_name_corrections,
     resolve_event_places,
     resolve_place,
 )
@@ -314,3 +321,58 @@ def test_a_name_two_edits_away_is_not_a_misspelling_of_it(write_gadm_cache):
     gazetteer = read_gazetteer("LAO", write_gadm_cache())
 
     assert nearest_name("Sanamxii", gazetteer, name_shapes(gazetteer)) is None
+
+
+def test_a_checked_misspelling_reaches_the_unit_it_stands_for(write_gadm_cache):
+    """Approximate matching proposes corrections; only the ones written into the table are applied."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())._replace(corrections={"sanamxai": "sanamxay"})
+
+    assert resolve_event_places([("Sanamxai", None)], gazetteer) == [Placement({"LAO.1.1_1"}, CORRECTED)]
+
+
+def test_a_misspelling_nobody_checked_is_left_unplaced(write_gadm_cache):
+    """One edit from a published name is a proposal, not a correction: `Lynmouth` sits one edit from
+    Lynemouth, four hundred miles away."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    assert resolve_event_places([("Sanamxai", None)], gazetteer) == [Placement(set(), NAMED)]
+
+
+def test_a_container_is_preferred_to_a_checked_misspelling(write_gadm_cache):
+    """The container is coarse but certain. A wrong district is worse for a damage estimate than a
+    correct province."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())._replace(corrections={"sanamxai": "sanamxay"})
+
+    (placed,) = resolve_event_places([("Sanamxai", "Bokeo")], gazetteer)
+
+    assert placed == Placement({"LAO.2_1"}, CONTAINED_BY)
+
+
+def test_a_correction_is_read_only_for_the_country_that_declares_it(write_gadm_cache, tmp_path):
+    """The same written name means different places in different countries, and a table keyed only
+    on the name would carry one country's correction into every other."""
+    table = tmp_path / "corrections.csv"
+    table.write_text("iso,written,corrected\nLAO,Sanamxai,sanamxay\nZMB,Sanamxai,kabwe\n", encoding="utf-8")
+
+    assert read_name_corrections("LAO", path=table) == {"sanamxai": "sanamxay"}
+
+
+def test_a_correction_the_table_leaves_blank_is_not_applied(write_gadm_cache, tmp_path):
+    """A row can record that a candidate was checked and rejected; that is not a correction."""
+    table = tmp_path / "corrections.csv"
+    table.write_text("iso,written,corrected\nLAO,Lynmouth,\n", encoding="utf-8")
+
+    assert read_name_corrections("LAO", path=table) == {}
+
+
+def test_no_country_corrects_one_name_to_two_different_units(write_gadm_cache):
+    """`Badakhstan` and `Badakhstan province` reduce to one key, which is fine while they agree.
+    Two rows disagreeing would resolve on file order, and the table is curated by hand."""
+    targets: dict[tuple[str, str], set[str]] = defaultdict(set)
+    with NAME_CORRECTIONS.open(encoding="utf-8", newline="") as handle:
+        for row in csv.DictReader(handle):
+            targets[(row["iso"], match_key(row["written"]))].add(row["corrected"])
+
+    conflicting = {key: sorted(published) for key, published in targets.items() if len(published) > 1}
+
+    assert not conflicting, f"one name corrected two ways: {sorted(conflicting.items())[:5]}"
