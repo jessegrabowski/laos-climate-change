@@ -15,6 +15,7 @@ import xarray as xr
 from shapely.geometry import LineString, Point, box
 
 from climate_risk.data.gpcc import GriddedProduct
+from climate_risk.data.osm import LOOKUP_COLUMNS
 from climate_risk.data.source import DataSource
 
 # One event that clears every downstream filter: deaths above 100, affected above 1000, and a start
@@ -758,6 +759,23 @@ def write_geonames_cache(tmp_path):
         )
         with zipfile.ZipFile(directory / f"{alpha2}.zip", "w") as archive:
             archive.writestr(f"{alpha2}.txt", toy_geonames() if rows is None else rows)
+
+        return tmp_path
+
+    return write
+
+
+@pytest.fixture
+def write_osm_cache(tmp_path):
+    """Return a callable writing cached Nominatim answers, and giving back the cache root.
+
+    The layout is stated literally rather than derived from the loader, so a wrong cache path fails
+    instead of agreeing with itself."""
+
+    def write(rows, *, iso="LAO"):
+        directory = tmp_path / "osm"
+        directory.mkdir(exist_ok=True)
+        pl.DataFrame(rows, schema=LOOKUP_COLUMNS, orient="row").write_parquet(directory / f"lookups__iso={iso}.parquet")
 
         return tmp_path
 
