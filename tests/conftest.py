@@ -386,6 +386,8 @@ def toy_gadm() -> gpd.GeoDataFrame:
 
     Ethiopia and Eritrea stand in for a country that lost territory and the state that holds it now.
 
+    Poland stands in for a language that writes a unit as an adjective built from its seat's name.
+
     Canada carries a unit whose own name joins two places with `and`, and Czechia and Slovakia
     stand in for the successors of a state GADM no longer models.
 
@@ -526,6 +528,25 @@ def toy_gadm() -> gpd.GeoDataFrame:
         # GADM writes an unnamed Ukrainian unit as `?` at both levels, so it comes out its own parent.
         ("UKR", "Ukraine", "?", "?", "", "?", "?", "", "", "", "", "", box(10, 0, 11, 1)),
         ("GHA", "Ghana", "GHA11_2", "Savannah", "", "GHA7.13_2", "Ga Central", "", "", "", "", "", box(8, 0, 9, 1)),
+        # Poland, where a mention is the adjective built from the seat GADM publishes. `Rybnik`
+        # and `Rybno` share the stem the adjective leaves, so one adjective settles nothing.
+        (
+            "POL",
+            "Poland",
+            "POL.1_1",
+            "Podkarpackie",
+            "",
+            "POL.1.1_1",
+            "Tarnobrzeg",
+            "",
+            "",
+            "",
+            "",
+            "",
+            box(28, 0, 29, 1),
+        ),
+        ("POL", "Poland", "POL.2_1", "Slaskie", "", "POL.2.1_1", "Rybnik", "", "", "", "", "", box(30, 0, 31, 1)),
+        ("POL", "Poland", "POL.2_1", "Slaskie", "", "POL.2.2_1", "Rybno", "", "", "", "", "", box(31, 0, 32, 1)),
     ]
     columns = (
         "GID_0",

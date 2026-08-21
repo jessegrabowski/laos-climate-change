@@ -9,6 +9,7 @@ from climate_risk.data import place_names
 from climate_risk.data.place_names import (
     CONTAINED_BY,
     CORRECTED,
+    DERIVED,
     INFERRED,
     LOCATED,
     NAME_CORRECTIONS,
@@ -862,6 +863,35 @@ def test_a_place_beside_a_road_reaches_the_place(write_gadm_cache):
     gazetteer = read_gazetteer("LAO", write_gadm_cache())
 
     assert resolve_place("Sanamxay road", None, gazetteer) == {"LAO.1.1_1"}
+
+
+def test_an_adjective_built_from_a_place_reaches_it(write_gadm_cache):
+    """EM-DAT writes a Polish powiat as `Tarnobrzeski` and GADM publishes Tarnobrzeg. Suffixing
+    reshapes the stem, so the match is on what the name opens with rather than what it equals."""
+    gazetteer = read_gazetteer("POL", write_gadm_cache())
+
+    (placed,) = resolve_event_places([("Tarnobrzeski", None)], gazetteer)
+
+    assert placed == Placement({"POL.1.1_1"}, DERIVED)
+
+
+def test_an_adjective_whose_stem_opens_two_names_reaches_neither(write_gadm_cache):
+    """`Rybnicki` leaves a stem that opens both Rybnik and Rybno. Two names equally reachable is a
+    choice, and this makes none."""
+    gazetteer = read_gazetteer("POL", write_gadm_cache())
+
+    (placed,) = resolve_event_places([("Rybnicki", None)], gazetteer)
+
+    assert placed.gids == set()
+
+
+def test_a_country_that_writes_no_adjectives_leaves_a_name_ending_that_way_alone(write_gadm_cache):
+    """The suffix is Polish morphology, not a general rule: `Nagasaki` and `Helsinki` end the same
+    way and are the names themselves."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    assert gazetteer.adjective is None
+    assert place_names._derived_unit("Sanamxayski", gazetteer) == set()
 
 
 def test_a_keying_rule_with_no_pattern_of_its_own_still_turns_the_cache_over(write_gadm_cache, monkeypatch):

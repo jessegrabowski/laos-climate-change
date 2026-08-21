@@ -203,6 +203,11 @@ DIRECTIONAL_QUALIFIER = re.compile(
     re.IGNORECASE,
 )
 
+# EM-DAT writes a Polish powiat as the adjective built from its seat — `Sieradzki` for the powiat
+# of Sieradz — while GADM publishes the seat. Suffixing reshapes the stem as well as ending it,
+# so what the strip leaves opens the published name rather than equalling it.
+DERIVED_ADJECTIVE = {"POL": re.compile(r"(?:owski|inski|icki|ecki|eski|ski|cki|zki|ki)$")}
+
 # How a written place reached the units it did.
 NAMED = "named"
 LOCATED = "located"
@@ -211,6 +216,7 @@ CORRECTED = "corrected"
 INFERRED = "inferred"
 QUALIFIED = "qualified"
 NAMES_NO_UNIT = "names no unit"
+DERIVED = "derived"
 
 
 # GADM publishes a level 5, for Belgium and Rwanda only.
@@ -271,12 +277,16 @@ class Gazetteer(NamedTuple):
         The published names each checked entry stands for, keyed on :func:`match_key`. A misspelling
         gives one; a name GADM never carried as a unit — a merged province since split, a
         statistical region — gives the several it covers.
+    adjective : re.Pattern or None
+        The suffix this country's language builds a place adjective with, where written mentions use
+        one. None where they do not.
     """
 
     names: dict[str, set[Unit]]
     parent_of: dict[str, str | None]
     shapes: dict[tuple[str, int], set[str]]
     corrections: dict[str, tuple[str, ...]]
+    adjective: re.Pattern[str] | None = None
 
     def _upwards(self, gid: str) -> Iterator[str]:
         """Yield the unit and each container above it, outwards."""
@@ -447,7 +457,9 @@ def read_gazetteer(iso: str, cache_dir: Path, *, layer: str = GADM_LAYER, force_
             names[key].add(Unit(gid, level, parent))
         parent_of[gid] = parent
 
-    return Gazetteer(dict(names), parent_of, _shape_index(names), read_name_corrections(iso))
+    return Gazetteer(
+        dict(names), parent_of, _shape_index(names), read_name_corrections(iso), DERIVED_ADJECTIVE.get(iso)
+    )
 
 
 def read_name_corrections(iso: str, *, path: Path = NAME_CORRECTIONS) -> dict[str, tuple[str, ...]]:
@@ -588,6 +600,29 @@ def container_parts(parent: str) -> list[str]:
     return [part for part in CONTAINER_PARTS.split(parent) if part.strip()]
 
 
+def _derived_unit(name: str, gazetteer: Gazetteer) -> set[str]:
+    """
+    Name the unit an adjective was built from, where the stem it leaves belongs to exactly one.
+
+    ``Tarnobrzeski`` is built from Tarnobrzeg, so the suffix takes part of the stem with it and what
+    remains opens the published name rather than equalling it. A stem opening several names is not a
+    reading, so it is refused.
+    """
+    if gazetteer.adjective is None:
+        return set()
+
+    key = match_key(name)
+    stem = gazetteer.adjective.sub("", key)
+    if not stem or stem == key:
+        return set()
+
+    built_on = {published for published in gazetteer.names if published != key and published.startswith(stem)}
+    if len(built_on) != 1:
+        return set()
+
+    return _outermost({unit.gid for unit in gazetteer.names[next(iter(built_on))]}, gazetteer)
+
+
 def _dashed_units(name: str, parent: str | None, gazetteer: Gazetteer) -> set[str]:
     """
     Name the units a dash-joined list reaches, where every one of its parts names a unit.
@@ -666,6 +701,7 @@ def _innermost_container(parent: str | None, pinned: set[str], gazetteer: Gazett
         lambda part: resolve_place(part, None, gazetteer),
         lambda part: _corrected_units(part, gazetteer),
         lambda part: _corroborated_slip(part, set(), pinned, gazetteer),
+        lambda part: _derived_unit(part, gazetteer),
         lambda part: _qualified_unit(part, gazetteer),
     )
     for reading in readings:
@@ -758,8 +794,8 @@ def _place_one(
     Place one written place, taking the first reading that holds.
 
     The order is what the readings are worth: the name itself, then a point, then a correction
-    someone checked, then a slip the event vouches for, then the unit a direction qualified, and
-    last the container, which claims everything inside it.
+    someone checked, then a slip the event vouches for, then the unit an adjective was built from or
+    a direction qualified, and last the container, which claims everything inside it.
     """
     if named:
         return Placement(_narrowed(named, pinned, gazetteer), NAMED)
@@ -773,6 +809,9 @@ def _place_one(
     container = _innermost_container(parent, pinned, gazetteer)
     if inferred := _corroborated_slip(name, container, pinned, gazetteer):
         return Placement(inferred, INFERRED)
+
+    if built_on := _derived_unit(name, gazetteer):
+        return Placement(built_on, DERIVED)
 
     if qualified := _qualified_unit(name, gazetteer):
         return Placement(qualified, QUALIFIED)
