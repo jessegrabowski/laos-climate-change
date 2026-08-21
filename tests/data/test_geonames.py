@@ -1,3 +1,6 @@
+import re
+
+from climate_risk.data import geonames, place_names
 from climate_risk.data.geonames import (
     GEONAMES_LICENCE,
     country_dump,
@@ -64,3 +67,29 @@ def test_the_places_table_carries_one_row_for_each_distinct_name(write_geonames_
     points = load_place_points("PHL", write_geonames_cache())
 
     assert sorted(points["key"]) == ["bacolod", "bakolod", "iloilo", "sulusea"]
+
+
+def test_changing_how_a_name_is_keyed_turns_the_cached_places_over(write_geonames_cache, monkeypatch):
+    """The places table is keyed by `match_key`, the same as the gazetteer it is matched against.
+    Cached on the country alone it serves keys built under rules that no longer apply, and every
+    mention whose key moved stops reaching its point."""
+    cache_dir = write_geonames_cache()
+    load_place_points("PHL", cache_dir)
+
+    monkeypatch.setattr(place_names, "UNIT_NOUNS", re.compile(r"\b(bacolod)\b", re.IGNORECASE))
+    rekeyed = load_place_points("PHL", cache_dir)
+
+    assert "bacolod" not in rekeyed["key"].to_list(), "the stripped word cannot survive as a key"
+
+
+def test_changing_which_columns_the_dump_is_read_from_turns_the_cached_places_over(write_geonames_cache, monkeypatch):
+    """The dump is headerless, so which field is latitude lives in a table the builder consults and
+    its own source never shows. Reading them the other way round puts every place in the wrong
+    hemisphere, and a cache that cannot see that table change keeps serving the old points."""
+    cache_dir = write_geonames_cache()
+    upright = load_place_points("PHL", cache_dir)
+
+    monkeypatch.setattr(geonames, "DUMP_FIELDS", {**geonames.DUMP_FIELDS, 4: "lon", 5: "lat"})
+    swapped = load_place_points("PHL", cache_dir)
+
+    assert swapped.sort("key")["lat"].to_list() != upright.sort("key")["lat"].to_list()

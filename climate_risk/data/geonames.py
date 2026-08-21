@@ -3,10 +3,10 @@ from zipfile import ZipFile
 
 import polars as pl
 
-from climate_risk.data.cache import cached, polars_parquet
+from climate_risk.data.cache import builder_fingerprint, cached, polars_parquet
 from climate_risk.data.fetch import fetch
 from climate_risk.data.geocoding import Geocoder
-from climate_risk.data.place_names import match_key
+from climate_risk.data.place_names import keying_fingerprint, match_key
 from climate_risk.data.source import DataSource
 
 GEONAMES_URL = "https://download.geonames.org/export/dump"
@@ -127,7 +127,16 @@ def load_place_points(iso: str, cache_dir: Path, *, force_reload: bool = False) 
 
         return keyed.sort("population", descending=True).unique(subset="key", keep="first").select("key", "lon", "lat")
 
-    return cached(directory, "places", build, polars_parquet(), params={"iso": iso}, force=force_reload)
+    return cached(
+        directory,
+        "places",
+        build,
+        polars_parquet(),
+        # `keying` covers the rules that turn a name into a key, `reading` the rules that decide
+        # which spelling of a place keeps one.
+        params={"iso": iso, "keying": keying_fingerprint(), "reading": builder_fingerprint(build, DUMP_FIELDS)},
+        force=force_reload,
+    )
 
 
 def geonames_geocoder(iso: str, cache_dir: Path, *, force_reload: bool = False) -> Geocoder:
