@@ -368,7 +368,7 @@ def match_key(name: str) -> str:
     return "".join(character for character in anyascii(repaired) if character.isalnum()).casefold()
 
 
-def _keying_fingerprint() -> str:
+def keying_fingerprint() -> str:
     """Fingerprint the rules that turn a name into a key, so a change to them invalidates the cache."""
     rules = "|".join((UNIT_NOUNS.pattern, str(INDEXABLE_LEVELS), match_key(_KEYING_PROBE)))
 
@@ -446,7 +446,7 @@ def read_gazetteer(iso: str, cache_dir: Path, *, layer: str = GADM_LAYER, force_
         build,
         polars_parquet(),
         # The index is keyed by `match_key`, so the cache turns over when those rules change.
-        params={"iso": iso, "keying": _keying_fingerprint()},
+        params={"iso": iso, "keying": keying_fingerprint()},
         force=force_reload,
     )
 
