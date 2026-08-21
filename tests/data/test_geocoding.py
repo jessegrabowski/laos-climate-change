@@ -6,6 +6,7 @@ from climate_risk.data.geocoding import (
     score_geocoder,
     unambiguous_units,
     units_containing_points,
+    units_from_geocoders,
 )
 from climate_risk.data.place_names import read_gazetteer
 
@@ -132,3 +133,35 @@ def test_a_point_in_a_disputed_territory_is_placed_for_the_country_administering
     placed = units_containing_points({"somewhere": (22.5, 0.5)}, "IND", cache_dir)
 
     assert placed == {"somewhere": "Z01.1.1_1"}
+
+
+def test_the_first_source_to_place_a_name_keeps_it(write_gadm_cache):
+    """Sources are asked in order of how much they are trusted, so a later one must not overwrite an
+    answer an earlier one already gave."""
+    cache_dir = write_gadm_cache()
+    trusted = lambda _, name: (0.5, 0.5) if name == "Somewhere" else None  # noqa: E731 - a stub, not a definition
+    other = lambda _, name: (3.5, 0.5) if name == "Somewhere" else None  # noqa: E731 - a stub, not a definition
+
+    placed = units_from_geocoders(["Somewhere"], "LAO", cache_dir, (trusted, other))
+
+    assert placed == {"Somewhere": "LAO.1.1.1_1"}
+
+
+def test_a_later_source_answers_for_what_the_first_could_not_place(write_gadm_cache):
+    """Adding a source is only worth doing if it reaches names the ones before it missed."""
+    cache_dir = write_gadm_cache()
+    sparse = lambda _, name: None  # noqa: E731 - a stub, not a definition
+    dense = lambda _, name: (0.5, 0.5)  # noqa: E731 - a stub, not a definition
+
+    placed = units_from_geocoders(["Somewhere"], "LAO", cache_dir, (sparse, dense))
+
+    assert placed == {"Somewhere": "LAO.1.1.1_1"}
+
+
+def test_a_point_outside_every_unit_is_not_passed_on_as_a_placement(write_gadm_cache):
+    """A geocoder answering with a point in the sea, or in the country next door, has not placed the
+    name — and a wrong unit is worse than none, because nothing downstream can tell."""
+    cache_dir = write_gadm_cache()
+    offshore = lambda _, name: (-40.0, -40.0)  # noqa: E731 - a stub, not a definition
+
+    assert units_from_geocoders(["Somewhere"], "LAO", cache_dir, (offshore,)) == {}

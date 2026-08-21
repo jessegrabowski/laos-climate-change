@@ -197,3 +197,53 @@ def units_containing_points(
         outstanding = {name: point for name, point in outstanding.items() if name not in placed}
 
     return placed
+
+
+def units_from_geocoders(
+    names: Iterable[str],
+    iso: str,
+    cache_dir: Path,
+    geocoders: Iterable[Geocoder],
+    *,
+    levels: Iterable[int] = PLACEABLE_LEVELS,
+    layer: str = GADM_LAYER,
+) -> dict[str, str]:
+    """
+    Name the GADM unit each written place falls in, asking each source in turn.
+
+    Sources are tried in the order given and the first answer for a name is kept, so the order is a
+    statement about which source is trusted: an earlier one is preferred wherever it answers at all.
+    A point that falls outside every unit is discarded rather than passed on, which is what stops a
+    place sitting offshore, or in the country next door, from reaching a unit it does not belong to.
+
+    Parameters
+    ----------
+    names : iterable of str
+        The places as written.
+    iso : str
+        ISO 3166-1 alpha-3 code of the country the places are in.
+    cache_dir : Path
+        Directory the caches live under.
+    geocoders : iterable of callable
+        Sources to ask, most trusted first.
+    levels : iterable of int, optional
+        Administrative levels to try, in order. Default finest to coarsest.
+    layer : str, optional
+        Layer to read inside the GeoPackage. Default ``GADM_LAYER``.
+
+    Returns
+    -------
+    dict mapping str to str
+        The GADM identifier each name reaches, absent where no source placed it inside a unit.
+    """
+    placed: dict[str, str] = {}
+    outstanding = list(names)
+
+    for geocode in geocoders:
+        if not outstanding:
+            break
+        points = {name: point for name in outstanding if (point := geocode(iso, name)) is not None}
+        placed |= units_containing_points(points, iso, cache_dir, levels=levels, layer=layer)
+        outstanding = [name for name in outstanding if name not in placed]
+
+    return placed
