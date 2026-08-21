@@ -13,7 +13,7 @@ import polars as pl
 
 from anyascii import anyascii
 
-from climate_risk.data.cache import cached, polars_parquet
+from climate_risk.data.cache import builder_fingerprint, cached, polars_parquet
 from climate_risk.data.gadm import GADM_LAYER, administered_territories, gadm_dir, gadm_path
 
 # Words naming what a unit is rather than which one it is. EM-DAT writes them inconsistently and
@@ -445,8 +445,14 @@ def read_gazetteer(iso: str, cache_dir: Path, *, layer: str = GADM_LAYER, force_
         "gazetteer",
         build,
         polars_parquet(),
-        # The index is keyed by `match_key`, so the cache turns over when those rules change.
-        params={"iso": iso, "keying": keying_fingerprint()},
+        # `layer` chooses what is read; `keying` covers the rules that turn a name into a key,
+        # and `reading` the rules that decide which rows carry one.
+        params={
+            "iso": iso,
+            "keying": keying_fingerprint(),
+            "layer": layer,
+            "reading": builder_fingerprint(build, _NAME_FIELDS, FORMERLY_INCLUDED.get(iso, ())),
+        },
         force=force_reload,
     )
 

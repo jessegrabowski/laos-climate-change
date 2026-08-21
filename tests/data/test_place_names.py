@@ -3,6 +3,7 @@ import re
 
 from collections import defaultdict
 
+import geopandas as gpd
 import pytest
 
 from climate_risk.data import place_names
@@ -905,3 +906,30 @@ def test_a_keying_rule_with_no_pattern_of_its_own_still_turns_the_cache_over(wri
     rekeyed = read_gazetteer("LAO", cache_dir)
 
     assert "sznzmxzy" in rekeyed.names, "the index was rebuilt under the changed rule"
+
+
+def test_changing_which_rows_the_index_reads_turns_the_cache_over(write_gadm_cache, monkeypatch):
+    """Fingerprinting the keying rules covers how a name becomes a key, not which rows get one.
+    Ethiopia's index carries Eritrea because a table here says it used to hold it, and a cache that
+    cannot see that table change serves an index built when it said something else."""
+    cache_dir = write_gadm_cache()
+    read_gazetteer("ETH", cache_dir)
+
+    monkeypatch.setattr(place_names, "FORMERLY_INCLUDED", {})
+    reread = read_gazetteer("ETH", cache_dir)
+
+    assert "maekel" not in reread.names, "Eritrea's units cannot survive the table that pulled them in"
+
+
+def test_one_layer_does_not_answer_for_another(write_gadm_cache):
+    """`layer` chooses which table the index is built from, so two layers are two different indexes.
+    Keyed alike the second caller is handed the first one's units."""
+    cache_dir = write_gadm_cache()
+    archive = cache_dir / "gadm" / "gadm_410.gpkg"
+    everything = gpd.read_file(archive, layer="gadm_410")
+    everything[everything["GID_0"] == "ZMB"].to_file(archive, layer="zambia_only")
+
+    read_gazetteer("LAO", cache_dir)
+    from_zambia_only = read_gazetteer("LAO", cache_dir, layer="zambia_only")
+
+    assert not from_zambia_only.names, "a layer holding no Laos must not answer with another layer's units"
