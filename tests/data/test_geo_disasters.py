@@ -373,7 +373,7 @@ def test_an_event_geocoded_at_both_levels_keeps_both(write_gadm_cache):
     """Footprints are dissolved per level, not per event. Dissolving across levels would union a
     province with a district somewhere else and place the pair against whichever level ran first."""
     cache_dir = write_gadm_cache()
-    at_both = pd.concat([footprints_over((3, 0, 4, 1), level=1), footprints_over((0, 0, 1, 1), level=2)])
+    at_both = pd.concat([footprints_over((3, 0, 5, 1), level=1), footprints_over((0, 0, 1, 1), level=2)])
 
     resolved = resolve_to_gadm(gpd.GeoDataFrame(at_both, crs="EPSG:4326"), cache_dir)
 

@@ -1,3 +1,5 @@
+import hashlib
+import inspect
 import logging
 import os
 
@@ -113,6 +115,33 @@ def _key_part(value: object, described_as: str) -> str:
         raise ValueError(f"{described_as} must not contain {forbidden}, got {text!r}")
 
     return text
+
+
+def builder_fingerprint(builder: Callable[[], object], *rules: object) -> str:
+    """
+    Fingerprint how an artefact is built, so a change to the builder turns over what it cached.
+
+    Parameters record what was asked for and nothing records how the answer was produced, so an
+    entry built under rules that have since changed reads back as a hit. Reformatting the builder or
+    editing a comment inside it turns the cache over as surely as changing a rule does.
+
+    Parameters
+    ----------
+    builder : callable
+        The function that produces the artefact.
+    *rules : object
+        Values the builder reads that its own source does not show — a table it consults, the
+        columns it selects. Each must repr the same way in every process, or the digest moves
+        between runs and nothing ever reads back.
+
+    Returns
+    -------
+    str
+        A short digest of the builder's source and the rules it was given.
+    """
+    declared = inspect.getsource(builder) + "".join(repr(rule) for rule in rules)
+
+    return hashlib.sha256(declared.encode()).hexdigest()[:12]
 
 
 def cached[T](

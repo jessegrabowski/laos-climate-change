@@ -1,7 +1,9 @@
 import datetime as dt
 import json
+import re
 
 from pathlib import Path
+from typing import NamedTuple
 
 import polars as pl
 
@@ -270,7 +272,161 @@ def load_emdat_events(cache_dir: Path) -> pl.DataFrame:
     return _read_workbook(EMDAT.require(cache_dir))
 
 
+LOCATION_SEPARATORS = ",;"
+
+# `X, and Y` splits on the comma and strands the conjunction on the second span. No GADM unit is
+# named with a leading `and`, so a span that starts with one is an artifact of the split.
+STRANDED_CONJUNCTION = re.compile(r"^(?:and|&)\b\s*", re.IGNORECASE)
+
+# A spreadsheet label EM-DAT leaks into the location field, as `Level 1 = Uttar Pradesh`.
+FIELD_LABEL = re.compile(r"^\s*level\s*\d+\s*=\s*", re.IGNORECASE)
+
+# `Montgomery County in (Tennessee state)` joins a place to its container with a preposition, which
+# the split leaves dangling on the end of the name.
+DANGLING_PREPOSITION = re.compile(r"\s+(?:in|of|at|on)$", re.IGNORECASE)
+
+
+class NamedPlace(NamedTuple):
+    """A place an event's location text names, and the place the text says contains it.
+
+    Parameters
+    ----------
+    name : str
+        The place as written, whitespace collapsed and nothing else changed.
+    parent : str or None
+        The containing place the prose gave in parentheses, or None where it gave none.
+    """
+
+    name: str
+    parent: str | None
+
+
+def named_places(location: str | None) -> list[NamedPlace]:
+    """
+    Explode an event's location text into the places it names.
+
+    EM-DAT writes a list of places, optionally followed by a parenthesised container that applies
+    to every place since the last one — ``Muang Nakhon Si Thammarat, Hua Sai, Pak Phanang, Ron
+    Phibun districts (Nakhon Si Thammarat province)`` names four districts of one province. The
+    parent is what tells a repeated district name which province it belongs to, so it is carried
+    rather than flattened into a sibling.
+
+    Separators are commas and semicolons outside parentheses. ``and`` is not one: 75 GADM units are
+    named like ``Newfoundland and Labrador``, and splitting on it would destroy them. Where the
+    prose writes ``X, and Y`` the comma splits and the conjunction is left stranded, so a leading
+    one is dropped from each place, as is a preposition left dangling on the end by ``X in (Y)`` and
+    the ``Level 1 =`` label the workbook leaks into the column.
+
+    Parameters
+    ----------
+    location : str or None
+        The ``Location`` column as EM-DAT writes it.
+
+    Returns
+    -------
+    list of NamedPlace
+        One entry per place named, in the order written, without repeats. Empty when the text names
+        nothing.
+    """
+    spans: list[str] = []
+    places: list[NamedPlace] = []
+    written: list[str] = []
+    container: list[str] = []
+    depth = 0
+
+    def close_span() -> None:
+        collapsed = " ".join("".join(written).split())
+        without_conjunction = STRANDED_CONJUNCTION.sub("", FIELD_LABEL.sub("", collapsed))
+        if trimmed := DANGLING_PREPOSITION.sub("", without_conjunction).strip():
+            spans.append(trimmed)
+        written.clear()
+
+    def close_group() -> None:
+        # Nested parentheses gloss the container rather than nesting inside it — `Region I (Ilocos
+        # region)` is one place under two names — so the inner text is dropped, not treated as a
+        # further parent.
+        parent = " ".join(re.sub(r"\([^()]*\)", " ", "".join(container)).split()) or None
+        places.extend(NamedPlace(span, parent) for span in spans)
+        spans.clear()
+        container.clear()
+
+    for character in str(location or ""):
+        if character == "(":
+            depth += 1
+            if depth == 1:
+                close_span()
+                continue
+        elif character == ")":
+            if depth == 0:
+                continue
+            depth -= 1
+            if depth == 0:
+                close_group()
+                continue
+
+        if depth:
+            container.append(character)
+        elif character in LOCATION_SEPARATORS:
+            close_span()
+        else:
+            written.append(character)
+
+    close_span()
+    # An unclosed parenthesis still names a container; the text was truncated, not unstructured.
+    close_group()
+
+    return list(dict.fromkeys(places))
+
+
 GADM_UNITS_COLUMN = "GADM Admin Units"
+
+
+class UncodedEvent(NamedTuple):
+    """An event EM-DAT recorded a location for without coding any administrative unit.
+
+    Parameters
+    ----------
+    disno : str
+        The EM-DAT event identifier.
+    iso : str
+        ISO 3166-1 alpha-3 code of the country the event is filed under.
+    places : list of NamedPlace
+        The places its location text names, never empty.
+    """
+
+    disno: str
+    iso: str
+    places: list[NamedPlace]
+
+
+def events_missing_units(events: pl.DataFrame) -> list[UncodedEvent]:
+    """
+    Collect the events whose geography has to be recovered from their location text.
+
+    Two thirds of the workbook carries no administrative units, and an event whose text names
+    nothing is left out: there is nothing to resolve and no reason to fetch a gazetteer for it.
+
+    Parameters
+    ----------
+    events : DataFrame
+        The workbook, from :func:`load_emdat_events`.
+
+    Returns
+    -------
+    list of UncodedEvent
+        One entry per event with places to place, in workbook order.
+    """
+    uncoded = []
+    for disno, iso, location, units in zip(
+        events["DisNo."], events["ISO"], events["Location"], events[GADM_UNITS_COLUMN], strict=True
+    ):
+        if str(units or "").strip() and json.loads(units):
+            continue
+        if places := named_places(location):
+            uncoded.append(UncodedEvent(str(disno), str(iso), places))
+
+    return uncoded
+
 
 # One row per affected administrative unit. `name` and `migration_method` are absent on some units:
 # EM-DAT omits the name where GADM has none, and the method where the unit was never migrated.

@@ -15,6 +15,7 @@ import xarray as xr
 from shapely.geometry import LineString, Point, box
 
 from climate_risk.data.gpcc import GriddedProduct
+from climate_risk.data.osm import LOOKUP_COLUMNS
 from climate_risk.data.source import DataSource
 
 # One event that clears every downstream filter: deaths above 100, affected above 1000, and a start
@@ -380,15 +381,189 @@ def toy_gadm() -> gpd.GeoDataFrame:
     Ghana is included because GADM numbers it unlike everywhere else — `GHA11_2` for a province and
     `GHA7.13_2` for a district, with no dot after the country code. Any code inferring the level
     from the shape of the id gets Ghana wrong.
+
+    `LAO.1.2.1_1` is the seat named after the district holding it, which is what most ambiguous
+    mentions turn out to be: candidates on one nesting chain rather than places in two locations.
+
+    Ethiopia and Eritrea stand in for a country that lost territory and the state that holds it now.
+
+    Poland stands in for a language that writes a unit as an adjective built from its seat's name.
+
+    Canada carries a unit whose own name joins two places with `and`, and Czechia and Slovakia
+    stand in for the successors of a state GADM no longer models.
+
+    Ukraine carries GADM's placeholder identifier, which is the string `?` at both levels and
+    therefore parents itself. Walking a unit's containers without a visited set never terminates.
+
+    `VARNAME` carries the alternative spellings GADM publishes, pipe-separated, and is empty for
+    most units. A name lookup that reads only `NAME` misses whichever spelling the mention used.
     """
     rows = [
-        ("LAO", "LAO.1_1", "Attapu", "LAO.1.1_1", "Sanamxay", box(0, 0, 1, 1)),
-        ("LAO", "LAO.1_1", "Attapu", "LAO.1.2_1", "Samakhixay", box(1, 0, 2, 1)),
-        ("LAO", "LAO.2_1", "Bokeo", "LAO.2.1_1", "Houayxay", box(3, 0, 4, 1)),
-        ("ZMB", "ZMB.1_1", "Central", "ZMB.1.1_1", "Kabwe", box(6, 0, 7, 1)),
-        ("GHA", "GHA11_2", "Savannah", "GHA7.13_2", "Ga Central", box(8, 0, 9, 1)),
+        (
+            "LAO",
+            "Laos",
+            "LAO.1_1",
+            "Attapu",
+            "Attopeu",
+            "LAO.1.1_1",
+            "Sanamxay",
+            "",
+            "LAO.1.1.1_1",
+            "Ban Mai",
+            "",
+            "",
+            box(0, 0, 1, 1),
+        ),
+        (
+            "LAO",
+            "Laos",
+            "LAO.1_1",
+            "Attapu",
+            "Attopeu",
+            "LAO.1.2_1",
+            "Samakhixay",
+            "",
+            "LAO.1.2.1_1",
+            "Samakhixay",
+            "",
+            "",
+            box(1, 0, 2, 1),
+        ),
+        (
+            "LAO",
+            "Laos",
+            "LAO.2_1",
+            "Bokeo",
+            "",
+            "LAO.2.1_1",
+            "Houayxay",
+            "Ban Houayxay|Houei Sai",
+            "LAO.2.1.1_1",
+            "Ban Mai",
+            "",
+            "",
+            box(3, 0, 4, 1),
+        ),
+        # A district sharing its name with a province elsewhere, which is the common homonym: 94 of
+        # 111 ambiguous mentions in the workbook are a province and a same-named district.
+        ("LAO", "Laos", "LAO.2_1", "Bokeo", "", "LAO.2.2_1", "Attapu", "", "", "", "", "", box(4, 0, 5, 1)),
+        ("ZMB", "Zambia", "ZMB.1_1", "Central", "", "ZMB.1.1_1", "Kabwe", "", "", "", "", "", box(6, 0, 7, 1)),
+        # A district whose name is short enough to be a syllable of another, which is what a dash
+        # split has to refuse: `Ali-Shan` is one mountain and both halves are Chinese counties.
+        ("LAO", "Laos", "LAO.2_1", "Bokeo", "", "LAO.2.4_1", "Xay", "", "", "", "", "", box(7, 0, 8, 1)),
+        # `Nam Bay` is one edit from this district and names a bay, which is the collision an
+        # approximate match has to refuse: `Manila Bay` reaches a barangay called Manlabay.
+        ("LAO", "Laos", "LAO.2_1", "Bokeo", "", "LAO.2.3_1", "Nambak", "", "", "", "", "", box(5, 0, 6, 1)),
+        # 75 GADM units carry a conjunction in their own name, which a split on `and` destroys.
+        (
+            "CAN",
+            "Canada",
+            "CAN.5_1",
+            "Newfoundland and Labrador",
+            "",
+            "CAN.5.1_1",
+            "Division No. 1",
+            "",
+            "",
+            "",
+            "",
+            "",
+            box(12, 0, 13, 1),
+        ),
+        # Two successors of a dissolved state, so a historical event has something to choose between.
+        ("CZE", "Czechia", "CZE.1_1", "Praha", "", "CZE.1.1_1", "Praha 1", "", "", "", "", "", box(14, 0, 15, 1)),
+        (
+            "SVK",
+            "Slovakia",
+            "SVK.1_1",
+            "Bratislavsky",
+            "",
+            "SVK.1.1_1",
+            "Bratislava I",
+            "",
+            "",
+            "",
+            "",
+            "",
+            box(16, 0, 17, 1),
+        ),
+        # A name both successors publish, which is a tie rather than an answer.
+        ("CZE", "Czechia", "CZE.1_1", "Praha", "", "CZE.1.2_1", "Nove Mesto", "", "", "", "", "", box(14, 1, 15, 2)),
+        (
+            "SVK",
+            "Slovakia",
+            "SVK.1_1",
+            "Bratislavsky",
+            "",
+            "SVK.1.2_1",
+            "Nove Mesto",
+            "",
+            "",
+            "",
+            "",
+            "",
+            box(16, 1, 17, 2),
+        ),
+        # One successor of a second dissolved state, so a lone candidate placing nothing is still no answer.
+        ("HRV", "Croatia", "HRV.1_1", "Zagreb", "", "HRV.1.1_1", "Zagreb", "", "", "", "", "", box(18, 0, 19, 1)),
+        # Kashmir is filed under a code of its own, with GADM naming the country administering it.
+        ("IND", "India", "IND.1_1", "Kerala", "", "IND.1.1_1", "Kochi", "", "", "", "", "", box(20, 0, 21, 1)),
+        (
+            "Z01",
+            "India",
+            "Z01.1_1",
+            "Jammu and Kashmir",
+            "",
+            "Z01.1.1_1",
+            "Srinagar",
+            "",
+            "",
+            "",
+            "",
+            "",
+            box(22, 0, 23, 1),
+        ),
+        # A country that lost territory, and the state that holds it now.
+        ("ETH", "Ethiopia", "ETH.1_1", "Tigray", "", "ETH.1.1_1", "Mekele", "", "", "", "", "", box(24, 0, 25, 1)),
+        ("ERI", "Eritrea", "ERI.1_1", "Maekel", "", "ERI.1.1_1", "Asmara", "", "", "", "", "", box(26, 0, 27, 1)),
+        # GADM writes an unnamed Ukrainian unit as `?` at both levels, so it comes out its own parent.
+        ("UKR", "Ukraine", "?", "?", "", "?", "?", "", "", "", "", "", box(10, 0, 11, 1)),
+        ("GHA", "Ghana", "GHA11_2", "Savannah", "", "GHA7.13_2", "Ga Central", "", "", "", "", "", box(8, 0, 9, 1)),
+        # Poland, where a mention is the adjective built from the seat GADM publishes. `Rybnik`
+        # and `Rybno` share the stem the adjective leaves, so one adjective settles nothing.
+        (
+            "POL",
+            "Poland",
+            "POL.1_1",
+            "Podkarpackie",
+            "",
+            "POL.1.1_1",
+            "Tarnobrzeg",
+            "",
+            "",
+            "",
+            "",
+            "",
+            box(28, 0, 29, 1),
+        ),
+        ("POL", "Poland", "POL.2_1", "Slaskie", "", "POL.2.1_1", "Rybnik", "", "", "", "", "", box(30, 0, 31, 1)),
+        ("POL", "Poland", "POL.2_1", "Slaskie", "", "POL.2.2_1", "Rybno", "", "", "", "", "", box(31, 0, 32, 1)),
     ]
-    columns = ("GID_0", "GID_1", "NAME_1", "GID_2", "NAME_2", "geometry")
+    columns = (
+        "GID_0",
+        "COUNTRY",
+        "GID_1",
+        "NAME_1",
+        "VARNAME_1",
+        "GID_2",
+        "NAME_2",
+        "VARNAME_2",
+        "GID_3",
+        "NAME_3",
+        "GID_4",
+        "NAME_4",
+        "geometry",
+    )
 
     return gpd.GeoDataFrame(dict(zip(columns, zip(*rows, strict=True), strict=True)), crs="EPSG:4326")
 
@@ -534,3 +709,74 @@ def pytest_collection_modifyitems(config, items):
     for item in items:
         if "network" in item.keywords:
             item.add_marker(skip_network)
+
+
+def toy_geonames() -> str:
+    """Rows shaped like a GeoNames country dump: headerless, tab-separated, nineteen fields.
+
+    Bacolod is published under three spellings and shares its name with a far smaller barangay,
+    which is the collision that decides whether a written mention reaches the city or the hamlet.
+    """
+    rows = [
+        (
+            "1",
+            "Bacolod",
+            "Bacolod",
+            "Bacolod City,Bakolod",
+            "10.667",
+            "122.95",
+            "P",
+            "PPL",
+            "PH",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "561875",
+        ),
+        ("2", "Bacolod", "Bacolod", "", "8.5", "124.1", "P", "PPL", "PH", "", "", "", "", "", "0"),
+        ("3", "Iloilo", "Iloilo", "Ilo-ilo", "10.7", "122.567", "P", "PPLA", "PH", "", "", "", "", "", "457626"),
+        ("4", "Sulu Sea", "Sulu Sea", "", "8.0", "120.0", "H", "SEA", "PH", "", "", "", "", "", "0"),
+    ]
+    padding = ("", "", "", "")
+
+    return "\n".join("\t".join(row + padding) for row in rows) + "\n"
+
+
+COUNTRY_INFO_HEADER = "#ISO\tISO3\tISO-Numeric\tfips\tCountry\n"
+
+
+@pytest.fixture
+def write_geonames_cache(tmp_path):
+    """Return a callable writing a GeoNames-shaped dump into the cache, and giving back the root."""
+
+    def write(rows=None, *, alpha2="PH", alpha3="PHL"):
+        directory = tmp_path / "geonames"
+        directory.mkdir(exist_ok=True)
+        (directory / "countryInfo.txt").write_text(
+            COUNTRY_INFO_HEADER + f"{alpha2}\t{alpha3}\t608\tRP\tPhilippines\n", encoding="utf-8"
+        )
+        with zipfile.ZipFile(directory / f"{alpha2}.zip", "w") as archive:
+            archive.writestr(f"{alpha2}.txt", toy_geonames() if rows is None else rows)
+
+        return tmp_path
+
+    return write
+
+
+@pytest.fixture
+def write_osm_cache(tmp_path):
+    """Return a callable writing cached Nominatim answers, and giving back the cache root.
+
+    The layout is stated literally rather than derived from the loader, so a wrong cache path fails
+    instead of agreeing with itself."""
+
+    def write(rows, *, iso="LAO"):
+        directory = tmp_path / "osm"
+        directory.mkdir(exist_ok=True)
+        pl.DataFrame(rows, schema=LOOKUP_COLUMNS, orient="row").write_parquet(directory / f"lookups__iso={iso}.parquet")
+
+        return tmp_path
+
+    return write

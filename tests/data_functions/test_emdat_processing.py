@@ -12,12 +12,15 @@ from climate_risk.data_functions.emdat_processing import (
     DISASTER_TYPES,
     EMDAT_WINDOW_START,
     GEOMETRY_SOURCES,
+    NamedPlace,
     count_events_by_type,
     country_year_grid,
     event_filter,
     event_geography,
     event_units,
+    events_missing_units,
     load_emdat_events,
+    named_places,
     total_damage,
 )
 from tests.conftest import emdat_event
@@ -299,6 +302,38 @@ REAL_CACHE_DIR = Path(__file__).parents[2] / "data"
 SHIPPED_PLACE_KEYS = sorted(path.stem for path in (CONFIG_ROOT / "places").glob("*.toml"))
 
 
+def test_an_event_carrying_units_is_not_offered_for_resolution(write_emdat_cache):
+    """Two thirds of the workbook has no units, and re-resolving the third that does would override
+    EM-DAT's own coding with a name match."""
+    events = load_emdat_events(
+        write_emdat_cache(
+            [
+                emdat_event(
+                    {"DisNo.": "2018-0001-LAO", "Location": "Attapu", "GADM Admin Units": '[{"gid_1": "LAO.1_1"}]'}
+                ),
+                emdat_event({"DisNo.": "2018-0002-LAO", "Location": "Bokeo", "GADM Admin Units": ""}),
+            ]
+        )
+    )
+
+    assert [event.disno for event in events_missing_units(events)] == ["2018-0002-LAO"]
+
+
+def test_an_event_whose_text_names_nothing_is_left_out(write_emdat_cache):
+    """`Countrywide` and `N.A. on the source` reach no gazetteer, and carrying them makes a caller
+    fetch an archive for a country it can place nothing in."""
+    events = load_emdat_events(
+        write_emdat_cache(
+            [
+                emdat_event({"DisNo.": "2018-0003-LAO", "Location": "()", "GADM Admin Units": ""}),
+                emdat_event({"DisNo.": "2018-0004-LAO", "Location": "Bokeo", "GADM Admin Units": ""}),
+            ]
+        )
+    )
+
+    assert [event.disno for event in events_missing_units(events)] == ["2018-0004-LAO"]
+
+
 @pytest.mark.requires_emdat
 @pytest.mark.skipif(not (REAL_CACHE_DIR / "emdat.xlsx").exists(), reason="needs the licensed EM-DAT workbook")
 @pytest.mark.parametrize("key", SHIPPED_PLACE_KEYS)
@@ -406,6 +441,105 @@ def test_a_unit_carrying_no_gid_names_the_event_it_came_from(write_emdat_cache):
 
     with pytest.raises(ValueError, match="broken"):
         event_units(load_emdat_events(cache_dir))
+
+
+def test_a_flat_list_of_places_explodes_to_one_row_each():
+    assert named_places("Cagayan, Ilocos Norte, Kalin-Aapayo province") == [
+        NamedPlace("Cagayan", None),
+        NamedPlace("Ilocos Norte", None),
+        NamedPlace("Kalin-Aapayo province", None),
+    ]
+
+
+def test_a_container_applies_to_every_place_since_the_last_one():
+    """EM-DAT writes a run of districts then the province holding all of them. Attaching the parent
+    to the nearest place alone would leave the rest unconstrained, and the parent is what tells a
+    repeated district name which province it is in."""
+    places = named_places("Muang Nakhon Si Thammarat, Hua Sai, Pak Phanang districts (Nakhon Si Thammarat province)")
+
+    assert [place.parent for place in places] == ["Nakhon Si Thammarat province"] * 3
+
+
+def test_a_second_container_starts_a_new_group():
+    """One event names districts of several provinces in sequence. A parent that leaked past its
+    own group would put every later district in the first province named."""
+    places = named_places("Ilocos Norte districts (Region II province), Batanes, Cagayan (Region III province)")
+
+    assert places == [
+        NamedPlace("Ilocos Norte districts", "Region II province"),
+        NamedPlace("Batanes", "Region III province"),
+        NamedPlace("Cagayan", "Region III province"),
+    ]
+
+
+def test_a_nested_parenthesis_glosses_the_container_rather_than_nesting_inside_it():
+    """`Region I (Ilocos region)` is one place under two names, not a place inside a place. Reading
+    the inner group as a further parent invents a level of hierarchy the prose does not claim."""
+    assert named_places("Ilocos Norte district (Region I (Ilocos region) province)") == [
+        NamedPlace("Ilocos Norte district", "Region I province")
+    ]
+
+
+@pytest.mark.parametrize(
+    ("location", "expected"),
+    [
+        ("Maradu, Long Lama (Northern Sarawak", [("Maradu", "Northern Sarawak"), ("Long Lama", "Northern Sarawak")]),
+        ("Kakinada (Andhra Pradesh state))", [("Kakinada", "Andhra Pradesh state")]),
+    ],
+    ids=["never closed", "closed twice"],
+)
+def test_unbalanced_parentheses_still_yield_the_container(location, expected):
+    """Fifty of the workbook's location strings are truncated or double-closed. A parser that gave
+    up on them would drop the container that disambiguates the places it does read."""
+    assert named_places(location) == [NamedPlace(*pair) for pair in expected]
+
+
+def test_a_preposition_joining_a_place_to_its_container_is_dropped():
+    """EM-DAT writes `Montgomery County in (Tennessee state)`, and the split leaves the preposition
+    on the end of a name that would otherwise match."""
+    assert named_places("Clarksville City, Montgomery County in (Tennesee state)") == [
+        NamedPlace("Clarksville City", "Tennesee state"),
+        NamedPlace("Montgomery County", "Tennesee state"),
+    ]
+
+
+def test_a_leaked_spreadsheet_label_is_dropped_from_the_name():
+    """EM-DAT writes `Level 1 = Uttar Pradesh` in the location column, and the label reaches the
+    matcher as part of the place name."""
+    assert named_places("Level 1 = Uttar Pradesh; Bihar") == [
+        NamedPlace("Uttar Pradesh", None),
+        NamedPlace("Bihar", None),
+    ]
+
+
+def test_a_place_named_twice_appears_once():
+    """`Savannakhet, Kham Muane, Savannakhet` would otherwise weight one province double in
+    whatever counts the places."""
+    assert named_places("Savannakhet, Kham Muane, Savannakhet") == [
+        NamedPlace("Savannakhet", None),
+        NamedPlace("Kham Muane", None),
+    ]
+
+
+def test_a_conjunction_is_not_a_separator():
+    """Seventy-five GADM units are named like this. Splitting on `and` would destroy exactly the
+    names the match is looking for, so a span is left whole for the resolver to interpret."""
+    assert named_places("Newfoundland and Labrador") == [NamedPlace("Newfoundland and Labrador", None)]
+
+
+def test_a_conjunction_stranded_by_the_split_is_dropped():
+    """`X, and Y` splits on the comma and leaves the conjunction on the second place. No GADM unit
+    is named with a leading `and`, so the fragment would match nothing and lose the place."""
+    assert named_places("Aceh, and Sumatera Utara provinces") == [
+        NamedPlace("Aceh", None),
+        NamedPlace("Sumatera Utara provinces", None),
+    ]
+
+
+@pytest.mark.parametrize("location", [None, "", "   ", "()"], ids=["null", "empty", "whitespace", "empty group"])
+def test_text_naming_nothing_yields_nothing(location):
+    """Two thirds of the workbook has no location text, and a country-tier event reaches here."""
+    assert named_places(location) == []
 
 
 @pytest.mark.requires_emdat

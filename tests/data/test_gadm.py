@@ -4,10 +4,19 @@ import sqlite3
 
 from pathlib import Path
 
+import geopandas as gpd
 import polars as pl
 import pytest
 
-from climate_risk.data.gadm import GADM, gadm_dir, gadm_path, load_admin_units, load_units_in_country
+from climate_risk.data import gadm
+from climate_risk.data.gadm import (
+    GADM,
+    administered_territories,
+    gadm_dir,
+    gadm_path,
+    load_admin_units,
+    load_units_in_country,
+)
 from climate_risk.data_functions.emdat_processing import load_emdat_events
 from climate_risk.exceptions import DataValidationError
 
@@ -77,7 +86,7 @@ def test_an_id_gadm_does_not_hold_is_an_error_not_a_dropped_row(write_gadm_cache
 
 
 def test_a_level_gadm_is_not_read_at_is_rejected(write_gadm_cache):
-    """Units are read at level 1 and 2; anything else would silently match nothing."""
+    """Units are read at levels 1 through 4; anything else would silently match nothing."""
     cache_dir = write_gadm_cache()
 
     with pytest.raises(DataValidationError, match="read at levels"):
@@ -102,13 +111,39 @@ def test_a_country_reads_back_every_unit_it_holds_at_a_level(write_gadm_cache):
     assert set(provinces["admin_level"]) == {1}
 
 
+def test_a_country_reads_back_the_villages_below_its_districts(write_gadm_cache):
+    """Written locations name units below adm2 — 18% of the places that resolve are adm3 or adm4 —
+    and scoring a point against one needs its polygon."""
+    cache_dir = write_gadm_cache()
+
+    villages = load_units_in_country("LAO", 3, cache_dir)
+
+    assert sorted(villages["gid"]) == ["LAO.1.1.1_1", "LAO.1.2.1_1", "LAO.2.1.1_1"]
+
+
+def test_a_country_not_divided_at_a_level_reads_back_empty(write_gadm_cache):
+    """GADM stores a blank identifier rather than omitting the row, so dissolving without dropping
+    those yields one phantom unit whose id is the empty string and whose polygon is the country."""
+    cache_dir = write_gadm_cache()
+
+    assert load_units_in_country("LAO", 4, cache_dir).empty
+
+
+def test_a_unit_below_adm2_resolves_to_its_polygon(write_gadm_cache):
+    cache_dir = write_gadm_cache()
+
+    units = load_admin_units([("LAO.1.1.1_1", 3)], cache_dir)
+
+    assert list(units["name"]) == ["Ban Mai"]
+
+
 def test_a_country_reads_back_its_districts(write_gadm_cache):
     """Level decides which column is read, and reading the wrong one returns the wrong geography."""
     cache_dir = write_gadm_cache()
 
     districts = load_units_in_country("LAO", 2, cache_dir)
 
-    assert sorted(districts["name"]) == ["Houayxay", "Samakhixay", "Sanamxay"]
+    assert sorted(districts["name"]) == ["Attapu", "Houayxay", "Nambak", "Samakhixay", "Sanamxay", "Xay"]
 
 
 def test_a_province_spanning_several_districts_is_one_row(write_gadm_cache):
@@ -223,3 +258,54 @@ def test_an_empty_request_still_carries_the_crs(write_gadm_cache):
     assert units.empty
     assert units.crs == "EPSG:4326"
     assert list(units.columns) == ["gid", "name", "admin_level", "geometry"]
+
+
+def test_a_country_names_the_disputed_territory_it_administers(write_gadm_cache):
+    """Kashmir is filed under a code of its own, so an Indian event named there reaches nothing
+    unless the country's own code is read together with what it administers."""
+    assert administered_territories("IND", write_gadm_cache()) == ("Z01",)
+
+
+def test_a_country_administering_nothing_names_nothing(write_gadm_cache):
+    assert administered_territories("LAO", write_gadm_cache()) == ()
+
+
+def test_a_country_read_twice_reads_the_same_units(write_gadm_cache):
+    """Reading a country's polygons out of the GeoPackage takes seconds, so the result is cached;
+    a cache hit has to carry the same units and the same geometry as the build."""
+    cache_dir = write_gadm_cache()
+
+    built = load_units_in_country("LAO", 2, cache_dir, force_reload=True)
+    from_cache = load_units_in_country("LAO", 2, cache_dir)
+
+    assert list(from_cache["gid"]) == list(built["gid"])
+    assert from_cache.geometry.equals(built.geometry)
+    assert from_cache.crs == built.crs
+
+
+def test_one_layer_does_not_answer_for_another(write_gadm_cache):
+    """`layer` chooses which table is read, so two layers are two different questions. Keyed alike
+    they collide, and the second caller is handed the first one's geometry."""
+    cache_dir = write_gadm_cache()
+    archive = cache_dir / "gadm" / "gadm_410.gpkg"
+    everything = gpd.read_file(archive, layer="gadm_410")
+    everything[everything["GID_0"] == "ZMB"].to_file(archive, layer="zambia_only")
+
+    from_the_whole_world = load_units_in_country("LAO", 2, cache_dir)
+    from_zambia_only = load_units_in_country("LAO", 2, cache_dir, layer="zambia_only")
+
+    assert not from_the_whole_world.empty
+    assert from_zambia_only.empty, "a layer holding no Laos must not answer with another layer's units"
+
+
+def test_changing_which_columns_a_level_reads_turns_the_cached_geometry_over(write_gadm_cache, monkeypatch):
+    """The columns each level is read from live in a table the builder consults, which its own source
+    does not show. Pointing level 2 at level 1's columns returns provinces where districts were
+    cached, and nothing else in the key would say so."""
+    cache_dir = write_gadm_cache()
+    districts = load_units_in_country("LAO", 2, cache_dir)
+
+    monkeypatch.setattr(gadm, "GID_COLUMNS", {**gadm.GID_COLUMNS, 2: ("GID_1", "NAME_1")})
+    reread = load_units_in_country("LAO", 2, cache_dir)
+
+    assert sorted(reread["gid"]) != sorted(districts["gid"])
