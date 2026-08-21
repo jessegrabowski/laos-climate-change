@@ -6,7 +6,7 @@ from pathlib import Path
 import geopandas as gpd
 import pandas as pd
 
-from climate_risk.data.cache import cached, geo_parquet
+from climate_risk.data.cache import builder_fingerprint, cached, geo_parquet
 from climate_risk.data.source import ManualSource
 from climate_risk.exceptions import DataValidationError
 
@@ -146,7 +146,9 @@ def load_units_in_country(
         "units",
         build,
         geo_parquet(),
-        params={"iso": iso, "level": level},
+        # `layer` chooses what is read and the fingerprint covers how, neither of which the other
+        # parameters record.
+        params={"iso": iso, "layer": layer, "level": level, "reading": builder_fingerprint(build, GID_COLUMNS)},
         force=force_reload,
     )
 

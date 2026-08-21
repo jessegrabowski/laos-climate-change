@@ -4,9 +4,11 @@ import sqlite3
 
 from pathlib import Path
 
+import geopandas as gpd
 import polars as pl
 import pytest
 
+from climate_risk.data import gadm
 from climate_risk.data.gadm import (
     GADM,
     administered_territories,
@@ -279,3 +281,31 @@ def test_a_country_read_twice_reads_the_same_units(write_gadm_cache):
     assert list(from_cache["gid"]) == list(built["gid"])
     assert from_cache.geometry.equals(built.geometry)
     assert from_cache.crs == built.crs
+
+
+def test_one_layer_does_not_answer_for_another(write_gadm_cache):
+    """`layer` chooses which table is read, so two layers are two different questions. Keyed alike
+    they collide, and the second caller is handed the first one's geometry."""
+    cache_dir = write_gadm_cache()
+    archive = cache_dir / "gadm" / "gadm_410.gpkg"
+    everything = gpd.read_file(archive, layer="gadm_410")
+    everything[everything["GID_0"] == "ZMB"].to_file(archive, layer="zambia_only")
+
+    from_the_whole_world = load_units_in_country("LAO", 2, cache_dir)
+    from_zambia_only = load_units_in_country("LAO", 2, cache_dir, layer="zambia_only")
+
+    assert not from_the_whole_world.empty
+    assert from_zambia_only.empty, "a layer holding no Laos must not answer with another layer's units"
+
+
+def test_changing_which_columns_a_level_reads_turns_the_cached_geometry_over(write_gadm_cache, monkeypatch):
+    """The columns each level is read from live in a table the builder consults, which its own source
+    does not show. Pointing level 2 at level 1's columns returns provinces where districts were
+    cached, and nothing else in the key would say so."""
+    cache_dir = write_gadm_cache()
+    districts = load_units_in_country("LAO", 2, cache_dir)
+
+    monkeypatch.setattr(gadm, "GID_COLUMNS", {**gadm.GID_COLUMNS, 2: ("GID_1", "NAME_1")})
+    reread = load_units_in_country("LAO", 2, cache_dir)
+
+    assert sorted(reread["gid"]) != sorted(districts["gid"])
