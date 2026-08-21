@@ -445,6 +445,9 @@ def toy_gadm() -> gpd.GeoDataFrame:
         # 111 ambiguous mentions in the workbook are a province and a same-named district.
         ("LAO", "Laos", "LAO.2_1", "Bokeo", "", "LAO.2.2_1", "Attapu", "", "", "", "", "", box(4, 0, 5, 1)),
         ("ZMB", "Zambia", "ZMB.1_1", "Central", "", "ZMB.1.1_1", "Kabwe", "", "", "", "", "", box(6, 0, 7, 1)),
+        # A district whose name is short enough to be a syllable of another, which is what a dash
+        # split has to refuse: `Ali-Shan` is one mountain and both halves are Chinese counties.
+        ("LAO", "Laos", "LAO.2_1", "Bokeo", "", "LAO.2.4_1", "Xay", "", "", "", "", "", box(7, 0, 8, 1)),
         # `Nam Bay` is one edit from this district and names a bay, which is the collision an
         # approximate match has to refuse: `Manila Bay` reaches a barangay called Manlabay.
         ("LAO", "Laos", "LAO.2_1", "Bokeo", "", "LAO.2.3_1", "Nambak", "", "", "", "", "", box(5, 0, 6, 1)),

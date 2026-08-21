@@ -823,6 +823,47 @@ def test_a_name_that_was_never_mangled_survives_the_repair(written):
     assert repair_mojibake(written) == written
 
 
+def test_a_dash_joining_two_places_reaches_both(write_gadm_cache):
+    """EM-DAT joins a pair of districts with a dash as readily as with `and`, and refusing to split
+    leaves both unplaced."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    assert resolve_place("Sanamxay-Samakhixay", None, gazetteer) == {"LAO.1.1_1", "LAO.1.2_1"}
+
+
+def test_a_dash_only_half_of_which_names_a_place_is_left_whole(write_gadm_cache):
+    """A dash sits inside a single name — `Nord-Ubangi`, `Alpes-Maritimes` — more often than it
+    joins two. Only unanimity tells a pair from one name the gazetteer spells differently, so a
+    half-match is read as a misspelling rather than split."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    assert resolve_place("Sanamxay-Nowhere", None, gazetteer) == set()
+
+
+def test_a_dash_split_refuses_a_part_too_short_to_be_a_place(write_gadm_cache):
+    """`Ali-Shan` is one Taiwanese mountain whose halves are both Chinese counties. A syllable is
+    not a place, whatever it happens to spell."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    assert resolve_place("Xay-Sanamxay", None, gazetteer) == set(), "Xay names a district and is still too short"
+
+
+def test_a_route_running_between_two_places_is_not_split_across_them(write_gadm_cache):
+    """`Qom-Teheran highway` names the road, not the provinces at its ends. Splitting it claims a
+    footprint the event never had."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    assert resolve_place("Sanamxay-Samakhixay road", None, gazetteer) == set()
+
+
+def test_a_place_beside_a_road_reaches_the_place(write_gadm_cache):
+    """A route noun attaches to one place as often as it spans two, and `Bankass road` is a cercle
+    of Mali with a word after it."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    assert resolve_place("Sanamxay road", None, gazetteer) == {"LAO.1.1_1"}
+
+
 def test_a_keying_rule_with_no_pattern_of_its_own_still_turns_the_cache_over(write_gadm_cache, monkeypatch):
     """Fingerprinting the unit-noun pattern covers only the rules that are patterns. Repairing a
     mis-decoded name is a codec round trip, and a cache that cannot see it changing serves an index

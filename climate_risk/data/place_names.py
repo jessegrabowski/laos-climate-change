@@ -66,6 +66,10 @@ _STANDS_ALONE = (
     "kec",
     "kab",
     "desa",
+    "roads?",
+    "highways?",
+    "airports?",
+    "pass(?:es)?",
 )
 
 # Prepositional phrases, which have no bare form.
@@ -86,6 +90,18 @@ UNIT_NOUNS = re.compile(
 # before its parts.
 CONJUNCTION = re.compile(r"\s+(?:and|et)\s+|\s*[&+/]\s*", re.IGNORECASE)
 
+
+# A road runs between places rather than sitting in one. The noun comes off like any other, so
+# `Bankass road` reaches Bankass, but a route naming two places is a line and splitting it puts
+# the event on both ends of a journey it only crossed.
+ROUTE = re.compile(r"\b(?:roads?|highways?)\b", re.IGNORECASE)
+
+# A part of a dash-joined name shorter than this is a syllable rather than a place: splitting
+# `Ali-Shan` yields two Chinese counties and the event was in neither.
+MIN_SPLIT_LENGTH = 4
+
+# A dash joins two places as often as it sits inside one name, so the whole is always read first.
+DASH = re.compile(r"\s*[-\u2013\u2014]\s*")
 
 # `Wayanad district, Kerala state` names the same place twice over, finest first. Read whole it
 # matches nothing; read in parts each one matches a unit.
@@ -572,6 +588,23 @@ def container_parts(parent: str) -> list[str]:
     return [part for part in CONTAINER_PARTS.split(parent) if part.strip()]
 
 
+def _dashed_units(name: str, parent: str | None, gazetteer: Gazetteer) -> set[str]:
+    """
+    Name the units a dash-joined list reaches, where every one of its parts names a unit.
+
+    A dash joins two places as often as it belongs inside a single name, and nothing in the text
+    tells them apart. Unanimity does: ``Grevena-Kozani`` is a pair because both halves are
+    prefectures, while a name that only half resolves is one name the gazetteer spells differently.
+    """
+    parts = [part.strip() for part in DASH.split(name) if part.strip()]
+    if len(parts) < 2 or any(len(match_key(part)) < MIN_SPLIT_LENGTH for part in parts):
+        return set()
+
+    reached = [_units_named(part, parent, gazetteer) for part in parts]
+
+    return _outermost(set().union(*reached), gazetteer) if all(reached) else set()
+
+
 def _qualified_unit(name: str, gazetteer: Gazetteer) -> set[str]:
     """
     Name the unit a directional qualifier was applied to, where it names exactly one.
@@ -678,9 +711,10 @@ def resolve_place(name: str, parent: str | None, gazetteer: Gazetteer) -> set[st
     contradiction: the prose routinely names a region GADM does not model.
 
     A name joined by ``and`` is split only where the whole fails, so ``Newfoundland and Labrador``
-    stays one unit while ``Aceh and West Sumatra`` becomes two. Every part that names something is
-    kept, except where the name opens with a word placing the event between its parts rather than
-    in them.
+    stays one unit while ``Aceh and West Sumatra`` becomes two, and every part that names something
+    is kept. A dash is weaker evidence of a list and is split only where every part names a unit.
+    Neither is split where the name places the event between its parts rather than in them, or along
+    a route running through both.
 
     Parameters
     ----------
@@ -700,13 +734,16 @@ def resolve_place(name: str, parent: str | None, gazetteer: Gazetteer) -> set[st
     if gids:
         return _outermost(gids, gazetteer)
 
+    if RELATIONAL.match(name) or ROUTE.search(name):
+        return set()
+
     parts = [part.strip() for part in CONJUNCTION.split(name) if part.strip()]
-    if len(parts) > 1 and not RELATIONAL.match(name):
+    if len(parts) > 1:
         reached = [found for part in parts if (found := _units_named(part, parent, gazetteer))]
         if reached:
             return _outermost(set().union(*reached), gazetteer)
 
-    return set()
+    return _dashed_units(name, parent, gazetteer)
 
 
 def _place_one(
