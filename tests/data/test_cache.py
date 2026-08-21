@@ -10,7 +10,7 @@ from geopandas.testing import assert_geodataframe_equal
 from polars.testing import assert_frame_equal
 from shapely.geometry import Point
 
-from climate_risk.data.cache import cache_key, cached, geo_parquet, pandas_parquet, polars_parquet
+from climate_risk.data.cache import builder_fingerprint, cache_key, cached, geo_parquet, pandas_parquet, polars_parquet
 
 
 @pytest.fixture
@@ -161,3 +161,55 @@ def test_a_polars_date_column_keeps_its_type(tmp_path):
     cached(tmp_path, "co2", lambda: frame, polars_parquet())
 
     assert cached(tmp_path, "co2", lambda: frame, polars_parquet()).schema["Date"] == pl.Date
+
+
+def test_two_builders_named_alike_but_reading_differently_fingerprint_differently():
+    """Every builder in this package is called `build`, so a fingerprint taken from the name would
+    be one value shared by every cached artefact. What has to reach the key is the rule that
+    changed, which lives only in the body."""
+
+    def builder(keep_every_row: bool):
+        if keep_every_row:
+
+            def build() -> str:
+                return "every row"
+        else:
+
+            def build() -> str:
+                return "only the rows that are named"
+
+        return build
+
+    assert builder_fingerprint(builder(True)) != builder_fingerprint(builder(False))
+
+
+def test_the_same_builder_fingerprints_the_same_every_time():
+    """A digest that moved between runs would rebuild every artefact on every process start."""
+
+    def build() -> str:
+        return "unchanged"
+
+    assert builder_fingerprint(build) == builder_fingerprint(build)
+
+
+def test_a_builder_closing_over_different_values_fingerprints_the_same():
+    """The closure's values are what `params` is for. Folding them in here would key one entry per
+    country twice over, and every cached artefact would miss."""
+
+    def builder_for(iso: str):
+        def build() -> str:
+            return iso
+
+        return build
+
+    assert builder_fingerprint(builder_for("LAO")) == builder_fingerprint(builder_for("ZMB"))
+
+
+def test_a_builder_reading_a_different_table_fingerprints_differently():
+    """A builder's source does not show the module tables it consults, so changing one changes the
+    artefact with nothing in the key to say so."""
+
+    def build() -> str:
+        return "unchanged"
+
+    assert builder_fingerprint(build, {"ETH": ("ERI",)}) != builder_fingerprint(build, {})
