@@ -110,6 +110,10 @@ FEATURE = re.compile(
     re.IGNORECASE,
 )
 
+# Written through the keying rules, so the cache fingerprint moves when any of them does, whether
+# or not the rule can be expressed as a pattern.
+_KEYING_PROBE = "SÃƒÂ©dhiou province & Kalin-Aapayo district"
+
 # Below this a single edit is a large share of the name and the match stops meaning anything:
 # `Arora` sits one edit from both `Aurora` and `Arora` in half the countries that have either.
 MIN_APPROXIMATE_LENGTH = 6
@@ -288,12 +292,40 @@ def _name_columns(level: int, available: set[str]) -> str:
     return ", ".join(f"{field}_{level}" if f"{field}_{level}" in available else "''" for field in _NAME_FIELDS)
 
 
+def repair_mojibake(text: str) -> str:
+    """
+    Undo text that was decoded as cp1252 after being written as UTF-8, however many times.
+
+    ``SÃ©dhiou`` is Sédhiou read through the wrong codec, and EM-DAT carries names that went
+    through it twice. The repair is its own guard: text that was never mangled does not survive
+    the round trip, because the bytes a correct name encodes to are not valid UTF-8.
+
+    Parameters
+    ----------
+    text : str
+        The name as written.
+
+    Returns
+    -------
+    str
+        The name with the mangling undone, or unchanged where there was none.
+    """
+    while True:
+        try:
+            once = text.encode("cp1252").decode("utf-8")
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            return text
+        if once == text:
+            return text
+        text = once
+
+
 def match_key(name: str) -> str:
     """
     Reduce a place name to what a written mention and a GADM name can be expected to share.
 
-    Transliterated, stripped of the noun saying what kind of unit it is, and reduced to letters and
-    digits, so ``Kalin-Aapayo province`` and ``Kalin Aapayo`` meet.
+    Repaired of any mis-decoding, transliterated, stripped of the noun saying what kind of unit it
+    is, and reduced to letters and digits, so ``Kalin-Aapayo province`` and ``Kalin Aapayo`` meet.
 
     Parameters
     ----------
@@ -305,12 +337,14 @@ def match_key(name: str) -> str:
     str
         The comparison key, empty where the name was only a unit noun.
     """
-    return "".join(character for character in anyascii(UNIT_NOUNS.sub(" ", name)) if character.isalnum()).casefold()
+    repaired = UNIT_NOUNS.sub(" ", repair_mojibake(name))
+
+    return "".join(character for character in anyascii(repaired) if character.isalnum()).casefold()
 
 
 def _keying_fingerprint() -> str:
     """Fingerprint the rules that turn a name into a key, so a change to them invalidates the cache."""
-    rules = "|".join((UNIT_NOUNS.pattern, str(INDEXABLE_LEVELS)))
+    rules = "|".join((UNIT_NOUNS.pattern, str(INDEXABLE_LEVELS), match_key(_KEYING_PROBE)))
 
     return hashlib.sha256(rules.encode()).hexdigest()[:12]
 
@@ -385,7 +419,6 @@ def read_gazetteer(iso: str, cache_dir: Path, *, layer: str = GADM_LAYER, force_
         "gazetteer",
         build,
         polars_parquet(),
-        # The index is keyed by `match_key`, so the cache turns over when those rules change.
         # The index is keyed by `match_key`, so the cache turns over when those rules change.
         params={"iso": iso, "keying": _keying_fingerprint()},
         force=force_reload,

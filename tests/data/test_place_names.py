@@ -22,6 +22,7 @@ from climate_risk.data.place_names import (
     nearest_name,
     read_gazetteer,
     read_name_corrections,
+    repair_mojibake,
     resolve_event_places,
     resolve_place,
     successor_state,
@@ -797,3 +798,39 @@ def test_an_exact_container_beats_a_misspelling_of_a_finer_one(write_gadm_cache)
     _, fallen_back = resolve_event_places([("Sanamxay", None), ("Nowhere At All", "Samakhixai, Bokeo")], gazetteer)
 
     assert fallen_back == Placement({"LAO.2_1"}, CONTAINED_BY), "Bokeo exactly, not a slip for Samakhixay"
+
+
+@pytest.mark.parametrize(
+    ("mangled", "intended"),
+    [("SÃ©dhiou", "Sédhiou"), ("SÃƒÂ©dhiou", "Sédhiou"), ("HanoÃ¯", "Hanoï")],
+    ids=["decoded once through the wrong codec", "decoded twice", "a different accent"],
+)
+def test_a_name_decoded_through_the_wrong_codec_reaches_the_name_it_mangles(mangled, intended):
+    """EM-DAT carries names written as UTF-8 and read back as cp1252, some of them twice over. Until
+    the mangling comes off they key to letters GADM never published."""
+    assert match_key(mangled) == match_key(intended)
+
+
+@pytest.mark.parametrize(
+    "written",
+    ["Sédhiou", "Đà Nẵng", "Attapu", "Kraków", "São Paulo", "Côte-d'Or"],
+    ids=["accented", "vietnamese", "plain", "polish", "portuguese", "french"],
+)
+def test_a_name_that_was_never_mangled_survives_the_repair(written):
+    """The repair is only safe because it is self-guarding: a correctly written name encodes to
+    bytes that are not valid UTF-8, so the round trip fails and leaves it alone. A name that
+    silently changed here would be corrupted for every lookup."""
+    assert repair_mojibake(written) == written
+
+
+def test_a_keying_rule_with_no_pattern_of_its_own_still_turns_the_cache_over(write_gadm_cache, monkeypatch):
+    """Fingerprinting the unit-noun pattern covers only the rules that are patterns. Repairing a
+    mis-decoded name is a codec round trip, and a cache that cannot see it changing serves an index
+    built under rules that no longer apply."""
+    cache_dir = write_gadm_cache()
+    read_gazetteer("LAO", cache_dir)
+
+    monkeypatch.setattr(place_names, "repair_mojibake", lambda text: text.replace("a", "z"))
+    rekeyed = read_gazetteer("LAO", cache_dir)
+
+    assert "sznzmxzy" in rekeyed.names, "the index was rebuilt under the changed rule"
