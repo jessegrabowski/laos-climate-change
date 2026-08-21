@@ -578,11 +578,34 @@ def _corroborated_slip(name: str, container: set[str], pinned: set[str], gazette
     return inside if len(inside) == 1 else set()
 
 
-def _innermost_container(parent: str | None, gazetteer: Gazetteer) -> set[str]:
-    """Name the units the finest resolving part of a container reaches, so a district beats the state beside it."""
-    for part in container_parts(parent or ""):
-        if found := resolve_place(part, None, gazetteer):
-            return found
+def _corrected_units(name: str, gazetteer: Gazetteer) -> set[str]:
+    """Name the units a checked entry says this name stands for."""
+    published = gazetteer.corrections.get(match_key(name), ())
+
+    return _outermost(
+        {unit.gid for stood_for in published for unit in gazetteer.names.get(stood_for, set())}, gazetteer
+    )
+
+
+def _innermost_container(parent: str | None, pinned: set[str], gazetteer: Gazetteer) -> set[str]:
+    """
+    Name the units a container reaches, reading it the same way a written place is read.
+
+    Stronger evidence wins over finer granularity: an exact match on the state is taken before a
+    misspelling of the district beside it. Within a reading the finest part wins, since the prose
+    writes the container finest first.
+    """
+    parts = container_parts(parent or "")
+    readings = (
+        lambda part: resolve_place(part, None, gazetteer),
+        lambda part: _corrected_units(part, gazetteer),
+        lambda part: _corroborated_slip(part, set(), pinned, gazetteer),
+        lambda part: _qualified_unit(part, gazetteer),
+    )
+    for reading in readings:
+        for part in parts:
+            if found := reading(part):
+                return found
 
     return set()
 
@@ -674,12 +697,10 @@ def _place_one(
     if by_point := located.get(name):
         return Placement({by_point}, LOCATED)
 
-    published = gazetteer.corrections.get(match_key(name), ())
-    stands_for = {unit.gid for stood_for in published for unit in gazetteer.names.get(stood_for, set())}
-    if stands_for:
-        return Placement(_narrowed(_outermost(stands_for, gazetteer), pinned, gazetteer), CORRECTED)
+    if stands_for := _corrected_units(name, gazetteer):
+        return Placement(_narrowed(stands_for, pinned, gazetteer), CORRECTED)
 
-    container = _innermost_container(parent, gazetteer)
+    container = _innermost_container(parent, pinned, gazetteer)
     if inferred := _corroborated_slip(name, container, pinned, gazetteer):
         return Placement(inferred, INFERRED)
 

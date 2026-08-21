@@ -767,3 +767,33 @@ def test_a_place_whose_name_ends_in_a_unit_word_survives():
     the published name, so the two still meet — but a name reduced to nothing would be lost."""
     assert match_key("Rhode Island") == match_key("Rhode Island")
     assert match_key("Kelantan") == "kelantan"
+
+
+def test_a_container_with_a_direction_on_it_reaches_the_unit(write_gadm_cache):
+    """`northern Queensland` names a container the prose plainly gives, and Queensland is a unit.
+    Everything built for reading a place name has to reach the container too."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    (placed,) = resolve_event_places([("Nowhere At All", "Northern Bokeo")], gazetteer)
+
+    assert placed == Placement({"LAO.2_1"}, CONTAINED_BY)
+
+
+def test_a_misspelled_container_the_event_vouches_for_reaches_the_unit(write_gadm_cache):
+    """GADM spells it Hirat and EM-DAT writes Herat. The container carries the same slips a name
+    does, and the event's other places vouch for it the same way."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    _, fallen_back = resolve_event_places([("Sanamxay", None), ("Nowhere At All", "Samakhixai")], gazetteer)
+
+    assert fallen_back == Placement({"LAO.1.2_1"}, CONTAINED_BY)
+
+
+def test_an_exact_container_beats_a_misspelling_of_a_finer_one(write_gadm_cache):
+    """The prose writes a container finest first, but an exact match on the coarser part is better
+    evidence than a slip on the finer one — even when the event vouches for the slip."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    _, fallen_back = resolve_event_places([("Sanamxay", None), ("Nowhere At All", "Samakhixai, Bokeo")], gazetteer)
+
+    assert fallen_back == Placement({"LAO.2_1"}, CONTAINED_BY), "Bokeo exactly, not a slip for Samakhixay"
