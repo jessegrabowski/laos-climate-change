@@ -112,7 +112,9 @@ def place_pinned_units(
     return placed
 
 
-def compare(expected: dict[tuple[int, int], tuple[frozenset[str], str]], placed: dict[tuple[int, int], set[str]]):
+def compare(
+    expected: dict[tuple[int, int], tuple[frozenset[str], str]], placed: dict[tuple[int, int], set[str]]
+) -> pd.DataFrame:
     """
     Score the placement of every pinned unit that had a footprint.
 
@@ -159,8 +161,8 @@ def main() -> int:
 
     print(f"agreement: {scored['agrees'].sum()}/{len(scored)} ({scored['agrees'].mean():.1%})\n")
     by_method = (
-        scored.groupby("method")["agrees"]
-        .agg(matched="sum", units="count", share="mean")
+        scored.groupby("method")
+        .agg(matched=("agrees", "sum"), units=("agrees", "count"), share=("agrees", "mean"))
         .sort_values("units", ascending=False)
     )
     print("by the migration method EM-DAT used, which the units partition between:")

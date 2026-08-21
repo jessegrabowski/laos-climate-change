@@ -201,6 +201,7 @@ files = [
     "climate_risk/sample.py",
     "climate_risk/stats",
     "tests",
+    "tools",
 ]
 python_version = "3.12"
 disallow_untyped_defs = true
@@ -212,6 +213,9 @@ warn_return_any = true
 warn_unreachable = true
 warn_unused_ignores = true
 strict_equality = true
+
+# A name bound on only some paths reads as defined and raises at runtime. Off by default in mypy.
+enable_error_code = ["possibly-undefined"]
 
 # No stubs exist for these, on the index or in the packages themselves.
 [[tool.mypy.overrides]]
