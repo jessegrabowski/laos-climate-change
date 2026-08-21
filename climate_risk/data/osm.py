@@ -34,9 +34,9 @@ PLACE_CATEGORIES = ("place", "boundary")
 
 # One row per name asked about, whether or not it was found. A miss is a result: without recording
 # it, every rebuild asks the whole question again. `kind` is Nominatim's `type`, renamed off the
-# builtin.
+# builtin. The name is stored as written and keyed at read time, so a change to the keying rules
+# costs a lookup rather than another crawl.
 LOOKUP_COLUMNS = {
-    "key": pl.String,
     "written": pl.String,
     "lon": pl.Float64,
     "lat": pl.Float64,
@@ -144,8 +144,8 @@ def read_osm_places(iso: str, cache_dir: Path) -> pl.DataFrame:
     Returns
     -------
     DataFrame
-        Columns ``key``, ``written``, ``lon``, ``lat``, ``category`` and ``kind``, one row per name
-        asked about. Empty where nothing has been asked for this country yet.
+        Columns ``written``, ``lon``, ``lat``, ``category`` and ``kind``, one row per name asked
+        about. Empty where nothing has been asked for this country yet.
     """
     stored = polars_parquet()
     path = (osm_dir(cache_dir) / cache_key("lookups", {"iso": iso})).with_suffix(stored.suffix)
@@ -176,7 +176,8 @@ def osm_geocoder(iso: str, cache_dir: Path) -> Geocoder:
     found = read_osm_places(iso, cache_dir).filter(
         pl.col("lon").is_not_null() & pl.col("category").is_in(PLACE_CATEGORIES)
     )
-    located = dict(zip(found["key"], zip(found["lon"], found["lat"], strict=True), strict=True))
+    points = zip(found["lon"], found["lat"], strict=True)
+    located = {match_key(written): point for written, point in zip(found["written"], points, strict=True)}
 
     def locate(_: str, name: str) -> tuple[float, float] | None:
         return located.get(match_key(name))
@@ -205,7 +206,6 @@ def record_lookups(iso: str, cache_dir: Path, answers: Mapping[str, NominatimAns
     fresh = pl.DataFrame(
         [
             {
-                "key": match_key(written),
                 "written": written,
                 "lon": answer.lon if answer else None,
                 "lat": answer.lat if answer else None,
