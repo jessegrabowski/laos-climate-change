@@ -12,6 +12,7 @@ from climate_risk.data_functions.emdat_processing import (
     DISASTER_TYPES,
     EMDAT_WINDOW_START,
     GEOMETRY_SOURCES,
+    RESOLVED_UNIT_SCHEMA,
     NamedPlace,
     count_events_by_type,
     country_year_grid,
@@ -667,3 +668,164 @@ def test_no_tier_silently_swallows_the_others():
     # Coded events carry several units each, so the gadm tier is the longest despite being a
     # minority of events.
     assert per_source["gadm"] > per_source["country"]
+
+
+def resolved_units(rows):
+    """Units another gazetteer places, in the shape `event_geography` takes them."""
+    return pl.DataFrame(rows, schema=RESOLVED_UNIT_SCHEMA, orient="row")
+
+
+def test_an_event_the_workbook_places_nowhere_takes_the_overlay_units(write_emdat_cache):
+    """The 209 events this tier exists for: geography is available from a second gazetteer and the
+    table recorded none of it, because nothing produced the tier `GEOMETRY_SOURCES` advertised."""
+    cache_dir = write_emdat_cache([emdat_event({"DisNo.": "uncoded", "Latitude": None, "Longitude": None})])
+
+    geography = event_geography(
+        load_emdat_events(cache_dir), resolved=resolved_units([("uncoded", "AAA.1_1", "Somewhere", 1, 3, 0.8)])
+    )
+
+    assert geography["geometry_source"].to_list() == ["geo_disasters"]
+    assert geography["gid"].to_list() == ["AAA.1_1"]
+    assert geography["admin_level"].to_list() == [1]
+    assert geography["geocoding_q"].to_list() == [3]
+    assert geography["overlap"].to_list() == [0.8]
+
+
+def test_an_overlay_unit_inside_one_the_workbook_codes_is_dropped(write_emdat_cache):
+    """The same ground at a second resolution. Keeping both would put a province and a district
+    inside it into one observation, which reads as more geography than either source claims."""
+    cache_dir = write_emdat_cache(
+        [emdat_event({"DisNo.": "coded", "GADM Admin Units": units_json({"gid_1": "AAA.1_1"})})]
+    )
+
+    geography = event_geography(
+        load_emdat_events(cache_dir), resolved=resolved_units([("coded", "AAA.1.2_1", "Inside it", 2, 1, 0.9)])
+    )
+
+    assert set(geography["geometry_source"]) == {"gadm"}
+    assert geography["gid"].to_list() == ["AAA.1_1"]
+
+
+def test_an_overlay_unit_the_workbook_already_codes_is_dropped(write_emdat_cache):
+    """The commonest case by far — the two sources mostly name the same units. Counting a repeat as
+    new ground gives the event the same unit twice under two tiers, which reads as twice the
+    footprint and double-counts it in anything aggregating over units."""
+    cache_dir = write_emdat_cache(
+        [emdat_event({"DisNo.": "coded", "GADM Admin Units": units_json({"gid_1": "AAA.1_1"})})]
+    )
+
+    geography = event_geography(
+        load_emdat_events(cache_dir), resolved=resolved_units([("coded", "AAA.1_1", "The same one", 1, 1, 0.9)])
+    )
+
+    assert geography["gid"].to_list() == ["AAA.1_1"]
+    assert geography["geometry_source"].to_list() == ["gadm"]
+
+
+def test_an_overlay_unit_containing_one_the_workbook_codes_is_dropped(write_emdat_cache):
+    """Nesting the other way round, which happens wherever EM-DAT codes finer than the overlay
+    resolves. Still one piece of ground named twice."""
+    cache_dir = write_emdat_cache(
+        [emdat_event({"DisNo.": "coded", "GADM Admin Units": units_json({"gid_2": "AAA.1.2_1"})})]
+    )
+
+    geography = event_geography(
+        load_emdat_events(cache_dir), resolved=resolved_units([("coded", "AAA.1_1", "Around it", 1, 1, 0.9)])
+    )
+
+    assert set(geography["geometry_source"]) == {"gadm"}
+    assert geography["gid"].to_list() == ["AAA.1.2_1"]
+
+
+def test_an_overlay_unit_nesting_with_none_of_the_coded_ones_is_kept(write_emdat_cache):
+    """Area EM-DAT never coded. Across the region this is 596 units over 90 events, and dropping it
+    loses geography one source holds and nothing else records."""
+    cache_dir = write_emdat_cache(
+        [emdat_event({"DisNo.": "coded", "GADM Admin Units": units_json({"gid_1": "AAA.1_1"})})]
+    )
+
+    geography = event_geography(
+        load_emdat_events(cache_dir), resolved=resolved_units([("coded", "AAA.9_1", "Elsewhere", 1, 2, 0.6)])
+    )
+
+    assert sorted(geography["gid"]) == ["AAA.1_1", "AAA.9_1"]
+    assert set(geography["geometry_source"]) == {"gadm", "geo_disasters"}
+    assert geography.filter(pl.col("gid") == "AAA.9_1")["geocoding_q"].to_list() == [2]
+
+
+def test_the_overlay_columns_are_null_on_every_other_tier(write_emdat_cache):
+    """`geocoding_q` and `overlap` say how one gazetteer placed a unit, so a value on a row it did
+    not place reads as its judgement of a placement it never made. The tier has to be populated for
+    this to mean anything — with no overlay at all every row is null trivially."""
+    cache_dir = write_emdat_cache(
+        [
+            emdat_event({"DisNo.": "coded", "GADM Admin Units": units_json({"gid_1": "AAA.1_1"})}),
+            emdat_event({"DisNo.": "overlaid", "Latitude": None, "Longitude": None}),
+            emdat_event({"DisNo.": "point", "Latitude": 1.0, "Longitude": 2.0}),
+            emdat_event({"DisNo.": "nothing", "Latitude": None, "Longitude": None}),
+        ]
+    )
+
+    geography = event_geography(
+        load_emdat_events(cache_dir), resolved=resolved_units([("overlaid", "AAA.2_1", "Somewhere", 2, 4, 0.6)])
+    )
+
+    scored = geography.filter(pl.col("geometry_source") == "geo_disasters")
+    elsewhere = geography.filter(pl.col("geometry_source") != "geo_disasters")
+
+    assert scored["geocoding_q"].to_list() == [4]
+    assert elsewhere["geocoding_q"].null_count() == len(elsewhere)
+    assert elsewhere["overlap"].null_count() == len(elsewhere)
+
+
+def test_an_overlay_naming_an_event_the_workbook_does_not_have_is_ignored(write_emdat_cache):
+    """The overlay is resolved per country, so it carries events this frame has filtered out. One
+    arriving as its own row would be geography for an event nothing else in the table knows."""
+    cache_dir = write_emdat_cache([emdat_event({"DisNo.": "nothing", "Latitude": None, "Longitude": None})])
+
+    geography = event_geography(
+        load_emdat_events(cache_dir),
+        resolved=resolved_units([("a-different-event", "AAA.1_1", "Somewhere", 1, 1, 0.5)]),
+    )
+
+    assert geography["DisNo."].to_list() == ["nothing"]
+    assert geography["geometry_source"].to_list() == ["country"]
+
+
+def test_an_overlay_placing_an_event_in_several_units_contributes_a_row_each(write_emdat_cache):
+    """An event spanning three provinces is three rows, the same as when the workbook codes it.
+    Collapsing them would make a wide event look like a point one."""
+    cache_dir = write_emdat_cache([emdat_event({"DisNo.": "wide", "Latitude": None, "Longitude": None})])
+
+    geography = event_geography(
+        load_emdat_events(cache_dir),
+        resolved=resolved_units(
+            [
+                ("wide", "AAA.1_1", "First", 1, 1, 0.9),
+                ("wide", "AAA.2_1", "Second", 1, 1, 0.7),
+                ("wide", "AAA.3_1", "Third", 1, 2, 0.4),
+            ]
+        ),
+    )
+
+    assert sorted(geography["gid"]) == ["AAA.1_1", "AAA.2_1", "AAA.3_1"]
+    assert set(geography["geometry_source"]) == {"geo_disasters"}
+
+
+def test_every_geometry_source_the_table_advertises_can_be_produced(write_emdat_cache):
+    """`GEOMETRY_SOURCES` is what a model reads to choose the tiers it accepts, so a value nothing
+    emits is a tier a caller can filter on forever and never see."""
+    cache_dir = write_emdat_cache(
+        [
+            emdat_event({"DisNo.": "coded", "GADM Admin Units": units_json({"gid_1": "AAA.1_1"})}),
+            emdat_event({"DisNo.": "overlaid", "Latitude": None, "Longitude": None}),
+            emdat_event({"DisNo.": "point", "Latitude": 1.0, "Longitude": 2.0}),
+            emdat_event({"DisNo.": "nothing", "Latitude": None, "Longitude": None}),
+        ]
+    )
+
+    geography = event_geography(
+        load_emdat_events(cache_dir), resolved=resolved_units([("overlaid", "AAA.2_1", "Somewhere", 1, 1, 0.5)])
+    )
+
+    assert set(geography["geometry_source"]) == set(GEOMETRY_SOURCES)
