@@ -497,8 +497,18 @@ EVENT_GEOGRAPHY_COLUMNS = (
     "Longitude",
 )
 
+# What a caller has to supply for the `geo_disasters` tier to be emitted.
+RESOLVED_UNIT_SCHEMA = pl.Schema(
+    {
+        "DisNo.": pl.String,
+        "gid": pl.String,
+        "name": pl.String,
+        "admin_level": pl.Int8,
+    }
+)
 
-def event_geography(events: pl.DataFrame) -> pl.DataFrame:
+
+def event_geography(events: pl.DataFrame, *, resolved: pl.DataFrame | None = None) -> pl.DataFrame:
     """
     Say where every event's geometry comes from, one row per event-unit and one per event otherwise.
 
@@ -509,10 +519,19 @@ def event_geography(events: pl.DataFrame) -> pl.DataFrame:
     ``Latitude`` and ``Longitude`` are carried wherever EM-DAT supplies them, including on ``gadm``
     rows, so the two claims stay visible side by side rather than one being discarded.
 
+    An event EM-DAT codes to units keeps only those, and ``resolved`` fills events it codes to none.
+    The two sources never disagree about where an event was, only about how finely to say it, so
+    taking both would mix a province and the districts inside it into one observation while leaving
+    ``geometry_source`` no longer describing the row.
+
     Parameters
     ----------
     events : DataFrame
         The workbook, as :func:`load_emdat_events` returns it.
+    resolved : DataFrame, optional
+        Units another gazetteer places, with the columns of ``RESOLVED_UNIT_SCHEMA``. Default None,
+        which emits no ``geo_disasters`` rows. Reading them is the caller's job: they come from a
+        polygon overlay, and this layer holds no geometry.
 
     Returns
     -------
@@ -522,10 +541,21 @@ def event_geography(events: pl.DataFrame) -> pl.DataFrame:
     """
     units = event_units(events)
     located = events.select("DisNo.", "ISO", "Latitude", "Longitude")
+    overlay = pl.DataFrame(schema=RESOLVED_UNIT_SCHEMA) if resolved is None else resolved
 
-    from_units = units.join(located, on="DisNo.", how="left").with_columns(pl.lit("gadm").alias("geometry_source"))
+    from_units = units.join(located, on="DisNo.", how="left").with_columns(
+        pl.lit("gadm").alias("geometry_source"),
+    )
 
-    rest = located.join(units.select("DisNo.").unique(), on="DisNo.", how="anti").with_columns(
+    uncoded = located.join(units.select("DisNo.").unique(), on="DisNo.", how="anti")
+    from_overlay = uncoded.join(
+        overlay.select(list(RESOLVED_UNIT_SCHEMA)).cast(RESOLVED_UNIT_SCHEMA), on="DisNo.", how="inner"
+    ).with_columns(
+        pl.lit("geo_disasters").alias("geometry_source"),
+        pl.lit(None, dtype=pl.String).alias("migration_method"),
+    )
+
+    rest = uncoded.join(overlay.select("DisNo.").unique(), on="DisNo.", how="anti").with_columns(
         pl.when(pl.col("Latitude").is_not_null())
         .then(pl.lit("emdat_point"))
         .otherwise(pl.lit("country"))
@@ -536,9 +566,9 @@ def event_geography(events: pl.DataFrame) -> pl.DataFrame:
         pl.lit(None, dtype=pl.String).alias("migration_method"),
     )
 
-    return pl.concat([from_units.select(EVENT_GEOGRAPHY_COLUMNS), rest.select(EVENT_GEOGRAPHY_COLUMNS)]).sort(
-        "DisNo.", "gid", nulls_last=True
-    )
+    tiers = (from_units, from_overlay, rest)
+
+    return pl.concat([tier.select(EVENT_GEOGRAPHY_COLUMNS) for tier in tiers]).sort("DisNo.", "gid", nulls_last=True)
 
 
 def event_filter(filters: EventFilters) -> pl.Expr:

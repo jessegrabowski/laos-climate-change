@@ -12,6 +12,7 @@ from climate_risk.data_functions.emdat_processing import (
     DISASTER_TYPES,
     EMDAT_WINDOW_START,
     GEOMETRY_SOURCES,
+    RESOLVED_UNIT_SCHEMA,
     NamedPlace,
     count_events_by_type,
     country_year_grid,
@@ -667,3 +668,50 @@ def test_no_tier_silently_swallows_the_others():
     # Coded events carry several units each, so the gadm tier is the longest despite being a
     # minority of events.
     assert per_source["gadm"] > per_source["country"]
+
+
+def resolved_units(rows):
+    """Units another gazetteer places, in the shape `event_geography` takes them."""
+    return pl.DataFrame(rows, schema=RESOLVED_UNIT_SCHEMA, orient="row")
+
+
+def test_an_event_the_workbook_places_nowhere_takes_the_overlay_units(write_emdat_cache):
+    """The 209 events this tier exists for: geography is available from a second gazetteer and the
+    table recorded none of it, because nothing produced the tier `GEOMETRY_SOURCES` advertised."""
+    cache_dir = write_emdat_cache([emdat_event({"DisNo.": "uncoded", "Latitude": None, "Longitude": None})])
+
+    geography = event_geography(
+        load_emdat_events(cache_dir), resolved=resolved_units([("uncoded", "AAA.1_1", "Somewhere", 1)])
+    )
+
+    assert geography["geometry_source"].to_list() == ["geo_disasters"]
+    assert geography["gid"].to_list() == ["AAA.1_1"]
+
+
+def test_the_workbook_s_own_units_are_kept_whole_over_the_overlay_s(write_emdat_cache):
+    """Precedence, and it is a choice about resolution rather than trust: on the events both cover
+    neither disagrees about where the event was, only about how finely to say it. Taking both would
+    put a province and the districts inside it into one observation, and leave `geometry_source` no
+    longer describing the row."""
+    cache_dir = write_emdat_cache([emdat_event({"DisNo.": "coded", "GADM Admin Units": '[{"gid_1": "AAA.1_1"}]'})])
+
+    geography = event_geography(
+        load_emdat_events(cache_dir), resolved=resolved_units([("coded", "AAA.9_1", "Elsewhere", 1)])
+    )
+
+    assert set(geography["geometry_source"]) == {"gadm"}
+    assert "AAA.9_1" not in geography["gid"].to_list()
+
+
+def test_an_overlay_naming_an_event_the_workbook_does_not_have_is_ignored(write_emdat_cache):
+    """The overlay is resolved per country, so it carries events this frame has filtered out. One
+    arriving as its own row would be geography for an event nothing else in the table knows."""
+    cache_dir = write_emdat_cache([emdat_event({"DisNo.": "nothing", "Latitude": None, "Longitude": None})])
+
+    geography = event_geography(
+        load_emdat_events(cache_dir),
+        resolved=resolved_units([("a-different-event", "AAA.1_1", "Somewhere", 1)]),
+    )
+
+    assert geography["DisNo."].to_list() == ["nothing"]
+    assert geography["geometry_source"].to_list() == ["country"]
