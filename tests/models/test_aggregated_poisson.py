@@ -1,12 +1,19 @@
+from typing import NamedTuple
+
 import numpy as np
+import ptgp
+import pymc as pm
 import pytensor
 import pytensor.tensor as pt
 import pytest
+import scipy.optimize
 
+from ptgp import FitResult
 from ptgp.gp import SVGP, init_variational_params
 from ptgp.inducing import Points
 from ptgp.kernels import ExpQuad
 from ptgp.likelihoods import Poisson
+from ptgp.optim.training import compile_scipy_objective, get_trained_params
 from pytensor.graph.traversal import explicit_graph_inputs
 from pytensor.tensor.special import gammaln
 
@@ -232,3 +239,153 @@ def test_the_objective_is_the_poisson_likelihood_less_the_divergence():
     from_objective, from_pieces = compiled(*[rng.normal(0.0, 0.2, size=p.type.shape) for p in parameters])
 
     assert from_objective == pytest.approx(from_pieces)
+
+
+CELLS_PER_AXIS, INDUCING_PER_AXIS = 24, 6
+
+
+class Recovery(NamedTuple):
+    """How much of a known surface a fit got back.
+
+    Parameters
+    ----------
+    correlation : float
+        Correlation of the recovered log-intensity with the truth, over every cell.
+    within_unit_correlation : float
+        The same, after each cell has its own unit's mean removed. This is the only one that says
+        anything about seeing inside a polygon; the other is dominated by between-unit signal.
+    flat_correlation : float
+        The same as ``correlation``, for a baseline spreading each unit's count evenly over its
+        cells.
+    flat_within_unit_spread : float
+        Standard deviation of the baseline's within-unit residual, which is zero by construction.
+    """
+
+    correlation: float
+    within_unit_correlation: float
+    flat_correlation: float
+    flat_within_unit_spread: float
+
+
+def true_log_intensity(x: np.ndarray, y: np.ndarray) -> np.ndarray:
+    """A surface no exponentiated-quadratic kernel can reproduce from its own basis, so recovering
+    it is a claim about the fit rather than about the prior."""
+    return 8.0 + 1.3 * np.sin(np.pi * x) * np.cos(2.0 / 3.0 * np.pi * y) - 0.8 * x
+
+
+def recover_known_surface(*, units_per_axis: int, fixed_lengthscale: float | None = None) -> Recovery:
+    """Observe a known surface through polygon totals, fit it, and score what comes back."""
+    rng = np.random.default_rng(0)
+    edges = np.linspace(0.0, 1.0, CELLS_PER_AXIS + 1)
+    centres = (edges[:-1] + edges[1:]) / 2.0
+    x, y = (axis.ravel() for axis in np.meshgrid(centres, centres, indexing="ij"))
+    areas = np.full(x.shape, 1.0 / CELLS_PER_AXIS**2)
+
+    column = np.minimum((x * units_per_axis).astype(int), units_per_axis - 1)
+    row = np.minimum((y * units_per_axis).astype(int), units_per_axis - 1)
+    unit_of_cell = [f"u{r:02d}{c:02d}" for r, c in zip(row, column, strict=True)]
+
+    features = np.column_stack([x, y])
+    aggregation = build_aggregation(unit_of_cell=unit_of_cell, weights=areas)
+    log_truth = true_log_intensity(x, y)
+    counts = rng.poisson(aggregation.aggregate(np.exp(log_truth))).astype(float)
+
+    axis_points = np.linspace(0.05, 0.95, INDUCING_PER_AXIS)
+    inducing = np.column_stack([axis.ravel() for axis in np.meshgrid(axis_points, axis_points, indexing="ij")])
+
+    with pm.Model() as model:
+        lengthscale = (
+            pt.constant(fixed_lengthscale, name="lengthscale")
+            if fixed_lengthscale is not None
+            else pm.HalfNormal("lengthscale", 0.5)
+        )
+        amplitude = pm.HalfNormal("amplitude", 2.0)
+        offset = pm.Normal("offset", 7.0, 3.0)
+        svgp = SVGP(
+            kernel=amplitude**2 * ExpQuad(input_dim=2, ls=lengthscale),
+            likelihood=Poisson(),
+            mean=lambda X: pt.full((X.shape[0],), offset),
+            inducing_variable=Points(Z=inducing),
+            variational_params=init_variational_params(inducing.shape[0]),
+            whiten=True,
+        )
+
+        def objective(gp, cell_features, unit_counts):
+            return aggregated_poisson_elbo(gp, cell_features, unit_counts, aggregation, n_draws=32, seed=1)
+
+        loss_and_grad, start, unpack, shared_params, shared_extras = compile_scipy_objective(
+            objective, svgp, pt.matrix("X", shape=(None, 2)), pt.vector("y", shape=(None,)), model=model
+        )
+        result = scipy.optimize.minimize(
+            loss_and_grad, start, args=(features, counts), jac=True, method="L-BFGS-B", options={"maxiter": 200}
+        )
+        unpack(result.x)
+        fitted = FitResult(
+            result=result,
+            params=get_trained_params(model, shared_params),
+            shared_params=shared_params,
+            shared_extras=tuple(shared_extras),
+            model=model,
+        )
+
+    posterior_mean, posterior_variance = ptgp.predict(svgp, features, fitted)
+    log_recovered = posterior_mean + posterior_variance / 2.0
+
+    rows = np.array([aggregation.units.index(unit) for unit in unit_of_cell])
+    cells_per_unit = (CELLS_PER_AXIS // units_per_axis) ** 2
+    log_flat = np.log(counts[rows] / (cells_per_unit * areas))
+
+    labels = np.array(unit_of_cell)
+
+    def within_unit(field: np.ndarray) -> np.ndarray:
+        centred = np.empty_like(field)
+        for label in set(unit_of_cell):
+            inside = labels == label
+            centred[inside] = field[inside] - field[inside].mean()
+
+        return centred
+
+    inside_truth = within_unit(log_truth)
+
+    return Recovery(
+        correlation=float(np.corrcoef(log_recovered, log_truth)[0, 1]),
+        within_unit_correlation=float(np.corrcoef(within_unit(log_recovered), inside_truth)[0, 1]),
+        flat_correlation=float(np.corrcoef(log_flat, log_truth)[0, 1]),
+        flat_within_unit_spread=float(np.std(within_unit(log_flat))),
+    )
+
+
+@pytest.mark.slow
+def test_a_variational_gp_recovers_structure_inside_a_polygon():
+    """The premise the whole geographic model rests on. Spreading each unit's count evenly over its
+    cells already correlates 0.89 with the truth, entirely from between-unit variation, so the
+    aggregate number proves nothing — the baseline carries no within-unit signal at all, by
+    construction. Against the residual it cannot see, the fit recovers most of the surface."""
+    recovery = recover_known_surface(units_per_axis=12)
+
+    assert recovery.flat_within_unit_spread == pytest.approx(0.0, abs=1e-12), "the baseline is blind inside a unit"
+    assert recovery.within_unit_correlation > 0.8
+    assert recovery.correlation > recovery.flat_correlation + 0.05
+
+
+@pytest.mark.slow
+def test_a_coarse_unit_learns_a_lengthscale_that_sees_nothing_inside_itself():
+    """With 36 cells to a unit the lengthscale is fit from between-unit variation alone and comes
+    back far too long, so the field is smooth where the truth is not. The aggregate correlation
+    falls below the baseline, which is the honest reading: on coarse units this model is worse than
+    spreading the totals. Step 4 has to fix or bound the lengthscale rather than learn it."""
+    recovery = recover_known_surface(units_per_axis=4)
+
+    assert recovery.within_unit_correlation < 0.3
+    assert recovery.correlation < recovery.flat_correlation
+
+
+@pytest.mark.slow
+def test_fixing_the_lengthscale_restores_recovery_in_coarse_units():
+    """The coarse-unit failure is the lengthscale being learned badly, not an inability to see
+    inside a large polygon. Held at the truth's scale, the same fit on the same data recovers most
+    of the within-unit surface."""
+    recovery = recover_known_surface(units_per_axis=4, fixed_lengthscale=0.5)
+
+    assert recovery.within_unit_correlation > 0.6
+    assert recovery.correlation > recovery.flat_correlation
