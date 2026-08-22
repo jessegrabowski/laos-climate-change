@@ -9,6 +9,7 @@ import polars as pl
 
 from climate_risk.config.schema import EventFilters
 from climate_risk.data.source import ManualSource
+from climate_risk.exceptions import DataValidationError
 
 # EM-DAT requires an account and forbids redistribution, so it is fetched by a person, not by code.
 EMDAT = ManualSource(
@@ -483,7 +484,7 @@ def event_units(events: pl.DataFrame) -> pl.DataFrame:
 
 # Where an event's geometry comes from, best first. Nothing is filtered on this: the column records
 # what the source holds, and a model chooses which tiers it will accept.
-GEOMETRY_SOURCES = ("gadm", "geo_disasters", "emdat_point", "country")
+GEOMETRY_SOURCES = ("gadm", "geo_disasters", "location_text", "emdat_point", "country")
 
 EVENT_GEOGRAPHY_COLUMNS = (
     "DisNo.",
@@ -495,6 +496,8 @@ EVENT_GEOGRAPHY_COLUMNS = (
     "migration_method",
     "geocoding_q",
     "overlap",
+    "names_written",
+    "names_reached",
     "Latitude",
     "Longitude",
 )
@@ -512,6 +515,19 @@ RESOLVED_UNIT_SCHEMA = pl.Schema(
     }
 )
 
+# The units an event's own prose reaches, resolved elsewhere: this layer holds no gazetteer.
+TEXT_UNIT_SCHEMA = pl.Schema({"DisNo.": pl.String, "gid": pl.String, "name": pl.String, "admin_level": pl.Int8})
+
+# How complete that reading was, per event rather than per unit, so an event whose prose reached
+# nothing still records that it wrote names. Null where the event carries no parseable text.
+TEXT_RESOLUTION_SCHEMA = pl.Schema({"DisNo.": pl.String, "names_written": pl.Int16, "names_reached": pl.Int16})
+
+# What a tier assembles on its own. The rest of the table is joined on afterwards, per event
+# rather than per unit.
+_TIER_COLUMNS = tuple(
+    column for column in EVENT_GEOGRAPHY_COLUMNS if column == "DisNo." or column not in TEXT_RESOLUTION_SCHEMA
+)
+
 # The columns a tier need not carry, and the type each takes where it does not. A tier states only
 # what it knows, so a column added to the table is declared here once instead of in every tier.
 _ABSENT_COLUMN_TYPES = pl.Schema(
@@ -524,6 +540,22 @@ _ABSENT_COLUMN_TYPES = pl.Schema(
         "overlap": pl.Float64,
     }
 )
+
+
+def _as_frame(given: pl.DataFrame | None, schema: pl.Schema) -> pl.DataFrame:
+    """Take the caller's frame down to the columns and types the schema names, or an empty one."""
+    return pl.DataFrame(schema=schema) if given is None else given.select(list(schema)).cast(schema)
+
+
+def _one_row_per_event(counts: pl.DataFrame) -> pl.DataFrame:
+    """Refuse a per-event lookup that names an event twice."""
+    # Attached by a join on the event alone, so a repeated event fans out every geography row it
+    # has, including rows of tiers the reading had nothing to do with.
+    repeated = sorted(counts.filter(pl.col("DisNo.").is_duplicated())["DisNo."].unique().to_list())
+    if repeated:
+        raise DataValidationError(f"The resolution counts name an event more than once: {repeated[:5]}.")
+
+    return counts
 
 
 def _nesting_path(gid: pl.Expr) -> pl.Expr:
@@ -577,7 +609,13 @@ def _with_absent_columns(tier: pl.DataFrame) -> pl.DataFrame:
     )
 
 
-def event_geography(events: pl.DataFrame, *, resolved: pl.DataFrame | None = None) -> pl.DataFrame:
+def event_geography(
+    events: pl.DataFrame,
+    *,
+    resolved: pl.DataFrame | None = None,
+    from_text: pl.DataFrame | None = None,
+    text_resolution: pl.DataFrame | None = None,
+) -> pl.DataFrame:
     """
     Say where every event's geometry comes from, one row per event-unit and one per event otherwise.
 
@@ -588,10 +626,16 @@ def event_geography(events: pl.DataFrame, *, resolved: pl.DataFrame | None = Non
     ``Latitude`` and ``Longitude`` are carried wherever EM-DAT supplies them, including on ``gadm``
     rows, so the two claims stay visible side by side rather than one being discarded.
 
-    An event keeps every unit EM-DAT codes it to and takes from ``resolved`` only the units naming
-    ground those leave uncovered. The two sources differ on how finely to name a location rather
-    than on where it was, so a unit either already names is the same ground counted at a second
-    resolution, while one nesting with none of them is area EM-DAT never coded.
+    Sources are taken in the order ``GEOMETRY_SOURCES`` declares. An event keeps every unit EM-DAT
+    codes it to, and each later source contributes only units naming ground the ones before it leave
+    uncovered. GADM ids nest, so a unit an earlier source already names is the same ground at a
+    second resolution; taking it again would put a province and the districts inside it into one
+    observation.
+
+    ``names_written`` and ``names_reached`` say how much of an event's prose resolved, on every row
+    of an event whose text was read. They describe the prose rather than the tier, so an event whose
+    names all failed carries them at ``country`` tier, which is where a partial reading is least
+    visible and most worth recording.
 
     Parameters
     ----------
@@ -601,28 +645,42 @@ def event_geography(events: pl.DataFrame, *, resolved: pl.DataFrame | None = Non
         Units another gazetteer places, with the columns of ``RESOLVED_UNIT_SCHEMA``. Default None,
         which emits no ``geo_disasters`` rows. Reading them is the caller's job: they come from a
         polygon overlay, and this layer holds no geometry.
+    from_text : DataFrame, optional
+        Units an event's own location text reaches, with the columns of ``TEXT_UNIT_SCHEMA``.
+        Default None, which emits no ``location_text`` rows. Resolving them needs a gazetteer, which
+        this layer does not hold either.
+    text_resolution : DataFrame, optional
+        How many placeable names each event wrote and how many reached a unit, with the columns of
+        ``TEXT_RESOLUTION_SCHEMA``. Default None, which leaves both columns null.
 
     Returns
     -------
     DataFrame
         ``DisNo.``, ``ISO``, ``geometry_source`` from ``GEOMETRY_SOURCES``, the unit columns of
         :func:`event_units` where one applies, ``geocoding_q`` and ``overlap`` on the
-        ``geo_disasters`` tier, and the event's coordinate where it has one.
+        ``geo_disasters`` tier, ``names_written`` and ``names_reached`` wherever the event's text was
+        read, and the event's coordinate where it has one.
     """
     units = event_units(events)
     located = events.select("DisNo.", "ISO", "Latitude", "Longitude")
-    overlay = pl.DataFrame(schema=RESOLVED_UNIT_SCHEMA) if resolved is None else resolved
+    overlay = _as_frame(resolved, RESOLVED_UNIT_SCHEMA)
+    prose = _as_frame(from_text, TEXT_UNIT_SCHEMA)
 
     from_units = units.join(located, on="DisNo.", how="left").with_columns(pl.lit("gadm").alias("geometry_source"))
 
-    unnamed = _naming_ground_the_units_do_not(
-        overlay.select(list(RESOLVED_UNIT_SCHEMA)).cast(RESOLVED_UNIT_SCHEMA), units
-    )
+    unnamed = _naming_ground_the_units_do_not(overlay, units)
     from_overlay = located.join(unnamed, on="DisNo.", how="inner").with_columns(
         pl.lit("geo_disasters").alias("geometry_source")
     )
 
-    placed = pl.concat([units.select("DisNo."), unnamed.select("DisNo.")]).unique()
+    # Each source answers only for ground the ones before it left unnamed, so the order in
+    # `GEOMETRY_SOURCES` decides who wins a repeat rather than who is read last.
+    already = pl.concat([units.select("DisNo.", "gid"), unnamed.select("DisNo.", "gid")])
+    from_prose = located.join(_naming_ground_the_units_do_not(prose, already), on="DisNo.", how="inner").with_columns(
+        pl.lit("location_text").alias("geometry_source")
+    )
+
+    placed = pl.concat([tier.select("DisNo.") for tier in (units, unnamed, from_prose)]).unique()
     rest = located.join(placed, on="DisNo.", how="anti").with_columns(
         pl.when(pl.col("Latitude").is_not_null())
         .then(pl.lit("emdat_point"))
@@ -630,10 +688,13 @@ def event_geography(events: pl.DataFrame, *, resolved: pl.DataFrame | None = Non
         .alias("geometry_source")
     )
 
-    tiers = (from_units, from_overlay, rest)
+    tiers = (from_units, from_overlay, from_prose, rest)
+    every = pl.concat([_with_absent_columns(tier).select(_TIER_COLUMNS) for tier in tiers])
 
-    return pl.concat([_with_absent_columns(tier).select(EVENT_GEOGRAPHY_COLUMNS) for tier in tiers]).sort(
-        "DisNo.", "gid", nulls_last=True
+    return (
+        every.join(_one_row_per_event(_as_frame(text_resolution, TEXT_RESOLUTION_SCHEMA)), on="DisNo.", how="left")
+        .select(EVENT_GEOGRAPHY_COLUMNS)
+        .sort("DisNo.", "gid", nulls_last=True)
     )
 
 

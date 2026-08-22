@@ -13,6 +13,8 @@ from climate_risk.data_functions.emdat_processing import (
     EMDAT_WINDOW_START,
     GEOMETRY_SOURCES,
     RESOLVED_UNIT_SCHEMA,
+    TEXT_RESOLUTION_SCHEMA,
+    TEXT_UNIT_SCHEMA,
     NamedPlace,
     count_events_by_type,
     country_year_grid,
@@ -24,6 +26,7 @@ from climate_risk.data_functions.emdat_processing import (
     named_places,
     total_damage,
 )
+from climate_risk.exceptions import DataValidationError
 from tests.conftest import emdat_event
 
 
@@ -670,6 +673,16 @@ def test_no_tier_silently_swallows_the_others():
     assert per_source["gadm"] > per_source["country"]
 
 
+def text_units(rows):
+    """Units an event's own prose reaches, in the shape `event_geography` takes them."""
+    return pl.DataFrame(rows, schema=TEXT_UNIT_SCHEMA, orient="row")
+
+
+def resolution_counts(rows):
+    """How much of each event's prose resolved, per event."""
+    return pl.DataFrame(rows, schema=TEXT_RESOLUTION_SCHEMA, orient="row")
+
+
 def resolved_units(rows):
     """Units another gazetteer places, in the shape `event_geography` takes them."""
     return pl.DataFrame(rows, schema=RESOLVED_UNIT_SCHEMA, orient="row")
@@ -819,13 +832,180 @@ def test_every_geometry_source_the_table_advertises_can_be_produced(write_emdat_
         [
             emdat_event({"DisNo.": "coded", "GADM Admin Units": units_json({"gid_1": "AAA.1_1"})}),
             emdat_event({"DisNo.": "overlaid", "Latitude": None, "Longitude": None}),
+            emdat_event({"DisNo.": "spoken", "Latitude": None, "Longitude": None}),
             emdat_event({"DisNo.": "point", "Latitude": 1.0, "Longitude": 2.0}),
             emdat_event({"DisNo.": "nothing", "Latitude": None, "Longitude": None}),
         ]
     )
 
     geography = event_geography(
-        load_emdat_events(cache_dir), resolved=resolved_units([("overlaid", "AAA.2_1", "Somewhere", 1, 1, 0.5)])
+        load_emdat_events(cache_dir),
+        resolved=resolved_units([("overlaid", "AAA.2_1", "Somewhere", 1, 1, 0.5)]),
+        from_text=text_units([("spoken", "AAA.3_1", "Elsewhere", 1)]),
     )
 
     assert set(geography["geometry_source"]) == set(GEOMETRY_SOURCES)
+
+
+def test_an_event_only_its_prose_places_takes_the_text_units(write_emdat_cache):
+    """The 125 events of the 1980s the study window turns on: EM-DAT codes none of them and the
+    overlay starts in 1990, so the location text is the only thing that reaches them."""
+    cache_dir = write_emdat_cache([emdat_event({"DisNo.": "spoken", "Latitude": None, "Longitude": None})])
+
+    geography = event_geography(
+        load_emdat_events(cache_dir), from_text=text_units([("spoken", "AAA.1_1", "Somewhere", 1)])
+    )
+
+    assert geography["geometry_source"].to_list() == ["location_text"]
+    assert geography["gid"].to_list() == ["AAA.1_1"]
+
+
+def test_prose_naming_ground_the_workbook_already_codes_adds_nothing(write_emdat_cache):
+    """Each source answers only for ground the ones before it left unnamed, and the prose is read
+    last of the three that name units. A district inside a coded province is that province again."""
+    cache_dir = write_emdat_cache(
+        [emdat_event({"DisNo.": "coded", "GADM Admin Units": units_json({"gid_1": "AAA.1_1"})})]
+    )
+
+    geography = event_geography(
+        load_emdat_events(cache_dir), from_text=text_units([("coded", "AAA.1.2_1", "Inside it", 2)])
+    )
+
+    assert set(geography["geometry_source"]) == {"gadm"}
+    assert geography["gid"].to_list() == ["AAA.1_1"]
+
+
+def test_prose_naming_ground_the_overlay_already_placed_adds_nothing(write_emdat_cache):
+    """The overlay is read before the prose, so ground it names is taken. Testing only against the
+    workbook's own units would leave the middle source out of the ordering."""
+    cache_dir = write_emdat_cache([emdat_event({"DisNo.": "both", "Latitude": None, "Longitude": None})])
+
+    geography = event_geography(
+        load_emdat_events(cache_dir),
+        resolved=resolved_units([("both", "AAA.1_1", "Somewhere", 1, 1, 0.8)]),
+        from_text=text_units([("both", "AAA.1.2_1", "Inside it", 2)]),
+    )
+
+    assert set(geography["geometry_source"]) == {"geo_disasters"}
+    assert geography["gid"].to_list() == ["AAA.1_1"]
+
+
+def test_how_much_of_the_prose_resolved_is_recorded_on_every_row_of_the_event(write_emdat_cache):
+    """An event that named six places and reached five enters looking located while under-counting
+    the sixth, and those failures cluster by country and era. The counts say which rows are whole."""
+    cache_dir = write_emdat_cache([emdat_event({"DisNo.": "partly", "Latitude": None, "Longitude": None})])
+
+    geography = event_geography(
+        load_emdat_events(cache_dir),
+        from_text=text_units([("partly", "AAA.1_1", "One", 1), ("partly", "AAA.2_1", "Two", 1)]),
+        text_resolution=resolution_counts([("partly", 6, 2)]),
+    )
+
+    assert geography["names_written"].to_list() == [6, 6]
+    assert geography["names_reached"].to_list() == [2, 2]
+
+
+def test_an_event_whose_prose_reached_nothing_still_records_that_it_wrote_names(write_emdat_cache):
+    """The case the counts exist for. An event at country tier because every name failed is not the
+    same observation as one that carried no text at all, and nothing else in the table tells them
+    apart."""
+    cache_dir = write_emdat_cache([emdat_event({"DisNo.": "failed", "Latitude": None, "Longitude": None})])
+
+    geography = event_geography(load_emdat_events(cache_dir), text_resolution=resolution_counts([("failed", 5, 0)]))
+
+    assert geography["geometry_source"].to_list() == ["country"]
+    assert geography["names_written"].to_list() == [5]
+    assert geography["names_reached"].to_list() == [0]
+
+
+def test_an_event_carrying_no_text_leaves_the_resolution_columns_null(write_emdat_cache):
+    """Zero names written would be a claim the prose was read and held nothing; null is the absence
+    of a reading. The two have to sit in one table for the difference to mean anything."""
+    cache_dir = write_emdat_cache(
+        [
+            emdat_event({"DisNo.": "read", "Latitude": None, "Longitude": None}),
+            emdat_event({"DisNo.": "silent", "Latitude": None, "Longitude": None}),
+        ]
+    )
+
+    geography = event_geography(load_emdat_events(cache_dir), text_resolution=resolution_counts([("read", 4, 0)]))
+
+    was_read = geography.filter(pl.col("DisNo.") == "read")
+    silent = geography.filter(pl.col("DisNo.") == "silent")
+
+    assert was_read["names_written"].to_list() == [4]
+    assert silent["names_written"].null_count() == len(silent)
+    assert silent["names_reached"].null_count() == len(silent)
+
+
+def test_the_window_counts_the_year_it_opens_in(write_emdat_cache):
+    """1981 rather than 1990 is worth 125 located events, and every one of them is an off-by-one
+    away from being discarded. `end_year` is tested for the same inclusivity at the other end."""
+    cache_dir = write_emdat_cache(
+        [
+            emdat_event({"DisNo.": "the-year-before", "Start Year": 1980}),
+            emdat_event({"DisNo.": "the-opening-year", "Start Year": 1981}),
+            emdat_event({"DisNo.": "after", "Start Year": 1982}),
+        ]
+    )
+
+    kept = selected_events(cache_dir, filters=EventFilters(start_year=1981))["DisNo."]
+
+    assert kept.to_list() == ["the-opening-year", "after"]
+
+
+def test_a_place_that_names_no_window_opens_in_1981(write_emdat_cache):
+    """The default is the decision, so it is worth one assertion: 1990 would silently drop the
+    1980s, which are the events only the location text reaches."""
+    cache_dir = write_emdat_cache(
+        [
+            emdat_event({"DisNo.": "eighties", "Start Year": 1985}),
+            emdat_event({"DisNo.": "nineties", "Start Year": 1995}),
+        ]
+    )
+
+    assert EventFilters().start_year == 1981
+    assert selected_events(cache_dir)["DisNo."].to_list() == ["eighties", "nineties"]
+
+
+def test_prose_naming_ground_nothing_else_reaches_is_added_to_a_coded_event(write_emdat_cache):
+    """The positive half of the ordering rule. An event can be coded and still have prose naming
+    somewhere the coding missed, which is 596 units across the region for the overlay and is the
+    same argument for the text."""
+    cache_dir = write_emdat_cache(
+        [emdat_event({"DisNo.": "coded", "GADM Admin Units": units_json({"gid_1": "AAA.1_1"})})]
+    )
+
+    geography = event_geography(
+        load_emdat_events(cache_dir), from_text=text_units([("coded", "AAA.9_1", "Elsewhere", 1)])
+    )
+
+    assert sorted(geography["gid"]) == ["AAA.1_1", "AAA.9_1"]
+    assert set(geography["geometry_source"]) == {"gadm", "location_text"}
+
+
+def test_the_resolution_counts_reach_rows_of_a_tier_the_prose_did_not_place(write_emdat_cache):
+    """The counts describe the prose, not the tier, so they belong on an event EM-DAT coded as much
+    as on one the text placed — that is what makes them usable as a completeness covariate rather
+    than a property of one tier."""
+    cache_dir = write_emdat_cache(
+        [emdat_event({"DisNo.": "coded", "GADM Admin Units": units_json({"gid_1": "AAA.1_1"})})]
+    )
+
+    geography = event_geography(load_emdat_events(cache_dir), text_resolution=resolution_counts([("coded", 3, 1)]))
+
+    assert geography["geometry_source"].to_list() == ["gadm"]
+    assert geography["names_written"].to_list() == [3]
+    assert geography["names_reached"].to_list() == [1]
+
+
+def test_resolution_counts_naming_an_event_twice_are_refused(write_emdat_cache):
+    """They are attached by a join on the event alone, so a repeated event fans out every geography
+    row it has — including rows of tiers the reading had nothing to do with. Silently doubling a
+    table is worse than refusing to build one."""
+    cache_dir = write_emdat_cache([emdat_event({"DisNo.": "twice", "Latitude": None, "Longitude": None})])
+
+    with pytest.raises(DataValidationError, match="twice"):
+        event_geography(
+            load_emdat_events(cache_dir), text_resolution=resolution_counts([("twice", 5, 2), ("twice", 5, 2)])
+        )
