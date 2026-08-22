@@ -686,16 +686,17 @@ def test_an_event_the_workbook_places_nowhere_takes_the_overlay_units(write_emda
 
     assert geography["geometry_source"].to_list() == ["geo_disasters"]
     assert geography["gid"].to_list() == ["AAA.1_1"]
+    assert geography["admin_level"].to_list() == [1]
     assert geography["geocoding_q"].to_list() == [3]
     assert geography["overlap"].to_list() == [0.8]
 
 
-def test_the_workbook_s_own_units_are_kept_whole_over_the_overlay_s(write_emdat_cache):
-    """Precedence, and it is a choice about resolution rather than trust: on the events both cover
-    neither disagrees about where the event was, only about how finely to say it. Taking both would
-    put a province and the districts inside it into one observation, and leave `geometry_source` no
-    longer describing the row."""
-    cache_dir = write_emdat_cache([emdat_event({"DisNo.": "coded", "GADM Admin Units": '[{"gid_1": "AAA.1_1"}]'})])
+def test_the_overlay_adds_nothing_to_an_event_the_workbook_already_codes(write_emdat_cache):
+    """Precedence. Taking both sources would put a province and the districts inside it into one
+    observation, which reads as more geography than either source claims."""
+    cache_dir = write_emdat_cache(
+        [emdat_event({"DisNo.": "coded", "GADM Admin Units": units_json({"gid_1": "AAA.1_1"})})]
+    )
 
     geography = event_geography(
         load_emdat_events(cache_dir), resolved=resolved_units([("coded", "AAA.9_1", "Elsewhere", 1, 1, 0.9)])
@@ -706,20 +707,28 @@ def test_the_workbook_s_own_units_are_kept_whole_over_the_overlay_s(write_emdat_
 
 
 def test_the_overlay_columns_are_null_on_every_other_tier(write_emdat_cache):
-    """`geocoding_q` and `overlap` describe how one gazetteer placed a unit, so a value on a row it
-    did not place would be read as its judgement of a placement it never made."""
+    """`geocoding_q` and `overlap` say how one gazetteer placed a unit, so a value on a row it did
+    not place reads as its judgement of a placement it never made. The tier has to be populated for
+    this to mean anything — with no overlay at all every row is null trivially."""
     cache_dir = write_emdat_cache(
         [
-            emdat_event({"DisNo.": "coded", "GADM Admin Units": '[{"gid_1": "AAA.1_1"}]'}),
+            emdat_event({"DisNo.": "coded", "GADM Admin Units": units_json({"gid_1": "AAA.1_1"})}),
+            emdat_event({"DisNo.": "overlaid", "Latitude": None, "Longitude": None}),
             emdat_event({"DisNo.": "point", "Latitude": 1.0, "Longitude": 2.0}),
             emdat_event({"DisNo.": "nothing", "Latitude": None, "Longitude": None}),
         ]
     )
 
-    geography = event_geography(load_emdat_events(cache_dir))
+    geography = event_geography(
+        load_emdat_events(cache_dir), resolved=resolved_units([("overlaid", "AAA.2_1", "Somewhere", 2, 4, 0.6)])
+    )
 
-    assert geography["geocoding_q"].null_count() == len(geography)
-    assert geography["overlap"].null_count() == len(geography)
+    scored = geography.filter(pl.col("geometry_source") == "geo_disasters")
+    elsewhere = geography.filter(pl.col("geometry_source") != "geo_disasters")
+
+    assert scored["geocoding_q"].to_list() == [4]
+    assert elsewhere["geocoding_q"].null_count() == len(elsewhere)
+    assert elsewhere["overlap"].null_count() == len(elsewhere)
 
 
 def test_an_overlay_naming_an_event_the_workbook_does_not_have_is_ignored(write_emdat_cache):
@@ -734,3 +743,42 @@ def test_an_overlay_naming_an_event_the_workbook_does_not_have_is_ignored(write_
 
     assert geography["DisNo."].to_list() == ["nothing"]
     assert geography["geometry_source"].to_list() == ["country"]
+
+
+def test_an_overlay_placing_an_event_in_several_units_contributes_a_row_each(write_emdat_cache):
+    """An event spanning three provinces is three rows, the same as when the workbook codes it.
+    Collapsing them would make a wide event look like a point one."""
+    cache_dir = write_emdat_cache([emdat_event({"DisNo.": "wide", "Latitude": None, "Longitude": None})])
+
+    geography = event_geography(
+        load_emdat_events(cache_dir),
+        resolved=resolved_units(
+            [
+                ("wide", "AAA.1_1", "First", 1, 1, 0.9),
+                ("wide", "AAA.2_1", "Second", 1, 1, 0.7),
+                ("wide", "AAA.3_1", "Third", 1, 2, 0.4),
+            ]
+        ),
+    )
+
+    assert sorted(geography["gid"]) == ["AAA.1_1", "AAA.2_1", "AAA.3_1"]
+    assert set(geography["geometry_source"]) == {"geo_disasters"}
+
+
+def test_every_geometry_source_the_table_advertises_can_be_produced(write_emdat_cache):
+    """`GEOMETRY_SOURCES` is what a model reads to choose the tiers it accepts, so a value nothing
+    emits is a tier a caller can filter on forever and never see."""
+    cache_dir = write_emdat_cache(
+        [
+            emdat_event({"DisNo.": "coded", "GADM Admin Units": units_json({"gid_1": "AAA.1_1"})}),
+            emdat_event({"DisNo.": "overlaid", "Latitude": None, "Longitude": None}),
+            emdat_event({"DisNo.": "point", "Latitude": 1.0, "Longitude": 2.0}),
+            emdat_event({"DisNo.": "nothing", "Latitude": None, "Longitude": None}),
+        ]
+    )
+
+    geography = event_geography(
+        load_emdat_events(cache_dir), resolved=resolved_units([("overlaid", "AAA.2_1", "Somewhere", 1, 1, 0.5)])
+    )
+
+    assert set(geography["geometry_source"]) == set(GEOMETRY_SOURCES)
