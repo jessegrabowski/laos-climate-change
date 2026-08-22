@@ -362,7 +362,10 @@ def test_a_variational_gp_recovers_structure_inside_a_polygon():
     recovery = recover_known_surface(units_per_axis=12)
 
     assert recovery.flat_within_unit_spread == pytest.approx(0.0, abs=1e-12), "the baseline is blind inside a unit"
-    assert recovery.within_unit_correlation > 0.8
+    assert recovery.flat_correlation > 0.85, (
+        f"the baseline is a real competitor, not a strawman: was {recovery.flat_correlation:.3f}, 0.892 when written"
+    )
+    assert recovery.within_unit_correlation > 0.8, f"was {recovery.within_unit_correlation:.3f}, 0.888 when written"
     assert recovery.correlation > recovery.flat_correlation + 0.05
 
 
@@ -371,10 +374,12 @@ def test_a_coarse_unit_learns_a_lengthscale_that_sees_nothing_inside_itself():
     """With 36 cells to a unit the lengthscale is fit from between-unit variation alone and comes
     back far too long, so the field is smooth where the truth is not. The aggregate correlation
     falls below the baseline, which is the honest reading: on coarse units this model is worse than
-    spreading the totals. Step 4 has to fix or bound the lengthscale rather than learn it."""
+    spreading the totals, so the frequency model has to fix or bound the lengthscale rather than
+    learn it. This test pins a limitation, and a fit that removed it would fail here."""
     recovery = recover_known_surface(units_per_axis=4)
 
-    assert recovery.within_unit_correlation < 0.3
+    assert recovery.flat_correlation > 0.85, f"was {recovery.flat_correlation:.3f}, 0.933 when written"
+    assert recovery.within_unit_correlation < 0.3, f"was {recovery.within_unit_correlation:.3f}, 0.099 when written"
     assert recovery.correlation < recovery.flat_correlation
 
 
@@ -385,5 +390,6 @@ def test_fixing_the_lengthscale_restores_recovery_in_coarse_units():
     of the within-unit surface."""
     recovery = recover_known_surface(units_per_axis=4, fixed_lengthscale=0.5)
 
-    assert recovery.within_unit_correlation > 0.6
+    assert recovery.flat_correlation > 0.85, f"was {recovery.flat_correlation:.3f}, 0.933 when written"
+    assert recovery.within_unit_correlation > 0.6, f"was {recovery.within_unit_correlation:.3f}, 0.767 when written"
     assert recovery.correlation > recovery.flat_correlation
