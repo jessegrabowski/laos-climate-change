@@ -26,6 +26,7 @@ from climate_risk.data_functions.emdat_processing import (
     named_places,
     total_damage,
 )
+from climate_risk.exceptions import DataValidationError
 from tests.conftest import emdat_event
 
 
@@ -956,3 +957,15 @@ def test_a_place_that_names_no_window_opens_in_1981(write_emdat_cache):
 
     assert EventFilters().start_year == 1981
     assert selected_events(cache_dir)["DisNo."].to_list() == ["eighties", "nineties"]
+
+
+def test_resolution_counts_naming_an_event_twice_are_refused(write_emdat_cache):
+    """They are attached by a join on the event alone, so a repeated event fans out every geography
+    row it has — including rows of tiers the reading had nothing to do with. Silently doubling a
+    table is worse than refusing to build one."""
+    cache_dir = write_emdat_cache([emdat_event({"DisNo.": "twice", "Latitude": None, "Longitude": None})])
+
+    with pytest.raises(DataValidationError, match="twice"):
+        event_geography(
+            load_emdat_events(cache_dir), text_resolution=resolution_counts([("twice", 5, 2), ("twice", 5, 2)])
+        )

@@ -9,6 +9,7 @@ import polars as pl
 
 from climate_risk.config.schema import EventFilters
 from climate_risk.data.source import ManualSource
+from climate_risk.exceptions import DataValidationError
 
 # EM-DAT requires an account and forbids redistribution, so it is fetched by a person, not by code.
 EMDAT = ManualSource(
@@ -546,6 +547,17 @@ def _as_frame(given: pl.DataFrame | None, schema: pl.Schema) -> pl.DataFrame:
     return pl.DataFrame(schema=schema) if given is None else given.select(list(schema)).cast(schema)
 
 
+def _one_row_per_event(counts: pl.DataFrame) -> pl.DataFrame:
+    """Refuse a per-event lookup that names an event twice."""
+    # Attached by a join on the event alone, so a repeated event fans out every geography row it
+    # has, including rows of tiers the reading had nothing to do with.
+    repeated = sorted(counts.filter(pl.col("DisNo.").is_duplicated())["DisNo."].unique().to_list())
+    if repeated:
+        raise DataValidationError(f"The resolution counts name an event more than once: {repeated[:5]}.")
+
+    return counts
+
+
 def _nesting_path(gid: pl.Expr) -> pl.Expr:
     """Strip a GADM identifier's version suffix, leaving the path it nests by: `LAO.1.2_1` -> `LAO.1.2`."""
     return gid.str.split("_").list.first()
@@ -679,7 +691,7 @@ def event_geography(
     every = pl.concat([_with_absent_columns(tier).select(_TIER_COLUMNS) for tier in tiers])
 
     return (
-        every.join(_as_frame(text_resolution, TEXT_RESOLUTION_SCHEMA), on="DisNo.", how="left")
+        every.join(_one_row_per_event(_as_frame(text_resolution, TEXT_RESOLUTION_SCHEMA)), on="DisNo.", how="left")
         .select(EVENT_GEOGRAPHY_COLUMNS)
         .sort("DisNo.", "gid", nulls_last=True)
     )
