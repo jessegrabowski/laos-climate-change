@@ -493,17 +493,22 @@ EVENT_GEOGRAPHY_COLUMNS = (
     "name",
     "admin_level",
     "migration_method",
+    "geocoding_q",
+    "overlap",
     "Latitude",
     "Longitude",
 )
 
-# What a caller has to supply for the `geo_disasters` tier to be emitted.
+# What the `geo_disasters` tier adds, and what a caller has to supply for it to be emitted. Null on
+# every other tier, as `migration_method` already is outside `gadm`.
 RESOLVED_UNIT_SCHEMA = pl.Schema(
     {
         "DisNo.": pl.String,
         "gid": pl.String,
         "name": pl.String,
         "admin_level": pl.Int8,
+        "geocoding_q": pl.Int8,
+        "overlap": pl.Float64,
     }
 )
 
@@ -537,7 +542,8 @@ def event_geography(events: pl.DataFrame, *, resolved: pl.DataFrame | None = Non
     -------
     DataFrame
         ``DisNo.``, ``ISO``, ``geometry_source`` from ``GEOMETRY_SOURCES``, the unit columns of
-        :func:`event_units` where one applies, and the event's coordinate where it has one.
+        :func:`event_units` where one applies, ``geocoding_q`` and ``overlap`` on the
+        ``geo_disasters`` tier, and the event's coordinate where it has one.
     """
     units = event_units(events)
     located = events.select("DisNo.", "ISO", "Latitude", "Longitude")
@@ -545,6 +551,8 @@ def event_geography(events: pl.DataFrame, *, resolved: pl.DataFrame | None = Non
 
     from_units = units.join(located, on="DisNo.", how="left").with_columns(
         pl.lit("gadm").alias("geometry_source"),
+        pl.lit(None, dtype=pl.Int8).alias("geocoding_q"),
+        pl.lit(None, dtype=pl.Float64).alias("overlap"),
     )
 
     uncoded = located.join(units.select("DisNo.").unique(), on="DisNo.", how="anti")
@@ -564,6 +572,8 @@ def event_geography(events: pl.DataFrame, *, resolved: pl.DataFrame | None = Non
         pl.lit(None, dtype=pl.String).alias("name"),
         pl.lit(None, dtype=pl.Int8).alias("admin_level"),
         pl.lit(None, dtype=pl.String).alias("migration_method"),
+        pl.lit(None, dtype=pl.Int8).alias("geocoding_q"),
+        pl.lit(None, dtype=pl.Float64).alias("overlap"),
     )
 
     tiers = (from_units, from_overlay, rest)

@@ -681,11 +681,13 @@ def test_an_event_the_workbook_places_nowhere_takes_the_overlay_units(write_emda
     cache_dir = write_emdat_cache([emdat_event({"DisNo.": "uncoded", "Latitude": None, "Longitude": None})])
 
     geography = event_geography(
-        load_emdat_events(cache_dir), resolved=resolved_units([("uncoded", "AAA.1_1", "Somewhere", 1)])
+        load_emdat_events(cache_dir), resolved=resolved_units([("uncoded", "AAA.1_1", "Somewhere", 1, 3, 0.8)])
     )
 
     assert geography["geometry_source"].to_list() == ["geo_disasters"]
     assert geography["gid"].to_list() == ["AAA.1_1"]
+    assert geography["geocoding_q"].to_list() == [3]
+    assert geography["overlap"].to_list() == [0.8]
 
 
 def test_the_workbook_s_own_units_are_kept_whole_over_the_overlay_s(write_emdat_cache):
@@ -696,11 +698,28 @@ def test_the_workbook_s_own_units_are_kept_whole_over_the_overlay_s(write_emdat_
     cache_dir = write_emdat_cache([emdat_event({"DisNo.": "coded", "GADM Admin Units": '[{"gid_1": "AAA.1_1"}]'})])
 
     geography = event_geography(
-        load_emdat_events(cache_dir), resolved=resolved_units([("coded", "AAA.9_1", "Elsewhere", 1)])
+        load_emdat_events(cache_dir), resolved=resolved_units([("coded", "AAA.9_1", "Elsewhere", 1, 1, 0.9)])
     )
 
     assert set(geography["geometry_source"]) == {"gadm"}
     assert "AAA.9_1" not in geography["gid"].to_list()
+
+
+def test_the_overlay_columns_are_null_on_every_other_tier(write_emdat_cache):
+    """`geocoding_q` and `overlap` describe how one gazetteer placed a unit, so a value on a row it
+    did not place would be read as its judgement of a placement it never made."""
+    cache_dir = write_emdat_cache(
+        [
+            emdat_event({"DisNo.": "coded", "GADM Admin Units": '[{"gid_1": "AAA.1_1"}]'}),
+            emdat_event({"DisNo.": "point", "Latitude": 1.0, "Longitude": 2.0}),
+            emdat_event({"DisNo.": "nothing", "Latitude": None, "Longitude": None}),
+        ]
+    )
+
+    geography = event_geography(load_emdat_events(cache_dir))
+
+    assert geography["geocoding_q"].null_count() == len(geography)
+    assert geography["overlap"].null_count() == len(geography)
 
 
 def test_an_overlay_naming_an_event_the_workbook_does_not_have_is_ignored(write_emdat_cache):
@@ -710,7 +729,7 @@ def test_an_overlay_naming_an_event_the_workbook_does_not_have_is_ignored(write_
 
     geography = event_geography(
         load_emdat_events(cache_dir),
-        resolved=resolved_units([("a-different-event", "AAA.1_1", "Somewhere", 1)]),
+        resolved=resolved_units([("a-different-event", "AAA.1_1", "Somewhere", 1, 1, 0.5)]),
     )
 
     assert geography["DisNo."].to_list() == ["nothing"]
