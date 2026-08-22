@@ -27,6 +27,7 @@ from climate_risk.models.aggregated_poisson import (
 from climate_risk.models.aggregation import build_aggregation
 
 N_CELLS, N_INDUCING = 12, 4
+CELLS_PER_AXIS, INDUCING_PER_AXIS = 24, 6
 
 
 def latent_pieces(seed: int):
@@ -239,9 +240,6 @@ def test_the_objective_is_the_poisson_likelihood_less_the_divergence():
     from_objective, from_pieces = compiled(*[rng.normal(0.0, 0.2, size=p.type.shape) for p in parameters])
 
     assert from_objective == pytest.approx(from_pieces)
-
-
-CELLS_PER_AXIS, INDUCING_PER_AXIS = 24, 6
 
 
 class Recovery(NamedTuple):
