@@ -495,6 +495,8 @@ EVENT_GEOGRAPHY_COLUMNS = (
     "migration_method",
     "geocoding_q",
     "overlap",
+    "names_written",
+    "names_reached",
     "Latitude",
     "Longitude",
 )
@@ -514,6 +516,16 @@ RESOLVED_UNIT_SCHEMA = pl.Schema(
 
 # The units an event's own prose reaches, resolved elsewhere: this layer holds no gazetteer.
 TEXT_UNIT_SCHEMA = pl.Schema({"DisNo.": pl.String, "gid": pl.String, "name": pl.String, "admin_level": pl.Int8})
+
+# How complete that reading was, per event rather than per unit, so an event whose prose reached
+# nothing still records that it wrote names. Null where the event carries no parseable text.
+TEXT_RESOLUTION_SCHEMA = pl.Schema({"DisNo.": pl.String, "names_written": pl.Int16, "names_reached": pl.Int16})
+
+# What a tier assembles on its own. The rest of the table is joined on afterwards, per event
+# rather than per unit.
+_TIER_COLUMNS = tuple(
+    column for column in EVENT_GEOGRAPHY_COLUMNS if column == "DisNo." or column not in TEXT_RESOLUTION_SCHEMA
+)
 
 # The columns a tier need not carry, and the type each takes where it does not. A tier states only
 # what it knows, so a column added to the table is declared here once instead of in every tier.
@@ -590,6 +602,7 @@ def event_geography(
     *,
     resolved: pl.DataFrame | None = None,
     from_text: pl.DataFrame | None = None,
+    text_resolution: pl.DataFrame | None = None,
 ) -> pl.DataFrame:
     """
     Say where every event's geometry comes from, one row per event-unit and one per event otherwise.
@@ -607,6 +620,11 @@ def event_geography(
     second resolution; taking it again would put a province and the districts inside it into one
     observation.
 
+    ``names_written`` and ``names_reached`` say how much of an event's prose resolved, on every row
+    of an event whose text was read. They describe the prose rather than the tier, so an event whose
+    names all failed carries them at ``country`` tier, which is where a partial reading is least
+    visible and most worth recording.
+
     Parameters
     ----------
     events : DataFrame
@@ -619,6 +637,9 @@ def event_geography(
         Units an event's own location text reaches, with the columns of ``TEXT_UNIT_SCHEMA``.
         Default None, which emits no ``location_text`` rows. Resolving them needs a gazetteer, which
         this layer does not hold either.
+    text_resolution : DataFrame, optional
+        How many placeable names each event wrote and how many reached a unit, with the columns of
+        ``TEXT_RESOLUTION_SCHEMA``. Default None, which leaves both columns null.
 
     Returns
     -------
@@ -655,9 +676,12 @@ def event_geography(
     )
 
     tiers = (from_units, from_overlay, from_prose, rest)
+    every = pl.concat([_with_absent_columns(tier).select(_TIER_COLUMNS) for tier in tiers])
 
-    return pl.concat([_with_absent_columns(tier).select(EVENT_GEOGRAPHY_COLUMNS) for tier in tiers]).sort(
-        "DisNo.", "gid", nulls_last=True
+    return (
+        every.join(_as_frame(text_resolution, TEXT_RESOLUTION_SCHEMA), on="DisNo.", how="left")
+        .select(EVENT_GEOGRAPHY_COLUMNS)
+        .sort("DisNo.", "gid", nulls_last=True)
     )
 
 

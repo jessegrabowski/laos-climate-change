@@ -13,6 +13,7 @@ from climate_risk.data_functions.emdat_processing import (
     EMDAT_WINDOW_START,
     GEOMETRY_SOURCES,
     RESOLVED_UNIT_SCHEMA,
+    TEXT_RESOLUTION_SCHEMA,
     TEXT_UNIT_SCHEMA,
     NamedPlace,
     count_events_by_type,
@@ -676,6 +677,11 @@ def text_units(rows):
     return pl.DataFrame(rows, schema=TEXT_UNIT_SCHEMA, orient="row")
 
 
+def text_resolution(rows):
+    """How much of each event's prose resolved, per event."""
+    return pl.DataFrame(rows, schema=TEXT_RESOLUTION_SCHEMA, orient="row")
+
+
 def resolved_units(rows):
     """Units another gazetteer places, in the shape `event_geography` takes them."""
     return pl.DataFrame(rows, schema=RESOLVED_UNIT_SCHEMA, orient="row")
@@ -881,3 +887,42 @@ def test_prose_naming_ground_the_overlay_already_placed_adds_nothing(write_emdat
 
     assert set(geography["geometry_source"]) == {"geo_disasters"}
     assert geography["gid"].to_list() == ["AAA.1_1"]
+
+
+def test_how_much_of_the_prose_resolved_is_recorded_on_every_row_of_the_event(write_emdat_cache):
+    """An event that named six places and reached five enters looking located while under-counting
+    the sixth, and those failures cluster by country and era. The counts say which rows are whole."""
+    cache_dir = write_emdat_cache([emdat_event({"DisNo.": "partly", "Latitude": None, "Longitude": None})])
+
+    geography = event_geography(
+        load_emdat_events(cache_dir),
+        from_text=text_units([("partly", "AAA.1_1", "One", 1), ("partly", "AAA.2_1", "Two", 1)]),
+        text_resolution=text_resolution([("partly", 6, 2)]),
+    )
+
+    assert geography["names_written"].to_list() == [6, 6]
+    assert geography["names_reached"].to_list() == [2, 2]
+
+
+def test_an_event_whose_prose_reached_nothing_still_records_that_it_wrote_names(write_emdat_cache):
+    """The case the counts exist for. An event at country tier because every name failed is not the
+    same observation as one that carried no text at all, and nothing else in the table tells them
+    apart."""
+    cache_dir = write_emdat_cache([emdat_event({"DisNo.": "failed", "Latitude": None, "Longitude": None})])
+
+    geography = event_geography(load_emdat_events(cache_dir), text_resolution=text_resolution([("failed", 5, 0)]))
+
+    assert geography["geometry_source"].to_list() == ["country"]
+    assert geography["names_written"].to_list() == [5]
+    assert geography["names_reached"].to_list() == [0]
+
+
+def test_an_event_carrying_no_text_leaves_the_resolution_columns_null(write_emdat_cache):
+    """Zero names written would be a claim the prose was read and held nothing; null is the absence
+    of a reading."""
+    cache_dir = write_emdat_cache([emdat_event({"DisNo.": "silent", "Latitude": None, "Longitude": None})])
+
+    geography = event_geography(load_emdat_events(cache_dir))
+
+    assert geography["names_written"].null_count() == 1
+    assert geography["names_reached"].null_count() == 1
