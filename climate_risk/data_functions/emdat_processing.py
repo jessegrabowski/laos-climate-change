@@ -512,6 +512,30 @@ RESOLVED_UNIT_SCHEMA = pl.Schema(
     }
 )
 
+# The columns a tier need not carry, and the type each takes where it does not. A tier states only
+# what it knows, so a column added to the table is declared here once instead of in every tier.
+_ABSENT_COLUMN_TYPES = pl.Schema(
+    {
+        "gid": pl.String,
+        "name": pl.String,
+        "admin_level": pl.Int8,
+        "migration_method": pl.String,
+        "geocoding_q": pl.Int8,
+        "overlap": pl.Float64,
+    }
+)
+
+
+def _with_absent_columns(tier: pl.DataFrame) -> pl.DataFrame:
+    """Fill every geography column the tier does not carry with a null of the right type."""
+    return tier.with_columns(
+        [
+            pl.lit(None, dtype=dtype).alias(name)
+            for name, dtype in _ABSENT_COLUMN_TYPES.items()
+            if name not in tier.columns
+        ]
+    )
+
 
 def event_geography(events: pl.DataFrame, *, resolved: pl.DataFrame | None = None) -> pl.DataFrame:
     """
@@ -524,10 +548,9 @@ def event_geography(events: pl.DataFrame, *, resolved: pl.DataFrame | None = Non
     ``Latitude`` and ``Longitude`` are carried wherever EM-DAT supplies them, including on ``gadm``
     rows, so the two claims stay visible side by side rather than one being discarded.
 
-    An event EM-DAT codes to units keeps only those, and ``resolved`` fills events it codes to none.
-    The two sources never disagree about where an event was, only about how finely to say it, so
-    taking both would mix a province and the districts inside it into one observation while leaving
-    ``geometry_source`` no longer describing the row.
+    An event EM-DAT codes to units keeps only those, and ``resolved`` fills events it codes to none:
+    the two sources differ on how finely to name a location rather than on where it was, so taking
+    both would mix a province with the districts inside it.
 
     Parameters
     ----------
@@ -549,36 +572,25 @@ def event_geography(events: pl.DataFrame, *, resolved: pl.DataFrame | None = Non
     located = events.select("DisNo.", "ISO", "Latitude", "Longitude")
     overlay = pl.DataFrame(schema=RESOLVED_UNIT_SCHEMA) if resolved is None else resolved
 
-    from_units = units.join(located, on="DisNo.", how="left").with_columns(
-        pl.lit("gadm").alias("geometry_source"),
-        pl.lit(None, dtype=pl.Int8).alias("geocoding_q"),
-        pl.lit(None, dtype=pl.Float64).alias("overlap"),
-    )
+    from_units = units.join(located, on="DisNo.", how="left").with_columns(pl.lit("gadm").alias("geometry_source"))
 
     uncoded = located.join(units.select("DisNo.").unique(), on="DisNo.", how="anti")
     from_overlay = uncoded.join(
         overlay.select(list(RESOLVED_UNIT_SCHEMA)).cast(RESOLVED_UNIT_SCHEMA), on="DisNo.", how="inner"
-    ).with_columns(
-        pl.lit("geo_disasters").alias("geometry_source"),
-        pl.lit(None, dtype=pl.String).alias("migration_method"),
-    )
+    ).with_columns(pl.lit("geo_disasters").alias("geometry_source"))
 
     rest = uncoded.join(overlay.select("DisNo.").unique(), on="DisNo.", how="anti").with_columns(
         pl.when(pl.col("Latitude").is_not_null())
         .then(pl.lit("emdat_point"))
         .otherwise(pl.lit("country"))
-        .alias("geometry_source"),
-        pl.lit(None, dtype=pl.String).alias("gid"),
-        pl.lit(None, dtype=pl.String).alias("name"),
-        pl.lit(None, dtype=pl.Int8).alias("admin_level"),
-        pl.lit(None, dtype=pl.String).alias("migration_method"),
-        pl.lit(None, dtype=pl.Int8).alias("geocoding_q"),
-        pl.lit(None, dtype=pl.Float64).alias("overlap"),
+        .alias("geometry_source")
     )
 
     tiers = (from_units, from_overlay, rest)
 
-    return pl.concat([tier.select(EVENT_GEOGRAPHY_COLUMNS) for tier in tiers]).sort("DisNo.", "gid", nulls_last=True)
+    return pl.concat([_with_absent_columns(tier).select(EVENT_GEOGRAPHY_COLUMNS) for tier in tiers]).sort(
+        "DisNo.", "gid", nulls_last=True
+    )
 
 
 def event_filter(filters: EventFilters) -> pl.Expr:
