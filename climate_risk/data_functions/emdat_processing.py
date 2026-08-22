@@ -658,7 +658,8 @@ def event_geography(
     DataFrame
         ``DisNo.``, ``ISO``, ``geometry_source`` from ``GEOMETRY_SOURCES``, the unit columns of
         :func:`event_units` where one applies, ``geocoding_q`` and ``overlap`` on the
-        ``geo_disasters`` tier, and the event's coordinate where it has one.
+        ``geo_disasters`` tier, ``names_written`` and ``names_reached`` wherever the event's text was
+        read, and the event's coordinate where it has one.
     """
     units = event_units(events)
     located = events.select("DisNo.", "ISO", "Latitude", "Longitude")
