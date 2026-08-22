@@ -691,19 +691,66 @@ def test_an_event_the_workbook_places_nowhere_takes_the_overlay_units(write_emda
     assert geography["overlap"].to_list() == [0.8]
 
 
-def test_the_overlay_adds_nothing_to_an_event_the_workbook_already_codes(write_emdat_cache):
-    """Precedence. Taking both sources would put a province and the districts inside it into one
-    observation, which reads as more geography than either source claims."""
+def test_an_overlay_unit_inside_one_the_workbook_codes_is_dropped(write_emdat_cache):
+    """The same ground at a second resolution. Keeping both would put a province and a district
+    inside it into one observation, which reads as more geography than either source claims."""
     cache_dir = write_emdat_cache(
         [emdat_event({"DisNo.": "coded", "GADM Admin Units": units_json({"gid_1": "AAA.1_1"})})]
     )
 
     geography = event_geography(
-        load_emdat_events(cache_dir), resolved=resolved_units([("coded", "AAA.9_1", "Elsewhere", 1, 1, 0.9)])
+        load_emdat_events(cache_dir), resolved=resolved_units([("coded", "AAA.1.2_1", "Inside it", 2, 1, 0.9)])
     )
 
     assert set(geography["geometry_source"]) == {"gadm"}
-    assert "AAA.9_1" not in geography["gid"].to_list()
+    assert geography["gid"].to_list() == ["AAA.1_1"]
+
+
+def test_an_overlay_unit_the_workbook_already_codes_is_dropped(write_emdat_cache):
+    """The commonest case by far — the two sources mostly name the same units. Counting a repeat as
+    new ground gives the event the same unit twice under two tiers, which reads as twice the
+    footprint and double-counts it in anything aggregating over units."""
+    cache_dir = write_emdat_cache(
+        [emdat_event({"DisNo.": "coded", "GADM Admin Units": units_json({"gid_1": "AAA.1_1"})})]
+    )
+
+    geography = event_geography(
+        load_emdat_events(cache_dir), resolved=resolved_units([("coded", "AAA.1_1", "The same one", 1, 1, 0.9)])
+    )
+
+    assert geography["gid"].to_list() == ["AAA.1_1"]
+    assert geography["geometry_source"].to_list() == ["gadm"]
+
+
+def test_an_overlay_unit_containing_one_the_workbook_codes_is_dropped(write_emdat_cache):
+    """Nesting the other way round, which happens wherever EM-DAT codes finer than the overlay
+    resolves. Still one piece of ground named twice."""
+    cache_dir = write_emdat_cache(
+        [emdat_event({"DisNo.": "coded", "GADM Admin Units": units_json({"gid_2": "AAA.1.2_1"})})]
+    )
+
+    geography = event_geography(
+        load_emdat_events(cache_dir), resolved=resolved_units([("coded", "AAA.1_1", "Around it", 1, 1, 0.9)])
+    )
+
+    assert set(geography["geometry_source"]) == {"gadm"}
+    assert geography["gid"].to_list() == ["AAA.1.2_1"]
+
+
+def test_an_overlay_unit_nesting_with_none_of_the_coded_ones_is_kept(write_emdat_cache):
+    """Area EM-DAT never coded. Across the region this is 596 units over 90 events, and dropping it
+    loses geography one source holds and nothing else records."""
+    cache_dir = write_emdat_cache(
+        [emdat_event({"DisNo.": "coded", "GADM Admin Units": units_json({"gid_1": "AAA.1_1"})})]
+    )
+
+    geography = event_geography(
+        load_emdat_events(cache_dir), resolved=resolved_units([("coded", "AAA.9_1", "Elsewhere", 1, 2, 0.6)])
+    )
+
+    assert sorted(geography["gid"]) == ["AAA.1_1", "AAA.9_1"]
+    assert set(geography["geometry_source"]) == {"gadm", "geo_disasters"}
+    assert geography.filter(pl.col("gid") == "AAA.9_1")["geocoding_q"].to_list() == [2]
 
 
 def test_the_overlay_columns_are_null_on_every_other_tier(write_emdat_cache):

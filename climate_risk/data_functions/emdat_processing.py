@@ -526,6 +526,46 @@ _ABSENT_COLUMN_TYPES = pl.Schema(
 )
 
 
+def _nesting_path(gid: pl.Expr) -> pl.Expr:
+    """Strip a GADM identifier's version suffix, leaving the path it nests by: `LAO.1.2_1` -> `LAO.1.2`."""
+    return gid.str.split("_").list.first()
+
+
+def _naming_ground_the_units_do_not(overlay: pl.DataFrame, units: pl.DataFrame) -> pl.DataFrame:
+    """
+    Keep the overlay rows for ground an event's own units leave unnamed.
+
+    GADM identifiers nest by dotted prefix, so an overlay unit repeats ground already named where
+    the event carries that unit, something containing it, or something inside it. What survives is
+    area no unit of the event covers, which an event with no units of its own is all of.
+
+    Parameters
+    ----------
+    overlay : DataFrame
+        Units another gazetteer places, with the columns of ``RESOLVED_UNIT_SCHEMA``.
+    units : DataFrame
+        The event's own units, as :func:`event_units` returns them.
+
+    Returns
+    -------
+    DataFrame
+        The rows of ``overlay`` naming ground ``units`` does not.
+    """
+    already_named = (
+        overlay.select("DisNo.", "gid", offered=_nesting_path(pl.col("gid")))
+        .join(units.select("DisNo.", carried=_nesting_path(pl.col("gid"))), on="DisNo.", how="inner")
+        .filter(
+            (pl.col("offered") == pl.col("carried"))
+            | pl.col("offered").str.starts_with(pl.col("carried") + ".")
+            | pl.col("carried").str.starts_with(pl.col("offered") + ".")
+        )
+        .select("DisNo.", "gid")
+        .unique()
+    )
+
+    return overlay.join(already_named, on=["DisNo.", "gid"], how="anti")
+
+
 def _with_absent_columns(tier: pl.DataFrame) -> pl.DataFrame:
     """Fill every geography column the tier does not carry with a null of the right type."""
     return tier.with_columns(
@@ -548,9 +588,10 @@ def event_geography(events: pl.DataFrame, *, resolved: pl.DataFrame | None = Non
     ``Latitude`` and ``Longitude`` are carried wherever EM-DAT supplies them, including on ``gadm``
     rows, so the two claims stay visible side by side rather than one being discarded.
 
-    An event EM-DAT codes to units keeps only those, and ``resolved`` fills events it codes to none:
-    the two sources differ on how finely to name a location rather than on where it was, so taking
-    both would mix a province with the districts inside it.
+    An event keeps every unit EM-DAT codes it to and takes from ``resolved`` only the units naming
+    ground those leave uncovered. The two sources differ on how finely to name a location rather
+    than on where it was, so a unit either already names is the same ground counted at a second
+    resolution, while one nesting with none of them is area EM-DAT never coded.
 
     Parameters
     ----------
@@ -574,12 +615,15 @@ def event_geography(events: pl.DataFrame, *, resolved: pl.DataFrame | None = Non
 
     from_units = units.join(located, on="DisNo.", how="left").with_columns(pl.lit("gadm").alias("geometry_source"))
 
-    uncoded = located.join(units.select("DisNo.").unique(), on="DisNo.", how="anti")
-    from_overlay = uncoded.join(
-        overlay.select(list(RESOLVED_UNIT_SCHEMA)).cast(RESOLVED_UNIT_SCHEMA), on="DisNo.", how="inner"
-    ).with_columns(pl.lit("geo_disasters").alias("geometry_source"))
+    unnamed = _naming_ground_the_units_do_not(
+        overlay.select(list(RESOLVED_UNIT_SCHEMA)).cast(RESOLVED_UNIT_SCHEMA), units
+    )
+    from_overlay = located.join(unnamed, on="DisNo.", how="inner").with_columns(
+        pl.lit("geo_disasters").alias("geometry_source")
+    )
 
-    rest = uncoded.join(overlay.select("DisNo.").unique(), on="DisNo.", how="anti").with_columns(
+    placed = pl.concat([units.select("DisNo."), unnamed.select("DisNo.")]).unique()
+    rest = located.join(placed, on="DisNo.", how="anti").with_columns(
         pl.when(pl.col("Latitude").is_not_null())
         .then(pl.lit("emdat_point"))
         .otherwise(pl.lit("country"))
