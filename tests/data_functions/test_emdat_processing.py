@@ -677,7 +677,7 @@ def text_units(rows):
     return pl.DataFrame(rows, schema=TEXT_UNIT_SCHEMA, orient="row")
 
 
-def text_resolution(rows):
+def resolution_counts(rows):
     """How much of each event's prose resolved, per event."""
     return pl.DataFrame(rows, schema=TEXT_RESOLUTION_SCHEMA, orient="row")
 
@@ -897,7 +897,7 @@ def test_how_much_of_the_prose_resolved_is_recorded_on_every_row_of_the_event(wr
     geography = event_geography(
         load_emdat_events(cache_dir),
         from_text=text_units([("partly", "AAA.1_1", "One", 1), ("partly", "AAA.2_1", "Two", 1)]),
-        text_resolution=text_resolution([("partly", 6, 2)]),
+        text_resolution=resolution_counts([("partly", 6, 2)]),
     )
 
     assert geography["names_written"].to_list() == [6, 6]
@@ -910,7 +910,7 @@ def test_an_event_whose_prose_reached_nothing_still_records_that_it_wrote_names(
     apart."""
     cache_dir = write_emdat_cache([emdat_event({"DisNo.": "failed", "Latitude": None, "Longitude": None})])
 
-    geography = event_geography(load_emdat_events(cache_dir), text_resolution=text_resolution([("failed", 5, 0)]))
+    geography = event_geography(load_emdat_events(cache_dir), text_resolution=resolution_counts([("failed", 5, 0)]))
 
     assert geography["geometry_source"].to_list() == ["country"]
     assert geography["names_written"].to_list() == [5]
