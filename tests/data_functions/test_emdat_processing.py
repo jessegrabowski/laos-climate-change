@@ -926,3 +926,33 @@ def test_an_event_carrying_no_text_leaves_the_resolution_columns_null(write_emda
 
     assert geography["names_written"].null_count() == 1
     assert geography["names_reached"].null_count() == 1
+
+
+def test_the_window_counts_the_year_it_opens_in(write_emdat_cache):
+    """1981 rather than 1990 is worth 125 located events, and every one of them is an off-by-one
+    away from being discarded. `end_year` is tested for the same inclusivity at the other end."""
+    cache_dir = write_emdat_cache(
+        [
+            emdat_event({"DisNo.": "the-year-before", "Start Year": 1980}),
+            emdat_event({"DisNo.": "the-opening-year", "Start Year": 1981}),
+            emdat_event({"DisNo.": "after", "Start Year": 1982}),
+        ]
+    )
+
+    kept = selected_events(cache_dir, filters=EventFilters(start_year=1981))["DisNo."]
+
+    assert kept.to_list() == ["the-opening-year", "after"]
+
+
+def test_a_place_that_names_no_window_opens_in_1981(write_emdat_cache):
+    """The default is the decision, so it is worth one assertion: 1990 would silently drop the
+    1980s, which are the events only the location text reaches."""
+    cache_dir = write_emdat_cache(
+        [
+            emdat_event({"DisNo.": "eighties", "Start Year": 1985}),
+            emdat_event({"DisNo.": "nineties", "Start Year": 1995}),
+        ]
+    )
+
+    assert EventFilters().start_year == 1981
+    assert selected_events(cache_dir)["DisNo."].to_list() == ["eighties", "nineties"]
