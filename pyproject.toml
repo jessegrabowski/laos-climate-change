@@ -177,6 +177,8 @@ filterwarnings = [
     "ignore:Normalized/laundered field name:RuntimeWarning",
     # A shapefile Date field holds whole days, so a timestamp column is written as text.
     "ignore:Field .* created as String field:RuntimeWarning",
+    # numba colorizes the message, so the pattern cannot anchor at the start.
+    'ignore:.*np\.dot\(\) is faster on contiguous arrays:numba.core.errors.NumbaPerformanceWarning',
 ]
 
 [tool.mypy]
