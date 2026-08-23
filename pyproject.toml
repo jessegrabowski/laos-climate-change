@@ -27,6 +27,7 @@ dependencies = [
     "kuznets[polars]>=1.0.1,<2",
     "geopandas>=1.1,<2",
     "exactextract>=0.3,<1",
+    "rasterio>=1.5,<2",
     "pymc>=6.3,<7",
     "pytensor>=3.3,<4",
     "arviz>=1.2,<2",
@@ -91,6 +92,7 @@ openpyxl = ">=3.1,<4"
 xlrd = ">=2.0,<3"
 geopandas = ">=1.1,<2"
 exactextract = ">=0.3,<1"
+rasterio = ">=1.5,<2"
 pymc = ">=6.3,<7"
 pytensor = ">=3.3,<4"
 arviz = ">=1.2,<2"
@@ -168,6 +170,7 @@ markers = [
     "requires_emdat: needs the licensed EM-DAT workbook, absent from CI",
     "requires_gadm: needs the GADM GeoPackage, which is non-commercial and absent from CI",
     "requires_geo_disasters: needs the Geo-Disasters GeoPackage, non-commercial and absent from CI",
+    "requires_ghsl: needs the GHS-POP raster, half a gigabyte and absent from CI",
 ]
 filterwarnings = [
     "error",
@@ -221,7 +224,7 @@ enable_error_code = ["possibly-undefined"]
 
 # No stubs exist for these, on the index or in the packages themselves.
 [[tool.mypy.overrides]]
-module = ["arviz.*", "pymc.*", "pytensor.*", "ptgp.*", "exactextract.*", "sklearn.*", "statsmodels.*"]
+module = ["arviz.*", "pymc.*", "pytensor.*", "ptgp.*", "exactextract.*", "rasterio.*", "sklearn.*", "statsmodels.*"]
 ignore_missing_imports = true
 
 # Test functions carry no annotations, so their bodies need checking on their own terms.
