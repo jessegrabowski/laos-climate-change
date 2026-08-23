@@ -718,6 +718,19 @@ def _innermost_container(parent: str | None, pinned: set[str], gazetteer: Gazett
     return set()
 
 
+def _chosen_by_point(gids: set[str], inside: str | None, gazetteer: Gazetteer) -> set[str]:
+    """
+    Let a point choose between the candidates a name cannot separate itself.
+
+    The candidates a name reaches are disjoint, so a point sits in at most one of them. Where it
+    sits in none, or where no source placed the name, every candidate is kept.
+    """
+    if inside is None or len(gids) < 2:
+        return gids
+
+    return (gids & gazetteer.ancestry(inside)) or gids
+
+
 def _narrowed(gids: set[str], pinned: set[str], gazetteer: Gazetteer) -> set[str]:
     """Keep the candidates inside something the event already pinned, or all of them if none are."""
     if len(gids) < 2:
@@ -837,9 +850,12 @@ def resolve_event_places(
     """
     Resolve the places one event names together, letting the unambiguous ones narrow the rest.
 
-    An event's places share a footprint, so a mention that lands on exactly one unit tells the
-    ambiguous mentions beside it where to look. Candidates outside everything the event has already
-    pinned are dropped, and a mention narrowed to nothing keeps its candidates.
+    A name reaching several units is settled first by a point, which sits in at most one of them
+    because the candidates are disjoint. What is left is settled by the event: its places share a
+    footprint, so a mention that lands on exactly one unit tells the ambiguous mentions beside it
+    where to look, and a mention a point has just settled speaks with the same authority. Candidates
+    outside everything the event has pinned are dropped, and a mention narrowed to nothing keeps its
+    candidates.
 
     A place naming nothing takes the unit a point put it in where one is offered. Failing that it
     falls back to the container the prose wrote it in — ``Pesisir Selaten (West Sumatra province)``
@@ -856,8 +872,9 @@ def resolve_event_places(
     gazetteer : Gazetteer
         The country's units, from :func:`read_gazetteer`.
     located : mapping of str to str, optional
-        The unit a point put a written place in, keyed on the name. Default None. A point beats the
-        container because it names one unit where the container names everything inside it.
+        The unit a point put a written place in, keyed on the name. Default None. A point chooses
+        between the units a name reaches, and beats the container where the name reaches none,
+        because it names one unit where the container names everything inside it.
 
     Returns
     -------
@@ -865,7 +882,11 @@ def resolve_event_places(
         Where each place put the event, in the order the places were given.
     """
     written = list(places)
-    resolved = [resolve_place(name, parent, gazetteer) for name, parent in written]
+    points = located or {}
+    resolved = [
+        _chosen_by_point(resolve_place(name, parent, gazetteer), points.get(name), gazetteer)
+        for name, parent in written
+    ]
 
     pinned: set[str] = set()
     for gids in resolved:
@@ -873,7 +894,7 @@ def resolve_event_places(
             pinned |= gazetteer.ancestry(next(iter(gids)))
 
     return [
-        _place_one(name, parent, gids, located or {}, pinned, gazetteer)
+        _place_one(name, parent, gids, points, pinned, gazetteer)
         for (name, parent), gids in zip(written, resolved, strict=True)
     ]
 

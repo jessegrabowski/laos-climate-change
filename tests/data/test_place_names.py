@@ -347,6 +347,48 @@ def test_a_place_its_own_name_reaches_ignores_the_point_offered_for_it(write_gad
     assert placed == Placement({"LAO.1.1_1"}, NAMED)
 
 
+def test_a_point_chooses_between_the_units_one_name_reaches(write_gadm_cache):
+    """`Attapu` is both a province and a district of another province. Keeping both puts the event
+    in a place it never happened, and the point says which one the writer meant."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    (placed,) = resolve_event_places([("Attapu", None)], gazetteer, located={"Attapu": "LAO.2.2_1"})
+
+    assert placed == Placement({"LAO.2.2_1"}, NAMED), "the district, not the province as well"
+
+
+def test_a_point_inside_a_candidate_chooses_it_from_any_depth(write_gadm_cache):
+    """A geocoder answers with the finest unit holding the point, which is below the level the
+    written name reaches. Matching the two literally would settle nothing."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    (placed,) = resolve_event_places([("Attapu", None)], gazetteer, located={"Attapu": "LAO.1.1.1_1"})
+
+    assert placed == Placement({"LAO.1_1"}, NAMED), "the province holding the village the point fell in"
+
+
+def test_a_point_outside_every_candidate_settles_nothing(write_gadm_cache):
+    """Geocoders are wrong often enough that a point landing somewhere else is evidence of nothing.
+    Discarding candidates on it would trade an ambiguous placement for a confident wrong one."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    (placed,) = resolve_event_places([("Attapu", None)], gazetteer, located={"Attapu": "LAO.2.1_1"})
+
+    assert placed == Placement({"LAO.1_1", "LAO.2.2_1"}, NAMED)
+
+
+def test_a_name_a_point_settled_narrows_the_places_beside_it(write_gadm_cache):
+    """A settled name is as good as one that was never ambiguous, so it has to reach `pinned` before
+    the event's other places are read against it."""
+    gazetteer = read_gazetteer("LAO", write_gadm_cache())
+
+    _, fallen_back = resolve_event_places(
+        [("Attapu", None), ("Nowhere At All", "Attapu")], gazetteer, located={"Attapu": "LAO.1_1"}
+    )
+
+    assert fallen_back == Placement({"LAO.1_1"}, CONTAINED_BY), "the province the point settled on, not both"
+
+
 def test_a_correction_is_read_only_for_the_country_that_declares_it(write_gadm_cache, tmp_path):
     """The same written name means different places in different countries, and a table keyed only
     on the name would carry one country's correction into every other."""
