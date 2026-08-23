@@ -16,6 +16,9 @@ from climate_risk.geo.distance import get_distance_to
 
 DAMAGE_COLUMNS = ("ISO", "End Year", "Latitude", "Longitude", "River Basin", "Total_Damage", "Total_Affected", "Deaths")
 
+# The damage regressions are specified over events reaching more than this many people.
+REPLICATION_FILTERS = EventFilters(min_total_affected=1_000)
+
 
 def _create_rivers_damage(
     cache_dir: Path,
@@ -56,7 +59,7 @@ def _create_rivers_damage(
 
     def build() -> gpd.GeoDataFrame:
         big_rivers = load_rivers_data(cache_dir)
-        emdat = load_emdat_events(cache_dir).filter(event_filter(EventFilters())).to_pandas()
+        emdat = load_emdat_events(cache_dir).filter(event_filter(REPLICATION_FILTERS)).to_pandas()
         world = load_shapefile("world", cache_dir, repair_ISO_codes=True)
 
         events = emdat.query(query)

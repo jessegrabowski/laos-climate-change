@@ -19,6 +19,7 @@ UNPATCHED_LATITUDE = 1.25
 FLOOD_LATITUDE = 18.25
 STORM_LATITUDE = 18.5
 DROUGHT_LATITUDE = 18.75
+BARELY_FELT_LATITUDE = 17.75
 
 VARIANTS = {
     "hydro": (create_hydro_rivers_damage, "Total_Damage_Hydro", "log_affected_hydro"),
@@ -89,6 +90,17 @@ def damage_cache(tmp_path, write_emdat_cache, write_shapefile_cache, write_river
                     "Latitude": UNDAMAGED_LATITUDE,
                     "Longitude": 101.25,
                     "Total Damage ('000 US$)": 0,
+                }
+            ),
+            # Below the damage panel's reach floor, so it must not enter the regressions.
+            emdat_event(
+                {
+                    "ISO": "LAO",
+                    "DisNo.": "LAO-barelyfelt",
+                    "Disaster Type": "Flood",
+                    "Latitude": BARELY_FELT_LATITUDE,
+                    "Longitude": 101.75,
+                    "Total Affected": 30,
                 }
             ),
             emdat_event(
@@ -184,6 +196,14 @@ def test_an_event_missing_one_coordinate_is_dropped(damage_cache):
 
     assert HALF_LOCATED_LATITUDE not in set(damage["Latitude"])
     assert damage.geometry.is_valid.all()
+
+
+def test_an_event_below_the_reach_floor_stays_out_of_the_damage_frame(damage_cache):
+    """The damage panel sets its own reach floor, so its regressions are fitted on the same events
+    whatever thresholds a place carries."""
+    damage = create_floods_rivers_damage(damage_cache)
+
+    assert BARELY_FELT_LATITUDE not in set(damage["Latitude"])
 
 
 def test_zero_damage_becomes_missing_rather_than_a_log_of_zero(damage_cache):
