@@ -3,10 +3,11 @@ from dataclasses import dataclass
 import geopandas as gpd
 import numpy as np
 import pandas as pd
+import rasterio
 import shapely
 
 from exactextract import exact_extract
-from exactextract.raster import NumPyRasterSource
+from exactextract.raster import NumPyRasterSource, RasterioRasterSource
 from pyproj import Geod
 from shapely.geometry import box
 
@@ -184,6 +185,10 @@ class CellGrid:
     cells : GeoDataFrame
         Surviving cells, with ``cell_id``, ``lon``, ``lat``, ``ISO_A3``, ``cell_area_km2`` for the whole
         cell and ``place_area_km2`` for the part of it inside the place.
+    place : shapely geometry
+        The ground the lattice was cut to, dissolved. Anything measured over the cells is measured
+        over their intersection with this, so a raster sampled onto the grid cannot be clipped to
+        different ground than the grid itself was.
     """
 
     longitudes: np.ndarray
@@ -191,6 +196,7 @@ class CellGrid:
     longitude_step: float
     latitude_step: float
     cells: gpd.GeoDataFrame
+    place: shapely.geometry.base.BaseGeometry
 
     @property
     def shape(self) -> tuple[int, int]:
@@ -309,6 +315,47 @@ def cell_coverage(
     )
 
 
+def sample_onto_cells(grid: CellGrid, raster: str, *, statistic: str) -> np.ndarray:
+    """
+    Reduce a raster to one value per grid cell, over the part of each cell inside the place.
+
+    Parameters
+    ----------
+    grid : CellGrid
+        The lattice to reduce onto. Values come back in the order of ``grid.cells``.
+    raster : str
+        Path or URI :func:`rasterio.open` accepts.
+    statistic : str
+        An ``exactextract`` operation. It follows the quantity rather than the grid: an extensive
+        one such as a headcount takes ``"sum"``, an intensive one such as an elevation ``"mean"``.
+
+    Returns
+    -------
+    ndarray
+        One value per surviving cell, aligned with ``grid.cells``.
+    """
+    clipped = grid.footprints.intersection(grid.place)
+    missed = clipped.is_empty
+    if missed.any():
+        raise DataValidationError(
+            f"{int(missed.sum())} cells were kept for overlapping the place but do not intersect it."
+        )
+    footprints = gpd.GeoDataFrame(geometry=clipped, crs=GEOGRAPHIC_CRS)
+
+    with rasterio.open(raster) as source:
+        reduced = exact_extract(RasterioRasterSource(source), footprints, [statistic, "count"], output="pandas")
+
+    # A sum over no data is zero, which reads as an empty cell rather than an unmeasured one, so
+    # coverage is what says whether the raster answered.
+    uncovered = np.asarray(reduced["count"].to_numpy(), dtype=float) == 0.0
+    if uncovered.any():
+        raise DataValidationError(
+            f"{int(uncovered.sum())} cells are not covered by {raster}, so their value is unknown rather than zero."
+        )
+
+    return np.asarray(reduced[statistic].to_numpy(), dtype=float)
+
+
 def build_cell_grid(boundary: gpd.GeoDataFrame, *, resolution_km: float) -> CellGrid:
     """
     Lay a grid of cells over a dissolved boundary and keep every cell it touches.
@@ -384,6 +431,7 @@ def build_cell_grid(boundary: gpd.GeoDataFrame, *, resolution_km: float) -> Cell
             geometry=gpd.points_from_xy(kept["lon"], kept["lat"]),
             crs=GEOGRAPHIC_CRS,
         ),
+        place=boundary.to_crs(GEOGRAPHIC_CRS).union_all(),
     )
 
 

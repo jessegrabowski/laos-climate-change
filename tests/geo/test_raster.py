@@ -1,8 +1,10 @@
 import geopandas as gpd
 import numpy as np
 import pytest
+import rasterio
 
 from pyproj import Geod
+from rasterio.transform import from_bounds
 from shapely.geometry import box
 
 from climate_risk.exceptions import DataValidationError
@@ -14,6 +16,7 @@ from climate_risk.geo.raster import (
     build_cell_grid,
     dissolve_place_boundary,
     grid_axes,
+    sample_onto_cells,
 )
 
 
@@ -494,3 +497,82 @@ def test_a_cell_outside_the_grid_is_named_rather_than_translated():
 
     with pytest.raises(DataValidationError, match="not in the grid"):
         grid.column_of_cell(np.array([0, 10_000]))
+
+
+def write_raster(path, values, bounds=(0.0, 0.0, 1.0, 1.0)):
+    """A north-up GeoTIFF holding `values`, spread evenly over `bounds`."""
+    rows, columns = values.shape
+    with rasterio.open(
+        path,
+        "w",
+        driver="GTiff",
+        height=rows,
+        width=columns,
+        count=1,
+        dtype="float64",
+        crs=GEOGRAPHIC_CRS,
+        transform=from_bounds(*bounds, columns, rows),
+    ) as writing:
+        writing.write(values, 1)
+
+    return str(path)
+
+
+def test_summing_conserves_the_total_the_raster_holds(tmp_path):
+    """A count is extensive: every person in the raster lands in exactly one cell, so the cells add
+    back to the whole. Averaging instead would give people per source pixel and lose the scale."""
+    raster = write_raster(tmp_path / "people.tif", np.ones((8, 8)))
+    place = tiles([(0, 0, 1, 1)], ISO_A3=["AAA"])
+    grid = build_cell_grid(place, resolution_km=30.0)
+
+    counted = sample_onto_cells(grid, raster, statistic="sum")
+
+    assert counted.sum() == pytest.approx(64.0)
+    assert len(counted) == len(grid.cells)
+
+
+def test_the_statistic_is_the_callers_choice(tmp_path):
+    """An elevation averages where a population sums, and nothing in the grid says which this is."""
+    raster = write_raster(tmp_path / "field.tif", np.full((8, 8), 3.0))
+    place = tiles([(0, 0, 1, 1)], ISO_A3=["AAA"])
+    grid = build_cell_grid(place, resolution_km=30.0)
+
+    assert sample_onto_cells(grid, raster, statistic="mean") == pytest.approx(3.0)
+    assert sample_onto_cells(grid, raster, statistic="sum").sum() == pytest.approx(64.0 * 3.0)
+
+
+def test_a_cell_the_raster_does_not_cover_is_an_error(tmp_path):
+    """A sum over no data is zero, so an unmeasured cell is indistinguishable from an empty one and
+    the exposure weight silently says nobody lives there."""
+    raster = write_raster(tmp_path / "corner.tif", np.ones((4, 4)), bounds=(0.0, 0.0, 0.4, 0.4))
+    place = tiles([(0, 0, 1, 1)], ISO_A3=["AAA"])
+    grid = build_cell_grid(place, resolution_km=30.0)
+
+    with pytest.raises(DataValidationError, match="not covered"):
+        sample_onto_cells(grid, raster, statistic="sum")
+
+
+def test_values_come_back_in_the_order_of_the_cells(tmp_path):
+    """Totals are order-invariant, so nothing above this would notice the values being shuffled —
+    and a permuted exposure vector hands each cell its neighbour's people."""
+    rising_eastwards = np.tile(np.arange(8, dtype=float), (8, 1))
+    raster = write_raster(tmp_path / "gradient.tif", rising_eastwards)
+    place = tiles([(0, 0, 1, 1)], ISO_A3=["AAA"])
+    grid = build_cell_grid(place, resolution_km=30.0)
+
+    counted = sample_onto_cells(grid, raster, statistic="sum")
+
+    eastwards = np.argsort(grid.cells["lon"].to_numpy(), kind="stable")
+    assert np.all(np.diff(counted[eastwards]) >= 0.0), "cells do not rise with longitude as the raster does"
+
+
+def test_the_grid_carries_the_place_it_was_cut_to():
+    """Sampling clips to this rather than to a boundary passed alongside. A grid built from one
+    place and sampled against another would count the neighbours and never say so."""
+    # L-shaped, so the place and its bounding box are different ground and a grid keeping the box
+    # instead would still look right on a rectangular country.
+    place = tiles([(0, 0, 1, 1), (1, 0, 2, 1), (0, 1, 1, 2)], ISO_A3=["AAA"] * 3)
+
+    grid = build_cell_grid(place, resolution_km=30.0)
+
+    assert grid.place.equals(place.union_all()), "the grid clips to different ground than it was built from"
