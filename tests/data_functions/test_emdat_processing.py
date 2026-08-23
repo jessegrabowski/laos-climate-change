@@ -198,8 +198,8 @@ def test_an_event_exactly_on_the_affected_threshold_does_not_count(write_emdat_c
 
 
 def test_an_event_whose_reach_was_never_recorded_counts_by_default(write_emdat_cache):
-    """A fifth of the workbook records no reach at all. Comparing a null against a floor drops it, so
-    a default floor would discard events for being unquantified rather than for being small."""
+    """Comparing a null against a floor drops it, so a default floor would discard events for being
+    unquantified rather than for being small."""
     cache_dir = write_emdat_cache(
         [
             emdat_event({"DisNo.": "counted", "Start Year": 1995, "Total Affected": 5_000}),
@@ -228,6 +228,23 @@ def test_a_small_event_counts_unless_a_place_sets_a_floor(write_emdat_cache):
 
     assert by_default.to_list() == ["large", "small"]
     assert with_a_floor.to_list() == ["large"]
+
+
+def test_a_deaths_threshold_drops_an_event_whose_deaths_were_never_recorded(write_emdat_cache):
+    """Every threshold compares against a possibly-null column, so the rule that an unrecorded
+    severity fails any threshold set has to hold for deaths as much as for reach."""
+    cache_dir = write_emdat_cache(
+        [
+            emdat_event({"DisNo.": "counted", "Start Year": 1995, "Total Deaths": 500}),
+            emdat_event({"DisNo.": "unquantified", "Start Year": 1995, "Total Deaths": None}),
+        ]
+    )
+
+    by_default = selected_events(cache_dir)["DisNo."]
+    with_a_floor = selected_events(cache_dir, filters=EventFilters(min_deaths=1))["DisNo."]
+
+    assert sorted(by_default.to_list()) == ["counted", "unquantified"]
+    assert with_a_floor.to_list() == ["counted"]
 
 
 def test_the_adjusted_view_follows_the_filters_it_is_given(write_emdat_cache):
