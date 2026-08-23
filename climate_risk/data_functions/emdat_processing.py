@@ -712,11 +712,13 @@ def event_filter(filters: EventFilters) -> pl.Expr:
     Returns
     -------
     Expr
-        True for events that count. An event whose severity is unrecorded does not.
+        True for events that count. A severity threshold a place does not set is not applied, so an
+        event whose severity is unrecorded counts by default and is dropped by any threshold.
     """
-    counts = (pl.col("Total_Affected") > filters.min_total_affected) & (
-        pl.col("Start_Year") >= pl.date(filters.start_year, 1, 1)
-    )
+    counts = pl.col("Start_Year") >= pl.date(filters.start_year, 1, 1)
+
+    if filters.min_total_affected is not None:
+        counts = counts & (pl.col("Total_Affected") > filters.min_total_affected)
 
     if filters.end_year is not None:
         counts = counts & (pl.col("Start_Year") <= pl.date(filters.end_year, 12, 31))

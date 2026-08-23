@@ -41,8 +41,9 @@ class EventFilters:
         First year of the study window, included. Default 1981.
     end_year : int, optional
         Last year, included. Default None, meaning the newest event in the workbook.
-    min_total_affected : int
-        An event must affect more than this many people to count. Default 1000.
+    min_total_affected : int, optional
+        An event must affect more than this many people to count. Default None, which counts an
+        event however small, and counts one whose reach was never recorded.
     min_deaths : int, optional
         An event must kill more than this many people to count. Default None, which counts an event
         on its reach alone.
@@ -50,7 +51,7 @@ class EventFilters:
 
     start_year: int = 1981
     end_year: int | None = None
-    min_total_affected: int = 1000
+    min_total_affected: int | None = None
     min_deaths: int | None = None
 
     def __post_init__(self) -> None:

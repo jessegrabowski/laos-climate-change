@@ -192,9 +192,42 @@ def test_an_event_exactly_on_the_affected_threshold_does_not_count(write_emdat_c
         ]
     )
 
-    kept = selected_events(cache_dir)["DisNo."]
+    kept = selected_events(cache_dir, filters=EventFilters(min_total_affected=1_000))["DisNo."]
 
     assert kept.to_list() == ["over"]
+
+
+def test_an_event_whose_reach_was_never_recorded_counts_by_default(write_emdat_cache):
+    """A fifth of the workbook records no reach at all. Comparing a null against a floor drops it, so
+    a default floor would discard events for being unquantified rather than for being small."""
+    cache_dir = write_emdat_cache(
+        [
+            emdat_event({"DisNo.": "counted", "Start Year": 1995, "Total Affected": 5_000}),
+            emdat_event({"DisNo.": "unquantified", "Start Year": 1995, "Total Affected": None}),
+        ]
+    )
+
+    by_default = selected_events(cache_dir)["DisNo."]
+    with_a_floor = selected_events(cache_dir, filters=EventFilters(min_total_affected=1))["DisNo."]
+
+    assert sorted(by_default.to_list()) == ["counted", "unquantified"]
+    assert with_a_floor.to_list() == ["counted"], "a floor still drops what it cannot compare"
+
+
+def test_a_small_event_counts_unless_a_place_sets_a_floor(write_emdat_cache):
+    """Small events carry the finest geography, so a floor biases the panel towards coarse units."""
+    cache_dir = write_emdat_cache(
+        [
+            emdat_event({"DisNo.": "large", "Start Year": 1995, "Total Affected": 5_000}),
+            emdat_event({"DisNo.": "small", "Start Year": 1995, "Total Affected": 30}),
+        ]
+    )
+
+    by_default = selected_events(cache_dir)["DisNo."]
+    with_a_floor = selected_events(cache_dir, filters=EventFilters(min_total_affected=1_000))["DisNo."]
+
+    assert by_default.to_list() == ["large", "small"]
+    assert with_a_floor.to_list() == ["large"]
 
 
 def test_the_adjusted_view_follows_the_filters_it_is_given(write_emdat_cache):
