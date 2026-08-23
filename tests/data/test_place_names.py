@@ -348,8 +348,8 @@ def test_a_place_its_own_name_reaches_ignores_the_point_offered_for_it(write_gad
 
 
 def test_a_point_chooses_between_the_units_one_name_reaches(write_gadm_cache):
-    """`Attapu` is both a province and a district three hundred kilometres away. Keeping both puts
-    the event in a place it never happened, and the point says which one the writer meant."""
+    """`Attapu` is both a province and a district of another province. Keeping both puts the event
+    in a place it never happened, and the point says which one the writer meant."""
     gazetteer = read_gazetteer("LAO", write_gadm_cache())
 
     (placed,) = resolve_event_places([("Attapu", None)], gazetteer, located={"Attapu": "LAO.2.2_1"})

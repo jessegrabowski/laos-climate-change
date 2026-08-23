@@ -728,9 +728,7 @@ def _chosen_by_point(gids: set[str], inside: str | None, gazetteer: Gazetteer) -
     if inside is None or len(gids) < 2:
         return gids
 
-    holding = {gid for gid in gids if gid == inside or gid in gazetteer.ancestry(inside)}
-
-    return holding or gids
+    return (gids & gazetteer.ancestry(inside)) or gids
 
 
 def _narrowed(gids: set[str], pinned: set[str], gazetteer: Gazetteer) -> set[str]:
