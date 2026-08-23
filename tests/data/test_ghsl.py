@@ -11,10 +11,12 @@ from exactextract.raster import RasterioRasterSource
 from climate_risk.data.gadm import load_units_in_country
 from climate_risk.data.ghsl import (
     POPULATION_EPOCHS,
+    population_on_cells,
     population_raster,
     population_source,
 )
 from climate_risk.exceptions import DataValidationError
+from climate_risk.geo.raster import build_cell_grid, dissolve_place_boundary
 
 
 def write_archive(cache_dir, epoch, members):
@@ -115,3 +117,23 @@ def test_the_epochs_form_one_series_on_one_grid():
 
     assert len(grids) == 1, "the epochs are read against different grids"
     assert totals == sorted(totals), "Laos population does not rise through the series"
+
+
+@pytest.mark.slow
+@pytest.mark.requires_ghsl
+@pytest.mark.requires_gadm
+@pytest.mark.skipif(not REAL_ARCHIVE.exists(), reason="needs the GHS-POP archive")
+@pytest.mark.skipif(not (REAL_CACHE_DIR / "gadm" / "gadm_410.gpkg").exists(), reason="needs the GADM GeoPackage")
+def test_gridded_population_holds_the_country_total_at_any_resolution():
+    """The exposure offset must not depend on the grid it is measured on. Cells overhang the border,
+    so an unclipped count would pick up the neighbours and grow as the cells got coarser."""
+    units = load_units_in_country("LAO", 1, REAL_CACHE_DIR).assign(ISO_A3="LAO")
+    boundary = dissolve_place_boundary(units)
+
+    totals = [
+        population_on_cells(build_cell_grid(boundary, resolution_km=km), 2020, REAL_CACHE_DIR).sum()
+        for km in (10.0, 50.0)
+    ]
+
+    assert totals[0] == pytest.approx(totals[1], rel=0.001)
+    assert totals[0] == pytest.approx(7.4e6, rel=0.05)

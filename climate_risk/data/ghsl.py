@@ -1,9 +1,12 @@
 from pathlib import Path
 from zipfile import ZipFile
 
+import numpy as np
+
 from climate_risk.data.fetch import fetch
 from climate_risk.data.source import DataSource
 from climate_risk.exceptions import DataValidationError
+from climate_risk.geo.raster import CellGrid, sample_onto_cells
 
 GHSL_URL = "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL"
 GHSL_SUBDIRECTORY = "ghsl"
@@ -86,3 +89,24 @@ def population_raster(epoch: int, cache_dir: Path) -> str:
         raise DataValidationError(f"{source.filename} holds {len(members)} rasters, expected exactly one")
 
     return f"zip://{archive}!/{members[0]}"
+
+
+def population_on_cells(grid: CellGrid, epoch: int, cache_dir: Path) -> np.ndarray:
+    """
+    Count the people in each grid cell.
+
+    Parameters
+    ----------
+    grid : CellGrid
+        The lattice to count onto. Values come back in the order of ``grid.cells``.
+    epoch : int
+        Year the grid describes, one of ``POPULATION_EPOCHS``.
+    cache_dir : Path
+        Directory the caches live under.
+
+    Returns
+    -------
+    ndarray
+        People per cell, aligned with ``grid.cells``.
+    """
+    return sample_onto_cells(grid, population_raster(epoch, cache_dir), statistic="sum")
