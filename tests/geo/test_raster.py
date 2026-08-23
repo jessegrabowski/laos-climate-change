@@ -1,7 +1,10 @@
+import dataclasses
+
 import geopandas as gpd
 import numpy as np
 import pytest
 import rasterio
+import shapely
 
 from pyproj import Geod
 from rasterio.transform import from_bounds
@@ -576,3 +579,16 @@ def test_the_grid_carries_the_place_it_was_cut_to():
     grid = build_cell_grid(place, resolution_km=30.0)
 
     assert grid.place.equals(place.union_all()), "the grid clips to different ground than it was built from"
+
+
+def test_a_cell_that_misses_the_place_is_an_error(tmp_path):
+    """Cells are kept by one engine's coverage and clipped by another's intersection, so the two can
+    disagree on a sliver. Sampling an empty geometry gets a parse error out of the raster library
+    rather than a sentence about the grid."""
+    raster = write_raster(tmp_path / "field.tif", np.ones((8, 8)))
+    place = tiles([(0, 0, 1, 1)], ISO_A3=["AAA"])
+    grid = build_cell_grid(place, resolution_km=30.0)
+    detached = dataclasses.replace(grid, place=shapely.box(10.0, 10.0, 11.0, 11.0))
+
+    with pytest.raises(DataValidationError, match="do not intersect it"):
+        sample_onto_cells(detached, raster, statistic="sum")
