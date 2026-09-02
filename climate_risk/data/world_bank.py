@@ -59,6 +59,11 @@ def transform_world_bank(raw: pl.DataFrame, indicator_names: Mapping[str, str]) 
     DataFrame
         One row per country and year, sorted, with an integer ``year``.
     """
+    # kuznets warns rather than raising when the Bank rejects a code, and omits the column entirely.
+    missing = sorted(set(indicator_names) - set(raw.columns))
+    if missing:
+        raise ValueError(f"The World Bank returned no column for {missing}; the codes may have been retired.")
+
     coded = raw.with_columns(pl.col("country").replace_strict(COUNTRY_CODE_BY_NAME, default=None).alias("country_code"))
 
     unmatched = sorted(set(coded.filter(pl.col("country_code").is_null())["country"].to_list()))

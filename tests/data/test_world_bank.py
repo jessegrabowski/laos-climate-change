@@ -232,3 +232,13 @@ def test_a_backend_other_than_polars_is_rejected(tmp_path, monkeypatch):
 
     with pytest.raises(TypeError, match="output_type='polars'"):
         load_wb_data(tmp_path)
+
+
+def test_an_indicator_the_bank_no_longer_serves_is_named():
+    """kuznets warns and omits the column rather than raising, so without this the failure surfaces
+    from the select as a polars error naming a column, after the whole panel has been downloaded.
+    """
+    retired = downloaded([("Aruba", "1990", 10.0, 1000.0, 100000, 5.0, 180.0)]).drop("AG.SRF.TOTL.K2")
+
+    with pytest.raises(ValueError, match=r"AG\.SRF\.TOTL\.K2"):
+        transform_world_bank(retired, INDICATOR_NAMES)
