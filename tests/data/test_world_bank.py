@@ -10,9 +10,12 @@ from climate_risk.data.world_bank import (
     COUNTRIES_FILE,
     COUNTRY_CODE_BY_NAME,
     INDICATOR_NAMES,
+    MACRO_INDICATOR_NAMES,
     REQUESTED_COUNTRY_CODES,
     WB_INDICATORS,
+    WB_MACRO_INDICATORS,
     load_wb_data,
+    load_wb_macro_data,
     transform_world_bank,
 )
 
@@ -232,6 +235,78 @@ def test_a_backend_other_than_polars_is_rejected(tmp_path, monkeypatch):
 
     with pytest.raises(TypeError, match="output_type='polars'"):
         load_wb_data(tmp_path)
+
+
+def macro_downloaded(rows) -> pl.DataFrame:
+    """The macro indicators shaped as kuznets returns them tidy."""
+    frame = pl.DataFrame(rows, schema=["country", "year", *WB_MACRO_INDICATORS], orient="row")
+
+    return frame.with_columns(pl.col("year").str.to_datetime("%Y"))
+
+
+def macro_row(country: str = "Aruba", year: str = "1990"):
+    return (country, year, *range(len(WB_MACRO_INDICATORS)))
+
+
+def test_the_macro_panel_is_keyed_the_same_way_as_the_indicator_panel():
+    """Both panels key on country_code and year so they can be joined without restating either."""
+    frame = transform_world_bank(macro_downloaded([macro_row()]), MACRO_INDICATOR_NAMES)
+
+    assert frame.columns[:2] == ["country_code", "year"]
+    assert frame.select("country_code", "year").rows() == [("ABW", 1990)]
+
+
+def test_the_real_quantities_and_the_local_currency_codes_are_the_same_set():
+    """The model's ratios are formed within a country, so its real quantities must share one unit. A
+    KD series among them converts at a market exchange rate, moving every ratio built from it. The
+    check runs both ways: a `.KN` code named without the suffix is as wrong as the reverse.
+    """
+    suffixed = {code for code, name in MACRO_INDICATOR_NAMES.items() if name.endswith("_lcu")}
+    local_currency = {code for code in MACRO_INDICATOR_NAMES if code.endswith(".KN")}
+
+    assert local_currency, "no constant-local-currency indicators found"
+    assert suffixed == local_currency
+
+
+def test_the_two_panels_share_no_column_name():
+    """`real_gdp` is constant US$ in one panel. A name carrying two units across the two frames is a
+    silent unit mix on any join between them.
+    """
+    assert set(INDICATOR_NAMES.values()).isdisjoint(MACRO_INDICATOR_NAMES.values())
+
+
+def test_no_two_macro_indicators_share_a_name():
+    """The names become columns, so a repeated one would silently drop an indicator from the panel."""
+    names = list(MACRO_INDICATOR_NAMES.values())
+
+    assert len(names) == len(set(names))
+
+
+def test_the_macro_panel_caches_apart_from_the_indicator_panel(tmp_path, serves):
+    """One cache key for both would serve whichever panel was downloaded first to both callers."""
+    serves(macro_downloaded([macro_row()]))
+
+    load_wb_macro_data(tmp_path)
+
+    assert (tmp_path / "world_bank_macro.parquet").exists()
+    assert not (tmp_path / CACHE_FILE).exists()
+
+
+def test_the_macro_download_asks_for_the_macro_indicators(tmp_path, serves):
+    calls = serves(macro_downloaded([macro_row()]))
+
+    load_wb_macro_data(tmp_path)
+
+    assert calls[0]["indicator"] == WB_MACRO_INDICATORS
+
+
+def test_the_macro_panel_covers_every_requested_country(tmp_path, serves):
+    """The model is estimated per country, so the panel must not be narrowed to any one of them."""
+    calls = serves(macro_downloaded([macro_row()]))
+
+    load_wb_macro_data(tmp_path)
+
+    assert calls[0]["country"] == REQUESTED_COUNTRY_CODES
 
 
 def test_an_indicator_the_bank_no_longer_serves_is_named():

@@ -39,6 +39,31 @@ INDICATOR_NAMES = {
 
 WB_INDICATORS = list(INDICATOR_NAMES)
 
+# The national accounts, prices, rates and fiscal aggregates the small open economy model is
+# estimated on. KN is constant local currency, so the ratios the model forms within a country share
+# one unit. The KD variant converts at a market exchange rate.
+MACRO_INDICATOR_NAMES = {
+    "NY.GDP.MKTP.KN": "real_gdp_lcu",
+    "NE.CON.PRVT.KN": "real_consumption_lcu",
+    "NE.GDI.FTOT.KN": "real_investment_lcu",
+    "NE.CON.GOVT.KN": "real_government_lcu",
+    "NE.EXP.GNFS.KN": "real_exports_lcu",
+    "NE.IMP.GNFS.KN": "real_imports_lcu",
+    "FP.CPI.TOTL": "cpi",
+    "NY.GDP.DEFL.ZS": "gdp_deflator",
+    "PA.NUS.FCRF": "exchange_rate",
+    "FR.INR.LEND": "lending_rate",
+    "FR.INR.DPST": "deposit_rate",
+    "TM.TAX.MRCH.WM.AR.ZS": "import_tariff",
+    "DT.DOD.DECT.CD": "external_debt",
+    "BN.CAB.XOKA.GD.ZS": "current_account_gdp",
+    "SL.EMP.TOTL.SP.ZS": "employment_rate",
+    "GC.TAX.TOTL.GD.ZS": "tax_revenue_gdp",
+    "GC.XPN.TOTL.GD.ZS": "government_expense_gdp",
+}
+
+WB_MACRO_INDICATORS = list(MACRO_INDICATOR_NAMES)
+
 # Earlier than any indicator's coverage, so the series starts wherever the data does.
 FIRST_YEAR = 1900
 
@@ -112,3 +137,13 @@ def _load_indicators(
 def load_wb_data(cache_dir: Path, *, force_reload: bool = False) -> pl.DataFrame:
     """Return the population, area and output panel, one row per country and year."""
     return _load_indicators(cache_dir, "world_bank", INDICATOR_NAMES, force_reload=force_reload)
+
+
+def load_wb_macro_data(cache_dir: Path, *, force_reload: bool = False) -> pl.DataFrame:
+    """
+    Return the macroeconomic panel the small open economy model is estimated on, one row per country
+    and year.
+
+    The World Bank publishes these indicators annually, and they are returned at that frequency.
+    """
+    return _load_indicators(cache_dir, "world_bank_macro", MACRO_INDICATOR_NAMES, force_reload=force_reload)
