@@ -47,7 +47,7 @@ def serves(monkeypatch):
 def test_indicators_are_keyed_by_iso_code_and_year():
     raw = downloaded([("Aruba", "1990", 10.0, 1000.0, 100000, 5.0, 180.0)])
 
-    frame = transform_world_bank(raw)
+    frame = transform_world_bank(raw, INDICATOR_NAMES)
 
     assert frame.columns[:2] == ["country_code", "year"]
     assert frame.select("country_code", "year").rows() == [("ABW", 1990)]
@@ -57,7 +57,7 @@ def test_the_dated_year_becomes_an_integer():
     """Upstream dates the year; casting that date rather than reading it yields microseconds."""
     raw = downloaded([("Aruba", "1990", 10.0, 1000.0, 100000, 5.0, 180.0)])
 
-    frame = transform_world_bank(raw)
+    frame = transform_world_bank(raw, INDICATOR_NAMES)
 
     assert frame.schema["year"] == pl.Int64
 
@@ -65,7 +65,7 @@ def test_the_dated_year_becomes_an_integer():
 def test_indicator_codes_become_readable_names():
     raw = downloaded([("Aruba", "1990", 10.0, 1000.0, 100000, 5.0, 180.0)])
 
-    frame = transform_world_bank(raw)
+    frame = transform_world_bank(raw, INDICATOR_NAMES)
 
     assert set(frame.columns) == {
         "country_code",
@@ -101,7 +101,7 @@ def test_a_country_with_no_iso_code_is_dropped():
         ]
     )
 
-    frame = transform_world_bank(raw)
+    frame = transform_world_bank(raw, INDICATOR_NAMES)
 
     assert frame["country_code"].to_list() == ["ABW"]
 
@@ -115,7 +115,7 @@ def test_the_result_is_sorted_by_country_and_year():
         ]
     )
 
-    frame = transform_world_bank(raw)
+    frame = transform_world_bank(raw, INDICATOR_NAMES)
 
     assert frame.select("country_code", "year").rows() == [("ABW", 1990), ("ABW", 1991), ("ZWE", 1991)]
 
@@ -221,7 +221,7 @@ def test_dropping_an_unmatched_country_says_which_one(caplog):
     )
 
     with caplog.at_level(logging.WARNING, logger="climate_risk.data.world_bank"):
-        transform_world_bank(raw)
+        transform_world_bank(raw, INDICATOR_NAMES)
 
     assert "Not A Country" in caplog.text
 

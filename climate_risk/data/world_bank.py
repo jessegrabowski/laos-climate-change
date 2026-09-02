@@ -1,5 +1,6 @@
 import logging
 
+from collections.abc import Mapping
 from pathlib import Path
 
 import polars as pl
@@ -42,7 +43,7 @@ WB_INDICATORS = list(INDICATOR_NAMES)
 FIRST_YEAR = 1900
 
 
-def transform_world_bank(raw: pl.DataFrame) -> pl.DataFrame:
+def transform_world_bank(raw: pl.DataFrame, indicator_names: Mapping[str, str]) -> pl.DataFrame:
     """
     Key the World Bank indicators by ISO code and year, under their readable names.
 
@@ -50,6 +51,8 @@ def transform_world_bank(raw: pl.DataFrame) -> pl.DataFrame:
     ----------
     raw : DataFrame
         Indicators as ``kuznets`` returns them tidy, with ``country`` and ``year`` columns.
+    indicator_names : mapping of str to str
+        The indicator codes to keep, each mapped to the name it is stored under.
 
     Returns
     -------
@@ -69,17 +72,25 @@ def transform_world_bank(raw: pl.DataFrame) -> pl.DataFrame:
             # Upstream dates the year. dt.year() narrows it to Int32, and a join key that changes
             # width is a join that stops matching.
             pl.col("year").dt.year().cast(pl.Int64),
-            *(pl.col(code).alias(name) for code, name in INDICATOR_NAMES.items()),
+            *(pl.col(code).alias(name) for code, name in indicator_names.items()),
         )
         .sort("country_code", "year")
     )
 
 
-def load_wb_data(cache_dir: Path, *, force_reload: bool = False) -> pl.DataFrame:
+def _load_indicators(
+    cache_dir: Path,
+    name: str,
+    indicator_names: Mapping[str, str],
+    *,
+    force_reload: bool,
+) -> pl.DataFrame:
+    """Download ``indicator_names`` for every requested country and cache the panel under ``name``."""
+
     def build() -> pl.DataFrame:
-        _log.info("Downloading World Bank indicators")
+        _log.info(f"Downloading {len(indicator_names)} World Bank indicators for {name}")
         downloaded = wb.download(
-            indicator=WB_INDICATORS,
+            indicator=list(indicator_names),
             country=REQUESTED_COUNTRY_CODES,
             start=FIRST_YEAR,
             end=None,
@@ -88,6 +99,11 @@ def load_wb_data(cache_dir: Path, *, force_reload: bool = False) -> pl.DataFrame
         if not isinstance(downloaded, pl.DataFrame):
             raise TypeError(f"kuznets returned a {type(downloaded).__name__} for output_type='polars'")
 
-        return transform_world_bank(downloaded)
+        return transform_world_bank(downloaded, indicator_names)
 
-    return cached(cache_dir, "world_bank", build, polars_parquet(), force=force_reload)
+    return cached(cache_dir, name, build, polars_parquet(), force=force_reload)
+
+
+def load_wb_data(cache_dir: Path, *, force_reload: bool = False) -> pl.DataFrame:
+    """Return the population, area and output panel, one row per country and year."""
+    return _load_indicators(cache_dir, "world_bank", INDICATOR_NAMES, force_reload=force_reload)
