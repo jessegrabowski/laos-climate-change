@@ -174,7 +174,7 @@ Administrative units and event footprints
     ~geo_disasters.compare_event_units
     ~geo_disasters.event_unit_ids
     ~geo_disasters.unit_names
-    ~geo_disasters.normalise_unit_name
+    ~geo_disasters.normalize_unit_name
     ~ghsl.population_source
     ~ghsl.population_raster
     ~gpcc.GriddedProduct

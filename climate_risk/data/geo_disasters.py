@@ -21,7 +21,7 @@ _log = logging.getLogger(__name__)
 GEO_DISASTERS = ManualSource(
     filename="disaster_subnational_90_23.gpkg",
     homepage="https://doi.org/10.5281/zenodo.15487667",
-    licence=(
+    license=(
         "Spatial geometries are © FAO 2015 under the GAUL 2015 Data Licence, non-commercial with "
         "attribution required. All non-spatial attributes are CC-BY-4.0."
     ),
@@ -314,7 +314,7 @@ def load_resolved_units(isos: Sequence[str], cache_dir: Path, *, force_reload: b
     return pd.concat(frames, ignore_index=True)
 
 
-def normalise_unit_name(name: str) -> str:
+def normalize_unit_name(name: str) -> str:
     """
     Reduce an administrative unit's name to what two gazetteers can be expected to agree on.
 

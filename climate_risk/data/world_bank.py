@@ -14,7 +14,7 @@ _log = logging.getLogger(__name__)
 
 WORLD_BANK = ApiSource(
     url="https://api.worldbank.org/v2/country",
-    licence="CC BY 4.0",
+    license="CC BY 4.0",
     citation=(
         "World Bank, World Development Indicators, https://databank.worldbank.org/source/world-development-indicators."
     ),

@@ -23,7 +23,7 @@ OSM_SUBDIRECTORY = "osm"
 
 NOMINATIM = ApiSource(
     url="https://nominatim.openstreetmap.org/search",
-    licence="ODbL 1.0",
+    license="ODbL 1.0",
     citation="OpenStreetMap contributors, https://www.openstreetmap.org/copyright, licensed ODbL 1.0.",
     retrieved="2026-09-05",
 )

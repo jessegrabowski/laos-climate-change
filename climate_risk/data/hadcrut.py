@@ -17,7 +17,7 @@ _log = logging.getLogger(__name__)
 HADCRUT = DataSource(
     url="https://crudata.uea.ac.uk/cru/data/temperature/HadCRUT.5.0.2.0.analysis.anomalies.ensemble_mean.nc",
     filename="HadCRUT.5.0.2.0.analysis.anomalies.ensemble_mean.nc",
-    licence="Open Government Licence v3",
+    license="Open Government Licence v3",
     citation=(
         "HadCRUT.5.0.2.0 analysis anomalies, ensemble mean, obtained from "
         "https://www.metoffice.gov.uk/hadobs/hadcrut5 and \u00a9 British Crown Copyright, Met Office, "

@@ -14,7 +14,7 @@ class DataSource:
         Address to download from.
     filename : str
         Name to store the download under, inside the cache directory. A bare name, never a path.
-    licence : str
+    license : str
         Terms the data is published under. EM-DAT is licensed and HydroRIVERS requires attribution.
     citation : str
         How to credit the publisher.
@@ -24,7 +24,7 @@ class DataSource:
 
     url: str
     filename: str
-    licence: str
+    license: str
     citation: str
     retrieved: str
 
@@ -61,7 +61,7 @@ class ManualSource:
         Name the file is stored under, inside its cache directory. A bare name, never a path.
     homepage : str
         Where a person goes to obtain the file.
-    licence : str
+    license : str
         Terms the data is published under, including any restriction on redistribution.
     citation : str
         How to credit the publisher.
@@ -71,7 +71,7 @@ class ManualSource:
 
     filename: str
     homepage: str
-    licence: str
+    license: str
     citation: str
     retrieved: str
 
@@ -97,7 +97,7 @@ class ManualSource:
         if not path.exists():
             raise NotImplementedError(
                 f"No {self.filename} was found at `{path}`.\n"
-                f"Licence: {self.licence}\n"
+                f"Licence: {self.license}\n"
                 f"Obtain it from {self.homepage} and place it at `{path}`."
             )
 
@@ -117,7 +117,7 @@ class ApiSource:
     ----------
     url : str
         Documented entry point for the service.
-    licence : str
+    license : str
         Terms the data is published under. Some services aggregate publishers under differing terms.
     citation : str
         How to credit the publisher.
@@ -126,7 +126,7 @@ class ApiSource:
     """
 
     url: str
-    licence: str
+    license: str
     citation: str
     retrieved: str
 

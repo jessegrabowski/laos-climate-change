@@ -15,7 +15,7 @@ from climate_risk.exceptions import DataValidationError
 EMDAT = ManualSource(
     filename="emdat.xlsx",
     homepage="https://public.emdat.be/",
-    licence=(
+    license=(
         "Free for non-commercial use with attribution. Redistribution of the database is not "
         "permitted; users must download it themselves after registering."
     ),

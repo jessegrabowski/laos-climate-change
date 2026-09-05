@@ -196,7 +196,7 @@ def toy_gpcc_products() -> tuple[GriddedProduct, ...]:
         return DataSource(
             url=f"https://opendata.dwd.de/climate_environment/GPCC/{filename}",
             filename=filename,
-            licence="CC BY 4.0",
+            license="CC BY 4.0",
             citation="GPCC",
             retrieved="2026-08-07",
         )

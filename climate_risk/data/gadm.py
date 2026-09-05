@@ -15,7 +15,7 @@ from climate_risk.exceptions import DataValidationError
 GADM = ManualSource(
     filename="gadm_410.gpkg",
     homepage="https://gadm.org/download_world.html",
-    licence=(
+    license=(
         "Academic use and other non-commercial use only. Redistribution, and use as part of a "
         "commercial product or service, require prior written permission."
     ),

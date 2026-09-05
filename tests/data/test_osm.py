@@ -111,7 +111,7 @@ def test_one_country_does_not_answer_for_another(write_osm_cache):
 def test_openstreetmap_is_declared_under_the_licence_it_is_published_with():
     """ODbL carries attribution and share-alike obligations that the other sources here do not, so
     the terms travel with the data rather than living in a README."""
-    assert NOMINATIM.licence == "ODbL 1.0"
+    assert NOMINATIM.license == "ODbL 1.0"
 
 
 @pytest.mark.parametrize("category", PLACE_CATEGORIES)

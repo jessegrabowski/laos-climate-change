@@ -15,7 +15,7 @@ _log = logging.getLogger(__name__)
 
 IMTS = ApiSource(
     url="https://api.imf.org/external/sdmx/2.1/data/IMF.STA,IMTS,1.0.0",
-    licence="\u00a9 International Monetary Fund. All rights reserved. https://www.imf.org/external/terms.htm",
+    license="\u00a9 International Monetary Fund. All rights reserved. https://www.imf.org/external/terms.htm",
     citation=(
         "International Monetary Fund, International Trade in Goods (by partner country), "
         "https://data.imf.org/en/datasets/IMF.STA:IMTS."

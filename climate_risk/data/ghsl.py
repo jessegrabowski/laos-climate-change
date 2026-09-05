@@ -11,7 +11,7 @@ from climate_risk.geo.raster import CellGrid, sample_onto_cells
 GHSL_URL = "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL"
 GHSL_SUBDIRECTORY = "ghsl"
 GHSL_RELEASE = "R2023A"
-GHSL_LICENCE = "European Commission reuse notice: reuse authorised provided the source is acknowledged"
+GHSL_LICENSE = "European Commission reuse notice: reuse authorised provided the source is acknowledged"
 GHSL_CITATION = (
     "Schiavina, M., Freire, S., Carioli, A., MacManus, K. (2026): GHS-POP R2023A - GHS population "
     "grid multitemporal (1975-2030). European Commission, Joint Research Centre. "
@@ -54,7 +54,7 @@ def population_source(epoch: int) -> DataSource:
     return DataSource(
         url=f"{GHSL_URL}/GHS_POP_GLOBE_{GHSL_RELEASE}/{stem}/V1-0/{stem}_V1_0.zip",
         filename=f"{stem}_V1_0.zip",
-        licence=GHSL_LICENCE,
+        license=GHSL_LICENSE,
         citation=GHSL_CITATION,
         retrieved=GHSL_RETRIEVED,
     )

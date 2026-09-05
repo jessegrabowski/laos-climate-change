@@ -46,7 +46,7 @@ def test_a_placed_geopackage_is_returned(tmp_path):
 def test_the_declaration_carries_the_non_commercial_restriction():
     """Generic checks live in test_source; what is specific here is the restriction itself, which
     binds every figure built from these boundaries."""
-    assert "non-commercial" in GADM.licence.lower()
+    assert "non-commercial" in GADM.license.lower()
     assert "gadm.org" in GADM.citation
 
 

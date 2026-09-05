@@ -14,7 +14,7 @@ _log = logging.getLogger(__name__)
 
 FRED = ApiSource(
     url="https://api.stlouisfed.org/fred/series/observations",
-    licence=(
+    license=(
         "Series carry the terms of whoever published them. The US federal series read here are "
         "public domain; other series on FRED are redistributed under restrictions, some serving only "
         "a rolling window of history."

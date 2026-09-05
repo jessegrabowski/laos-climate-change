@@ -11,7 +11,7 @@ from climate_risk.data.source import DataSource
 
 GEONAMES_URL = "https://download.geonames.org/export/dump"
 GEONAMES_SUBDIRECTORY = "geonames"
-GEONAMES_LICENCE = "CC BY 4.0"
+GEONAMES_LICENSE = "CC BY 4.0"
 GEONAMES_CITATION = "GeoNames geographical database, https://www.geonames.org, licensed CC BY 4.0."
 GEONAMES_RETRIEVED = "2026-08-19"
 
@@ -22,7 +22,7 @@ DUMP_FIELDS = {1: "name", 2: "ascii_name", 3: "alternates", 4: "lat", 5: "lon", 
 COUNTRY_INFO = DataSource(
     url=f"{GEONAMES_URL}/countryInfo.txt",
     filename="countryInfo.txt",
-    licence=GEONAMES_LICENCE,
+    license=GEONAMES_LICENSE,
     citation=GEONAMES_CITATION,
     retrieved=GEONAMES_RETRIEVED,
 )
@@ -38,7 +38,7 @@ def country_dump(alpha2: str) -> DataSource:
     return DataSource(
         url=f"{GEONAMES_URL}/{alpha2}.zip",
         filename=f"{alpha2}.zip",
-        licence=GEONAMES_LICENCE,
+        license=GEONAMES_LICENSE,
         citation=GEONAMES_CITATION,
         retrieved=GEONAMES_RETRIEVED,
     )

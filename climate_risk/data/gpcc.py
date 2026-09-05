@@ -86,7 +86,7 @@ def _full_data_archive(decade: str) -> DataSource:
     return DataSource(
         url=f"{GPCC_URL}/full_data_monthly_v2022/10/{name}",
         filename=name,
-        licence="CC BY 4.0",
+        license="CC BY 4.0",
         citation=FULL_DATA_CITATION,
         retrieved="2026-08-05",
     )
@@ -98,7 +98,7 @@ def _monitoring_archive(year: int, month: int) -> DataSource:
     return DataSource(
         url=f"{GPCC_URL}/monitoring_v2022/{year}/{name}",
         filename=name,
-        licence="CC BY 4.0",
+        license="CC BY 4.0",
         citation=MONITORING_CITATION,
         retrieved="2026-08-07",
     )

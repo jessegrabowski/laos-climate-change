@@ -18,7 +18,7 @@ _log = logging.getLogger(__name__)
 WORLD = DataSource(
     url=("https://datacatalogfiles.worldbank.org/ddh-published/0038272/DR0046659/wb_countries_admin0_10m.zip"),
     filename="wb_countries_admin0_10m.zip",
-    licence="CC BY 4.0",
+    license="CC BY 4.0",
     citation=(
         "World Bank Official Boundaries, dataset 0038272 in the World Bank Data Catalog. "
         "https://datacatalog.worldbank.org/search/dataset/0038272"
@@ -29,7 +29,7 @@ WORLD = DataSource(
 COASTLINE = DataSource(
     url="https://www.soest.hawaii.edu/pwessel/gshhg/gshhg-shp-2.3.7.zip",
     filename="gshhg-shp-2.3.7.zip",
-    licence="LGPL",
+    license="LGPL",
     citation=(
         "Wessel, P., and Smith, W. H. F. (1996): A global, self-consistent, hierarchical, "
         "high-resolution shoreline database. Journal of Geophysical Research, 101(B4), 8741-8743. "

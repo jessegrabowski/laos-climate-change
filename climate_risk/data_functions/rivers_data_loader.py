@@ -14,7 +14,7 @@ _log = logging.getLogger(__name__)
 RIVERS = DataSource(
     url="https://data.hydrosheds.org/file/HydroRIVERS/HydroRIVERS_v10_shp.zip",
     filename="HydroRIVERS_v10_shp.zip",
-    licence="HydroSHEDS License Agreement: free for scientific, educational and commercial use",
+    license="HydroSHEDS License Agreement: free for scientific, educational and commercial use",
     citation=(
         "Lehner, B., Grill, G. (2013): Global river hydrography and network routing: baseline data "
         "and new approaches to study the world's large river systems. Hydrological Processes, "

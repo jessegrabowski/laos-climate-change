@@ -12,7 +12,7 @@ _log = logging.getLogger(__name__)
 PWT = ManualSource(
     filename="pwt100.xlsx",
     homepage="https://www.rug.nl/ggdc/productivity/pwt/",
-    licence="Creative Commons Attribution 4.0",
+    license="Creative Commons Attribution 4.0",
     citation=(
         "Feenstra, Robert C., Robert Inklaar and Marcel P. Timmer (2015), "
         "'The Next Generation of the Penn World Table', American Economic Review 105(10), 3150-3182"

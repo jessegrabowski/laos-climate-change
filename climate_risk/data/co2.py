@@ -10,7 +10,7 @@ from climate_risk.data.source import DataSource
 CO2 = DataSource(
     url="https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_annmean_mlo.csv",
     filename="co2_annmean_mlo.csv",
-    licence="public domain (U.S. Government work, 17 U.S.C. 105)",
+    license="public domain (U.S. Government work, 17 U.S.C. 105)",
     citation=(
         "Lan, X., NOAA Global Monitoring Laboratory (https://gml.noaa.gov/ccgg/trends/) and "
         "Keeling, R., Scripps Institution of Oceanography. Mauna Loa annual mean CO2."

@@ -48,7 +48,7 @@ It needs `member` naming the layer to read inside the zip, alongside the usual s
 member = "lao_admin2.shp"
 url = "https://…/lao_admin_boundaries.shp.zip"
 filename = "lao_admin_boundaries.shp.zip"
-licence = "CC BY 3.0 IGO"
+license = "CC BY 3.0 IGO"
 citation = "National Geographic Department (NGD), via the Humanitarian Data Exchange."
 retrieved = "2026-08-08"
 ```
