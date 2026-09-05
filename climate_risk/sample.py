@@ -62,27 +62,44 @@ def sample_or_load(
 ) -> xr.DataTree:
     """Sample the model or load the model from disk.
 
+    Where ``fp`` already holds inference data and no resample is asked for, it is read back. Otherwise
+    the model is sampled, its posterior predictive drawn, and the result written to ``fp``.
+
     Parameters
     ----------
-    fp: str
-        The file path to save/load the inference data.
-    model: pm.Model, optional
-        The PyMC model to sample. Defaults to None, in which case the currently active model context is used.
-    force_resample: bool, optional
-        Whether to resample the model, even if data is found at the filepath. Defaults to False.
-    sample_kwargs: dict, optional
-        Additional keyword arguments to pass to the sampling function.
-    compile_kwargs: dict, options
-        Pytensor.function kwargs, passed to `sample_posterior_predictive` and `compute_log_likelihood`.
-    save_results: bool, optional
-        Whether to save the results to disk. Defaults to True.
+    fp : str
+        Path the inference data is saved to and loaded from.
+    model : Model, optional
+        Model to sample. Defaults to the model on the context stack.
+    force_resample : bool, optional
+        Sample again even when data is found at ``fp``. Default False.
+    sample_kwargs : dict, optional
+        Extra keyword arguments for :func:`pymc.sample`.
+    compile_kwargs : dict, optional
+        PyTensor compilation arguments, passed to :func:`pymc.sample_posterior_predictive` and
+        :func:`pymc.compute_log_likelihood`.
+    save_results : bool, optional
+        Write the result to ``fp``. Default True.
 
     Returns
     -------
-    idata: xr.DataTree
-        The sampled inference data.
+    idata : DataTree
+        Posterior, posterior predictive and log likelihood.
 
-    This function performs posterior and posterior predictive sampling of a PyMC model. It either loads the model from disk or samples it using the provided model and sample_kwargs. If the file already exists and resampling is not requested, it loads the data from disk. Otherwise, it samples the model, performs posterior predictive sampling, and saves the resulting inference data to disk.
+    Examples
+    --------
+    Sample once, then reuse the saved draws on every later run:
+
+    .. code-block:: python
+
+        import pymc as pm
+
+        from climate_risk.sample import sample_or_load
+
+        with pm.Model() as model:
+            mu = pm.Normal("mu")
+            obs = pm.Normal("obs", mu=mu, observed=[0.1, 0.3, -0.2])
+            idata = sample_or_load("fits/demo.nc")
     """
     _fp = pathlib.Path(fp)
 
