@@ -106,7 +106,7 @@ def test_the_two_products_meet_without_a_gap_or_an_overlap():
 
 
 def test_a_time_axis_in_an_unknown_encoding_is_refused():
-    """Reading an unrecognised numeric axis as-is would date the record silently, not loudly."""
+    """Reading an unrecognized numeric axis as-is would date the record silently, not loudly."""
     time = xr.DataArray([20210101.0], dims="time", attrs={"units": "days since 1900-01-01"})
 
     with pytest.raises(ValueError, match="neither a decoded datetime"):

@@ -219,7 +219,7 @@ def test_a_baseline_the_record_does_not_cover_is_refused(wide_cache):
 
 
 def test_the_ocean_temperature_deviation_is_residual_around_its_trend(replication):
-    """It is the STL residual, so it is centred near zero and not the level of Temp itself."""
+    """It is the STL residual, so it is centered near zero and not the level of Temp itself."""
     deviations = replication["dev_from_trend_ocean_temp"].drop_nulls()
 
     assert deviations.mean() == pytest.approx(0.0, abs=0.5)

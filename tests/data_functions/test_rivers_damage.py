@@ -140,11 +140,11 @@ def test_the_totals_and_their_logs_are_suffixed_per_variant(damage_cache, varian
     assert log in damage.columns
 
 
-def test_distance_to_the_nearest_river_is_in_kilometres(damage_cache):
-    """The column feeds a regression in kilometres; metres would inflate it a thousandfold."""
+def test_distance_to_the_nearest_river_is_in_kilometers(damage_cache):
+    """The column feeds a regression in kilometers; meters would inflate it a thousandfold."""
     damage = create_floods_rivers_damage(damage_cache)
 
-    # Both floods sit within a couple of degrees of the river, so a few hundred kilometres.
+    # Both floods sit within a couple of degrees of the river, so a few hundred kilometers.
     assert damage["closest_river"].max() < 1_000
 
 

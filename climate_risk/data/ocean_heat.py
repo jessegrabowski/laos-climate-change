@@ -12,7 +12,7 @@ OCEAN_HEAT = DataSource(
         "/basin/3month/ohc_levitus_climdash_seasonal.csv"
     ),
     filename="ohc_levitus_climdash_seasonal.csv",
-    licence="public domain (U.S. Government work, 17 U.S.C. 105)",
+    license="public domain (U.S. Government work, 17 U.S.C. 105)",
     citation=(
         "NOAA National Centers for Environmental Information, global ocean heat content. "
         "https://doi.org/10.7289/V53F4MVP"
@@ -37,7 +37,7 @@ def transform_ocean_heat(seasonal: pl.DataFrame) -> pl.DataFrame:
 
     Returns
     -------
-    DataFrame
+    ocean_heat : DataFrame
         Annual means dated to each year's first day, offset by ``OCEAN_HEAT_BASELINE_OFFSET``.
     """
     # Only the year survives the average, so the year is all that is read.
@@ -52,6 +52,32 @@ def transform_ocean_heat(seasonal: pl.DataFrame) -> pl.DataFrame:
 
 
 def load_ocean_heat_data(cache_dir: Path, *, force_reload: bool = False) -> pl.DataFrame:
+    """
+    Load the NOAA/NCEI global ocean heat content record, averaged to one value a year.
+
+    Parameters
+    ----------
+    cache_dir : Path
+        Directory the source caches live under.
+    force_reload : bool, optional
+        Download again and rebuild the cache rather than reading it. Default False.
+
+    Returns
+    -------
+    ocean_heat : DataFrame
+        One row per year, with a ``Date`` column and a ``Temp`` column.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk import load_ocean_heat_data
+
+        ocean_heat = load_ocean_heat_data(Path("data"))
+    """
+
     def build() -> pl.DataFrame:
         raw = fetch(OCEAN_HEAT, cache_dir, force=force_reload)
 

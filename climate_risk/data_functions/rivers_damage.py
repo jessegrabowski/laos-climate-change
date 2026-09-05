@@ -52,8 +52,8 @@ def _create_rivers_damage(
 
     Returns
     -------
-    GeoDataFrame
-        One row per event, with its distance in kilometres to the nearest major river.
+    damage : GeoDataFrame
+        One row per event, with its distance in kilometers to the nearest major river.
     """
     totals = {"Total_Damage": f"Total_Damage_{total_suffix}", "Total_Affected": f"Total_Affected_{total_suffix}"}
 
@@ -103,6 +103,29 @@ def _create_rivers_damage(
 
 
 def create_hydro_rivers_damage(cache_dir: Path) -> gpd.GeoDataFrame:
+    """
+    Build the damage frame for hydrometeorological events, with each event's distance to a river.
+
+    Parameters
+    ----------
+    cache_dir : Path
+        Directory the source caches live under.
+
+    Returns
+    -------
+    damage : GeoDataFrame
+        One row per event, carrying its damage totals and its distance to the nearest river.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk.data_functions.rivers_damage import create_hydro_rivers_damage
+
+        damage = create_hydro_rivers_damage(Path("data"))
+    """
     return _create_rivers_damage(
         cache_dir,
         name="rivers_hydro_damage",
@@ -113,6 +136,29 @@ def create_hydro_rivers_damage(cache_dir: Path) -> gpd.GeoDataFrame:
 
 
 def create_floods_rivers_damage(cache_dir: Path) -> gpd.GeoDataFrame:
+    """
+    Build the damage frame for floods, with each event's distance to a river.
+
+    Parameters
+    ----------
+    cache_dir : Path
+        Directory the source caches live under.
+
+    Returns
+    -------
+    damage : GeoDataFrame
+        One row per flood event, carrying its damage totals and its distance to the nearest river.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk.data_functions.rivers_damage import create_floods_rivers_damage
+
+        floods = create_floods_rivers_damage(Path("data"))
+    """
     return _create_rivers_damage(
         cache_dir,
         name="rivers_floods_damage",

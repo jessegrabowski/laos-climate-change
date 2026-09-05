@@ -106,7 +106,7 @@ def test_a_bare_name_needs_no_parameters():
 )
 def test_a_value_that_would_corrupt_the_filename_is_rejected(params):
     """A separator in a value makes two different parameter sets collide on one cache entry. So does
-    a dot: the artefact's suffix is taken from the last one, so `4.1` and `4.2` name the same file."""
+    a dot: the artifact's suffix is taken from the last one, so `4.1` and `4.2` name the same file."""
     with pytest.raises(ValueError, match="must not contain"):
         cache_key("points", params)
 
@@ -126,7 +126,7 @@ def test_a_hyphenated_value_is_allowed():
 def test_a_write_killed_partway_does_not_poison_the_cache(tmp_path, frame):
     """A truncated file left at the destination would read back as a hit forever after."""
 
-    def write_half_then_die(artefact, path):
+    def write_half_then_die(artifact, path):
         path.write_bytes(b"PAR1 truncated")
         raise OSError("no space left on device")
 
@@ -165,7 +165,7 @@ def test_a_polars_date_column_keeps_its_type(tmp_path):
 
 def test_two_builders_named_alike_but_reading_differently_fingerprint_differently():
     """Every builder in this package is called `build`, so a fingerprint taken from the name would
-    be one value shared by every cached artefact. What has to reach the key is the rule that
+    be one value shared by every cached artifact. What has to reach the key is the rule that
     changed, which lives only in the body."""
 
     def builder(keep_every_row: bool):
@@ -184,7 +184,7 @@ def test_two_builders_named_alike_but_reading_differently_fingerprint_differentl
 
 
 def test_the_same_builder_fingerprints_the_same_every_time():
-    """A digest that moved between runs would rebuild every artefact on every process start."""
+    """A digest that moved between runs would rebuild every artifact on every process start."""
 
     def build() -> str:
         return "unchanged"
@@ -194,7 +194,7 @@ def test_the_same_builder_fingerprints_the_same_every_time():
 
 def test_a_builder_closing_over_different_values_fingerprints_the_same():
     """The closure's values are what `params` is for. Folding them in here would key one entry per
-    country twice over, and every cached artefact would miss."""
+    country twice over, and every cached artifact would miss."""
 
     def builder_for(iso: str):
         def build() -> str:
@@ -207,7 +207,7 @@ def test_a_builder_closing_over_different_values_fingerprints_the_same():
 
 def test_a_builder_reading_a_different_table_fingerprints_differently():
     """A builder's source does not show the module tables it consults, so changing one changes the
-    artefact with nothing in the key to say so."""
+    artifact with nothing in the key to say so."""
 
     def build() -> str:
         return "unchanged"

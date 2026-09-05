@@ -23,7 +23,7 @@ def resolve_gcn_path(variant: str) -> Path:
 
     Returns
     -------
-    Path
+    path : Path
         Location of the file inside the installed package.
     """
     if variant not in GCN_FILES:

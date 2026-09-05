@@ -14,7 +14,7 @@ _log = logging.getLogger(__name__)
 
 FRED = ApiSource(
     url="https://api.stlouisfed.org/fred/series/observations",
-    licence=(
+    license=(
         "Series carry the terms of whoever published them. The US federal series read here are "
         "public domain; other series on FRED are redistributed under restrictions, some serving only "
         "a rolling window of history."
@@ -56,7 +56,7 @@ def transform_fred(frames: Mapping[str, pl.DataFrame], series_names: Mapping[str
 
     Returns
     -------
-    DataFrame
+    observations : DataFrame
         Columns ``series``, ``date`` and ``value``, sorted, with observations FRED reports as
         missing dropped.
     """
@@ -115,5 +115,17 @@ def _load_series(
 
 
 def load_fred_data(cache_dir: Path, *, force_reload: bool = False) -> pl.DataFrame:
-    """Return the foreign block as a tidy panel of series, date and value, at native frequency."""
+    """
+    Return the foreign block as a tidy panel of series, date and value, at native frequency.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk.data.fred import load_fred_data
+
+        series = load_fred_data(Path("data"))
+    """
     return _load_series(cache_dir, "fred", SERIES_NAMES, force_reload=force_reload)

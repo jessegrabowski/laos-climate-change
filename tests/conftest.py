@@ -70,7 +70,7 @@ def toy_world():
 
 
 def toy_world_needing_repair():
-    """A world file shaped like the real one: unlabelled sovereigns and territories to drop.
+    """A world file shaped like the real one: unlabeled sovereigns and territories to drop.
 
     Carries one row per entry in DROPPED_TERRITORIES, DROPPED_ISO_CODES and ISO_CODE_REPAIRS; adding
     to any of those tables without adding a row here fails every repair test on the missing entry.
@@ -196,7 +196,7 @@ def toy_gpcc_products() -> tuple[GriddedProduct, ...]:
         return DataSource(
             url=f"https://opendata.dwd.de/climate_environment/GPCC/{filename}",
             filename=filename,
-            licence="CC BY 4.0",
+            license="CC BY 4.0",
             citation="GPCC",
             retrieved="2026-08-07",
         )

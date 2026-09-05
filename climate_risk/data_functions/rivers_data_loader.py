@@ -14,7 +14,7 @@ _log = logging.getLogger(__name__)
 RIVERS = DataSource(
     url="https://data.hydrosheds.org/file/HydroRIVERS/HydroRIVERS_v10_shp.zip",
     filename="HydroRIVERS_v10_shp.zip",
-    licence="HydroSHEDS License Agreement: free for scientific, educational and commercial use",
+    license="HydroSHEDS License Agreement: free for scientific, educational and commercial use",
     citation=(
         "Lehner, B., Grill, G. (2013): Global river hydrography and network routing: baseline data "
         "and new approaches to study the world's large river systems. Hydrological Processes, "
@@ -48,7 +48,7 @@ def transform_rivers(rivers: gpd.GeoDataFrame, stream_order_cutoff: int) -> gpd.
 
     Returns
     -------
-    GeoDataFrame
+    kept : GeoDataFrame
         The rivers that clear the cutoff.
     """
     return rivers.query(f"ORD_FLOW < {stream_order_cutoff}")
@@ -68,6 +68,34 @@ def _extract_rivers(cache_dir: Path) -> Path:
 
 
 def load_rivers_data(cache_dir: Path, *, include_medium: bool = False) -> gpd.GeoDataFrame:
+    """
+    Load HydroRIVERS, keeping the larger rivers.
+
+    Rivers are filtered by Strahler stream order, so the result holds the major channels rather
+    than every mapped tributary.
+
+    Parameters
+    ----------
+    cache_dir : Path
+        Directory the source caches live under.
+    include_medium : bool, optional
+        Lower the stream-order cutoff to keep medium rivers as well. Default False.
+
+    Returns
+    -------
+    rivers : GeoDataFrame
+        One row per river reach, with its geometry.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk import load_rivers_data
+
+        rivers = load_rivers_data(Path("data"), include_medium=True)
+    """
     cutoff = MEDIUM_RIVER_ORDER if include_medium else BIG_RIVER_ORDER
 
     def build() -> gpd.GeoDataFrame:

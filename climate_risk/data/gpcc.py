@@ -74,7 +74,17 @@ class GriddedProduct:
 
 
 def coverage_of(products: Iterable[GriddedProduct]) -> str:
-    """Return the span a set of products covers, as the string their cache entry is keyed on."""
+    """
+    Return the span a set of products covers, as the string their cache entry is keyed on.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from climate_risk.data.gpcc import GPCC_PRODUCTS, coverage_of
+
+        print(coverage_of(GPCC_PRODUCTS))
+    """
     covered = tuple(products)
 
     return f"{min(product.first_year for product in covered)}-{max(product.last_year for product in covered)}"
@@ -86,7 +96,7 @@ def _full_data_archive(decade: str) -> DataSource:
     return DataSource(
         url=f"{GPCC_URL}/full_data_monthly_v2022/10/{name}",
         filename=name,
-        licence="CC BY 4.0",
+        license="CC BY 4.0",
         citation=FULL_DATA_CITATION,
         retrieved="2026-08-05",
     )
@@ -98,13 +108,13 @@ def _monitoring_archive(year: int, month: int) -> DataSource:
     return DataSource(
         url=f"{GPCC_URL}/monitoring_v2022/{year}/{name}",
         filename=name,
-        licence="CC BY 4.0",
+        license="CC BY 4.0",
         citation=MONITORING_CITATION,
         retrieved="2026-08-07",
     )
 
 
-# The reanalysed gauge record, published a decade to an archive.
+# The reanalyzed gauge record, published a decade to an archive.
 FULL_DATA = GriddedProduct(
     variable="precip",
     first_year=FULL_DATA_START,
@@ -152,6 +162,11 @@ def transform_gpcc(grids: Iterable[pd.DataFrame], world: gpd.GeoDataFrame) -> pd
     """
     Average gridded precipitation to one value per country and month.
 
+    Every month is attributed to the boundaries ``world`` carries, which are current ones. The
+    record opens in 1891, so a long series describes rainfall over a country's present-day footprint
+    rather than over the country as it was. The Soviet Union, Yugoslavia and pre-split Sudan are all
+    absent from the years they existed in.
+
     Parameters
     ----------
     grids : iterable of DataFrame
@@ -159,14 +174,9 @@ def transform_gpcc(grids: Iterable[pd.DataFrame], world: gpd.GeoDataFrame) -> pd
     world : GeoDataFrame
         Country boundaries, carrying the columns named in ``WORLD_COLUMNS``.
 
-    Every month is attributed to the boundaries ``world`` carries, which are current ones. The
-    record opens in 1891, so a long series describes rainfall over a country's present-day
-    footprint rather than over the country as it was — the Soviet Union, Yugoslavia and pre-split
-    Sudan are all absent from the years they existed in.
-
     Returns
     -------
-    DataFrame
+    precipitation : DataFrame
         One row per country and month, indexed by ``country_code`` and ``time``.
     """
     countries = world.rename(columns=WORLD_COLUMNS)
@@ -194,7 +204,7 @@ def _as_timestamps(time: xr.DataArray) -> np.ndarray:
 
     Returns
     -------
-    ndarray
+    timestamps : ndarray
         The axis as ``datetime64``.
     """
     if np.issubdtype(time.dtype, np.datetime64):
@@ -241,6 +251,43 @@ def load_gpcc_data(
     force_reload: bool = False,
     repair_ISO_codes: bool = True,
 ) -> pd.DataFrame:
+    """
+    Load GPCC gridded precipitation, averaged onto countries.
+
+    GPCC publishes the record as more than one product, and every product named in ``products`` is
+    read and combined into a single frame.
+
+    Parameters
+    ----------
+    cache_dir : Path
+        Directory the source caches live under.
+    products : tuple of GriddedProduct, optional
+        Which published products to read. Defaults to the full and monitoring pair.
+    force_reload : bool, optional
+        Download again and rebuild the cache rather than reading it. Default False.
+    repair_ISO_codes : bool, optional
+        Correct the ISO codes on the world boundaries before the join. Default True.
+
+    Returns
+    -------
+    precipitation : DataFrame
+        One row per country and month, indexed by ``country_code`` and ``time``.
+
+    Examples
+    --------
+    Load the record, and report the span the default products cover:
+
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk import load_gpcc_data
+        from climate_risk.data.gpcc import GPCC_PRODUCTS, coverage_of
+
+        precipitation = load_gpcc_data(Path("data"))
+        print(coverage_of(GPCC_PRODUCTS))
+    """
+
     def build() -> pd.DataFrame:
         archives = [
             (fetch(source, cache_dir / GPCC_SUBDIRECTORY, force=force_reload), product.variable)

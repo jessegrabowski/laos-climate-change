@@ -10,7 +10,7 @@ from climate_risk.data.co2 import load_co2_data
 _log = logging.getLogger(__name__)
 
 # SEDAC, which published this figure's data, was decommissioned in June 2025, so the workbook is
-# redistributed with the package. Its licence and citation are in vendored/ATTRIBUTION.md.
+# redistributed with the package. Its license and citation are in vendored/ATTRIBUTION.md.
 IPCC_FILE = Path(__file__).parent / "vendored" / "ipcc_ar6_syr_csb2_fig1a.xlsx"
 
 IPCC_SHEET = "CO2 Emissions"
@@ -42,7 +42,7 @@ def transform_ipcc(scenarios: pl.DataFrame, co2_observations: pl.DataFrame) -> p
 
     Returns
     -------
-    DataFrame
+    projections : DataFrame
         One row per year from the anchor to ``LAST_PROJECTED_YEAR``, one column per scenario.
     """
     observed = co2_observations.select(pl.col("year").dt.year().alias("year"), "co2")
@@ -75,6 +75,35 @@ def transform_ipcc(scenarios: pl.DataFrame, co2_observations: pl.DataFrame) -> p
 
 
 def process_ipcc_scenarios(cache_dir: Path, *, force_reload: bool = False) -> pl.DataFrame:
+    """
+    Build the IPCC AR6 emissions scenarios, anchored to the observed CO2 record.
+
+    The scenario workbook ships with the package, so only the CO2 series it is anchored to is
+    fetched.
+
+    Parameters
+    ----------
+    cache_dir : Path
+        Directory the source caches live under.
+    force_reload : bool, optional
+        Download again and rebuild the cache rather than reading it. Default False.
+
+    Returns
+    -------
+    scenarios : DataFrame
+        One row per year from the anchor onward, one column per scenario.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk import process_ipcc_scenarios
+
+        scenarios = process_ipcc_scenarios(Path("data"))
+    """
+
     def build() -> pl.DataFrame:
         _log.info("Reading IPCC scenario emissions")
         published = pl.read_excel(IPCC_FILE, sheet_name=IPCC_SHEET)

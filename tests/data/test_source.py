@@ -20,7 +20,7 @@ from climate_risk.data_functions.shapefiles_data_loader import COASTLINE, WORLD
 FIELDS = {
     "url": "https://example.org/co2.csv",
     "filename": "noaa_co2.csv",
-    "licence": "public domain",
+    "license": "public domain",
     "citation": "NOAA GML",
     "retrieved": "2026-08-03",
 }
@@ -61,7 +61,7 @@ def test_an_archive_layer_outside_the_archive_is_rejected(member):
 MANUAL_FIELDS = {
     "filename": "gadm_410.gpkg",
     "homepage": "https://gadm.org/download_world.html",
-    "licence": "non-commercial use only",
+    "license": "non-commercial use only",
     "citation": "GADM 4.1",
     "retrieved": "2026-08-09",
 }
@@ -85,7 +85,7 @@ def test_a_manual_homepage_that_is_not_a_web_page_is_rejected(homepage):
         manual(homepage=homepage)
 
 
-def test_a_manual_source_reports_its_licence_when_the_file_is_missing(tmp_path):
+def test_a_manual_source_reports_its_license_when_the_file_is_missing(tmp_path):
     """A user hitting this has to know the terms before going to fetch the file."""
     with pytest.raises(NotImplementedError, match="non-commercial use only"):
         manual().require(tmp_path)
@@ -100,7 +100,7 @@ MANUAL_SOURCES = {"EMDAT": EMDAT, "GADM": GADM}
 def test_every_manual_source_says_where_to_get_it_and_on_what_terms(declared):
     """These declarations are the only record of terms binding data the repo cannot ship."""
     assert declared.homepage.startswith("https://")
-    assert declared.licence.strip()
+    assert declared.license.strip()
     assert declared.citation.strip()
 
 
@@ -159,7 +159,7 @@ def test_a_boundary_declared_in_a_place_file_reaches_the_check():
 @pytest.mark.network
 @pytest.mark.parametrize("declared", SOURCES.values(), ids=SOURCES.keys())
 def test_every_declared_source_is_still_published(declared):
-    """Upstream reorganises without notice, and a dead URL surfaces as a failed run months later."""
+    """Upstream reorganizes without notice, and a dead URL surfaces as a failed run months later."""
     # Hosts vary their answer by agent, so the check has to send the one fetch will send.
     headers = {"User-Agent": USER_AGENT}
     response = requests.head(declared.url, timeout=30, allow_redirects=True, headers=headers)
