@@ -11,3 +11,5 @@ API reference
     api/data_functions
     api/config
     api/geo
+    api/models
+    api/stats
