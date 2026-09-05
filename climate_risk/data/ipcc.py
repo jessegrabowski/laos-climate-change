@@ -42,7 +42,7 @@ def transform_ipcc(scenarios: pl.DataFrame, co2_observations: pl.DataFrame) -> p
 
     Returns
     -------
-    DataFrame
+    projections : DataFrame
         One row per year from the anchor to ``LAST_PROJECTED_YEAR``, one column per scenario.
     """
     observed = co2_observations.select(pl.col("year").dt.year().alias("year"), "co2")

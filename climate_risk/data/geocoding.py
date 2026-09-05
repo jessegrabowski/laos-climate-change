@@ -57,7 +57,7 @@ def unambiguous_units(places: Iterable[tuple[str, str | None]], gazetteer: Gazet
 
     Returns
     -------
-    dict mapping str to str
+    units : dict mapping str to str
         The GADM identifier each usable name reaches.
     """
     settled = {}
@@ -104,7 +104,7 @@ def score_geocoder(
 
     Returns
     -------
-    list of ScoredName
+    scores : list of ScoredName
         One entry per name that had an answer to check against.
     """
     settled = unambiguous_units(places, gazetteer)
@@ -167,7 +167,7 @@ def units_containing_points(
 
     Returns
     -------
-    dict mapping str to str
+    units : dict mapping str to str
         The GADM identifier each name's point falls in, absent where no level holds it.
     """
     if not points:
@@ -233,7 +233,7 @@ def units_from_geocoders(
 
     Returns
     -------
-    dict mapping str to str
+    units : dict mapping str to str
         The GADM identifier each name reaches, absent where no source placed it inside a unit.
     """
     placed: dict[str, str] = {}

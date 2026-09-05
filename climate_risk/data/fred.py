@@ -56,7 +56,7 @@ def transform_fred(frames: Mapping[str, pl.DataFrame], series_names: Mapping[str
 
     Returns
     -------
-    DataFrame
+    observations : DataFrame
         Columns ``series``, ``date`` and ``value``, sorted, with observations FRED reports as
         missing dropped.
     """

@@ -80,7 +80,7 @@ def transform_partner_activity(
 
     Returns
     -------
-    DataFrame
+    activity : DataFrame
         One row per country and year, carrying ``partner_activity`` and the ``partner_coverage``
         share of exports the retained partners take. Coverage is constant within a country, since
         the partner set is.
@@ -218,7 +218,7 @@ def load_partner_activity(
 
     Returns
     -------
-    DataFrame
+    activity : DataFrame
         One row per country and year, carrying ``partner_activity`` and ``partner_coverage``.
     """
     codes = sorted(countries)

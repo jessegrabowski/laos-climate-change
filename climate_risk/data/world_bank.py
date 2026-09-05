@@ -97,7 +97,7 @@ def transform_world_bank(raw: pl.DataFrame, indicator_names: Mapping[str, str]) 
 
     Returns
     -------
-    DataFrame
+    indicators : DataFrame
         One row per country and year, sorted, with an integer ``year``.
     """
     # kuznets warns rather than raising when the Bank rejects a code, and omits the column entirely.

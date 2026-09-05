@@ -71,7 +71,7 @@ class Aggregation:
 
         Returns
         -------
-        ndarray
+        aggregated : ndarray
             Shape ``(n_units,)`` or ``(n_units, k)``, in the row order of ``units``.
         """
         self._check_width(cell_values.shape[0])
@@ -92,7 +92,7 @@ class Aggregation:
 
         Returns
         -------
-        TensorVariable
+        aggregated : TensorVariable
             Shape ``(n_units,)`` or ``(n_units, k)``, in the row order of ``units``.
         """
         weights = pt.as_tensor_variable(self.weights)
@@ -136,7 +136,7 @@ def build_aggregation(
 
     Returns
     -------
-    Aggregation
+    aggregation : Aggregation
         The operator and its row labels.
     """
     weights = _validated_weights(weights)
@@ -186,7 +186,7 @@ def build_aggregation_from_overlaps(
 
     Returns
     -------
-    Aggregation
+    aggregation : Aggregation
         The operator and its row labels.
     """
     weights = _validated_weights(weights)

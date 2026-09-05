@@ -17,7 +17,7 @@ def stl_deviation(series: pd.Series, period: int = 3) -> pd.Series:
 
     Returns
     -------
-    Series
+    deviation : Series
         The series minus its trend, on the same index.
     """
     trend = pd.Series(STL(series, period=period).fit().trend, index=series.index)

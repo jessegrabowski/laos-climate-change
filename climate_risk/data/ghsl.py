@@ -42,7 +42,7 @@ def population_source(epoch: int) -> DataSource:
 
     Returns
     -------
-    DataSource
+    source : DataSource
         The zipped GeoTIFF as GHSL publishes it.
     """
     if epoch not in POPULATION_EPOCHS:
@@ -75,7 +75,7 @@ def population_raster(epoch: int, cache_dir: Path) -> str:
 
     Returns
     -------
-    str
+    uri : str
         A URI :func:`rasterio.open` accepts, addressing the GeoTIFF inside its archive. The band
         holds people per cell.
     """
@@ -106,7 +106,7 @@ def population_on_cells(grid: CellGrid, epoch: int, cache_dir: Path) -> np.ndarr
 
     Returns
     -------
-    ndarray
+    population : ndarray
         People per cell, aligned with ``grid.cells``.
     """
     return sample_onto_cells(grid, population_raster(epoch, cache_dir), statistic="sum")

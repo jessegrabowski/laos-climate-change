@@ -333,7 +333,7 @@ def repair_mojibake(text: str) -> str:
 
     Returns
     -------
-    str
+    name : str
         The name with the mangling undone, or unchanged where there was none.
     """
     while True:
@@ -360,7 +360,7 @@ def match_key(name: str) -> str:
 
     Returns
     -------
-    str
+    key : str
         The comparison key, empty where the name was only a unit noun.
     """
     repaired = UNIT_NOUNS.sub(" ", repair_mojibake(name))
@@ -401,7 +401,7 @@ def read_gazetteer(iso: str, cache_dir: Path, *, layer: str = GADM_LAYER, force_
 
     Returns
     -------
-    Gazetteer
+    gazetteer : Gazetteer
         The country's units.
     """
 
@@ -481,7 +481,7 @@ def read_name_corrections(iso: str, *, path: Path = NAME_CORRECTIONS) -> dict[st
 
     Returns
     -------
-    dict mapping str to tuple of str
+    corrections : dict mapping str to tuple of str
         The published names each entry stands for, keyed by :func:`match_key`. An entry naming
         several units, as a merged province since split does, separates them with a pipe.
     """
@@ -564,7 +564,7 @@ def nearest_name(name: str, gazetteer: Gazetteer, shapes: dict[tuple[str, int], 
 
     Returns
     -------
-    str or None
+    match : str or None
         The matching key in ``gazetteer.names``, or None where the gates reject the name or no
         single published name is close enough.
     """
@@ -600,7 +600,7 @@ def container_parts(parent: str) -> list[str]:
 
     Returns
     -------
-    list of str
+    parts : list of str
         Each place it names, in the order written.
     """
     return [part for part in CONTAINER_PARTS.split(parent) if part.strip()]
@@ -782,7 +782,7 @@ def resolve_place(name: str, parent: str | None, gazetteer: Gazetteer) -> set[st
 
     Returns
     -------
-    set of str
+    gids : set of str
         The GADM identifiers the name reaches, empty where it reaches none.
     """
     gids = _units_named(name, parent, gazetteer)
@@ -878,7 +878,7 @@ def resolve_event_places(
 
     Returns
     -------
-    list of Placement
+    placements : list of Placement
         Where each place put the event, in the order the places were given.
     """
     written = list(places)
@@ -927,7 +927,7 @@ def successor_state(
 
     Returns
     -------
-    str or None
+    successor : str or None
         The successor's ISO code, or None where the state has no successor recorded or its
         successors cannot be told apart.
     """
@@ -968,7 +968,7 @@ def names_no_unit(name: str) -> bool:
 
     Returns
     -------
-    bool
+    no_unit : bool
         True where no administrative unit could answer to this name.
     """
     written = name.strip()

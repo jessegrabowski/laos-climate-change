@@ -101,7 +101,7 @@ def search_nominatim(
 
     Returns
     -------
-    NominatimAnswer or None
+    answer : NominatimAnswer or None
         The best answer, or None where Nominatim has no place of that name.
     """
     query = {"q": name, "format": "jsonv2", "limit": 1}
@@ -148,7 +148,7 @@ def read_osm_places(iso: str, cache_dir: Path) -> pl.DataFrame:
 
     Returns
     -------
-    DataFrame
+    places : DataFrame
         Columns ``written``, ``lon``, ``lat``, ``category`` and ``kind``, one row per name asked
         about. Empty where nothing has been asked for this country yet.
     """
@@ -175,7 +175,7 @@ def osm_geocoder(iso: str, cache_dir: Path) -> Geocoder:
 
     Returns
     -------
-    callable
+    geocoder : callable
         Takes an ISO code and a written name, and returns longitude and latitude or None.
     """
     found = read_osm_places(iso, cache_dir).filter(
@@ -205,7 +205,7 @@ def record_lookups(iso: str, cache_dir: Path, answers: Mapping[str, NominatimAns
 
     Returns
     -------
-    DataFrame
+    places : DataFrame
         The country's whole cache, as it now stands on disk.
     """
     fresh = pl.DataFrame(

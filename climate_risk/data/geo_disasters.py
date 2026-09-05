@@ -62,7 +62,7 @@ def geo_disasters_path(cache_dir: Path) -> Path:
 
     Returns
     -------
-    Path
+    path : Path
         Location of ``disaster_subnational_90_23.gpkg``.
     """
     return GEO_DISASTERS.require(geo_disasters_dir(cache_dir))
@@ -86,7 +86,7 @@ def load_event_locations(cache_dir: Path, *, iso: str | None = None, layer: str 
 
     Returns
     -------
-    DataFrame
+    locations : DataFrame
         Columns ``DisNo.``, ``ISO``, ``admin_level``, ``geocoding_q``, ``ADM1_NAME`` and
         ``ADM2_NAME``, one row per location.
     """
@@ -109,7 +109,7 @@ def unit_names(locations: pd.DataFrame) -> pd.Series:
 
     Returns
     -------
-    Series
+    names : Series
         One name per row, taken from the column its ``admin_level`` points at.
     """
     named = pd.Series(pd.NA, index=locations.index, dtype="object")
@@ -139,7 +139,7 @@ def load_event_footprints(cache_dir: Path, *, iso: str, layer: str = GEO_DISASTE
 
     Returns
     -------
-    GeoDataFrame
+    footprints : GeoDataFrame
         The columns of :func:`load_event_locations` and the footprint of each location.
     """
     footprints = gpd.read_file(geo_disasters_path(cache_dir), layer=layer, where=f"ISO = '{iso}'")
@@ -217,7 +217,7 @@ def resolve_to_gadm(footprints: gpd.GeoDataFrame, cache_dir: Path) -> pd.DataFra
 
     Returns
     -------
-    DataFrame
+    resolved : DataFrame
         ``DisNo.``, ``ISO``, ``geometry_source``, a GADM unit, the location's ``geocoding_q``, and
         ``overlap``, the share of the event's footprint that unit covers. One row per event and
         unit, so an event spanning several units contributes several.
@@ -292,7 +292,7 @@ def load_resolved_units(isos: Sequence[str], cache_dir: Path, *, force_reload: b
 
     Returns
     -------
-    DataFrame
+    resolved : DataFrame
         The columns of :func:`resolve_to_gadm`, one row per event and unit, across every country
         asked for.
     """
@@ -328,7 +328,7 @@ def normalise_unit_name(name: str) -> str:
 
     Returns
     -------
-    str
+    normalised : str
         Casefolded, transliterated to ASCII, and stripped of everything that is not a letter or digit.
     """
     return "".join(character for character in anyascii(name) if character.isalnum()).casefold()
@@ -348,7 +348,7 @@ def event_unit_ids(units: pd.DataFrame) -> dict[str, set[str]]:
 
     Returns
     -------
-    dict mapping str to set of str
+    unit_ids : dict mapping str to set of str
         One entry per event, holding every GADM identifier it was placed in.
     """
     return {str(disno): set(group.dropna()) for disno, group in units.groupby("DisNo.")["gid"]}
@@ -394,7 +394,7 @@ def compare_event_units(*, em_dat: Mapping[str, set[str]], geo_disasters: Mappin
 
     Returns
     -------
-    DataFrame
+    comparison : DataFrame
         Columns ``DisNo.``, ``agreement`` and the three counts, one row per event either source
         geocoded, ordered by event id.
     """

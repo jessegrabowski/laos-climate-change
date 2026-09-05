@@ -72,7 +72,7 @@ def expected_intensity(
 
     Returns
     -------
-    TensorVariable
+    intensity : TensorVariable
         Shape ``(n_units,)``.
     """
     variance = independent_variance + pt.sum(factor**2, axis=1)
@@ -118,7 +118,7 @@ def sample_log_intensity(
 
     Returns
     -------
-    TensorVariable
+    log_intensity : TensorVariable
         Shape ``(n_units, n_draws)``.
     """
     spread = pt.sqrt(pt.clip(independent_variance, 0.0, np.inf))
@@ -175,7 +175,7 @@ def aggregated_poisson_elbo(
 
     Returns
     -------
-    TensorVariable
+    elbo : TensorVariable
         Scalar.
     """
     mean, independent_variance, factor = latent_moments(svgp, cell_features)

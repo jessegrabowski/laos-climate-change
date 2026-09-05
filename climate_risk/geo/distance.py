@@ -33,7 +33,7 @@ def get_distance_to(
 
     Returns
     -------
-    DataFrame
+    distances : DataFrame
         ``distance_to_closest`` plus one column per entry in ``return_columns``, indexed like
         ``points``.
     """

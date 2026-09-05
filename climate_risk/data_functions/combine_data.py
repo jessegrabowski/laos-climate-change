@@ -144,7 +144,7 @@ def annual_precipitation(cache_dir: Path) -> pl.DataFrame:
 
     Returns
     -------
-    DataFrame
+    precipitation : DataFrame
         ``ISO``, ``year`` and ``precip``, one row per country and year.
     """
     by_country, _ = _annual_precipitation(_as_polars(load_gpcc_data(cache_dir)))
@@ -163,7 +163,7 @@ def build_time_series(cache_dir: Path) -> pl.DataFrame:
 
     Returns
     -------
-    DataFrame
+    series : DataFrame
         ``year``, CO2, ocean temperature and worldwide precipitation, one row per year.
     """
     _, worldwide = _annual_precipitation(_as_polars(load_gpcc_data(cache_dir)))
@@ -189,7 +189,7 @@ def build_country_year_panel(cache_dir: Path) -> pl.DataFrame:
 
     Returns
     -------
-    DataFrame
+    panel : DataFrame
         One row per country and year, keyed on ``ISO`` and ``Start_Year``.
     """
     raw = load_emdat_events(cache_dir)

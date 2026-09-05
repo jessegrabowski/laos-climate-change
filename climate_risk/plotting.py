@@ -202,7 +202,7 @@ def _plot_single_kde(
 
     Returns
     -------
-    Axes
+    axis : Axes
         The axis drawn on.
     """
     data = data.dropna()
@@ -277,7 +277,7 @@ def plot_descriptive(
 
     Returns
     -------
-    Figure or Axes
+    figure : Figure or Axes
         The figure the panels were drawn on, or the single axis when there is only one column.
     """
     figsize = figure_kwargs.pop("figsize", (14, 4))
@@ -349,7 +349,7 @@ def plot_aggregated_series(
 
     Returns
     -------
-    Figure
+    figure : Figure
         The figure the panels were drawn on.
     """
     fig, axes = plt.subplots(graph_rows, AGGREGATE_COLUMNS, figsize=figure_size)
@@ -402,7 +402,7 @@ def plot_aggregated_series_by_region(
 
     Returns
     -------
-    Figure
+    figure : Figure
         The figure the panels were drawn on.
     """
     fig, axes = plt.subplots(graph_rows, AGGREGATE_COLUMNS, figsize=figure_size)
@@ -443,7 +443,7 @@ def plot_ppc_loopit(
 
     Returns
     -------
-    list of Axes
+    axes : list of Axes
         The posterior predictive panel and the two LOO-PIT panels.
     """
     fig = plt.figure(figsize=(12, 9))
@@ -489,7 +489,7 @@ def attach_count_predictions(idata: xr.DataTree, df: pd.DataFrame) -> pd.DataFra
 
     Returns
     -------
-    DataFrame
+    annotated : DataFrame
         ``df`` with ``predictions`` and the 95% and 50% HDI bounds appended.
     """
     y_hat = idata.posterior_predictive["y_hat"]
@@ -522,7 +522,7 @@ def plot_predicted_counts(idata: xr.DataTree, df: pd.DataFrame, country: str) ->
 
     Returns
     -------
-    Figure
+    figure : Figure
         Predicted mean, observed counts, and the 50% and 95% HDI bands.
     """
     df_predictions = attach_count_predictions(idata=idata, df=df)
@@ -574,7 +574,7 @@ def attach_damage_predictions(idata: xr.DataTree, df: pd.DataFrame) -> pd.DataFr
 
     Returns
     -------
-    DataFrame
+    annotated : DataFrame
         ``df`` with ``predictions`` and the 75% and 50% HDI bounds appended.
     """
     damages = idata.posterior_predictive["damage_millions"]
@@ -609,7 +609,7 @@ def plot_predicted_damages(idata: xr.DataTree, df: pd.DataFrame, country: str, t
 
     Returns
     -------
-    Figure
+    figure : Figure
         Predicted mean, observed damages, and the 50% and 75% HDI bands.
     """
     df_predictions = attach_damage_predictions(idata=idata, df=df)

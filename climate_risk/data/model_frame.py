@@ -33,7 +33,7 @@ def event_windows(events: pl.DataFrame, geography: pl.DataFrame) -> pl.DataFrame
 
     Returns
     -------
-    DataFrame
+    windows : DataFrame
         One row per event, ordered by identifier. ``gids`` holds the units the window covers, empty
         where the window is the whole country; ``n_units`` and ``finest_level`` describe its extent,
         the latter null on a whole-country window. ``geometry_source`` is the best source that

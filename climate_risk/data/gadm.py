@@ -48,7 +48,7 @@ def gadm_path(cache_dir: Path) -> Path:
 
     Returns
     -------
-    Path
+    path : Path
         Location of ``gadm_410.gpkg``.
     """
     return GADM.require(gadm_dir(cache_dir))
@@ -78,7 +78,7 @@ def administered_territories(iso: str, cache_dir: Path, *, layer: str = GADM_LAY
 
     Returns
     -------
-    tuple of str
+    territories : tuple of str
         The territory codes, empty for a country administering none.
     """
     with sqlite3.connect(gadm_path(cache_dir)) as connection:
@@ -117,7 +117,7 @@ def load_units_in_country(
 
     Returns
     -------
-    GeoDataFrame
+    units : GeoDataFrame
         Columns ``gid``, ``name``, ``admin_level`` and ``geometry``, one row per unit. Empty where
         the country is not divided at that level.
     """
@@ -207,7 +207,7 @@ def load_admin_units(
 
     Returns
     -------
-    GeoDataFrame
+    admin_units : GeoDataFrame
         Columns ``gid``, ``name``, ``admin_level`` and ``geometry``, one row per distinct id.
     """
     path = gadm_path(cache_dir)

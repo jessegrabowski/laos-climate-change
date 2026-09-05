@@ -33,7 +33,7 @@ def transform_co2(raw: pl.DataFrame) -> pl.DataFrame:
 
     Returns
     -------
-    DataFrame
+    co2 : DataFrame
         One row per year, dated to its first day.
     """
     return raw.select(

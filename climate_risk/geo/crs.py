@@ -21,7 +21,7 @@ def to_km[Distance: (float, np.ndarray, pd.Series)](meters: Distance) -> Distanc
 
     Returns
     -------
-    float, ndarray or Series
+    distance : float, ndarray or Series
         The same distance in kilometres, matching the input type.
     """
     return meters / METERS_PER_KM

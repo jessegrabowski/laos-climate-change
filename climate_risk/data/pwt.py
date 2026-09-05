@@ -49,7 +49,7 @@ def transform_pwt(raw: pl.DataFrame) -> pl.DataFrame:
 
     Returns
     -------
-    DataFrame
+    pwt : DataFrame
         One row per country and year, sorted, with an integer ``year``.
     """
     missing = sorted(set(PWT_COLUMNS) - set(raw.columns))
@@ -80,7 +80,7 @@ def load_pwt_data(cache_dir: Path, *, force_reload: bool = False) -> pl.DataFram
 
     Returns
     -------
-    DataFrame
+    pwt : DataFrame
         One row per country and year.
     """
 

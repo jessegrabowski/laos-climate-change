@@ -48,7 +48,7 @@ def transform_rivers(rivers: gpd.GeoDataFrame, stream_order_cutoff: int) -> gpd.
 
     Returns
     -------
-    GeoDataFrame
+    kept : GeoDataFrame
         The rivers that clear the cutoff.
     """
     return rivers.query(f"ORD_FLOW < {stream_order_cutoff}")

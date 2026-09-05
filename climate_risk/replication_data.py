@@ -69,7 +69,7 @@ def _precipitation_deviation(precipitation: pl.DataFrame, baseline: tuple[int, i
 
     Returns
     -------
-    DataFrame
+    deviation : DataFrame
         One row per country and year, carrying the deviation from that country's baseline mean.
     """
     first_year, last_year = baseline

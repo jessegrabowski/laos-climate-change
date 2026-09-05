@@ -52,7 +52,7 @@ def _create_rivers_damage(
 
     Returns
     -------
-    GeoDataFrame
+    damage : GeoDataFrame
         One row per event, with its distance in kilometres to the nearest major river.
     """
     totals = {"Total_Damage": f"Total_Damage_{total_suffix}", "Total_Affected": f"Total_Affected_{total_suffix}"}

@@ -26,7 +26,7 @@ def read_place(path: Path) -> Place:
 
     Returns
     -------
-    CountryConfig or RegionConfig
+    place : CountryConfig or RegionConfig
         The place the file describes.
     """
     try:
@@ -55,7 +55,7 @@ def load_place(key: str, *, root: Path = CONFIG_ROOT) -> Place:
 
     Returns
     -------
-    CountryConfig or RegionConfig
+    place : CountryConfig or RegionConfig
         The place, read fresh from disk.
     """
     for subdirectory in (COUNTRY_SUBDIRECTORY, REGION_SUBDIRECTORY):
@@ -125,7 +125,7 @@ def all_event_location_overrides(*, root: Path = CONFIG_ROOT) -> dict[str, tuple
 
     Returns
     -------
-    dict mapping str to tuple of float
+    overrides : dict mapping str to tuple of float
         Longitude and latitude, keyed by EM-DAT event id.
     """
     overrides: dict[str, tuple[float, float]] = {}

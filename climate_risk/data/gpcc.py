@@ -166,7 +166,7 @@ def transform_gpcc(grids: Iterable[pd.DataFrame], world: gpd.GeoDataFrame) -> pd
 
     Returns
     -------
-    DataFrame
+    precipitation : DataFrame
         One row per country and month, indexed by ``country_code`` and ``time``.
     """
     countries = world.rename(columns=WORLD_COLUMNS)
@@ -194,7 +194,7 @@ def _as_timestamps(time: xr.DataArray) -> np.ndarray:
 
     Returns
     -------
-    ndarray
+    timestamps : ndarray
         The axis as ``datetime64``.
     """
     if np.issubdtype(time.dtype, np.datetime64):

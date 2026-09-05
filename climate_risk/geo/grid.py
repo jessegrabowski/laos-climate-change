@@ -34,7 +34,7 @@ def create_grid_from_shape(
 
     Returns
     -------
-    GeoDataFrame
+    grid : GeoDataFrame
         One row per surviving point, with ``lon``, ``lat``, distances to the nearest river and
         coastline, their logs, and ``ISO``.
     """

@@ -163,7 +163,7 @@ def country_year_grid(events: pl.DataFrame, *, window_start: dt.date = EMDAT_WIN
 
     Returns
     -------
-    DataFrame
+    grid : DataFrame
         ``ISO``, ``Start_Year``, ``Region`` and ``Subregion``, sorted by country and year.
     """
     newest_event = events["Start_Year"].max()
@@ -201,7 +201,7 @@ def count_events_by_type(events: pl.DataFrame, grid: pl.DataFrame) -> pl.DataFra
 
     Returns
     -------
-    DataFrame
+    counts : DataFrame
         One row per country-year, one column per disaster type. A country-year with no events
         reads as null rather than zero.
     """
@@ -234,7 +234,7 @@ def total_damage(events: pl.DataFrame, grid: pl.DataFrame) -> pl.DataFrame:
 
     Returns
     -------
-    DataFrame
+    damage : DataFrame
         One row per country-year, one column per measure in ``DAMAGE_VARS``.
     """
     totals = (
@@ -264,7 +264,7 @@ def load_emdat_events(cache_dir: Path) -> pl.DataFrame:
 
     Returns
     -------
-    DataFrame
+    events : DataFrame
         One row per recorded event, keyed by ``DisNo.``, carrying ``disaster_class`` and the renamed
         damage columns.
     """
@@ -325,7 +325,7 @@ def named_places(location: str | None) -> list[NamedPlace]:
 
     Returns
     -------
-    list of NamedPlace
+    places : list of NamedPlace
         One entry per place named, in the order written, without repeats. Empty when the text names
         nothing.
     """
@@ -414,7 +414,7 @@ def events_missing_units(events: pl.DataFrame) -> list[UncodedEvent]:
 
     Returns
     -------
-    list of UncodedEvent
+    uncoded : list of UncodedEvent
         One entry per event with places to place, in workbook order.
     """
     uncoded = []
@@ -454,7 +454,7 @@ def event_units(events: pl.DataFrame) -> pl.DataFrame:
 
     Returns
     -------
-    DataFrame
+    units : DataFrame
         ``DisNo.``, ``gid``, ``name``, ``admin_level`` and ``migration_method``. An event carrying no
         units contributes no rows, so this is narrower than ``events``.
     """
@@ -580,7 +580,7 @@ def _naming_ground_the_units_do_not(overlay: pl.DataFrame, units: pl.DataFrame) 
 
     Returns
     -------
-    DataFrame
+    extra : DataFrame
         The rows of ``overlay`` naming ground ``units`` does not.
     """
     already_named = (
@@ -655,7 +655,7 @@ def event_geography(
 
     Returns
     -------
-    DataFrame
+    geography : DataFrame
         ``DisNo.``, ``ISO``, ``geometry_source`` from ``GEOMETRY_SOURCES``, the unit columns of
         :func:`event_units` where one applies, ``geocoding_q`` and ``overlap`` on the
         ``geo_disasters`` tier, ``names_written`` and ``names_reached`` wherever the event's text was
@@ -711,7 +711,7 @@ def event_filter(filters: EventFilters) -> pl.Expr:
 
     Returns
     -------
-    Expr
+    predicate : Expr
         True for events that count. An event whose severity is unrecorded clears every threshold a
         place leaves unset, and fails any it sets.
     """

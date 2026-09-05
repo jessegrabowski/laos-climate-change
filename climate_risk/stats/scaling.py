@@ -21,9 +21,9 @@ def standardize(
 
     Returns
     -------
-    StandardScaler
+    scaler : StandardScaler
         The fitted scaler, to pass back for held-out data.
-    DataFrame
+    standardized : DataFrame
         ``df`` with one ``__standardized`` column per entry in ``columns``.
     """
     if transformer_fitted is None:

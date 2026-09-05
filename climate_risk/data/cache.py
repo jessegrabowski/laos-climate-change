@@ -92,7 +92,7 @@ def cache_key(name: str, params: Mapping[str, object] | None = None) -> str:
 
     Returns
     -------
-    str
+    key : str
         A filename stem, such as ``points__grid_size=400__region=sea``.
     """
     parts = [_key_part(name, "name")]
@@ -136,7 +136,7 @@ def builder_fingerprint(builder: Callable[[], object], *rules: object) -> str:
 
     Returns
     -------
-    str
+    fingerprint : str
         A short digest of the builder's source and the rules it was given.
     """
     declared = inspect.getsource(builder) + "".join(repr(rule) for rule in rules)
@@ -176,7 +176,7 @@ def cached[T](
 
     Returns
     -------
-    T
+    artefact : T
         The artefact, read from the cache or freshly built.
     """
     path = (cache_dir / cache_key(name, params)).with_suffix(fmt.suffix)

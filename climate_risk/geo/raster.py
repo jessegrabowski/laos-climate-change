@@ -47,7 +47,7 @@ def dissolve_place_boundary(boundary: gpd.GeoDataFrame, *, iso3: str | None = No
 
     Returns
     -------
-    GeoDataFrame
+    dissolved : GeoDataFrame
         One row per country, carrying ``ISO_A3`` and ``geometry``, in ``GEOGRAPHIC_CRS``.
     """
     if boundary.empty:
@@ -143,7 +143,7 @@ def cell_areas_km2(latitudes: np.ndarray, longitude_step: float, latitude_step: 
 
     Returns
     -------
-    ndarray
+    areas : ndarray
         Cell area in square kilometres, one per entry of ``latitudes``.
     """
     # A spherical cos(latitude) form is biased by a few parts in a thousand, and the bias runs with
@@ -239,7 +239,7 @@ class CellGrid:
 
         Returns
         -------
-        ndarray
+        columns : ndarray
             Column index of each, positions into ``cells``.
         """
         wanted = np.asarray(cell_ids)
@@ -289,7 +289,7 @@ def cell_coverage(
 
     Returns
     -------
-    DataFrame
+    coverage : DataFrame
         One row per feature and overlapping cell, with the key, ``cell_id`` and ``coverage``. Cells
         a feature misses entirely produce no row.
     """
@@ -331,7 +331,7 @@ def sample_onto_cells(grid: CellGrid, raster: str, *, statistic: str) -> np.ndar
 
     Returns
     -------
-    ndarray
+    values : ndarray
         One value per surviving cell, aligned with ``grid.cells``.
     """
     clipped = grid.footprints.intersection(grid.place)
@@ -371,7 +371,7 @@ def build_cell_grid(boundary: gpd.GeoDataFrame, *, resolution_km: float) -> Cell
 
     Returns
     -------
-    CellGrid
+    grid : CellGrid
         The lattice and its surviving cells, in ``GEOGRAPHIC_CRS``.
     """
     # A country is mostly border at any resolution coarse enough to model, and a dropped border
@@ -454,7 +454,7 @@ def assign_cells_to_units(grid: CellGrid, units: gpd.GeoDataFrame, *, unit_colum
 
     Returns
     -------
-    DataFrame
+    assignments : DataFrame
         One row per overlapping cell and unit, with the unit key, ``cell_id``, the fraction of the
         cell inside the unit, and the overlapping area in square kilometres.
     """

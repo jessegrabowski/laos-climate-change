@@ -37,7 +37,7 @@ def transform_ocean_heat(seasonal: pl.DataFrame) -> pl.DataFrame:
 
     Returns
     -------
-    DataFrame
+    ocean_heat : DataFrame
         Annual means dated to each year's first day, offset by ``OCEAN_HEAT_BASELINE_OFFSET``.
     """
     # Only the year survives the average, so the year is all that is read.

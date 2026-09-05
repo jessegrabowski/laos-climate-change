@@ -50,7 +50,7 @@ def transform_hadcrut(temperatures: pd.DataFrame, world: gpd.GeoDataFrame) -> pd
 
     Returns
     -------
-    DataFrame
+    anomalies : DataFrame
         One row per country and year, indexed by ``ISO`` and ``year``.
     """
     located = gpd.GeoDataFrame(

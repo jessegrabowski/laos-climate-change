@@ -96,7 +96,7 @@ def repair_iso_codes(world: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
 
     Returns
     -------
-    GeoDataFrame
+    repaired : GeoDataFrame
         The repaired frame, reindexed from zero.
     """
     missing_columns = {"WB_NAME", "ISO_A3"} - set(world.columns)
@@ -181,7 +181,7 @@ def load_place_boundary(place: Place, cache_dir: Path, *, force_reload: bool = F
 
     Returns
     -------
-    GeoDataFrame
+    boundary : GeoDataFrame
         The place's geometry, in the boundary file's own CRS.
     """
     if isinstance(place, CountryConfig) and place.boundary is not None:

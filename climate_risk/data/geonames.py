@@ -56,7 +56,7 @@ def read_country_codes(cache_dir: Path, *, force_reload: bool = False) -> dict[s
 
     Returns
     -------
-    dict mapping str to str
+    codes : dict mapping str to str
         Alpha-2 code, keyed by alpha-3.
     """
     path = fetch(COUNTRY_INFO, geonames_dir(cache_dir), force=force_reload)
@@ -91,7 +91,7 @@ def load_place_points(iso: str, cache_dir: Path, *, force_reload: bool = False) 
 
     Returns
     -------
-    DataFrame
+    points : DataFrame
         Columns ``key``, ``lon`` and ``lat``, one row per distinct name.
     """
     directory = geonames_dir(cache_dir)
@@ -154,7 +154,7 @@ def geonames_geocoder(iso: str, cache_dir: Path, *, force_reload: bool = False) 
 
     Returns
     -------
-    callable
+    geocoder : callable
         Takes an ISO code and a written name, and returns longitude and latitude or None.
     """
     points = load_place_points(iso, cache_dir, force_reload=force_reload)
