@@ -8,8 +8,18 @@ import polars as pl
 from kuznets import wb
 
 from climate_risk.data.cache import cached, polars_parquet
+from climate_risk.data.source import ApiSource
 
 _log = logging.getLogger(__name__)
+
+WORLD_BANK = ApiSource(
+    url="https://api.worldbank.org/v2/country",
+    licence="CC BY 4.0",
+    citation=(
+        "World Bank, World Development Indicators, https://databank.worldbank.org/source/world-development-indicators."
+    ),
+    retrieved="2026-09-05",
+)
 
 # Every country name the World Bank can return, its ISO code, and whether we ask for it. The rows
 # it does not request are the Bank's regional and income aggregates, which are not countries.
@@ -115,7 +125,10 @@ def _load_indicators(
     *,
     force_reload: bool,
 ) -> pl.DataFrame:
-    """Download ``indicator_names`` for every requested country and cache the panel under ``name``."""
+    """
+    Download ``indicator_names`` for every requested country and cache the panel under ``name``.
+
+    """
 
     def build() -> pl.DataFrame:
         _log.info(f"Downloading {len(indicator_names)} World Bank indicators for {name}")
@@ -146,4 +159,9 @@ def load_wb_macro_data(cache_dir: Path, *, force_reload: bool = False) -> pl.Dat
 
     The World Bank publishes these indicators annually, and they are returned at that frequency.
     """
-    return _load_indicators(cache_dir, "world_bank_macro", MACRO_INDICATOR_NAMES, force_reload=force_reload)
+    return _load_indicators(
+        cache_dir,
+        "world_bank_macro",
+        MACRO_INDICATOR_NAMES,
+        force_reload=force_reload,
+    )

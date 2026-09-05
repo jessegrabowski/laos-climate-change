@@ -105,6 +105,42 @@ class ManualSource:
 
 
 @dataclass(frozen=True, slots=True)
+class ApiSource:
+    """
+    One upstream API a loader queries.
+
+    Carries no filename: an API answers a query rather than serving a file, so nothing lands in the
+    cache under a name of its own. It also stays outside the reachability sweep that walks
+    :class:`DataSource`, since these endpoints answer a query and refuse a bare request.
+
+    Parameters
+    ----------
+    url : str
+        Documented entry point for the service.
+    licence : str
+        Terms the data is published under. Some services aggregate publishers under differing terms.
+    citation : str
+        How to credit the publisher.
+    retrieved : str
+        ISO date this declaration was last checked against the publisher.
+    """
+
+    url: str
+    licence: str
+    citation: str
+    retrieved: str
+
+    def __post_init__(self) -> None:
+        if not self.url.startswith(("http://", "https://")):
+            raise ValueError(f"url must be http(s), got {self.url!r}")
+
+        try:
+            date.fromisoformat(self.retrieved)
+        except ValueError as err:
+            raise ValueError(f"{self.url}: retrieved must be an ISO date, got {self.retrieved!r}") from err
+
+
+@dataclass(frozen=True, slots=True)
 class ShapefileArchive:
     """
     A zipped shapefile, together with the layer inside it to read.

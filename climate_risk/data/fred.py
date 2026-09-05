@@ -8,8 +8,20 @@ import polars as pl
 from kuznets import fred
 
 from climate_risk.data.cache import cached, polars_parquet
+from climate_risk.data.source import ApiSource
 
 _log = logging.getLogger(__name__)
+
+FRED = ApiSource(
+    url="https://api.stlouisfed.org/fred/series/observations",
+    licence=(
+        "Series carry the terms of whoever published them. The US federal series read here are "
+        "public domain; other series on FRED are redistributed under restrictions, some serving only "
+        "a rolling window of history."
+    ),
+    citation="Federal Reserve Bank of St. Louis, FRED (Federal Reserve Economic Data), https://fred.stlouisfed.org/.",
+    retrieved="2026-09-05",
+)
 
 # The foreign block the small open economy model treats as exogenous: a world interest rate, a world
 # price level, and world prices for the goods it imports. Every one is a world aggregate, so this
