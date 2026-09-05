@@ -19,6 +19,20 @@ def stl_deviation(series: pd.Series, period: int = 3) -> pd.Series:
     -------
     deviation : Series
         The series minus its trend, on the same index.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        import numpy as np
+        import pandas as pd
+
+        from climate_risk.stats.timeseries import stl_deviation
+
+        rng = np.random.default_rng(0)
+        series = pd.Series(np.arange(60) * 0.1 + rng.normal(size=60))
+
+        deviation = stl_deviation(series, period=12)
     """
     trend = pd.Series(STL(series, period=period).fit().trend, index=series.index)
 

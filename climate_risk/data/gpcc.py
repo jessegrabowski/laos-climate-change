@@ -74,7 +74,17 @@ class GriddedProduct:
 
 
 def coverage_of(products: Iterable[GriddedProduct]) -> str:
-    """Return the span a set of products covers, as the string their cache entry is keyed on."""
+    """
+    Return the span a set of products covers, as the string their cache entry is keyed on.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from climate_risk.data.gpcc import GPCC_PRODUCTS, coverage_of
+
+        print(coverage_of(GPCC_PRODUCTS))
+    """
     covered = tuple(products)
 
     return f"{min(product.first_year for product in covered)}-{max(product.last_year for product in covered)}"

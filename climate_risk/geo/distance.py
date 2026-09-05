@@ -36,6 +36,18 @@ def get_distance_to(
     distances : DataFrame
         ``distance_to_closest`` plus one column per entry in ``return_columns``, indexed like
         ``points``.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk import load_rivers_data
+        from climate_risk.geo.distance import get_distance_to
+
+        rivers = load_rivers_data(Path("data"))
+        distances = get_distance_to(rivers, grid_points)
     """
     carried = list(return_columns or [])
 

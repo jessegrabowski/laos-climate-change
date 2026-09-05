@@ -25,6 +25,24 @@ def standardize(
         The fitted scaler, to pass back for held-out data.
     standardized : DataFrame
         ``df`` with one ``__standardized`` column per entry in ``columns``.
+
+    Examples
+    --------
+    Fit on the training frame, then reuse the scaler on held-out data:
+
+    .. code-block:: python
+
+        import numpy as np
+        import pandas as pd
+
+        from climate_risk.stats.scaling import standardize
+
+        rng = np.random.default_rng(0)
+        train = pd.DataFrame({"gdp": rng.normal(10, 2, 100)})
+        held_out = pd.DataFrame({"gdp": rng.normal(10, 2, 20)})
+
+        scaler, train_scaled = standardize(train, ["gdp"])
+        _, held_out_scaled = standardize(held_out, ["gdp"], transformer_fitted=scaler)
     """
     if transformer_fitted is None:
         transformer_fitted = StandardScaler().fit(df[columns])

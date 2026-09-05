@@ -90,6 +90,16 @@ def load_event_locations(cache_dir: Path, *, iso: str | None = None, layer: str 
     locations : DataFrame
         Columns ``DisNo.``, ``ISO``, ``admin_level``, ``geocoding_q``, ``ADM1_NAME`` and
         ``ADM2_NAME``, one row per location.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk.data.geo_disasters import load_event_locations
+
+        locations = load_event_locations(Path("data"), iso="LAO")
     """
     path = geo_disasters_path(cache_dir)
     where = f"ISO = '{iso}'" if iso is not None else None
@@ -142,6 +152,16 @@ def load_event_footprints(cache_dir: Path, *, iso: str, layer: str = GEO_DISASTE
     -------
     footprints : GeoDataFrame
         The columns of :func:`load_event_locations` and the footprint of each location.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk.data.geo_disasters import load_event_footprints
+
+        footprints = load_event_footprints(Path("data"), iso="LAO")
     """
     footprints = gpd.read_file(geo_disasters_path(cache_dir), layer=layer, where=f"ISO = '{iso}'")
 
@@ -296,6 +316,16 @@ def load_resolved_units(isos: Sequence[str], cache_dir: Path, *, force_reload: b
     resolved : DataFrame
         The columns of :func:`resolve_to_gadm`, one row per event and unit, across every country
         asked for.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk.data.geo_disasters import load_resolved_units
+
+        resolved = load_resolved_units(["LAO", "THA"], Path("data"))
     """
     frames = [
         cached(

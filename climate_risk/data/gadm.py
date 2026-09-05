@@ -121,6 +121,18 @@ def load_units_in_country(
     units : GeoDataFrame
         Columns ``gid``, ``name``, ``admin_level`` and ``geometry``, one row per unit. Empty where
         the country is not divided at that level.
+
+    Examples
+    --------
+    Read every district in Laos:
+
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk.data.gadm import load_units_in_country
+
+        districts = load_units_in_country("LAO", 2, Path("data"))
     """
     if level not in GID_COLUMNS:
         raise DataValidationError(f"Units are read at levels {sorted(GID_COLUMNS)}, not {level}")
@@ -210,6 +222,18 @@ def load_admin_units(
     -------
     admin_units : GeoDataFrame
         Columns ``gid``, ``name``, ``admin_level`` and ``geometry``, one row per distinct id.
+
+    Examples
+    --------
+    Read named units, each identified by its country and level:
+
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk.data.gadm import load_admin_units
+
+        units = load_admin_units([("LAO", 1), ("THA", 1)], Path("data"))
     """
     path = gadm_path(cache_dir)
     requested = set(units)

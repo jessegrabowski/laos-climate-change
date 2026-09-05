@@ -24,6 +24,14 @@ def prediction_to_gpd_df(
     -------
     predictions : dict mapping str to GeoDataFrame
         One frame per requested variable, each carrying the point geometry and the draws.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from climate_risk.models.predictions import prediction_to_gpd_df
+
+        frames = prediction_to_gpd_df(idata, ["intensity"], grid_points)
     """
     predictions_dict = {}
     predictions_dict_geo = {}

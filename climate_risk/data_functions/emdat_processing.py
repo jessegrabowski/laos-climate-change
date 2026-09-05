@@ -165,6 +165,14 @@ def country_year_grid(events: pl.DataFrame, *, window_start: dt.date = EMDAT_WIN
     -------
     grid : DataFrame
         ``ISO``, ``Start_Year``, ``Region`` and ``Subregion``, sorted by country and year.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from climate_risk.data_functions.emdat_processing import country_year_grid
+
+        grid = country_year_grid(events)
     """
     newest_event = events["Start_Year"].max()
     if not isinstance(newest_event, dt.date):
@@ -204,6 +212,14 @@ def count_events_by_type(events: pl.DataFrame, grid: pl.DataFrame) -> pl.DataFra
     counts : DataFrame
         One row per country-year, one column per disaster type. A country-year with no events
         reads as null rather than zero.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from climate_risk.data_functions.emdat_processing import count_events_by_type, country_year_grid
+
+        counts = count_events_by_type(events, country_year_grid(events))
     """
     counted = (
         events.filter(pl.col("Disaster Type").is_in(DISASTER_TYPES))
@@ -236,6 +252,14 @@ def total_damage(events: pl.DataFrame, grid: pl.DataFrame) -> pl.DataFrame:
     -------
     damage : DataFrame
         One row per country-year, one column per measure in ``DAMAGE_VARS``.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from climate_risk.data_functions.emdat_processing import country_year_grid, total_damage
+
+        damage = total_damage(events, country_year_grid(events))
     """
     totals = (
         events.filter(pl.col("Disaster Type").is_in(DISASTER_TYPES))
@@ -267,6 +291,16 @@ def load_emdat_events(cache_dir: Path) -> pl.DataFrame:
     events : DataFrame
         One row per recorded event, keyed by ``DisNo.``, carrying ``disaster_class`` and the renamed
         damage columns.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk import load_emdat_events
+
+        events = load_emdat_events(Path("data"))
     """
     cache_dir.mkdir(parents=True, exist_ok=True)
 
@@ -328,6 +362,15 @@ def named_places(location: str | None) -> list[NamedPlace]:
     places : list of NamedPlace
         One entry per place named, in the order written, without repeats. Empty when the text names
         nothing.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from climate_risk.data_functions.emdat_processing import named_places
+
+        for place in named_places("Hua Sai, Pak Phanang districts (Nakhon Si Thammarat province)"):
+            print(place)
     """
     spans: list[str] = []
     places: list[NamedPlace] = []
@@ -457,6 +500,14 @@ def event_units(events: pl.DataFrame) -> pl.DataFrame:
     units : DataFrame
         ``DisNo.``, ``gid``, ``name``, ``admin_level`` and ``migration_method``. An event carrying no
         units contributes no rows, so this is narrower than ``events``.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from climate_risk.data_functions.emdat_processing import event_units
+
+        units = event_units(events)
     """
     rows = []
 
@@ -660,6 +711,14 @@ def event_geography(
         :func:`event_units` where one applies, ``geocoding_q`` and ``overlap`` on the
         ``geo_disasters`` tier, ``names_written`` and ``names_reached`` wherever the event's text was
         read, and the event's coordinate where it has one.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from climate_risk.data_functions.emdat_processing import event_geography
+
+        geography = event_geography(events)
     """
     units = event_units(events)
     located = events.select("DisNo.", "ISO", "Latitude", "Longitude")
@@ -714,6 +773,18 @@ def event_filter(filters: EventFilters) -> pl.Expr:
     predicate : Expr
         True for events that count. An event whose severity is unrecorded clears every threshold a
         place leaves unset, and fails any it sets.
+
+    Examples
+    --------
+    Keep the events one place's configuration counts:
+
+    .. code-block:: python
+
+        from climate_risk.config.registry import load_place
+        from climate_risk.data_functions.emdat_processing import event_filter
+
+        laos = load_place("lao")
+        counted = events.filter(event_filter(laos.event_filters))
     """
     counts = pl.col("Start_Year") >= pl.date(filters.start_year, 1, 1)
 

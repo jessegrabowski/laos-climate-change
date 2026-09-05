@@ -138,6 +138,21 @@ def build_aggregation(
     -------
     aggregation : Aggregation
         The operator and its row labels.
+
+    Examples
+    --------
+    Two cells in one unit, one in another:
+
+    .. code-block:: python
+
+        import numpy as np
+
+        from climate_risk.models.aggregation import build_aggregation
+
+        aggregation = build_aggregation(
+            unit_of_cell=["LAO.1_1", "LAO.1_1", "LAO.2_1"],
+            weights=np.array([1.0, 1.0, 2.0]),
+        )
     """
     weights = _validated_weights(weights)
     if len(unit_of_cell) != weights.shape[0]:

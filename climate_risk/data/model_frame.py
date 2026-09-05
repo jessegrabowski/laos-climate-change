@@ -39,6 +39,15 @@ def event_windows(events: pl.DataFrame, geography: pl.DataFrame) -> pl.DataFrame
         where the window is the whole country; ``n_units`` and ``finest_level`` describe its extent,
         the latter null on a whole-country window. ``geometry_source`` is the best source that
         reached the event, ranked by ``GEOMETRY_SOURCES``.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from climate_risk.data.model_frame import event_windows
+        from climate_risk.data_functions.emdat_processing import event_geography
+
+        windows = event_windows(events, event_geography(events))
     """
     missing = set(events["DisNo."]) - set(geography["DisNo."])
     if missing:

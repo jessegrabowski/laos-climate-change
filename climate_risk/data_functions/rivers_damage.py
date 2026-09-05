@@ -115,6 +115,16 @@ def create_hydro_rivers_damage(cache_dir: Path) -> gpd.GeoDataFrame:
     -------
     damage : GeoDataFrame
         One row per event, carrying its damage totals and its distance to the nearest river.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk.data_functions.rivers_damage import create_hydro_rivers_damage
+
+        damage = create_hydro_rivers_damage(Path("data"))
     """
     return _create_rivers_damage(
         cache_dir,

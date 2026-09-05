@@ -109,5 +109,15 @@ def population_on_cells(grid: CellGrid, epoch: int, cache_dir: Path) -> np.ndarr
     -------
     population : ndarray
         People per cell, aligned with ``grid.cells``.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk.data.ghsl import population_on_cells
+
+        people = population_on_cells(grid, 2020, Path("data"))
     """
     return sample_onto_cells(grid, population_raster(epoch, cache_dir), statistic="sum")

@@ -216,6 +216,17 @@ def load_place_boundary(place: Place, cache_dir: Path, *, force_reload: bool = F
     -------
     boundary : GeoDataFrame
         The place's geometry, in the boundary file's own CRS.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk.config.registry import load_place
+        from climate_risk.data_functions.shapefiles_data_loader import load_place_boundary
+
+        boundary = load_place_boundary(load_place("lao"), Path("data"))
     """
     if isinstance(place, CountryConfig) and place.boundary is not None:
         return load_archive(place.boundary, cache_dir, force_reload=force_reload)

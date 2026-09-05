@@ -71,6 +71,19 @@ def prepare_gridspec_figure(n_cols: int, n_plots: int, figure: plt.Figure | None
         The layout the subplots are cut from.
     locations : list of tuple of slice
         Row and column slice for each subplot, in order.
+
+    Examples
+    --------
+    Lay out seven panels across three columns:
+
+    .. code-block:: python
+
+        import matplotlib.pyplot as plt
+
+        from climate_risk.plotting import prepare_gridspec_figure
+
+        figure = plt.figure()
+        gridspec, positions = prepare_gridspec_figure(3, 7, figure)
     """
     remainder = n_plots % n_cols
     has_remainder = remainder > 0
@@ -126,6 +139,14 @@ def panel_grid(
         The figure the axes belong to.
     axes : list of Axes
         One axis per name, in the order given.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from climate_risk.plotting import panel_grid
+
+        figure, axes = panel_grid(names=["co2", "precip"], units={"co2": "ppm"})
     """
     labels = labels or {}
     units = units or {}
@@ -175,6 +196,17 @@ def plot_fan(
         X position for a vertical rule, typically the last observation. Default None, drawing none.
     shades : tuple of float, optional
         Alpha for the widest and narrowest band, interpolated across the rest. Default (0.16, 0.34).
+
+    Examples
+    --------
+    .. code-block:: python
+
+        import matplotlib.pyplot as plt
+
+        from climate_risk.plotting import plot_fan
+
+        figure, axis = plt.subplots()
+        plot_fan(draws=posterior["co2"], axis=axis, observed=observed)
     """
     time = pd.to_datetime(draws.coords["time"].values)
 
@@ -301,6 +333,14 @@ def plot_descriptive(
     -------
     figure : Figure or Axes
         The figure the panels were drawn on, or the single axis when there is only one column.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from climate_risk.plotting import plot_descriptive
+
+        plot_descriptive(panel[["co2", "precip", "damage"]])
     """
     figsize = figure_kwargs.pop("figsize", (14, 4))
     dpi = figure_kwargs.pop("dpi", 144)
@@ -373,6 +413,14 @@ def plot_aggregated_series(
     -------
     figure : Figure
         The figure the panels were drawn on.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from climate_risk.plotting import plot_aggregated_series
+
+        figure = plot_aggregated_series(panel, ["damage"], "year", "sum")
     """
     fig, axes = plt.subplots(graph_rows, AGGREGATE_COLUMNS, figsize=figure_size)
 
@@ -426,6 +474,14 @@ def plot_aggregated_series_by_region(
     -------
     figure : Figure
         The figure the panels were drawn on.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from climate_risk.plotting import plot_aggregated_series_by_region
+
+        figure = plot_aggregated_series_by_region(panel, ["damage"], "year", "sum")
     """
     fig, axes = plt.subplots(graph_rows, AGGREGATE_COLUMNS, figsize=figure_size)
 
@@ -467,6 +523,14 @@ def plot_ppc_loopit(
     -------
     axes : list of Axes
         The posterior predictive panel and the two LOO-PIT panels.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from climate_risk.plotting import plot_ppc_loopit
+
+        axes = plot_ppc_loopit(idata, "counts")
     """
     fig = plt.figure(figsize=(12, 9))
     gs = plt.GridSpec(2, 2, figure=fig)
@@ -513,6 +577,14 @@ def attach_count_predictions(idata: xr.DataTree, df: pd.DataFrame) -> pd.DataFra
     -------
     annotated : DataFrame
         ``df`` with ``predictions`` and the 95% and 50% HDI bounds appended.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from climate_risk.plotting import attach_count_predictions
+
+        annotated = attach_count_predictions(idata, panel)
     """
     y_hat = idata.posterior_predictive["y_hat"]
     predictions = _aligned_prediction_mean(y_hat, df)
@@ -546,6 +618,14 @@ def plot_predicted_counts(idata: xr.DataTree, df: pd.DataFrame, country: str) ->
     -------
     figure : Figure
         Predicted mean, observed counts, and the 50% and 95% HDI bands.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from climate_risk.plotting import plot_predicted_counts
+
+        figure = plot_predicted_counts(idata, panel, "LAO")
     """
     df_predictions = attach_count_predictions(idata=idata, df=df)
 
@@ -598,6 +678,14 @@ def attach_damage_predictions(idata: xr.DataTree, df: pd.DataFrame) -> pd.DataFr
     -------
     annotated : DataFrame
         ``df`` with ``predictions`` and the 75% and 50% HDI bounds appended.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from climate_risk.plotting import attach_damage_predictions
+
+        annotated = attach_damage_predictions(idata, panel)
     """
     damages = idata.posterior_predictive["damage_millions"]
     predictions = _aligned_prediction_mean(damages, df)
@@ -633,6 +721,14 @@ def plot_predicted_damages(idata: xr.DataTree, df: pd.DataFrame, country: str, t
     -------
     figure : Figure
         Predicted mean, observed damages, and the 50% and 75% HDI bands.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from climate_risk.plotting import plot_predicted_damages
+
+        figure = plot_predicted_damages(idata, panel, "LAO", "total_damage")
     """
     df_predictions = attach_damage_predictions(idata=idata, df=df)
 

@@ -146,6 +146,16 @@ def annual_precipitation(cache_dir: Path) -> pl.DataFrame:
     -------
     precipitation : DataFrame
         ``ISO``, ``year`` and ``precip``, one row per country and year.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk import annual_precipitation
+
+        precipitation = annual_precipitation(Path("data"))
     """
     by_country, _ = _annual_precipitation(_as_polars(load_gpcc_data(cache_dir)))
 
@@ -165,6 +175,16 @@ def build_time_series(cache_dir: Path) -> pl.DataFrame:
     -------
     series : DataFrame
         ``year``, CO2, ocean temperature and worldwide precipitation, one row per year.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk import build_time_series
+
+        series = build_time_series(Path("data"))
     """
     _, worldwide = _annual_precipitation(_as_polars(load_gpcc_data(cache_dir)))
 
@@ -191,6 +211,16 @@ def build_country_year_panel(cache_dir: Path) -> pl.DataFrame:
     -------
     panel : DataFrame
         One row per country and year, keyed on ``ISO`` and ``Start_Year``.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk import build_country_year_panel
+
+        panel = build_country_year_panel(Path("data"))
     """
     raw = load_emdat_events(cache_dir)
     grid = country_year_grid(raw)

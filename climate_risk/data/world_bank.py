@@ -163,7 +163,19 @@ def _load_indicators(
 
 
 def load_wb_data(cache_dir: Path, *, force_reload: bool = False) -> pl.DataFrame:
-    """Return the population, area and output panel, one row per country and year."""
+    """
+    Return the population, area and output panel, one row per country and year.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk import load_wb_data
+
+        indicators = load_wb_data(Path("data"))
+    """
     return _load_indicators(cache_dir, "world_bank", INDICATOR_NAMES, force_reload=force_reload)
 
 
@@ -173,6 +185,16 @@ def load_wb_macro_data(cache_dir: Path, *, force_reload: bool = False) -> pl.Dat
     and year.
 
     The World Bank publishes these indicators annually, and they are returned at that frequency.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk.data.world_bank import load_wb_macro_data
+
+        macro = load_wb_macro_data(Path("data"))
     """
     return _load_indicators(
         cache_dir,

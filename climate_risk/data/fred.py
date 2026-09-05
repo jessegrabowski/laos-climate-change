@@ -115,5 +115,17 @@ def _load_series(
 
 
 def load_fred_data(cache_dir: Path, *, force_reload: bool = False) -> pl.DataFrame:
-    """Return the foreign block as a tidy panel of series, date and value, at native frequency."""
+    """
+    Return the foreign block as a tidy panel of series, date and value, at native frequency.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk.data.fred import load_fred_data
+
+        series = load_fred_data(Path("data"))
+    """
     return _load_series(cache_dir, "fred", SERIES_NAMES, force_reload=force_reload)

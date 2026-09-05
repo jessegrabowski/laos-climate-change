@@ -23,5 +23,15 @@ def to_km[Distance: (float, np.ndarray, pd.Series)](meters: Distance) -> Distanc
     -------
     distance : float, ndarray or Series
         The same distance in kilometers, matching the input type.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        import numpy as np
+
+        from climate_risk.geo.crs import to_km
+
+        print(to_km(np.array([1000.0, 2500.0])))
     """
     return meters / METERS_PER_KM

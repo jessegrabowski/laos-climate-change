@@ -48,6 +48,17 @@ def add_hierarchical_effect(
         Scale of the distribution over effects.
     effect_offset : TensorVariable
         Offset of each group from the location.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        import pymc as pm
+
+        from climate_risk.models.blocks import add_hierarchical_effect
+
+        with pm.Model(coords={"country": ["LAO", "THA"]}) as model:
+            effect, loc, scale, offset = add_hierarchical_effect("country", group_dim="country")
     """
     if group_dim is None:
         raise ValueError("group_dim must be provided")
@@ -104,6 +115,17 @@ def add_data(
         The data tensor.
     Y : TensorVariable
         The target tensor, returned only when ``target`` is given.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        import pymc as pm
+
+        from climate_risk.models.blocks import add_data
+
+        with pm.Model() as model:
+            features, target = add_data(["co2", "precip"], panel, target="counts")
     """
     X_name = "X" if name is None else f"X_{name}"
     Y_name = "Y" if name is None else f"Y_{name}"

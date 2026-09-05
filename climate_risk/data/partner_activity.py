@@ -219,6 +219,16 @@ def load_partner_activity(
     -------
     activity : DataFrame
         One row per country and year, carrying ``partner_activity`` and ``partner_coverage``.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk.data.partner_activity import load_partner_activity
+
+        activity = load_partner_activity(Path("data"), ["LAO", "THA", "VNM"], last_year=2023)
     """
     codes = sorted(countries)
 

@@ -403,6 +403,16 @@ def read_gazetteer(iso: str, cache_dir: Path, *, layer: str = GADM_LAYER, force_
     -------
     gazetteer : Gazetteer
         The country's units.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk.data.place_names import read_gazetteer
+
+        gazetteer = read_gazetteer("LAO", Path("data"))
     """
 
     def build() -> pl.DataFrame:
@@ -784,6 +794,19 @@ def resolve_place(name: str, parent: str | None, gazetteer: Gazetteer) -> set[st
     -------
     gids : set of str
         The GADM identifiers the name reaches, empty where it reaches none.
+
+    Examples
+    --------
+    The container picks between units sharing a name:
+
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk.data.place_names import read_gazetteer, resolve_place
+
+        gazetteer = read_gazetteer("LAO", Path("data"))
+        gids = resolve_place("Xaythany", "Vientiane", gazetteer)
     """
     gids = _units_named(name, parent, gazetteer)
     if gids:
@@ -885,6 +908,17 @@ def resolve_event_places(
     -------
     placements : list of Placement
         Where each place put the event, in the order the places were given.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk.data.place_names import read_gazetteer, resolve_event_places
+
+        gazetteer = read_gazetteer("LAO", Path("data"))
+        placements = resolve_event_places([("Xaythany", "Vientiane"), ("Pakse", None)], gazetteer)
     """
     written = list(places)
     points = located or {}

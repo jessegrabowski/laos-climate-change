@@ -82,6 +82,16 @@ def load_pwt_data(cache_dir: Path, *, force_reload: bool = False) -> pl.DataFram
     -------
     pwt : DataFrame
         One row per country and year.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk.data.pwt import load_pwt_data
+
+        pwt = load_pwt_data(Path("data"))
     """
 
     def build() -> pl.DataFrame:

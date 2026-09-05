@@ -106,6 +106,18 @@ def score_geocoder(
     -------
     scores : list of ScoredName
         One entry per name that had an answer to check against.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk.data.geocoding import score_geocoder
+        from climate_risk.data.geonames import geonames_geocoder
+
+        cache_dir = Path("data")
+        scores = score_geocoder(geonames_geocoder(cache_dir), "LAO", cache_dir)
     """
     settled = unambiguous_units(places, gazetteer)
     if not settled:
@@ -235,6 +247,18 @@ def units_from_geocoders(
     -------
     units : dict mapping str to str
         The GADM identifier each name reaches, absent where no source placed it inside a unit.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk.data.geocoding import units_from_geocoders
+        from climate_risk.data.placement import available_geocoders
+
+        cache_dir = Path("data")
+        units = units_from_geocoders(["Pakse", "Savannakhet"], "LAO", cache_dir, available_geocoders("LAO", cache_dir))
     """
     placed: dict[str, str] = {}
     outstanding = list(names)

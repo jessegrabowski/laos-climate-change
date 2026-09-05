@@ -49,6 +49,18 @@ def dissolve_place_boundary(boundary: gpd.GeoDataFrame, *, iso3: str | None = No
     -------
     dissolved : GeoDataFrame
         One row per country, carrying ``ISO_A3`` and ``geometry``, in ``GEOGRAPHIC_CRS``.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk import load_shapefile
+        from climate_risk.geo.raster import dissolve_place_boundary
+
+        world = load_shapefile("world", Path("data"))
+        laos = dissolve_place_boundary(world, iso3="LAO")
     """
     if boundary.empty:
         raise DataValidationError("The boundary holds no geometry, so there would be nothing to grid.")
@@ -292,6 +304,14 @@ def cell_coverage(
     coverage : DataFrame
         One row per feature and overlapping cell, with the key, ``cell_id`` and ``coverage``. Cells
         a feature misses entirely produce no row.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from climate_risk.geo.raster import cell_coverage
+
+        coverage = cell_coverage(grid.shape, grid.bounds, districts, "gid")
     """
     rows, columns = shape
     lon_min, lat_min, lon_max, lat_max = bounds
@@ -333,6 +353,18 @@ def sample_onto_cells(grid: CellGrid, raster: str, *, statistic: str) -> np.ndar
     -------
     values : ndarray
         One value per surviving cell, aligned with ``grid.cells``.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk.data.ghsl import population_raster
+        from climate_risk.geo.raster import sample_onto_cells
+
+        raster = population_raster(2020, Path("data"))
+        people = sample_onto_cells(grid, raster, statistic="sum")
     """
     clipped = grid.footprints.intersection(grid.place)
     missed = clipped.is_empty
@@ -373,6 +405,21 @@ def build_cell_grid(boundary: gpd.GeoDataFrame, *, resolution_km: float) -> Cell
     -------
     grid : CellGrid
         The lattice and its surviving cells, in ``GEOGRAPHIC_CRS``.
+
+    Examples
+    --------
+    Lay a 25 km lattice over a boundary:
+
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk import load_shapefile
+        from climate_risk.geo.raster import build_cell_grid, dissolve_place_boundary
+
+        world = load_shapefile("world", Path("data"))
+        boundary = dissolve_place_boundary(world, iso3="LAO")
+        grid = build_cell_grid(boundary, resolution_km=25.0)
     """
     # A country is mostly border at any resolution coarse enough to model, and a dropped border
     # cell takes its overlaps with the border units with it.
@@ -457,6 +504,20 @@ def assign_cells_to_units(grid: CellGrid, units: gpd.GeoDataFrame, *, unit_colum
     assignments : DataFrame
         One row per overlapping cell and unit, with the unit key, ``cell_id``, the fraction of the
         cell inside the unit, and the overlapping area in square kilometers.
+
+    Examples
+    --------
+    Map each cell onto the district that holds it:
+
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk.data.gadm import load_units_in_country
+        from climate_risk.geo.raster import assign_cells_to_units
+
+        districts = load_units_in_country("LAO", 2, Path("data"))
+        assignments = assign_cells_to_units(grid, districts)
     """
     if unit_column not in units.columns:
         raise DataValidationError(f"The units carry no {unit_column!r} column to key the operator's rows on.")
