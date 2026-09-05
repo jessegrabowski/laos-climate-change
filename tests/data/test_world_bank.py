@@ -304,3 +304,14 @@ def test_an_indicator_the_bank_no_longer_serves_is_named():
 
     with pytest.raises(ValueError, match=r"AG\.SRF\.TOTL\.K2"):
         transform_world_bank(retired, INDICATOR_NAMES)
+
+
+def test_every_current_price_quantity_has_a_constant_price_counterpart():
+    """The pair's ratio is the deflator, which is what carries import prices when no import price
+    index exists. A current-price series whose constant-price counterpart is missing carries none.
+    """
+    current = {code.removesuffix(".CN") for code in MACRO_INDICATOR_NAMES if code.endswith(".CN")}
+    constant = {code.removesuffix(".KN") for code in MACRO_INDICATOR_NAMES if code.endswith(".KN")}
+
+    assert current, "no current-price quantities found"
+    assert current <= constant, sorted(current - constant)

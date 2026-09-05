@@ -59,6 +59,12 @@ MACRO_INDICATOR_NAMES = {
     "NE.CON.GOVT.KN": "real_government_lcu",
     "NE.EXP.GNFS.KN": "real_exports_lcu",
     "NE.IMP.GNFS.KN": "real_imports_lcu",
+    # Paired with the constant-price series above, these give consumption and investment deflators,
+    # which is what carries import prices when no import price index is available.
+    "NE.CON.PRVT.CN": "nominal_consumption",
+    "NE.GDI.FTOT.CN": "nominal_investment",
+    # Model quantities are per capita.
+    "SP.POP.TOTL": "population",
     "FP.CPI.TOTL": "cpi",
     "NY.GDP.DEFL.ZS": "gdp_deflator",
     "PA.NUS.FCRF": "exchange_rate",
