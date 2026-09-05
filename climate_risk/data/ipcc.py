@@ -10,7 +10,7 @@ from climate_risk.data.co2 import load_co2_data
 _log = logging.getLogger(__name__)
 
 # SEDAC, which published this figure's data, was decommissioned in June 2025, so the workbook is
-# redistributed with the package. Its licence and citation are in vendored/ATTRIBUTION.md.
+# redistributed with the package. Its license and citation are in vendored/ATTRIBUTION.md.
 IPCC_FILE = Path(__file__).parent / "vendored" / "ipcc_ar6_syr_csb2_fig1a.xlsx"
 
 IPCC_SHEET = "CO2 Emissions"

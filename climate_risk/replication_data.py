@@ -15,7 +15,7 @@ PANEL_KEY = ["ISO", "year"]
 HYDROLOGICAL_TYPES = ["Flood", "Storm"]
 CLIMATOLOGICAL_TYPES = ["Extreme temperature", "Wildfire", "Drought"]
 
-# The WMO reference period each country's precipitation is centred on, inclusive of both ends.
+# The WMO reference period each country's precipitation is centered on, inclusive of both ends.
 CLIMATOLOGY_BASELINE = (1961, 1990)
 
 # The seasonal period the ocean-heat trend is fitted with.
@@ -58,7 +58,7 @@ def _counted_or_missing(types: list[str]) -> pl.Expr:
 
 def _precipitation_deviation(precipitation: pl.DataFrame, baseline: tuple[int, int]) -> pl.DataFrame:
     """
-    Centre each country's precipitation on its own mean over the baseline climatology period.
+    Center each country's precipitation on its own mean over the baseline climatology period.
 
     Parameters
     ----------

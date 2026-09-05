@@ -911,7 +911,7 @@ def successor_state(
 
     A state that left one successor needs no evidence. Where it left several, the successor placing
     strictly more of the written places than any other takes the event: a Soviet flood naming
-    Tashkent is Uzbek, and one naming nothing recognisable stays unplaced rather than being assigned
+    Tashkent is Uzbek, and one naming nothing recognizable stays unplaced rather than being assigned
     to the largest successor.
 
     Parameters

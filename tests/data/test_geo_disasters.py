@@ -42,13 +42,13 @@ def test_an_absent_geopackage_names_the_path_and_where_to_get_it(tmp_path):
     assert "10.5281/zenodo.15487667" in message
 
 
-def test_the_declaration_splits_the_licence_by_what_it_covers():
+def test_the_declaration_splits_the_license_by_what_it_covers():
     """The geometry is non-commercial and the attributes are not; a figure built from one is
     constrained where the other is free, so both halves have to survive in the declaration."""
-    licence = GEO_DISASTERS.license.lower()
+    license = GEO_DISASTERS.license.lower()
 
-    assert "non-commercial" in licence
-    assert "cc-by-4.0" in licence
+    assert "non-commercial" in license
+    assert "cc-by-4.0" in license
     assert "zenodo.15487667" in GEO_DISASTERS.citation
 
 
@@ -96,7 +96,7 @@ def test_a_unit_is_named_at_the_level_it_was_geocoded_to(write_geo_disasters_cac
 
 
 def test_geometry_is_left_on_disk(write_geo_disasters_cache):
-    """The polygons are the non-commercial half of the licence, and nothing here needs them."""
+    """The polygons are the non-commercial half of the license, and nothing here needs them."""
     cache_dir = write_geo_disasters_cache()
 
     locations = load_event_locations(cache_dir)
@@ -116,7 +116,7 @@ def test_geometry_is_left_on_disk(write_geo_disasters_cache):
     ],
     ids=["casing", "whitespace", "accent", "hyphen", "d-with-stroke", "l-with-stroke"],
 )
-def test_the_same_unit_spelled_two_ways_normalises_alike(published, other):
+def test_the_same_unit_spelled_two_ways_normalizes_alike(published, other):
     """GADM and GAUL differ in casing, spacing, accents and hyphens for units that are the same one,
     and a literal comparison would report every one of these as the sources disagreeing. A stroked
     letter carries no combining mark, so stripping accents leaves `Đ` and `ł` standing and `Đà Nẵng`
@@ -125,13 +125,13 @@ def test_the_same_unit_spelled_two_ways_normalises_alike(published, other):
 
 
 def test_units_that_are_genuinely_different_stay_different():
-    """Normalisation that collapses too far reports agreement everywhere and validates nothing."""
+    """Normalization that collapses too far reports agreement everywhere and validates nothing."""
     assert normalize_unit_name("Savannakhet") != normalize_unit_name("Khammouan")
 
 
 def test_a_different_romanisation_is_not_reconciled():
-    """Normalisation handles typography, not spelling. `Xiangkhouang` and `Xiangkhoang` are one
-    province under two romanisations, and normalising leaves them different — which is why the
+    """Normalization handles typography, not spelling. `Xiangkhouang` and `Xiangkhoang` are one
+    province under two romanisations, and normalizing leaves them different — which is why the
     agreement report matches identifiers and this function is not in its path."""
     assert normalize_unit_name("Xiangkhouang") != normalize_unit_name("Xiangkhoang")
 

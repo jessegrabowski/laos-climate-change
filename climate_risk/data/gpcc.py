@@ -104,7 +104,7 @@ def _monitoring_archive(year: int, month: int) -> DataSource:
     )
 
 
-# The reanalysed gauge record, published a decade to an archive.
+# The reanalyzed gauge record, published a decade to an archive.
 FULL_DATA = GriddedProduct(
     variable="precip",
     first_year=FULL_DATA_START,

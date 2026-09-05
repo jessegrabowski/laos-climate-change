@@ -214,7 +214,7 @@ def _plot_single_kde(
     bins : int, optional
         Histogram bins. Default 30.
     color : str, optional
-        Fill colour of the histogram. Default ``"tab:blue"``.
+        Fill color of the histogram. Default ``"tab:blue"``.
     leg_loc : str, optional
         Where to anchor the summary box. Default ``"upper left"``.
     set_title : bool, optional
@@ -287,7 +287,7 @@ def plot_descriptive(
     bins : int, optional
         Histogram bins. Default 30.
     color : str, optional
-        Fill colour of the histograms. Default ``"tab:blue"``.
+        Fill color of the histograms. Default ``"tab:blue"``.
     leg_loc : str, optional
         Where to anchor each summary box. Default ``"upper left"``.
     labels_size : int, optional

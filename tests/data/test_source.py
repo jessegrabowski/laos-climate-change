@@ -85,7 +85,7 @@ def test_a_manual_homepage_that_is_not_a_web_page_is_rejected(homepage):
         manual(homepage=homepage)
 
 
-def test_a_manual_source_reports_its_licence_when_the_file_is_missing(tmp_path):
+def test_a_manual_source_reports_its_license_when_the_file_is_missing(tmp_path):
     """A user hitting this has to know the terms before going to fetch the file."""
     with pytest.raises(NotImplementedError, match="non-commercial use only"):
         manual().require(tmp_path)
@@ -159,7 +159,7 @@ def test_a_boundary_declared_in_a_place_file_reaches_the_check():
 @pytest.mark.network
 @pytest.mark.parametrize("declared", SOURCES.values(), ids=SOURCES.keys())
 def test_every_declared_source_is_still_published(declared):
-    """Upstream reorganises without notice, and a dead URL surfaces as a failed run months later."""
+    """Upstream reorganizes without notice, and a dead URL surfaces as a failed run months later."""
     # Hosts vary their answer by agent, so the check has to send the one fetch will send.
     headers = {"User-Agent": USER_AGENT}
     response = requests.head(declared.url, timeout=30, allow_redirects=True, headers=headers)

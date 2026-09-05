@@ -54,7 +54,7 @@ retrieved = "2026-08-08"
 ```
 
 A boundary declared here is fetched, cached and reachability-checked exactly like a source declared
-in code. `licence` and `citation` are not decorative — fill them in from the publisher's own page.
+in code. `license` and `citation` are not decorative — fill them in from the publisher's own page.
 
 **`[event_location_overrides]`** — longitude and latitude forced onto EM-DAT records whose published
 position is wrong, keyed by event id. Two countries may not both claim the same event.

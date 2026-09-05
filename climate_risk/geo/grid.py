@@ -38,8 +38,8 @@ def create_grid_from_shape(
         One row per surviving point, with ``lon``, ``lat``, distances to the nearest river and
         coastline, their logs, and ``ISO``.
     """
-    labelled = "ISO_A3" in shapefile.columns
-    if not labelled and iso3 is None:
+    labeled = "ISO_A3" in shapefile.columns
+    if not labeled and iso3 is None:
         raise ValueError(
             "The geometry carries no ISO_A3 column, so pass iso3 to say which country its points belong to."
         )
@@ -76,6 +76,6 @@ def create_grid_from_shape(
         )
     )
 
-    points["ISO"] = point_overlay["ISO_A3"] if labelled else iso3
+    points["ISO"] = point_overlay["ISO_A3"] if labeled else iso3
 
     return points

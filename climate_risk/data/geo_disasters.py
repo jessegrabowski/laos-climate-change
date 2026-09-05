@@ -22,7 +22,7 @@ GEO_DISASTERS = ManualSource(
     filename="disaster_subnational_90_23.gpkg",
     homepage="https://doi.org/10.5281/zenodo.15487667",
     license=(
-        "Spatial geometries are © FAO 2015 under the GAUL 2015 Data Licence, non-commercial with "
+        "Spatial geometries are © FAO 2015 under the GAUL 2015 Data License, non-commercial with "
         "attribution required. All non-spatial attributes are CC-BY-4.0."
     ),
     citation=(
@@ -39,7 +39,7 @@ NAME_COLUMNS = {1: "ADM1_NAME", 2: "ADM2_NAME"}
 
 LOCATION_COLUMNS = ["DisNo.", "ISO", "admin_level", "geocoding_q", "ADM1_NAME", "ADM2_NAME"]
 
-# Attribution required by the GAUL 2015 Data Licence, clause 2(a), verbatim.
+# Attribution required by the GAUL 2015 Data License, clause 2(a), verbatim.
 GAUL_ATTRIBUTION = (
     "Source of Administrative boundaries: The Global Administrative Unit Layers (GAUL) dataset, "
     "implemented by FAO within the CountrySTAT and Agricultural Market Information System (AMIS) "
@@ -73,7 +73,7 @@ def load_event_locations(cache_dir: Path, *, iso: str | None = None, layer: str 
     """
     Read the geocoded locations Geo-Disasters records, one row per affected administrative unit.
 
-    Geometry is left on disk. The polygons carry the non-commercial GAUL licence while the attribute
+    Geometry is left on disk. The polygons carry the non-commercial GAUL license while the attribute
     table is CC-BY-4.0, and the attributes are what a comparison against EM-DAT needs.
 
     Parameters
@@ -125,7 +125,7 @@ def load_event_footprints(cache_dir: Path, *, iso: str, layer: str = GEO_DISASTE
     """
     Read one country's geocoded locations with the polygons attached.
 
-    These polygons are the non-commercial half of the licence, and :data:`GAUL_ATTRIBUTION` has to
+    These polygons are the non-commercial half of the license, and :data:`GAUL_ATTRIBUTION` has to
     appear on anything derived from them. :func:`load_event_locations` reads the same rows without
     geometry where the attributes alone will do.
 
@@ -329,7 +329,7 @@ def normalize_unit_name(name: str) -> str:
 
     Returns
     -------
-    normalised : str
+    normalized : str
         Casefolded, transliterated to ASCII, and stripped of everything that is not a letter or digit.
     """
     return "".join(character for character in anyascii(name) if character.isalnum()).casefold()

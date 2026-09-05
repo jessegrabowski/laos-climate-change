@@ -1,7 +1,7 @@
 climate_risk
 ============
 
-Bayesian disaster-frequency and damage modelling for climate adaptation policy.
+Bayesian disaster-frequency and damage modeling for climate adaptation policy.
 
 Quick install
 -------------

@@ -56,14 +56,14 @@ def dissolve_place_boundary(boundary: gpd.GeoDataFrame, *, iso3: str | None = No
     if boundary.crs is None:
         raise DataValidationError("The boundary carries no CRS, so its coordinates cannot be placed on the globe.")
 
-    labelled = ISO_COLUMN in boundary.columns
-    if not labelled and iso3 is None:
+    labeled = ISO_COLUMN in boundary.columns
+    if not labeled and iso3 is None:
         raise DataValidationError(
             f"The geometry carries no {ISO_COLUMN} column, so pass iso3 to say which country it covers."
         )
 
     located = boundary.to_crs(GEOGRAPHIC_CRS)
-    if not labelled:
+    if not labeled:
         located = located.assign(**{ISO_COLUMN: iso3})
 
     dissolved = located.dissolve(by=ISO_COLUMN, as_index=False)
@@ -73,15 +73,15 @@ def dissolve_place_boundary(boundary: gpd.GeoDataFrame, *, iso3: str | None = No
 
 def grid_axes(bounds: tuple[float, float, float, float], resolution_km: float) -> tuple[np.ndarray, np.ndarray]:
     """
-    Cell centre coordinates for a grid of approximately square cells tiling an extent.
+    Cell center coordinates for a grid of approximately square cells tiling an extent.
 
-    Resolution is stated in kilometres rather than points per axis, because points per axis means a
+    Resolution is stated in kilometers rather than points per axis, because points per axis means a
     different ground distance for every place and a different one along each axis of the same
     place. Longitude is converted at the extent's mean latitude, so cells are square in the middle
     of the place and drift from square towards its edges; the cell areas carry that drift rather
     than the spacing.
 
-    Centres, not edges: the aggregation operator sums a field sampled once per cell, which is a
+    Centers, not edges: the aggregation operator sums a field sampled once per cell, which is a
     midpoint rule, and a midpoint rule wants the sample in the middle of the ground it stands for.
 
     Parameters
@@ -89,14 +89,14 @@ def grid_axes(bounds: tuple[float, float, float, float], resolution_km: float) -
     bounds : tuple of float
         ``(lon_min, lat_min, lon_max, lat_max)`` in degrees.
     resolution_km : float
-        Target cell edge, in kilometres.
+        Target cell edge, in kilometers.
 
     Returns
     -------
     longitudes : ndarray
-        Cell centre longitudes, one per cell along the axis.
+        Cell center longitudes, one per cell along the axis.
     latitudes : ndarray
-        Cell centre latitudes, one per cell along the axis.
+        Cell center latitudes, one per cell along the axis.
     """
     if resolution_km <= 0.0:
         raise DataValidationError(f"The grid resolution must be a positive distance, not {resolution_km}.")
@@ -121,9 +121,9 @@ def grid_axes(bounds: tuple[float, float, float, float], resolution_km: float) -
 
 
 def _midpoints(edges: np.ndarray) -> np.ndarray:
-    centres: np.ndarray = (edges[:-1] + edges[1:]) / 2.0
+    centers: np.ndarray = (edges[:-1] + edges[1:]) / 2.0
 
-    return centres
+    return centers
 
 
 def cell_areas_km2(latitudes: np.ndarray, longitude_step: float, latitude_step: float) -> np.ndarray:
@@ -135,7 +135,7 @@ def cell_areas_km2(latitudes: np.ndarray, longitude_step: float, latitude_step: 
     Parameters
     ----------
     latitudes : ndarray
-        Cell centre latitude, in degrees.
+        Cell center latitude, in degrees.
     longitude_step : float
         Angular cell width, in degrees.
     latitude_step : float
@@ -144,7 +144,7 @@ def cell_areas_km2(latitudes: np.ndarray, longitude_step: float, latitude_step: 
     Returns
     -------
     areas : ndarray
-        Cell area in square kilometres, one per entry of ``latitudes``.
+        Cell area in square kilometers, one per entry of ``latitudes``.
     """
     # A spherical cos(latitude) form is biased by a few parts in a thousand, and the bias runs with
     # latitude. Banding keeps the ellipsoidal figure cheap: one evaluation per row, not per cell.
@@ -175,9 +175,9 @@ class CellGrid:
     Parameters
     ----------
     longitudes : ndarray
-        Cell centre longitudes, ascending.
+        Cell center longitudes, ascending.
     latitudes : ndarray
-        Cell centre latitudes, descending, so row zero is the northernmost.
+        Cell center latitudes, descending, so row zero is the northernmost.
     longitude_step : float
         Angular cell width, in degrees.
     latitude_step : float
@@ -211,9 +211,9 @@ class CellGrid:
     @property
     def footprints(self) -> gpd.GeoSeries:
         """
-        The rectangle each cell stands for, rather than the centre it is sampled at.
+        The rectangle each cell stands for, rather than the center it is sampled at.
 
-        ``cells.geometry`` is the centre, where the model evaluates the field.
+        ``cells.geometry`` is the center, where the model evaluates the field.
         """
         half_width, half_height = (step / 2.0 for step in self.steps)
         lon, lat = self.cells["lon"].to_numpy(), self.cells["lat"].to_numpy()
@@ -256,7 +256,7 @@ class CellGrid:
 
     @property
     def bounds(self) -> tuple[float, float, float, float]:
-        """Outer edges of the lattice, half a cell beyond the outermost centres."""
+        """Outer edges of the lattice, half a cell beyond the outermost centers."""
         half_width, half_height = (step / 2.0 for step in self.steps)
 
         return (
@@ -367,7 +367,7 @@ def build_cell_grid(boundary: gpd.GeoDataFrame, *, resolution_km: float) -> Cell
     boundary : GeoDataFrame
         One row per country, as :func:`dissolve_place_boundary` returns.
     resolution_km : float
-        Target cell edge, in kilometres.
+        Target cell edge, in kilometers.
 
     Returns
     -------
@@ -412,7 +412,7 @@ def build_cell_grid(boundary: gpd.GeoDataFrame, *, resolution_km: float) -> Cell
     )
     covered = cell_coverage(shape, edges, boundary, ISO_COLUMN)
 
-    # A cell on an internal frontier touches two countries. It is one piece of ground, labelled by
+    # A cell on an internal frontier touches two countries. It is one piece of ground, labeled by
     # whichever claims most of it and credited with everything the place covers.
     inside = covered.groupby("cell_id")[["coverage"]].sum()
     dominant = covered.sort_values("coverage", ascending=False).drop_duplicates("cell_id").set_index("cell_id")
@@ -456,7 +456,7 @@ def assign_cells_to_units(grid: CellGrid, units: gpd.GeoDataFrame, *, unit_colum
     -------
     assignments : DataFrame
         One row per overlapping cell and unit, with the unit key, ``cell_id``, the fraction of the
-        cell inside the unit, and the overlapping area in square kilometres.
+        cell inside the unit, and the overlapping area in square kilometers.
     """
     if unit_column not in units.columns:
         raise DataValidationError(f"The units carry no {unit_column!r} column to key the operator's rows on.")

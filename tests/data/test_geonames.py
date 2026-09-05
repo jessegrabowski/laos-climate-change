@@ -17,7 +17,7 @@ def test_a_country_is_looked_up_by_the_code_geonames_files_it_under(write_geonam
     assert codes["PHL"] == "PH"
 
 
-def test_a_dump_is_declared_under_the_licence_it_is_published_with():
+def test_a_dump_is_declared_under_the_license_it_is_published_with():
     """The archive is redistributable only with attribution, and the declaration is what carries it."""
     assert country_dump("PH").license == GEONAMES_LICENSE
 

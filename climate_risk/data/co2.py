@@ -18,7 +18,7 @@ CO2 = DataSource(
     retrieved="2026-08-05",
 )
 
-# The published file carries its licence and methodology above the header row.
+# The published file carries its license and methodology above the header row.
 CO2_HEADER_ROW = 43
 
 

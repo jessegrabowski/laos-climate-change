@@ -14,7 +14,7 @@ from climate_risk.exceptions import DataValidationError, ISOCodeValidationError
 _log = logging.getLogger(__name__)
 
 # The catalog's metadata API is rate-limited; its file host is not, and is where the published
-# artefact actually lives.
+# artifact actually lives.
 WORLD = DataSource(
     url=("https://datacatalogfiles.worldbank.org/ddh-published/0038272/DR0046659/wb_countries_admin0_10m.zip"),
     filename="wb_countries_admin0_10m.zip",
@@ -55,11 +55,11 @@ DROPPED_TERRITORIES = (
     "Clipperton Island (Fr.)",
     "Cocos (Keeling) Islands (Aus.)",
     "Christmas Island (Aus.)",
-    # Caribbean municipalities labelled as the Netherlands.
+    # Caribbean municipalities labeled as the Netherlands.
     "Bonaire (Neth.)",
     "Sint Eustatius (Neth.)",
     "Saba (Neth.)",
-    # Labelled as New Zealand.
+    # Labeled as New Zealand.
     "Tokelau (NZ)",
 )
 

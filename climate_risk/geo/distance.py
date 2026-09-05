@@ -4,7 +4,7 @@ import pandas as pd
 from climate_risk.exceptions import DataValidationError
 from climate_risk.geo.crs import PROJECTED_CRS
 
-# Distances come back in metres, and a point sitting on a feature measures zero, which has no log.
+# Distances come back in meters, and a point sitting on a feature measures zero, which has no log.
 MIN_DISTANCE_METRES = 1.0
 
 
@@ -29,7 +29,7 @@ def get_distance_to(
         returns the distance alone.
     crs : str, optional
         Projected CRS to measure in, which fixes the units of the result. Default
-        ``PROJECTED_CRS``, giving metres.
+        ``PROJECTED_CRS``, giving meters.
 
     Returns
     -------

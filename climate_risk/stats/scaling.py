@@ -7,7 +7,7 @@ def standardize(
     df: pd.DataFrame, columns: list[str], transformer_fitted: StandardScaler | None = None
 ) -> tuple[StandardScaler, pd.DataFrame]:
     """
-    Append centred and scaled copies of ``columns``, suffixed ``__standardized``.
+    Append centered and scaled copies of ``columns``, suffixed ``__standardized``.
 
     Parameters
     ----------

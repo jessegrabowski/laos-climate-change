@@ -33,7 +33,7 @@ Loaders for manually obtained sources
 
 These four upstreams are published under terms that forbid automated download. Nothing in the
 library fetches them: the file has to be placed in the cache by hand, and the loader raises with
-the licence and the expected path until it is there.
+the license and the expected path until it is there.
 
 .. autosummary::
     :toctree: generated/
@@ -68,7 +68,7 @@ returns the frame the loader caches.
 Declaring a source
 ------------------
 
-A source is declared beside the loader that reads it, carrying its licence and citation. The three
+A source is declared beside the loader that reads it, carrying its license and citation. The three
 kinds differ in what they can do: :class:`~source.DataSource` is fetchable,
 :class:`~source.ManualSource` has no URL because automated download is
 forbidden, and :class:`~source.ApiSource` answers queries rather than serving a

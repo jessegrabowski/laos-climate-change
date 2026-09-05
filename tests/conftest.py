@@ -70,7 +70,7 @@ def toy_world():
 
 
 def toy_world_needing_repair():
-    """A world file shaped like the real one: unlabelled sovereigns and territories to drop.
+    """A world file shaped like the real one: unlabeled sovereigns and territories to drop.
 
     Carries one row per entry in DROPPED_TERRITORIES, DROPPED_ISO_CODES and ISO_CODE_REPAIRS; adding
     to any of those tables without adding a row here fails every repair test on the missing entry.

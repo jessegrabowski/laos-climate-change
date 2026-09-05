@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "climate-risk"
-description = "Climate disaster frequency and damage modelling for climate adaptation policy"
+description = "Climate disaster frequency and damage modeling for climate adaptation policy"
 readme = "README.md"
 requires-python = ">=3.12"
 license = { file = "LICENSE" }

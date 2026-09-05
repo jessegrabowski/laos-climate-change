@@ -14,7 +14,7 @@ GHSL_RELEASE = "R2023A"
 GHSL_LICENSE = "European Commission reuse notice: reuse authorised provided the source is acknowledged"
 GHSL_CITATION = (
     "Schiavina, M., Freire, S., Carioli, A., MacManus, K. (2026): GHS-POP R2023A - GHS population "
-    "grid multitemporal (1975-2030). European Commission, Joint Research Centre. "
+    "grid multitemporal (1975-2030). European Commission, Joint Research Center. "
     "doi:10.2905/2FF68A52-5B5B-4A22-8F40-C41DA8332CFE"
 )
 GHSL_RETRIEVED = "2026-08-23"
@@ -22,7 +22,7 @@ GHSL_RETRIEVED = "2026-08-23"
 # Epochs the release publishes. Five-yearly, so the panel's 1981 opening is covered from below.
 POPULATION_EPOCHS = tuple(range(1975, 2031, 5))
 
-# Arc-seconds per cell in the WGS84 grids. 30 is roughly a kilometre, ample under a 5 km analysis
+# Arc-seconds per cell in the WGS84 grids. 30 is roughly a kilometer, ample under a 5 km analysis
 # cell; the 3 arc-second grid is a hundred times the bytes for a mean that cannot move.
 RESOLUTION = "30ss"
 

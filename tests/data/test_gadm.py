@@ -26,7 +26,7 @@ def test_the_geopackage_is_looked_for_under_the_cache(tmp_path):
 
 
 def test_an_absent_geopackage_names_the_path_and_where_to_get_it(tmp_path):
-    """The licence forbids fetching it, so the error is the user's only instruction."""
+    """The license forbids fetching it, so the error is the user's only instruction."""
     with pytest.raises(NotImplementedError) as raised:
         gadm_path(tmp_path)
 

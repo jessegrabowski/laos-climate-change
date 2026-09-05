@@ -238,7 +238,7 @@ def test_every_region_is_drawn_on_each_panel():
     assert all(len(axis.get_lines()) == len(REGIONS) for axis in panels)
 
 
-def test_the_grid_centres_a_short_last_row():
+def test_the_grid_centers_a_short_last_row():
     """Five plots in three columns leaves two on the bottom row; left-aligning them looks broken."""
     _, locations = prepare_gridspec_figure(n_cols=3, n_plots=5)
 

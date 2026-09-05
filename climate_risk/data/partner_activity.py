@@ -59,7 +59,7 @@ def transform_partner_activity(
     by filtering before calling.
 
     The index is built from one fixed set of partners: those with output in the base year and in
-    every year from ``first_year`` to ``last_year``. Weights are renormalised over that set once. A
+    every year from ``first_year`` to ``last_year``. Weights are renormalized over that set once. A
     set that changed from year to year would shift the weighted mean by a discontinuous constant
     whenever a partner entered or left, which is indistinguishable in the series from a movement in
     foreign demand.
@@ -99,7 +99,7 @@ def transform_partner_activity(
     whose spending buys a country's output. The global VAR papers weight by total trade because one
     matrix there serves prices and interest rates as well as output.
 
-    The partner set is fixed across the window rather than renormalised year by year as in [1]_, so
+    The partner set is fixed across the window rather than renormalized year by year as in [1]_, so
     that a partner entering or leaving cannot move the level of the index.
 
     References

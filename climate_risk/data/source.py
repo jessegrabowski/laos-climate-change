@@ -97,7 +97,7 @@ class ManualSource:
         if not path.exists():
             raise NotImplementedError(
                 f"No {self.filename} was found at `{path}`.\n"
-                f"Licence: {self.license}\n"
+                f"License: {self.license}\n"
                 f"Obtain it from {self.homepage} and place it at `{path}`."
             )
 

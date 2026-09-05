@@ -57,7 +57,7 @@ def test_partners_are_weighted_by_their_share_of_exports():
 
 
 def test_a_partner_without_output_does_not_read_as_lost_demand():
-    """Weights are renormalised over the retained set. Without that, a partner absent from the output
+    """Weights are renormalized over the retained set. Without that, a partner absent from the output
     panel would drag the index toward zero and look like a foreign slump.
     """
     exports = exported([one_year("LAO", "THA", 50.0), one_year("LAO", "XXX", 50.0)])

@@ -84,7 +84,7 @@ def test_the_result_is_sorted_by_series_and_date():
     assert frame["date"].to_list() == [date(2020, 1, 1), date(2020, 1, 1), date(2020, 1, 2)]
 
 
-def test_a_series_fred_does_not_recognise_is_rejected(tmp_path, serves):
+def test_a_series_fred_does_not_recognize_is_rejected(tmp_path, serves):
     """An unknown ID comes back empty rather than raising, so an unchecked typo would reach the panel
     as a series that is simply absent — and a model would then be estimated without it.
     """
