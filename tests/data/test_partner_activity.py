@@ -13,13 +13,6 @@ FIRST_YEAR = 2015
 LAST_YEAR = 2016
 
 
-class _StubReader:
-    """Stands in for the IMTS reader; the transform is patched out, so its answer is never read."""
-
-    def read(self):
-        return pl.DataFrame(schema={"country": pl.String, "counterpart": pl.String, "value": pl.Float64})
-
-
 def activity(exports, gdp, **overrides):
     """Run the transform over a two-year window, which every fixture below supplies output for."""
     window = {"base_year": BASE_YEAR, "first_year": FIRST_YEAR, "last_year": LAST_YEAR} | overrides
@@ -52,8 +45,8 @@ def test_partner_output_is_indexed_to_the_base_year():
 
 
 def test_partners_are_weighted_by_their_share_of_exports():
-    """A partner taking 70% of exports must move the index roughly seven times as much as one taking
-    10%. Weighting the log index makes the answer a geometric mean, so it is checked against one.
+    """A partner taking 70% of exports carries 70% of the index. Weighting the log output makes that a
+    geometric mean, so a partner that doubles while the other stands still gives 2 raised to its share.
     """
     exports = exported([one_year("LAO", "THA", 70.0), one_year("LAO", "CHN", 30.0)])
     gdp = outputs([("THA", 2015, 100.0), ("THA", 2016, 200.0), ("CHN", 2015, 100.0), ("CHN", 2016, 100.0)])
@@ -163,31 +156,53 @@ def test_thin_partner_coverage_is_reported(caplog):
 
 
 def test_a_warm_cache_reaches_neither_upstream(tmp_path, monkeypatch):
-    """The window keys the cache, so resolving it from the output panel would mean loading that panel
-    before the cache could be consulted — and on a cold World Bank cache, downloading it.
-    """
+    """Both upstreams are read inside the builder, so a second call must reach neither."""
     reached = []
-
-    def cached_frame():
-        return pl.DataFrame(
-            {"country_code": ["LAO"], "year": [2016], "partner_activity": [1.1], "partner_coverage": [0.9]}
-        )
 
     def fake_load_wb_macro_data(*args, **kwargs):
         reached.append("world_bank")
-        return outputs([])
+        return outputs([("THA", 2015, 100.0), ("THA", 2016, 200.0)])
 
-    def fake_reader(*args, **kwargs):
-        reached.append("imts")
-        return _StubReader()
+    class FakeReader:
+        def __init__(self, *args, **kwargs):
+            reached.append("imts")
+
+        def read(self):
+            return exported([one_year("LAO", "THA", 50.0)])
 
     monkeypatch.setattr(partner_activity, "load_wb_macro_data", fake_load_wb_macro_data)
-    monkeypatch.setattr(partner_activity.imf, "IMTSReader", fake_reader)
-    monkeypatch.setattr(partner_activity, "transform_partner_activity", lambda *a, **k: cached_frame())
-    load_partner_activity(tmp_path, ["LAO"], base_year=2015, first_year=2015, last_year=2016)
+    monkeypatch.setattr(partner_activity.imf, "IMTSReader", FakeReader)
+    cold = load_partner_activity(tmp_path, ["LAO"], base_year=2015, first_year=2015, last_year=2016)
     reached.clear()
 
-    frame = load_partner_activity(tmp_path, ["LAO"], base_year=2015, first_year=2015, last_year=2016)
+    warm = load_partner_activity(tmp_path, ["LAO"], base_year=2015, first_year=2015, last_year=2016)
 
     assert reached == []
-    assert frame["partner_activity"].to_list() == [1.1]
+    assert warm.equals(cold)
+
+
+def test_the_countries_asked_for_key_the_cache_in_any_order(tmp_path, monkeypatch):
+    """The codes are sorted before they key the entry. Without that, the same pair asked for the other
+    way round builds a second panel and downloads again.
+    """
+    downloads = []
+
+    class FakeReader:
+        def __init__(self, symbols, **kwargs):
+            downloads.append(symbols)
+
+        def read(self):
+            return exported([one_year("LAO", "THA", 50.0), one_year("ZMB", "THA", 50.0)])
+
+    monkeypatch.setattr(
+        partner_activity,
+        "load_wb_macro_data",
+        lambda *a, **k: outputs([("THA", 2015, 100.0), ("THA", 2016, 200.0)]),
+    )
+    monkeypatch.setattr(partner_activity.imf, "IMTSReader", FakeReader)
+
+    load_partner_activity(tmp_path, ["ZMB", "LAO"], base_year=2015, first_year=2015, last_year=2016)
+    load_partner_activity(tmp_path, ["LAO", "ZMB"], base_year=2015, first_year=2015, last_year=2016)
+
+    assert len(downloads) == 1
+    assert len(list(tmp_path.glob("partner_activity__*.parquet"))) == 1

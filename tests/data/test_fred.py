@@ -197,4 +197,4 @@ def test_changing_the_series_set_turns_the_cache_over(tmp_path, serves):
     two = _load_series(tmp_path, "fred", {"DTB3": "world_rate_3m", "DGS10": "world_rate_10y"}, force_reload=False)
 
     assert one["series"].unique().to_list() == ["world_rate_3m"]
-    assert set(two["series"].unique().to_list()) > {"world_rate_3m"}
+    assert set(two["series"].unique().to_list()) == {"world_rate_3m", "world_rate_10y"}
