@@ -12,4 +12,7 @@ API reference
     api/config
     api/geo
     api/models
+    api/sample
+    api/plotting
     api/stats
+    api/exceptions
