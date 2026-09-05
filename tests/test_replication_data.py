@@ -6,7 +6,7 @@ import polars as pl
 import pytest
 
 from climate_risk.replication_data import create_replication_data
-from tests.conftest import GPCC_CACHE_FILE, emdat_event, write_emdat_workbook
+from tests.conftest import GPCC_CACHE_FILE, emdat_event, seed_world_bank_cache, write_emdat_workbook
 
 # Long enough that `iloc[1:-1]` still leaves an STL-able series: STL(period=3) needs 2*3+1 points.
 YEARS = tuple(range(1985, 2021))
@@ -64,11 +64,7 @@ def wide_cache(tmp_path_factory):
         for n, iso in enumerate(WORLD_BANK_COUNTRIES)
         for i, year in enumerate(YEARS)
     ]
-    pl.DataFrame(
-        world_bank,
-        schema=["country_code", "year", "gdp_per_cap", "population_density", "Population"],
-        orient="row",
-    ).write_parquet(tmp_path / "world_bank.parquet")
+    seed_world_bank_cache(tmp_path, world_bank)
     pl.DataFrame(
         {"Date": [date(year, 1, 1) for year in YEARS], "co2": [float(350 + i) for i in range(len(YEARS))]}
     ).write_parquet(tmp_path / "co2.parquet")

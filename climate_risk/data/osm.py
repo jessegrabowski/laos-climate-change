@@ -14,14 +14,19 @@ from climate_risk.data.cache import cache_key, cached, polars_parquet
 from climate_risk.data.fetch import TIMEOUT_SECONDS, USER_AGENT
 from climate_risk.data.geocoding import Geocoder
 from climate_risk.data.place_names import match_key
+from climate_risk.data.source import ApiSource
 from climate_risk.exceptions import UpstreamUnavailableError
 
 _log = logging.getLogger(__name__)
 
-NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 OSM_SUBDIRECTORY = "osm"
-OSM_LICENCE = "ODbL 1.0"
-OSM_CITATION = "OpenStreetMap contributors, https://www.openstreetmap.org/copyright, licensed ODbL 1.0."
+
+NOMINATIM = ApiSource(
+    url="https://nominatim.openstreetmap.org/search",
+    licence="ODbL 1.0",
+    citation="OpenStreetMap contributors, https://www.openstreetmap.org/copyright, licensed ODbL 1.0.",
+    retrieved="2026-09-05",
+)
 
 # The public instance allows one request a second for a job of this length, and requires results to
 # be cached rather than re-requested. Both are conditions of use, not tuning.
@@ -106,7 +111,7 @@ def search_nominatim(
     get = session.get if session else requests.get
     try:
         response = get(
-            f"{NOMINATIM_URL}?{urllib.parse.urlencode(query)}",
+            f"{NOMINATIM.url}?{urllib.parse.urlencode(query)}",
             headers={"User-Agent": USER_AGENT},
             timeout=TIMEOUT_SECONDS,
         )

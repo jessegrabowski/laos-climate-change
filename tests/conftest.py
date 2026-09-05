@@ -4,6 +4,7 @@ import zipfile
 
 from datetime import date
 from functools import partial
+from unittest import mock
 
 import geopandas as gpd
 import numpy as np
@@ -14,6 +15,7 @@ import xarray as xr
 
 from shapely.geometry import LineString, Point, box
 
+from climate_risk.data import world_bank
 from climate_risk.data.gpcc import GriddedProduct
 from climate_risk.data.osm import LOOKUP_COLUMNS
 from climate_risk.data.source import DataSource
@@ -226,6 +228,25 @@ def write_gpcc_archives(tmp_path):
     return write
 
 
+def seed_world_bank_cache(cache_dir, rows):
+    """
+    Write ``rows`` into the World Bank cache the way the loader will look for them.
+
+    The panel is placed by running the loader over a stubbed download rather than by writing a file
+    named by hand, because the entry is keyed on a fingerprint of how it was built. The stub replaces
+    the transform as well as the download: these rows are already in the panel's shape, and the codes
+    they use are not names the World Bank publishes.
+    """
+    panel = pl.DataFrame(
+        rows, schema=["country_code", "year", "gdp_per_cap", "population_density", "Population"], orient="row"
+    )
+    with (
+        mock.patch.object(world_bank.wb, "download", lambda **kwargs: pl.DataFrame()),
+        mock.patch.object(world_bank, "transform_world_bank", lambda raw, indicator_names: panel),
+    ):
+        world_bank.load_wb_data(cache_dir)
+
+
 def write_merge_cache(cache_dir):
     """Seed every cache `load_all_data` reads, so the whole merge runs offline.
 
@@ -265,7 +286,8 @@ def write_merge_cache(cache_dir):
         )
     )
     write_emdat_workbook(cache_dir, events)
-    pl.DataFrame(
+    seed_world_bank_cache(
+        cache_dir,
         [
             ("AAA", 1990, 1000.0, 10.0, 1000000),
             ("AAA", 1991, 1100.0, 11.0, 1010000),
@@ -276,9 +298,7 @@ def write_merge_cache(cache_dir):
             ("EEE", 1990, 4000.0, 40.0, 4000000),
             ("EEE", 1991, 4400.0, 44.0, 4040000),
         ],
-        schema=["country_code", "year", "gdp_per_cap", "population_density", "Population"],
-        orient="row",
-    ).write_parquet(cache_dir / "world_bank.parquet")
+    )
     # The cache key is stated literally, so a wrong one fails rather than agreeing with itself.
     pl.DataFrame({"Date": [date(1990, 1, 1), date(1991, 1, 1)], "co2": [354.0, 355.0]}).write_parquet(
         cache_dir / "co2.parquet"
