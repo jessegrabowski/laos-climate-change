@@ -18,15 +18,16 @@ def event_windows(events: pl.DataFrame, geography: pl.DataFrame) -> pl.DataFrame
     """
     Collect each event into the one observation window its geography describes.
 
-    An event is located to whatever units the sources reached, and those units are not all at one
-    administrative level: a district for one event, a province for the next, nothing at all for a
-    third. The window is the union of the units named, so the resolution an event was reported at is
-    carried rather than normalized away, and an event naming nothing reduces to its whole country.
+    An event is located to whatever units the sources reached. Those units are not all at one administrative level: a
+    district for one event, a province for the next, nothing at all for a third. The window is the union of the units
+    named, so the resolution an event was reported at is carried rather than normalized away, and an event naming
+    nothing reduces to its whole country.
 
     Parameters
     ----------
     events : DataFrame
-        The workbook filtered to a place's window, from :func:`~climate_risk.data_functions.emdat_processing.load_emdat_events`.
+        The workbook filtered to a place's window, from
+        :func:`~climate_risk.data_functions.emdat_processing.load_emdat_events`.
     geography : DataFrame
         One row per event-unit, from
         :func:`~climate_risk.data_functions.emdat_processing.event_geography`.

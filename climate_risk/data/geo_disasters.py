@@ -201,7 +201,7 @@ def resolve_to_gadm(footprints: gpd.GeoDataFrame, cache_dir: Path) -> pd.DataFra
     The two gazetteers share no identifier and spell the same unit differently, so a footprint is
     placed by where it is rather than what it is called. Every GADM unit more than
     ``MIN_CONTAINMENT`` of the way inside the footprint is named, because one GAUL unit routinely
-    covers several GADM ones — where GAUL's admin-1 is a region and GADM's is a province, one
+    covers several GADM ones. Where GAUL's admin-1 is a region and GADM's is a province, one
     footprint holds five or six.
 
     An event's footprints are dissolved per administrative level before the overlay, so a unit
@@ -264,7 +264,7 @@ def resolve_to_gadm(footprints: gpd.GeoDataFrame, cache_dir: Path) -> pd.DataFra
 def _placement_rule() -> str:
     """Name the procedure that placed a cached entry, so the entry cannot outlive it.
 
-    Rename this whenever the procedure changes; the threshold follows :data:`MIN_CONTAINMENT`.
+    Rename this whenever the procedure changes. The threshold follows :data:`MIN_CONTAINMENT`.
     """
     # A cache key may not carry a dot, so the threshold is written without one.
     return f"dissolved-containment{MIN_CONTAINMENT}".replace(".", "-")
@@ -284,7 +284,7 @@ def load_resolved_units(isos: Sequence[str], cache_dir: Path, *, force_reload: b
     Parameters
     ----------
     isos : sequence of str
-        ISO 3166-1 alpha-3 codes to read. Duplicates and ordering do not matter; the result is
+        ISO 3166-1 alpha-3 codes to read. Duplicates and ordering do not matter. The result is
         ordered by code.
     cache_dir : Path
         Directory the caches live under.
@@ -318,8 +318,8 @@ def normalize_unit_name(name: str) -> str:
     """
     Reduce an administrative unit's name to what two gazetteers can be expected to agree on.
 
-    GADM and GAUL romanise the same unit differently — accents, hyphens and casing all drift — so a
-    literal comparison reports spelling as disagreement. The name is transliterated rather than
+    GADM and GAUL romanize the same unit differently, and accents, hyphens and casing all drift, so
+    a literal comparison reports spelling as disagreement. The name is transliterated rather than
     decomposed, because a letter like ``Đ`` or ``ł`` carries no combining mark to strip.
 
     Parameters

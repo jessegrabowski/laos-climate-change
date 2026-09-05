@@ -87,7 +87,7 @@ def search_nominatim(
     instance: a loop that forgets it is one that gets the project blocked.
 
     A name Nominatim has no place for and a name it was never asked about are different answers.
-    Only the first is None; a request that failed raises, because recording it as a miss would cache
+    Only the first is None. A request that failed raises, because recording it as a miss would cache
     a permanent absence that nothing afterwards could tell apart from a real one.
 
     Parameters

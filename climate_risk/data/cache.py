@@ -130,8 +130,8 @@ def builder_fingerprint(builder: Callable[[], object], *rules: object) -> str:
     builder : callable
         The function that produces the artifact.
     *rules : object
-        Values the builder reads that its own source does not show — a table it consults, the
-        columns it selects. Each must repr the same way in every process, or the digest moves
+        Values the builder reads that its own source does not show, such as a table it consults or
+        the columns it selects. Each must repr the same way in every process, or the digest moves
         between runs and nothing ever reads back.
 
     Returns

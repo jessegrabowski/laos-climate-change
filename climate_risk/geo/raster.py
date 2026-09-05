@@ -78,7 +78,7 @@ def grid_axes(bounds: tuple[float, float, float, float], resolution_km: float) -
     Resolution is stated in kilometers rather than points per axis, because points per axis means a
     different ground distance for every place and a different one along each axis of the same
     place. Longitude is converted at the extent's mean latitude, so cells are square in the middle
-    of the place and drift from square towards its edges; the cell areas carry that drift rather
+    of the place and drift from square towards its edges. The cell areas carry that drift rather
     than the spacing.
 
     Centers, not edges: the aggregation operator sums a field sampled once per cell, which is a
@@ -167,10 +167,10 @@ class CellGrid:
     """
     The quadrature lattice over a place, and the cells of it that fall inside.
 
-    Both halves are needed. The model integrates over ``cells``, but assigning cells to
-    administrative units treats the grid as a raster, and a raster is defined by the whole lattice
-    rather than by the part of it that survived clipping. ``cell_id`` on ``cells`` indexes the
-    lattice in raster order, north row first, so it is the join key between the two.
+    Both halves are needed. The model integrates over ``cells``, but assigning cells to administrative units treats the
+    grid as a raster. A raster is defined by the whole lattice rather than by the part of it that survived clipping.
+    ``cell_id`` on ``cells`` indexes the lattice in raster order, north row first, so it is the join key between the
+    two.
 
     Parameters
     ----------
@@ -440,7 +440,7 @@ def assign_cells_to_units(grid: CellGrid, units: gpd.GeoDataFrame, *, unit_colum
     Overlap between grid cells and administrative units, weighted by area.
 
     A cell on a border appears once per unit it touches, carrying the ground it contributes to
-    each. Cells outside every unit produce no rows; a unit smaller than a cell still gets its share
+    each. Cells outside every unit produce no rows. A unit smaller than a cell still gets its share
     of the cell it sits in.
 
     Parameters

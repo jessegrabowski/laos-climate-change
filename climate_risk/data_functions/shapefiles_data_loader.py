@@ -200,7 +200,7 @@ def load_place_boundary(place: Place, cache_dir: Path, *, force_reload: bool = F
     """
     Read the geometry a place covers.
 
-    A place carrying its own boundary archive reads that; everything else is sliced out of the world
+    A place carrying its own boundary archive reads that. Everything else is sliced out of the world
     shapefile by the ISO codes the place resolves to.
 
     Parameters

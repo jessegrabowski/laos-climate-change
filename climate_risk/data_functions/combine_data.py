@@ -179,7 +179,7 @@ def build_country_year_panel(cache_dir: Path) -> pl.DataFrame:
     Merge events, damages, development indicators and precipitation onto one country-year row.
 
     Covers the years EM-DAT records and the countries that have both a disaster record and
-    development indicators. Precipitation reaches further back; :func:`annual_precipitation` has
+    development indicators. Precipitation reaches further back, and :func:`annual_precipitation` has
     the whole record.
 
     Parameters

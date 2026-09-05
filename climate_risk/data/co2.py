@@ -60,7 +60,7 @@ def load_co2_data(cache_dir: Path, *, force_reload: bool = False) -> pl.DataFram
 
     Examples
     --------
-    The first call downloads; later ones read the cache:
+    The first call downloads. Later ones read the cache:
 
     .. code-block:: python
 

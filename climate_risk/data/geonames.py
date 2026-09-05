@@ -76,8 +76,8 @@ def load_place_points(iso: str, cache_dir: Path, *, force_reload: bool = False) 
     """
     Read one country's GeoNames places, keyed for matching against written mentions.
 
-    Every name a place is published under becomes a row — its own, its ASCII form and each
-    alternate — so a mention reaches a point whichever spelling it used. Where a name is shared, the
+    Every name a place is published under becomes a row: its own, its ASCII form and each
+    alternate. A mention therefore reaches a point whichever spelling it used. Where a name is shared, the
     most populous place keeps it, which is what makes a written ``Manila`` the city rather than one
     of the hamlets sharing the name.
 

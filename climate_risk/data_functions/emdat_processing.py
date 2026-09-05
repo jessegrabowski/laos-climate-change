@@ -307,16 +307,16 @@ def named_places(location: str | None) -> list[NamedPlace]:
     Explode an event's location text into the places it names.
 
     EM-DAT writes a list of places, optionally followed by a parenthesised container that applies
-    to every place since the last one — ``Muang Nakhon Si Thammarat, Hua Sai, Pak Phanang, Ron
+    to every place since the last one. ``Muang Nakhon Si Thammarat, Hua Sai, Pak Phanang, Ron
     Phibun districts (Nakhon Si Thammarat province)`` names four districts of one province. The
     parent is what tells a repeated district name which province it belongs to, so it is carried
     rather than flattened into a sibling.
 
     Separators are commas and semicolons outside parentheses. ``and`` is not one: 75 GADM units are
-    named like ``Newfoundland and Labrador``, and splitting on it would destroy them. Where the
-    prose writes ``X, and Y`` the comma splits and the conjunction is left stranded, so a leading
-    one is dropped from each place, as is a preposition left dangling on the end by ``X in (Y)`` and
-    the ``Level 1 =`` label the workbook leaks into the column.
+    named like ``Newfoundland and Labrador``, and splitting on it would destroy them. Where the prose writes ``X, and
+    Y`` the comma splits and the conjunction is left stranded, so a leading one is dropped from each place. The same
+    goes for a preposition left dangling on the end by ``X in (Y)``, and for the ``Level 1 =`` label the workbook leaks
+    into the column.
 
     Parameters
     ----------
@@ -619,7 +619,7 @@ def event_geography(
     """
     Say where every event's geometry comes from, one row per event-unit and one per event otherwise.
 
-    An event coded to administrative units contributes a row per unit; one with only a coordinate,
+    An event coded to administrative units contributes a row per unit. One with only a coordinate,
     or with nothing, contributes a single row. Every event in ``events`` appears, so an absence of
     geography is stated rather than implied by a missing row.
 
@@ -629,7 +629,7 @@ def event_geography(
     Sources are taken in the order ``GEOMETRY_SOURCES`` declares. An event keeps every unit EM-DAT
     codes it to, and each later source contributes only units naming ground the ones before it leave
     uncovered. GADM ids nest, so a unit an earlier source already names is the same ground at a
-    second resolution; taking it again would put a province and the districts inside it into one
+    second resolution. Taking it again would put a province and the districts inside it into one
     observation.
 
     ``names_written`` and ``names_reached`` say how much of an event's prose resolved, on every row

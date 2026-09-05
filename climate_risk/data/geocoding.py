@@ -148,8 +148,8 @@ def units_containing_points(
     """
     Name the finest GADM unit holding each point.
 
-    Falling back to the container a place was written in claims every unit inside it — a province
-    spans fourteen districts at the median — so a point is worth reaching for first wherever one
+    Falling back to the container a place was written in claims every unit inside it, and a province
+    spans fourteen districts at the median. A point is worth reaching for first wherever one
     exists.
 
     Parameters
@@ -211,10 +211,10 @@ def units_from_geocoders(
     """
     Name the GADM unit each written place falls in, asking each source in turn.
 
-    Sources are tried in the order given and the first answer for a name is kept, so the order is a
-    statement about which source is trusted: an earlier one is preferred wherever it answers at all.
-    A point that falls outside every unit is discarded rather than passed on, which is what stops a
-    place sitting offshore, or in the country next door, from reaching a unit it does not belong to.
+    Sources are tried in the order given, and the first answer for a name is kept. The order is therefore a statement
+    about which source is trusted: an earlier one is preferred wherever it answers at all. A point that falls outside
+    every unit is discarded rather than passed on. That is what stops a place sitting offshore, or in the country next
+    door, from reaching a unit it does not belong to.
 
     Parameters
     ----------

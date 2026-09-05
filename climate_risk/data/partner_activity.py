@@ -53,7 +53,7 @@ def transform_partner_activity(
 
     Partner output enters as a log index against ``base_year``, so the result is a unit-free measure
     of activity in the markets a country sells into. Levels in local currency are not comparable
-    across countries; the ratio of each partner to its own base year is.
+    across countries. The ratio of each partner to its own base year is.
 
     Weights are export shares over the whole of ``exports``, so a caller chooses the weighting window
     by filtering before calling.
@@ -93,11 +93,10 @@ def transform_partner_activity(
     exchange rate scheme ([3]_, [4]_). Foreign output serves as an observable in an estimated small
     open economy model in [5]_.
 
-    Weights are single bilateral export shares. [3]_ weights a foreign demand variable by exports
-    alone while using double weights for competitiveness, and the asymmetry is the point: a
-    competitiveness index has to price rivalry in third markets, whereas an activity index asks only
-    whose spending buys a country's output. The global VAR papers weight by total trade because one
-    matrix there serves prices and interest rates as well as output.
+    Weights are single bilateral export shares. [3]_ weights a foreign demand variable by exports alone while using
+    double weights for competitiveness. The asymmetry is the point: a competitiveness index has to price rivalry in
+    third markets, whereas an activity index asks only whose spending buys a country's output. The global VAR papers
+    weight by total trade because one matrix there serves prices and interest rates as well as output.
 
     The partner set is fixed across the window rather than renormalized year by year as in [1]_, so
     that a partner entering or leaving cannot move the level of the index.

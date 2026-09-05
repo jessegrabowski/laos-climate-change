@@ -152,17 +152,17 @@ def transform_gpcc(grids: Iterable[pd.DataFrame], world: gpd.GeoDataFrame) -> pd
     """
     Average gridded precipitation to one value per country and month.
 
+    Every month is attributed to the boundaries ``world`` carries, which are current ones. The
+    record opens in 1891, so a long series describes rainfall over a country's present-day footprint
+    rather than over the country as it was. The Soviet Union, Yugoslavia and pre-split Sudan are all
+    absent from the years they existed in.
+
     Parameters
     ----------
     grids : iterable of DataFrame
         Gridded precipitation, one frame per archive, with ``lat``, ``lon``, ``time`` and ``precip``.
     world : GeoDataFrame
         Country boundaries, carrying the columns named in ``WORLD_COLUMNS``.
-
-    Every month is attributed to the boundaries ``world`` carries, which are current ones. The
-    record opens in 1891, so a long series describes rainfall over a country's present-day
-    footprint rather than over the country as it was — the Soviet Union, Yugoslavia and pre-split
-    Sudan are all absent from the years they existed in.
 
     Returns
     -------

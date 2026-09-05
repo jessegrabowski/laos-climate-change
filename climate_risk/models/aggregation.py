@@ -129,7 +129,7 @@ def build_aggregation(
         every unit, which is dropped: it contributes to no total.
     weights : ndarray
         Each cell's weight in its unit, one per entry of ``unit_of_cell``. Cell area gives an
-        integral over the polygon; population gives an exposure-weighted one.
+        integral over the polygon. Population gives an exposure-weighted one.
     units : sequence of str, optional
         Row order of the operator. Every assigned label must appear, and no label twice. Default
         None, which orders the labels that appear in ``unit_of_cell``, sorted.
@@ -177,7 +177,7 @@ def build_aggregation_from_overlaps(
         The cell each overlap belongs to, indexing the grid, one entry per overlap.
     weights : ndarray
         The weight each overlap contributes, one entry per overlap. Overlapping area gives an
-        integral over the polygon; overlapping population gives an exposure-weighted one.
+        integral over the polygon. Overlapping population gives an exposure-weighted one.
     n_cells : int
         Width of the operator. Cells named in no overlap contribute to no total.
     units : sequence of str, optional

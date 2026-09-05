@@ -170,7 +170,7 @@ def plot_fan(
     probs : sequence of float, optional
         Credible masses, one band each. Default (0.50, 0.89).
     color : str, optional
-        Colour of the bands and the median line. Default 'tab:blue'.
+        Color of the bands and the median line. Default 'tab:blue'.
     divider : optional
         X position for a vertical rule, typically the last observation. Default None, drawing none.
     shades : tuple of float, optional
@@ -367,7 +367,7 @@ def plot_aggregated_series(
     figure_size : tuple of float, optional
         Figure width and height in inches. Default (20, 18).
     subplot_title_fontsize : int, optional
-        Point size for each panel's title; the figure heading is ten points larger. Default 14.
+        Point size for each panel's title. The figure heading is ten points larger. Default 14.
 
     Returns
     -------
@@ -420,7 +420,7 @@ def plot_aggregated_series_by_region(
     figure_size : tuple of float, optional
         Figure width and height in inches. Default (20, 18).
     subplot_title_fontsize : int, optional
-        Point size for each panel's title; the figure heading is ten points larger. Default 14.
+        Point size for each panel's title. The figure heading is ten points larger. Default 14.
 
     Returns
     -------
