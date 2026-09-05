@@ -1,0 +1,27 @@
+# Read the Docs build configuration.
+#
+# The build runs through pixi, so Read the Docs resolves from the committed pixi.lock rather than
+# from a second dependency list that would drift. This follows the pixi integration documented at
+# https://docs.readthedocs.com/platform/stable/build-customization.html. Overriding
+# create_environment, install and build means Read the Docs builds no environment and runs no
+# Sphinx of its own, so the sphinx, python and conda keys must stay absent.
+version: 2
+
+build:
+  os: ubuntu-24.04
+  tools:
+    python: "latest"
+  jobs:
+    # hatch-vcs derives the version from git tags, and the default checkout is shallow and
+    # tagless, so without this the version reads 0.0.0 and the selector labels break.
+    post_checkout:
+      - git fetch --tags --unshallow || true
+    create_environment:
+      - asdf plugin add pixi
+      - asdf install pixi latest
+      - asdf global pixi latest
+    install:
+      - pixi install -e docs
+    build:
+      html:
+        - pixi run -e docs sphinx-build -T -b html docs/source $READTHEDOCS_OUTPUT/html
