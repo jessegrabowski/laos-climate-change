@@ -73,6 +73,7 @@ class NominatimAnswer(NamedTuple):
 
 
 def osm_dir(cache_dir: Path) -> Path:
+    """Return the directory the recorded OSM lookups live in, inside ``cache_dir``."""
     return cache_dir / OSM_SUBDIRECTORY
 
 

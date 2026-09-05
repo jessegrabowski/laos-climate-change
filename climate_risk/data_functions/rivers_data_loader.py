@@ -68,6 +68,34 @@ def _extract_rivers(cache_dir: Path) -> Path:
 
 
 def load_rivers_data(cache_dir: Path, *, include_medium: bool = False) -> gpd.GeoDataFrame:
+    """
+    Load HydroRIVERS, keeping the larger rivers.
+
+    Rivers are filtered by Strahler stream order, so the result holds the major channels rather
+    than every mapped tributary.
+
+    Parameters
+    ----------
+    cache_dir : Path
+        Directory the source caches live under.
+    include_medium : bool, optional
+        Lower the stream-order cutoff to keep medium rivers as well. Default False.
+
+    Returns
+    -------
+    rivers : GeoDataFrame
+        One row per river reach, with its geometry.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk import load_rivers_data
+
+        rivers = load_rivers_data(Path("data"), include_medium=True)
+    """
     cutoff = MEDIUM_RIVER_ORDER if include_medium else BIG_RIVER_ORDER
 
     def build() -> gpd.GeoDataFrame:

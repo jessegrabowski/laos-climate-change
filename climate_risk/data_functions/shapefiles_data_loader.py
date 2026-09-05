@@ -76,6 +76,7 @@ ISO_CODE_REPAIRS = {
 
 
 def shapefile_dir(cache_dir: Path) -> Path:
+    """Return the directory the downloaded shapefile archives live in, inside ``cache_dir``."""
     return cache_dir / "shapefiles"
 
 
@@ -155,6 +156,38 @@ def load_archive(archive: ShapefileArchive, cache_dir: Path, *, force_reload: bo
 def load_shapefile(
     which: str, cache_dir: Path, *, force_reload: bool = False, repair_ISO_codes: bool = True
 ) -> gpd.GeoDataFrame:
+    """
+    Load one of the bundled boundary archives.
+
+    Parameters
+    ----------
+    which : str
+        Which archive to read: ``"world"`` for the World Bank country boundaries, ``"coastline"``
+        for the GSHHG continental shoreline.
+    cache_dir : Path
+        Directory the source caches live under.
+    force_reload : bool, optional
+        Download again and re-extract rather than reading the cache. Default False.
+    repair_ISO_codes : bool, optional
+        Drop territories that would double-count their owner and supply the missing ISO codes.
+        Applies to ``"world"`` only. Default True.
+
+    Returns
+    -------
+    boundaries : GeoDataFrame
+        The archive's geometries and attributes.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk import load_shapefile
+
+        world = load_shapefile("world", Path("data"))
+        coastline = load_shapefile("coastline", Path("data"))
+    """
     frame = load_archive(_archive_for(which), cache_dir, force_reload=force_reload)
 
     if which.lower() == "world" and repair_ISO_codes:

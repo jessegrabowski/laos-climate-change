@@ -29,6 +29,7 @@ COUNTRY_INFO = DataSource(
 
 
 def geonames_dir(cache_dir: Path) -> Path:
+    """Return the directory the GeoNames country dumps live in, inside ``cache_dir``."""
     return cache_dir / GEONAMES_SUBDIRECTORY
 
 

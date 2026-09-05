@@ -34,6 +34,7 @@ GID_CHUNK = 400
 
 
 def gadm_dir(cache_dir: Path) -> Path:
+    """Return the directory the GADM GeoPackage lives in, inside ``cache_dir``."""
     return cache_dir / "gadm"
 
 

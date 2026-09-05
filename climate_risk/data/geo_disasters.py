@@ -48,6 +48,7 @@ GAUL_ATTRIBUTION = (
 
 
 def geo_disasters_dir(cache_dir: Path) -> Path:
+    """Return the directory the Geo-Disasters GeoPackage lives in, inside ``cache_dir``."""
     return cache_dir / "geo_disasters"
 
 

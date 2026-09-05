@@ -16,6 +16,28 @@ REGIONS = ("Asia", "Europe", "Africa", "Oceania", "Americas")
 
 
 def configure_plot_style(add_grid: bool = False) -> None:
+    """
+    Apply the project's matplotlib and pandas display settings to the current session.
+
+    Sets figure size, constrained layout, spine visibility, and a two-decimal float format for
+    pandas. Call it once, before plotting.
+
+    Parameters
+    ----------
+    add_grid : bool, optional
+        Draw a dashed grid on every axes. Default False.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        import matplotlib.pyplot as plt
+
+        from climate_risk.plotting import configure_plot_style
+
+        configure_plot_style(add_grid=True)
+        figure, axis = plt.subplots()
+    """
     pd.set_option("display.float_format", "{:.2f}".format)
 
     plt.rcParams["figure.figsize"] = (14, 4)

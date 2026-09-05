@@ -75,6 +75,35 @@ def transform_ipcc(scenarios: pl.DataFrame, co2_observations: pl.DataFrame) -> p
 
 
 def process_ipcc_scenarios(cache_dir: Path, *, force_reload: bool = False) -> pl.DataFrame:
+    """
+    Build the IPCC AR6 emissions scenarios, anchored to the observed CO2 record.
+
+    The scenario workbook ships with the package, so only the CO2 series it is anchored to is
+    fetched.
+
+    Parameters
+    ----------
+    cache_dir : Path
+        Directory the source caches live under.
+    force_reload : bool, optional
+        Download again and rebuild the cache rather than reading it. Default False.
+
+    Returns
+    -------
+    scenarios : DataFrame
+        One row per year from the anchor onward, one column per scenario.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk import process_ipcc_scenarios
+
+        scenarios = process_ipcc_scenarios(Path("data"))
+    """
+
     def build() -> pl.DataFrame:
         _log.info("Reading IPCC scenario emissions")
         published = pl.read_excel(IPCC_FILE, sheet_name=IPCC_SHEET)

@@ -28,6 +28,7 @@ RESOLUTION = "30ss"
 
 
 def ghsl_dir(cache_dir: Path) -> Path:
+    """Return the directory the GHS-POP rasters live in, inside ``cache_dir``."""
     return cache_dir / GHSL_SUBDIRECTORY
 
 

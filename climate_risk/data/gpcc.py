@@ -241,6 +241,43 @@ def load_gpcc_data(
     force_reload: bool = False,
     repair_ISO_codes: bool = True,
 ) -> pd.DataFrame:
+    """
+    Load GPCC gridded precipitation, averaged onto countries.
+
+    GPCC publishes the record as more than one product, and every product named in ``products`` is
+    read and combined into a single frame.
+
+    Parameters
+    ----------
+    cache_dir : Path
+        Directory the source caches live under.
+    products : tuple of GriddedProduct, optional
+        Which published products to read. Defaults to the full and monitoring pair.
+    force_reload : bool, optional
+        Download again and rebuild the cache rather than reading it. Default False.
+    repair_ISO_codes : bool, optional
+        Correct the ISO codes on the world boundaries before the join. Default True.
+
+    Returns
+    -------
+    precipitation : DataFrame
+        One row per country and month, indexed by ``country_code`` and ``time``.
+
+    Examples
+    --------
+    Load the record, and report the span the default products cover:
+
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk import load_gpcc_data
+        from climate_risk.data.gpcc import GPCC_PRODUCTS, coverage_of
+
+        precipitation = load_gpcc_data(Path("data"))
+        print(coverage_of(GPCC_PRODUCTS))
+    """
+
     def build() -> pd.DataFrame:
         archives = [
             (fetch(source, cache_dir / GPCC_SUBDIRECTORY, force=force_reload), product.variable)

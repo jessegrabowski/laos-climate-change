@@ -104,6 +104,34 @@ def _deviation_from_trend(climate: pl.DataFrame) -> pl.DataFrame:
 
 
 def create_replication_data(cache_dir: Path, *, baseline: tuple[int, int] = CLIMATOLOGY_BASELINE) -> pl.DataFrame:
+    """
+    Assemble the country-year panel the paper's results are estimated from.
+
+    Joins the disaster panel to the climate series and adds the detrended deviations, so the frame
+    holds both the levels and the departures from trend the models use.
+
+    Parameters
+    ----------
+    cache_dir : Path
+        Directory the source caches live under.
+    baseline : tuple of int, optional
+        First and last year of the climatology the deviations are measured against.
+
+    Returns
+    -------
+    panel : DataFrame
+        One row per country and year.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from pathlib import Path
+
+        from climate_risk.replication_data import create_replication_data
+
+        panel = create_replication_data(Path("data"))
+    """
     panel = build_country_year_panel(cache_dir).rename({"Start_Year": "year"})
 
     # The first and last years are dropped. The reason is unrecorded, and the trend below is fitted
