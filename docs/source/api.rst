@@ -9,3 +9,5 @@ API reference
 
     api/data
     api/data_functions
+    api/config
+    api/geo
