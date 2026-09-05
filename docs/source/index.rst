@@ -7,3 +7,5 @@ Bayesian disaster-frequency and damage modelling for climate adaptation policy.
    :maxdepth: 1
    :hidden:
    :titlesonly:
+
+   user_guide/index
