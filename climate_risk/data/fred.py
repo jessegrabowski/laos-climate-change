@@ -7,7 +7,7 @@ import polars as pl
 
 from kuznets import fred
 
-from climate_risk.data.cache import cached, polars_parquet
+from climate_risk.data.cache import builder_fingerprint, cached, polars_parquet
 from climate_risk.data.source import ApiSource
 
 _log = logging.getLogger(__name__)
@@ -104,7 +104,14 @@ def _load_series(
 
         return transform_fred(frames, series_names)
 
-    return cached(cache_dir, name, build, polars_parquet(), force=force_reload)
+    return cached(
+        cache_dir,
+        name,
+        build,
+        polars_parquet(),
+        params={"reading": builder_fingerprint(build, series_names)},
+        force=force_reload,
+    )
 
 
 def load_fred_data(cache_dir: Path, *, force_reload: bool = False) -> pl.DataFrame:

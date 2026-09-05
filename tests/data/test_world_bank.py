@@ -19,9 +19,6 @@ from climate_risk.data.world_bank import (
     transform_world_bank,
 )
 
-# The cache key is stated literally, so a wrong one fails rather than agreeing with itself.
-CACHE_FILE = "world_bank.parquet"
-
 
 def downloaded(rows) -> pl.DataFrame:
     """Indicators shaped as kuznets returns them tidy, with the year dated rather than numbered."""
@@ -126,21 +123,11 @@ def test_the_result_is_sorted_by_country_and_year():
 def test_a_warm_cache_does_not_download(tmp_path, serves):
     """The download is hundreds of requests; a present cache must not trigger it."""
     calls = serves(downloaded([("Aruba", "1990", 10.0, 1000.0, 100000, 5.0, 180.0)]))
-    pl.DataFrame(
-        {
-            "country_code": ["ABW"],
-            "year": [1990],
-            "population_density": [10.0],
-            "gdp_per_cap": [1000.0],
-            "Population": [100000],
-            "real_gdp": [5.0],
-            "surface_area_km2": [180.0],
-        }
-    ).write_parquet(tmp_path / CACHE_FILE)
 
+    load_wb_data(tmp_path)
     frame = load_wb_data(tmp_path)
 
-    assert calls == []
+    assert len(calls) == 1
     assert frame.select("country_code", "year").rows() == [("ABW", 1990)]
 
 
@@ -150,7 +137,7 @@ def test_the_cold_run_writes_the_cache_it_will_read(tmp_path, serves):
 
     load_wb_data(tmp_path)
 
-    assert (tmp_path / CACHE_FILE).exists()
+    assert len(list(tmp_path.glob("world_bank__*.parquet"))) == 1
 
 
 def test_the_cold_and_warm_frames_agree(tmp_path, serves):
@@ -288,8 +275,8 @@ def test_the_macro_panel_caches_apart_from_the_indicator_panel(tmp_path, serves)
 
     load_wb_macro_data(tmp_path)
 
-    assert (tmp_path / "world_bank_macro.parquet").exists()
-    assert not (tmp_path / CACHE_FILE).exists()
+    assert len(list(tmp_path.glob("world_bank_macro__*.parquet"))) == 1
+    assert list(tmp_path.glob("world_bank__*.parquet")) == []
 
 
 def test_the_macro_download_asks_for_the_macro_indicators(tmp_path, serves):

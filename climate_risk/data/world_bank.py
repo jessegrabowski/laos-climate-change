@@ -7,7 +7,7 @@ import polars as pl
 
 from kuznets import wb
 
-from climate_risk.data.cache import cached, polars_parquet
+from climate_risk.data.cache import builder_fingerprint, cached, polars_parquet
 from climate_risk.data.source import ApiSource
 
 _log = logging.getLogger(__name__)
@@ -128,6 +128,8 @@ def _load_indicators(
     """
     Download ``indicator_names`` for every requested country and cache the panel under ``name``.
 
+    The entry is keyed on how it was built as well as on ``name``, so that editing
+    ``indicator_names`` turns it over instead of reading back what an earlier set produced.
     """
 
     def build() -> pl.DataFrame:
@@ -144,7 +146,14 @@ def _load_indicators(
 
         return transform_world_bank(downloaded, indicator_names)
 
-    return cached(cache_dir, name, build, polars_parquet(), force=force_reload)
+    return cached(
+        cache_dir,
+        name,
+        build,
+        polars_parquet(),
+        params={"reading": builder_fingerprint(build, indicator_names)},
+        force=force_reload,
+    )
 
 
 def load_wb_data(cache_dir: Path, *, force_reload: bool = False) -> pl.DataFrame:

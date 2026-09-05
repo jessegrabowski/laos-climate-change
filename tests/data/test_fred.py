@@ -8,9 +8,6 @@ from polars.testing import assert_frame_equal
 from climate_risk.data import fred
 from climate_risk.data.fred import SERIES_NAMES, _load_series, load_fred_data, transform_fred
 
-# The cache key is stated literally, so a wrong one fails rather than agreeing with itself.
-CACHE_FILE = "fred.parquet"
-
 ONE_SERIES = {"DTB3": "world_rate_3m"}
 
 
@@ -115,23 +112,22 @@ def test_a_backend_other_than_polars_is_rejected(tmp_path, monkeypatch):
 
 
 def test_a_warm_cache_does_not_download(tmp_path, serves):
+    """The download is one request per series; a present cache must not trigger it again."""
     requested = serves({"DTB3": downloaded("DTB3", [("2020-01-01", 1.5)])})
-    pl.DataFrame(
-        {"series": ["world_rate_3m"], "date": [date(2020, 1, 1)], "value": [1.5]},
-        schema={"series": pl.String, "date": pl.Date, "value": pl.Float64},
-    ).write_parquet(tmp_path / CACHE_FILE)
 
     _load_series(tmp_path, "fred", ONE_SERIES, force_reload=False)
+    _load_series(tmp_path, "fred", ONE_SERIES, force_reload=False)
 
-    assert requested == []
+    assert [symbols for symbols, _ in requested] == ["DTB3"]
 
 
 def test_the_cold_run_writes_the_cache_it_will_read(tmp_path, serves):
+    """A key spelled one way on write and another on read leaves a file nothing ever reads back."""
     serves({"DTB3": downloaded("DTB3", [("2020-01-01", 1.5)])})
 
     _load_series(tmp_path, "fred", ONE_SERIES, force_reload=False)
 
-    assert (tmp_path / CACHE_FILE).exists()
+    assert len(list(tmp_path.glob("fred__*.parquet"))) == 1
 
 
 def test_the_cold_and_warm_frames_agree(tmp_path, serves):
@@ -188,3 +184,17 @@ def test_a_series_returned_without_its_own_column_is_named():
 
     with pytest.raises(ValueError, match="DTB3"):
         transform_fred({"DTB3": headerless}, SERIES_NAMES)
+
+
+def test_changing_the_series_set_turns_the_cache_over(tmp_path, serves):
+    """Cache parameters record what was asked for, not how it was built, so without a fingerprint a
+    panel built under an older series list reads back as a hit and silently omits the new series.
+    """
+    both = {sid: downloaded(sid, [("2020-01-01", 1.0)]) for sid in ("DTB3", "DGS10")}
+    serves(both)
+
+    one = _load_series(tmp_path, "fred", {"DTB3": "world_rate_3m"}, force_reload=False)
+    two = _load_series(tmp_path, "fred", {"DTB3": "world_rate_3m", "DGS10": "world_rate_10y"}, force_reload=False)
+
+    assert one["series"].unique().to_list() == ["world_rate_3m"]
+    assert set(two["series"].unique().to_list()) > {"world_rate_3m"}
