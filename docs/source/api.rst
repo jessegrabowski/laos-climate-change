@@ -1,0 +1,11 @@
+.. _api:
+
+API reference
+=============
+
+.. toctree::
+    :maxdepth: 1
+    :titlesonly:
+
+    api/data
+    api/data_functions
