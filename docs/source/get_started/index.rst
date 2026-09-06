@@ -5,3 +5,4 @@ Getting started
    :maxdepth: 1
 
    install
+   cache-directory
