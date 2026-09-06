@@ -119,19 +119,18 @@ def damage_cache(tmp_path, write_emdat_cache, write_shapefile_cache, write_river
 
 @pytest.mark.parametrize("variant", list(VARIANTS), ids=list(VARIANTS))
 def test_the_cached_frame_matches_the_one_that_wrote_it(damage_cache, variant):
-    """A shapefile truncates field names and coarsens dates, so the warm path has to undo both."""
     create, _, _ = VARIANTS[variant]
 
     cold = create(damage_cache)
     warm = create(damage_cache)
 
-    assert set(cold.columns) == set(warm.columns)
-    assert (cold.dtypes[warm.columns.tolist()] == warm.dtypes).all()
+    assert list(warm.columns) == list(cold.columns)
+    assert (warm.dtypes == cold.dtypes).all()
 
 
 @pytest.mark.parametrize("variant", list(VARIANTS), ids=list(VARIANTS))
 def test_the_totals_and_their_logs_are_suffixed_per_variant(damage_cache, variant):
-    """Both variants land in the same cache directory and are told apart only by these suffixes."""
+    """The suffixes are the only thing separating the two frames' columns, so a consumer can hold both."""
     create, total, log = VARIANTS[variant]
 
     damage = create(damage_cache)
@@ -173,21 +172,10 @@ def test_laos_flood_coordinates_are_overridden(damage_cache):
 
 def test_the_year_survives_the_round_trip_as_a_timestamp(damage_cache):
     """Downstream reaches for `.dt`, which a string year cannot answer."""
-    cold = create_hydro_rivers_damage(damage_cache)
+    create_hydro_rivers_damage(damage_cache)
     warm = create_hydro_rivers_damage(damage_cache)
 
-    assert warm["year"].dtype == cold["year"].dtype
     assert set(warm["year"].dt.year) == {1990}
-
-
-def test_the_column_names_survive_the_round_trip(damage_cache):
-    """A shapefile truncates a field name to ten characters, so `Total_Damage_Hydro` came back
-    as `Total_Dama` and every reader had to un-truncate it."""
-    cold = create_hydro_rivers_damage(damage_cache)
-    warm = create_hydro_rivers_damage(damage_cache)
-
-    assert list(warm.columns) == list(cold.columns)
-    assert "Total_Damage_Hydro" in warm.columns
 
 
 def test_an_event_missing_one_coordinate_is_dropped(damage_cache):
