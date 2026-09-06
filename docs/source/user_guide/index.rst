@@ -8,3 +8,5 @@ How the pieces fit together, and how to point them at a country of your own.
 
    adding-a-country
    locating-events
+   layering
+   design-notes
