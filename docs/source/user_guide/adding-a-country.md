@@ -10,6 +10,8 @@ name = "Zambia"
 
 That is the whole minimum. The geometry comes from slicing the World Bank world shapefile by
 `iso3`, and everything else falls back to the project-wide defaults in `climate_risk/config/schema.py`.
+What those defaults are, and what the objects a file parses into hold, is in
+[places and regions](places.md).
 
 Nothing else has to change. If you find yourself editing a loader to make a country work, the
 loader is wrong, not the config.
@@ -94,6 +96,9 @@ workbook is absent, which includes CI. Run it once on a machine that has the wor
 ```
 pixi run pytest -m requires_emdat
 ```
+
+EM-DAT has to be obtained by hand. [Getting the data](../get_started/data.rst) says where from and
+where to put it.
 
 It checks that your country actually has events clearing its own filters. A country that does not
 produces an empty panel, and every other test will pass on it.

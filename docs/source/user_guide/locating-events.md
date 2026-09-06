@@ -33,12 +33,9 @@ latitude, and the point is placed in whichever GADM unit contains it.
 
 ## Getting the data
 
-Two archives are placed by hand, because their terms forbid automated download:
-
-| file | where it goes | obtained from |
-|---|---|---|
-| `emdat.xlsx` | `data/` | https://public.emdat.be — a free account, non-commercial use |
-| `gadm_410.gpkg` | `data/gadm/` | https://gadm.org/download_world.html — non-commercial use |
+Two archives are placed by hand, because their terms forbid automated download: `emdat.xlsx` at the
+top of the cache directory, and `gadm_410.gpkg` under `gadm/`. [Getting the
+data](../get_started/data.rst) has the licenses and the download pages.
 
 Everything else downloads itself:
 
@@ -47,9 +44,9 @@ pixi run fetch-geonames          # every country EM-DAT names, ~200 dumps
 pixi run fetch-geonames PHL IDN  # or just the ones you need
 ```
 
-Each dump is indexed into `data/geonames/places__iso=XXX.parquet`, one row per distinct name, the
-most populous place keeping a name where several share it. Re-running skips whatever is already
-there.
+Each dump is indexed into `<cache_dir>/geonames/places__iso=XXX.parquet`, one row per distinct
+name, the most populous place keeping a name where several share it. Re-running skips whatever is
+already there.
 
 ## Checking it still works
 
