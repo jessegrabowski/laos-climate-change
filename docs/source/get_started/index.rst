@@ -6,3 +6,4 @@ Getting started
 
    install
    cache-directory
+   data
