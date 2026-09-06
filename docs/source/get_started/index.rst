@@ -5,5 +5,6 @@ Getting started
    :maxdepth: 1
 
    install
+   quickstart
    cache-directory
    data
