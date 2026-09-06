@@ -93,9 +93,7 @@ EMDAT_DTYPES = {
     "GADM Admin Units": "string",
 }
 
-# Misspelled on the wire. Correcting it would invalidate every cached CSV on every machine, so the
-# literal stays and the constants are how code should refer to it.
-HYDROMETEOROLOGICAL = "Hydrometereological"
+HYDROMETEOROLOGICAL = "Hydrometeorological"
 CLIMATOLOGICAL = "Climatological"
 
 DISASTER_CLASSES = {
