@@ -7,7 +7,7 @@ import pandas as pd
 
 from climate_risk.config.registry import all_event_location_overrides
 from climate_risk.config.schema import EventFilters
-from climate_risk.data.cache import cached, geo_parquet
+from climate_risk.data.cache import builder_fingerprint, cached, geo_parquet
 from climate_risk.data_functions.emdat_processing import HYDROMETEOROLOGICAL, event_filter, load_emdat_events
 from climate_risk.data_functions.rivers_data_loader import load_rivers_data
 from climate_risk.data_functions.shapefiles_data_loader import load_shapefile
@@ -99,7 +99,18 @@ def _create_rivers_damage(
 
         return damage_df
 
-    return cached(cache_dir, name, build, geo_parquet())
+    reading = builder_fingerprint(
+        build,
+        query,
+        totals,
+        log_suffix,
+        tuple(extra_columns),
+        locations,
+        DAMAGE_COLUMNS,
+        REPLICATION_FILTERS,
+    )
+
+    return cached(cache_dir, name, build, geo_parquet(), params={"reading": reading})
 
 
 def create_hydro_rivers_damage(cache_dir: Path) -> gpd.GeoDataFrame:

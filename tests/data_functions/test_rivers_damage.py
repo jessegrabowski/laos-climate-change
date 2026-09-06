@@ -4,6 +4,8 @@ import pytest
 
 from shapely.geometry import LineString
 
+from climate_risk.config.schema import EventFilters
+from climate_risk.data_functions import rivers_damage
 from climate_risk.data_functions.rivers_damage import (
     create_floods_rivers_damage,
     create_hydro_rivers_damage,
@@ -203,3 +205,15 @@ def test_zero_damage_becomes_missing_rather_than_a_log_of_zero(damage_cache):
     assert len(undamaged) == 1
     assert undamaged["Total_Damage_Flood"].isna().all()
     assert not np.isneginf(damage["log_damage_floods"]).any()
+
+
+def test_a_changed_reach_floor_rebuilds_rather_than_reading_the_old_frame(damage_cache, monkeypatch):
+    """The floor is read by the builder and named nowhere in the cache key, so without a fingerprint
+    over it the entry from the old floor reads back as a hit."""
+    strict = create_floods_rivers_damage(damage_cache)
+
+    monkeypatch.setattr(rivers_damage, "REPLICATION_FILTERS", EventFilters(min_total_affected=10))
+    permissive = create_floods_rivers_damage(damage_cache)
+
+    assert BARELY_FELT_LATITUDE not in set(strict["Latitude"])
+    assert BARELY_FELT_LATITUDE in set(permissive["Latitude"])
