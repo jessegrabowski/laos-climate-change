@@ -166,6 +166,15 @@ def test_disaster_types_map_to_their_class(write_emdat_cache, disaster_type, exp
     assert classes.to_list() == [expected_class]
 
 
+def test_an_unclassified_disaster_type_becomes_null(write_emdat_cache):
+    """Geophysical and biological types are out of scope, and are mapped to null rather than guessed at."""
+    cache_dir = write_emdat_cache([emdat_event({"Disaster Type": "Earthquake"})])
+
+    classes = load_emdat_events(cache_dir)["disaster_class"]
+
+    assert classes.to_list() == [None]
+
+
 def test_adjusted_filter_ignores_deaths_but_starts_in_1981(write_emdat_cache):
     """1980 itself is excluded, so the boundary is pinned on both sides rather than approximately."""
     cache_dir = write_emdat_cache(
