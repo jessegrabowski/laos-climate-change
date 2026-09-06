@@ -150,16 +150,15 @@ def test_region_metadata_survives_reindexing(write_emdat_cache):
 @pytest.mark.parametrize(
     ("disaster_type", "expected_class"),
     [
-        ("Flood", "Hydrometereological"),
-        ("Storm", "Hydrometereological"),
+        ("Flood", "Hydrometeorological"),
+        ("Storm", "Hydrometeorological"),
         ("Drought", "Climatological"),
         ("Wildfire", "Climatological"),
         ("Extreme temperature", "Climatological"),
-        ("Mass movement (wet)", "Hydrometereological"),
+        ("Mass movement (wet)", "Hydrometeorological"),
     ],
 )
 def test_disaster_types_map_to_their_class(write_emdat_cache, disaster_type, expected_class):
-    """`Hydrometereological` is misspelled on purpose: it is the wire value in every cached CSV."""
     cache_dir = write_emdat_cache([emdat_event({"Disaster Type": disaster_type})])
 
     classes = load_emdat_events(cache_dir)["disaster_class"]

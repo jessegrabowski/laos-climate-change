@@ -8,7 +8,7 @@ import pandas as pd
 from climate_risk.config.registry import all_event_location_overrides
 from climate_risk.config.schema import EventFilters
 from climate_risk.data.cache import cached, geo_parquet
-from climate_risk.data_functions.emdat_processing import event_filter, load_emdat_events
+from climate_risk.data_functions.emdat_processing import HYDROMETEOROLOGICAL, event_filter, load_emdat_events
 from climate_risk.data_functions.rivers_data_loader import load_rivers_data
 from climate_risk.data_functions.shapefiles_data_loader import load_shapefile
 from climate_risk.geo.crs import to_km
@@ -129,7 +129,7 @@ def create_hydro_rivers_damage(cache_dir: Path) -> gpd.GeoDataFrame:
     return _create_rivers_damage(
         cache_dir,
         name="rivers_hydro_damage",
-        query='disaster_class == "Hydrometereological"',
+        query=f'disaster_class == "{HYDROMETEOROLOGICAL}"',
         total_suffix="Hydro",
         log_suffix="hydro",
     )
