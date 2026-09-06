@@ -17,6 +17,7 @@ PATCHED_EVENT = "2013-0338-LAO"
 HALF_LOCATED_LATITUDE = 20.5
 UNDAMAGED_LATITUDE = 17.25
 PATCHED_LATITUDE = 19.5
+PATCHED_LONGITUDE = 103.5
 UNPATCHED_LATITUDE = 1.25
 FLOOD_LATITUDE = 18.25
 STORM_LATITUDE = 18.5
@@ -145,8 +146,9 @@ def test_distance_to_the_nearest_river_is_in_kilometers(damage_cache):
     """The column feeds a regression in kilometers; meters would inflate it a thousandfold."""
     damage = create_floods_rivers_damage(damage_cache)
 
-    # Both floods sit within a couple of degrees of the river, so a few hundred kilometers.
-    assert damage["closest_river"].max() < 1_000
+    # Every event sits one to three degrees off the river, so tens to hundreds of kilometers. The
+    # lower bound is what catches a scale factor applied the wrong way.
+    assert damage["closest_river"].between(10, 1_000).all()
 
 
 @pytest.mark.parametrize(
@@ -168,7 +170,10 @@ def test_laos_flood_coordinates_are_overridden(damage_cache):
     """EM-DAT records these events against the wrong place, so the loader forces the coordinates."""
     damage = create_floods_rivers_damage(damage_cache)
 
-    assert PATCHED_LATITUDE in set(damage["Latitude"])
+    patched = damage[damage["Latitude"] == PATCHED_LATITUDE]
+
+    assert len(patched) == 1
+    assert patched["Longitude"].item() == PATCHED_LONGITUDE
     assert UNPATCHED_LATITUDE not in set(damage["Latitude"])
 
 
@@ -217,3 +222,12 @@ def test_a_changed_reach_floor_rebuilds_rather_than_reading_the_old_frame(damage
 
     assert BARELY_FELT_LATITUDE not in set(strict["Latitude"])
     assert BARELY_FELT_LATITUDE in set(permissive["Latitude"])
+
+
+def test_only_the_floods_frame_carries_the_location_text(damage_cache):
+    """`Location` reaches the frame through extra_columns, which only the floods variant asks for."""
+    floods = create_floods_rivers_damage(damage_cache)
+    hydro = create_hydro_rivers_damage(damage_cache)
+
+    assert "Location" in floods.columns
+    assert "Location" not in hydro.columns
